@@ -1,0 +1,36 @@
+node_modules/
+dist/
+.vite/
+coverage/
+
+.DS_Store
+**/.DS_Store
+*.log
+
+.env
+.env.*
+!.env.example
+
+.docx_render_qc/
+
+# Local agent notes are useful during development, but not part of the public game package.
+CLAUDE.md
+AGENT_INTRODUCTION.md
+PROGRESS_REPORT.md
+src/CLAUDE.md
+
+# Keep the repository focused on the current React/Vite build.
+# Runtime assets are served from public/assets.
+/assets/
+/App.jsx
+/main.jsx
+/components/
+/data/
+/game/
+/hooks/
+/styles/
+/ui/
+/utils/
+
+# Legacy prototype snapshots kept locally for reference.
+*.old
