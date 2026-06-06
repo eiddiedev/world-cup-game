@@ -1,5 +1,3 @@
-import { getTeamDefaultFormation } from '../data/teamFormations.js'
-
 const STORAGE_KEY = 'targeting-2026-save'
 
 /**
@@ -57,7 +55,6 @@ export function persistSaveData(saveData) {
 export function createNewRun(teamId) {
   return {
     teamId,
-    formation: getTeamDefaultFormation(teamId),
     stage: 'recruitment',
     startedAt: new Date().toISOString(),
     purchasedPlayerIds: [],

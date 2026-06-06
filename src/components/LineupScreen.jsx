@@ -1,15 +1,5 @@
-import React, { useMemo, useState } from 'react'
-import { FORMATION_NAMES, FORMATION_TACTICS } from '../data/formationTactics.js'
-import { getTeamDefaultFormation } from '../data/teamFormations.js'
+import React, { useState } from 'react'
 import { getTeamById, getTeamFlag } from '../data/teams'
-import {
-  calculateLineupRatings,
-  getEffectiveRating as calculateEffectiveRating,
-} from '../utils/lineupBalance.js'
-import {
-  getOpponentMatchSetup,
-  resolveOpponentStrength,
-} from '../utils/opponentTactics.js'
 
 /**
  * 排兵布阵页面
@@ -64,21 +54,13 @@ const formationPositions = {
     MF: [{ x: 15, y: 50 }, { x: 35, y: 55 }, { x: 65, y: 55 }, { x: 85, y: 50 }],
     FW: [{ x: 25, y: 25 }, { x: 50, y: 20 }, { x: 75, y: 25 }],
   },
-  '3-4-2-1': {
-    GK: [{ x: 50, y: 90 }],
-    DF: [{ x: 25, y: 75 }, { x: 50, y: 78 }, { x: 75, y: 75 }],
-    MF: [
-      { x: 12, y: 52 }, { x: 38, y: 56 }, { x: 62, y: 56 },
-      { x: 88, y: 52 }, { x: 35, y: 36 }, { x: 65, y: 36 },
-    ],
-    FW: [{ x: 50, y: 18 }],
-  },
   '5-3-2': {
     GK: [{ x: 50, y: 90 }],
     DF: [{ x: 10, y: 65 }, { x: 25, y: 72 }, { x: 50, y: 75 }, { x: 75, y: 72 }, { x: 90, y: 65 }],
     MF: [{ x: 30, y: 50 }, { x: 50, y: 45 }, { x: 70, y: 50 }],
     FW: [{ x: 35, y: 25 }, { x: 65, y: 25 }],
   },
+
   '4-1-4-1': {
     GK: [{ x: 50, y: 90 }],
     DF: [{ x: 15, y: 70 }, { x: 35, y: 75 }, { x: 65, y: 75 }, { x: 85, y: 70 }],
@@ -91,6 +73,16 @@ const formationPositions = {
     MF: [{ x: 15, y: 50 }, { x: 35, y: 55 }, { x: 65, y: 55 }, { x: 85, y: 50 }],
     FW: [{ x: 50, y: 35 }, { x: 50, y: 18 }],
   },
+}
+
+const defaultFormation = '4-3-3'
+
+// 位置兼容性检查
+const POSITION_COMPAT = {
+  GK: { GK: 1.0, DF: 0.4, MF: 0.3, FW: 0.2 },
+  DF: { GK: 0.3, DF: 1.0, MF: 0.7, FW: 0.5 },
+  MF: { GK: 0.2, DF: 0.7, MF: 1.0, FW: 0.7 },
+  FW: { GK: 0.2, DF: 0.5, MF: 0.7, FW: 1.0 },
 }
 
 // 位置中文名
@@ -114,13 +106,9 @@ function getStatusGradeColor(grade) {
 }
 
 export default function LineupScreen({ saveData, updateSaveData, navigateTo, showToast }) {
-  const formations = FORMATION_NAMES
-  const teamDefaultFormation = getTeamDefaultFormation(saveData.currentRun?.teamId)
+  const formations = ['4-3-3', '4-4-2', '4-2-3-1', '4-3-2-1', '3-5-2', '3-4-3', '5-3-2', '5-4-1', '4-1-4-1', '4-4-1-1']
 
-  const [selectedFormation, setSelectedFormation] = useState(
-    saveData.currentRun?.formation || teamDefaultFormation,
-  )
-  const [viewingOpponent, setViewingOpponent] = useState(false)
+  const [selectedFormation, setSelectedFormation] = useState(saveData.currentRun?.formation || defaultFormation)
   const [showPlayerInfo, setShowPlayerInfo] = useState(null)
   const [draggedPlayer, setDraggedPlayer] = useState(null)
   const [showPositionWarning, setShowPositionWarning] = useState(null)
@@ -141,7 +129,7 @@ export default function LineupScreen({ saveData, updateSaveData, navigateTo, sho
     const savedLineup = saveData.currentRun?.lineup
     if (savedLineup && savedLineup.length > 0) {
       if (savedLineup[0]?.id) {
-        const formation = saveData.currentRun?.formation || teamDefaultFormation
+        const formation = saveData.currentRun?.formation || defaultFormation
         const slots = formationPositions[formation]
         if (!slots) return []
         const result = []
@@ -162,26 +150,7 @@ export default function LineupScreen({ saveData, updateSaveData, navigateTo, sho
 
   const opponent = saveData.currentRun?.currentOpponent || '未知对手'
   const currentTeam = getTeamById(saveData.currentRun?.teamId)
-  const opponentTeam = getTeamById(opponent)
-  const opponentStrength = resolveOpponentStrength(
-    saveData.currentRun?.teamId,
-    opponent,
-    opponentTeam,
-  )
-  const opponentSetup = useMemo(
-    () => getOpponentMatchSetup(opponent, opponentTeam, opponentStrength),
-    [opponent, opponentTeam, opponentStrength],
-  )
   const allPlayers = allRosterPlayers
-
-  const getLineupPlayersFromSlots = () => startingLineup
-    .map(slot => {
-      const player = allPlayers.find(p => p.id === slot.playerId)
-      return player ? { ...player, pos: slot.position || slot.slotId.split('-')[0] } : null
-    })
-    .filter(player => player && isPlayerAvailable(player.id))
-
-  const lineupAssessment = calculateLineupRatings(getLineupPlayersFromSlots(), selectedFormation)
 
   // 获取对手国旗
   const getOpponentFlag = (opponentName) => {
@@ -200,7 +169,8 @@ export default function LineupScreen({ saveData, updateSaveData, navigateTo, sho
 
   // 计算位置惩罚后的有效评分
   const getEffectiveRating = (player, targetPosition) => {
-    return calculateEffectiveRating(player, targetPosition)
+    const compat = POSITION_COMPAT[player.position]?.[targetPosition] || 0.5
+    return Math.round(player.rating * compat)
   }
 
   // 拖拽开始 - 从替补席
@@ -368,15 +338,74 @@ export default function LineupScreen({ saveData, updateSaveData, navigateTo, sho
   }
 
   const getOverallRating = () => {
-    return startingLineup.length === 0 ? 0 : lineupAssessment.overall
+    if (startingLineup.length === 0) return 0
+    const total = startingLineup.reduce((sum, slot) => {
+      const p = allPlayers.find(pl => pl.id === slot.playerId)
+      if (!p) return sum
+      const targetPos = slot.position || slot.slotId.split('-')[0]
+      const effectiveRating = getEffectiveRating(p, targetPos)
+      return sum + effectiveRating
+    }, 0)
+    return Math.round(total / startingLineup.length)
+  }
+
+  // 阵型属性乘数
+  const FORMATION_STATS = {
+    '4-3-3':   { atk: 1.15, def: 0.95, mid: 1.00 },
+    '4-4-2':   { atk: 1.00, def: 1.00, mid: 1.10 },
+    '4-2-3-1': { atk: 1.08, def: 1.05, mid: 1.05 },
+    '4-3-2-1': { atk: 1.10, def: 1.00, mid: 1.00 },
+    '4-5-1':   { atk: 0.85, def: 1.10, mid: 1.20 },
+    '3-5-2':   { atk: 1.05, def: 0.88, mid: 1.15 },
+    '3-4-3':   { atk: 1.25, def: 0.80, mid: 1.05 },
+    '5-3-2':   { atk: 0.90, def: 1.25, mid: 0.95 },
+    '5-4-1':   { atk: 0.80, def: 1.25, mid: 1.05 },
+    '4-1-4-1': { atk: 1.00, def: 1.10, mid: 1.08 },
   }
 
   const getAttackRating = () => {
-    return startingLineup.length === 0 ? 0 : lineupAssessment.attack
+    if (startingLineup.length === 0) return 0
+    const fm = FORMATION_STATS[selectedFormation] || FORMATION_STATS['4-3-3']
+    let atkSum = 0, atkCount = 0
+    startingLineup.forEach(slot => {
+      const p = allPlayers.find(pl => pl.id === slot.playerId)
+      if (!p) return
+      const pos = slot.position || slot.slotId.split('-')[0]
+      const compat = POSITION_COMPAT[p.position]?.[pos] || 0.5
+      if (pos === 'FW') {
+        atkSum += ((p.tec || 70) * 0.45 + (p.spd || 70) * 0.35 + (p.phy || 70) * 0.20) * compat
+        atkCount++
+      } else if (pos === 'MF') {
+        atkSum += ((p.tec || 70) * 0.50 + (p.spd || 70) * 0.30 + (p.sta || 70) * 0.20) * compat * 0.7
+        atkCount += 0.7
+      }
+    })
+    if (atkCount === 0) return 50
+    return Math.min(99, Math.round((atkSum / atkCount) * fm.atk))
   }
 
   const getDefenseRating = () => {
-    return startingLineup.length === 0 ? 0 : lineupAssessment.defense
+    if (startingLineup.length === 0) return 0
+    const fm = FORMATION_STATS[selectedFormation] || FORMATION_STATS['4-3-3']
+    let defSum = 0, defCount = 0
+    startingLineup.forEach(slot => {
+      const p = allPlayers.find(pl => pl.id === slot.playerId)
+      if (!p) return
+      const pos = slot.position || slot.slotId.split('-')[0]
+      const compat = POSITION_COMPAT[p.position]?.[pos] || 0.5
+      if (pos === 'GK') {
+        defSum += ((p.def || 70) * 0.50 + (p.phy || 70) * 0.30 + (p.spd || 70) * 0.20) * compat
+        defCount++
+      } else if (pos === 'DF') {
+        defSum += ((p.def || 70) * 0.50 + (p.phy || 70) * 0.25 + (p.spd || 70) * 0.25) * compat
+        defCount++
+      } else if (pos === 'MF') {
+        defSum += ((p.def || 70) * 0.40 + (p.sta || 70) * 0.35 + (p.spd || 70) * 0.25) * compat * 0.5
+        defCount += 0.5
+      }
+    })
+    if (defCount === 0) return 50
+    return Math.min(99, Math.round((defSum / defCount) * fm.def))
   }
 
   const handleConfirmLineup = () => {
@@ -384,7 +413,12 @@ export default function LineupScreen({ saveData, updateSaveData, navigateTo, sho
       showToast('需要选择11名首发球员！')
       return
     }
-    const lineupPlayers = getLineupPlayersFromSlots()
+    const lineupPlayers = startingLineup
+      .map(slot => {
+        const player = allPlayers.find(p => p.id === slot.playerId)
+        return player ? { ...player, pos: slot.position || slot.slotId.split('-')[0] } : null
+      })
+      .filter(player => player && isPlayerAvailable(player.id))
     if (lineupPlayers.length < 11) {
       showToast('首发中包含伤停球员，请重新调整阵容！')
       return
@@ -397,7 +431,6 @@ export default function LineupScreen({ saveData, updateSaveData, navigateTo, sho
         formation: selectedFormation,
         matchAttackRating: getAttackRating(),
         matchDefenseRating: getDefenseRating(),
-        lineupAssessment,
         stage: 'match',
       },
     })
@@ -447,41 +480,36 @@ export default function LineupScreen({ saveData, updateSaveData, navigateTo, sho
 
   // 渲染球场位置
   const renderPitchSlots = () => {
-    const activeFormation = viewingOpponent ? opponentSetup.formation : selectedFormation
-    const slots = formationPositions[activeFormation]
+    const slots = formationPositions[selectedFormation]
     if (!slots) return null
     const elements = []
     Object.entries(slots).forEach(([positionType, positions]) => {
       positions.forEach((pos, idx) => {
         const slotId = `${positionType}-${idx}`
-        const assigned = viewingOpponent ? null : startingLineup.find(s => s.slotId === slotId)
-        const opponentPlayersAtPosition = opponentSetup.lineup.filter(player => player.assignedPosition === positionType)
-        const player = viewingOpponent
-          ? opponentPlayersAtPosition[idx]
-          : assigned ? allPlayers.find(p => p.id === assigned.playerId) : null
+        const assigned = startingLineup.find(s => s.slotId === slotId)
+        const player = assigned ? allPlayers.find(p => p.id === assigned.playerId) : null
         const isWrongPos = player && player.position !== positionType
 
+        // 使用onMouseDown/onMouseUp来区分点击和拖拽
         let isDragging = false
 
         elements.push(
           <div
             key={slotId}
-            className={`pitch-slot ${player ? 'filled' : 'empty'} ${isWrongPos ? 'wrong-position' : ''} ${viewingOpponent ? 'opponent-slot' : ''}`}
+            className={`pitch-slot ${player ? 'filled' : 'empty'} ${isWrongPos ? 'wrong-position' : ''}`}
             style={{ left: `${pos.x}%`, top: `${pos.y}%` }}
             onClick={() => {
-              if (viewingOpponent && player) {
-                setShowPlayerInfo(player)
-              } else if (!isDragging) {
+              // 只有在没有拖拽时才显示详情
+              if (!isDragging) {
                 handleSlotClick(positionType, idx)
               }
               isDragging = false
             }}
-            onContextMenu={viewingOpponent ? undefined : (e) => handleSlotRightClick(e, positionType, idx)}
-            onDrop={viewingOpponent ? undefined : (e) => handleDrop(e, positionType, idx)}
-            onDragOver={viewingOpponent ? undefined : handleDragOver}
-            draggable={!viewingOpponent && !!player}
+            onContextMenu={(e) => handleSlotRightClick(e, positionType, idx)}
+            onDrop={(e) => handleDrop(e, positionType, idx)}
+            onDragOver={handleDragOver}
+            draggable={!!player}
             onDragStart={(e) => {
-              if (viewingOpponent) return
               isDragging = true
               if (player) {
                 handlePitchDragStart(e, player, slotId)
@@ -528,160 +556,98 @@ export default function LineupScreen({ saveData, updateSaveData, navigateTo, sho
         </span>
       </div>
 
-      <div className="lineup-workspace">
-        <section className="lineup-pitch-pane">
-          <div className="pitch-view-title">
-            <span>{viewingOpponent ? `${opponent}首发阵容` : `${currentTeam?.name || '我方'}战术板`}</span>
-            <strong>{viewingOpponent ? opponentSetup.formation : selectedFormation}</strong>
-          </div>
-          <div className="pitch-container">
-            <img src="/assets/足球场.png" alt="球场" className="pitch-bg" />
-            <div className="pitch-overlay">{renderPitchSlots()}</div>
-          </div>
-        </section>
+      {/* 阵容评分 */}
+      <div className="lineup-rating" style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
+        <span>总评: <strong>{getOverallRating()}</strong></span>
+        <span style={{ color: '#ff6644' }}>进攻: <strong>{getAttackRating()}</strong></span>
+        <span style={{ color: '#4488ff' }}>防守: <strong>{getDefenseRating()}</strong></span>
+        <span className="rating-count">({startingLineup.length}/11)</span>
+      </div>
 
-        <aside className="lineup-control-pane">
+      {/* 阵型选择 */}
+      <div className="formation-selector">
+        {formations.map(f => (
           <button
-            className={`lineup-view-toggle ${viewingOpponent ? 'active' : ''}`}
-            onClick={() => setViewingOpponent(value => !value)}
+            key={f}
+            className={`formation-btn ${selectedFormation === f ? 'active' : ''}`}
+            onClick={() => { setSelectedFormation(f); setStartingLineup([]) }}
           >
-            {viewingOpponent ? '返回我方阵容' : `查看${opponent}阵容`}
+            {f}
           </button>
+        ))}
+      </div>
 
-          <section className="lineup-control-section formation-control-section">
-            <div className="lineup-section-title">
-              <span>{viewingOpponent ? '对手阵型' : '阵型选择'}</span>
-              <strong>{viewingOpponent ? opponentSetup.formation : selectedFormation}</strong>
-            </div>
-            {!viewingOpponent && (
-              <div className="formation-selector">
-                {formations.map(f => (
-                  <button
-                    key={f}
-                    className={`formation-btn ${selectedFormation === f ? 'active' : ''}`}
-                    onClick={() => {
-                      setSelectedFormation(f)
-                      // 使用一键布阵逻辑
-                      const formationCounts = FORMATION_TACTICS[f]?.counts
-                      if (!formationCounts) return
-                      const availablePlayers = allPlayers.filter(p => isPlayerAvailable(p.id))
-                      const playersByPosition = {
-                        GK: availablePlayers.filter(p => p.position === 'GK').sort((a, b) => b.rating - a.rating),
-                        DF: availablePlayers.filter(p => p.position === 'DF').sort((a, b) => b.rating - a.rating),
-                        MF: availablePlayers.filter(p => p.position === 'MF').sort((a, b) => b.rating - a.rating),
-                        FW: availablePlayers.filter(p => p.position === 'FW').sort((a, b) => b.rating - a.rating),
-                      }
-                      const newLineup = []
-                      const usedPlayerIds = new Set()
-                      for (const [position, count] of Object.entries(formationCounts)) {
-                        const candidates = playersByPosition[position] || []
-                        let assigned = 0
-                        // 只选本位置球员，不够就留空
-                        for (const player of candidates) {
-                          if (assigned >= count) break
-                          if (!usedPlayerIds.has(player.id)) {
-                            newLineup.push({ slotId: `${position}-${assigned}`, playerId: player.id, position })
-                            usedPlayerIds.add(player.id)
-                            assigned++
-                          }
-                        }
-                      }
-                      setStartingLineup(newLineup)
-                    }}
-                    aria-label={`${f} ${FORMATION_TACTICS[f].style}`}
-                  >
-                    {f}
-                  </button>
-                ))}
-              </div>
-            )}
-            <div className="formation-description">
-              <strong>{(viewingOpponent ? opponentSetup.tactics : FORMATION_TACTICS[selectedFormation]).style}</strong>
-              <span>{(viewingOpponent ? opponentSetup.tactics : FORMATION_TACTICS[selectedFormation]).summary}</span>
-              <small>{(viewingOpponent ? opponentSetup.tactics : FORMATION_TACTICS[selectedFormation]).suitableFor}</small>
-            </div>
-          </section>
+      {/* 球场 */}
+      <div className="pitch-container">
+        <img src="/assets/足球场.png" alt="球场" className="pitch-bg" />
+        <div className="pitch-overlay">{renderPitchSlots()}</div>
+      </div>
 
-          <section
-            className={`lineup-control-section player-control-section${viewingOpponent ? ' is-opponent' : ''}`}
-          >
-            <div className="lineup-section-title">
-              <span>{viewingOpponent ? '对手首发' : '球员选择'}</span>
-              <div className="lineup-section-actions">
-                {!viewingOpponent && (
-                  <button
-                    className="auto-lineup-btn"
-                    onClick={handleAutoLineup}
-                    title="按能力值自动选择最佳阵容"
-                  >
-                    一键布阵
-                  </button>
+      {/* 替补席 */}
+      <div
+        className="bench-section"
+        onDrop={handleBenchDrop}
+        onDragOver={handleDragOver}
+      >
+        <h3>替补席 <span className="bench-count">({getBenchPlayers().length}人)</span></h3>
+        <div className="bench-list">
+          {getBenchPlayers().map(player => {
+            const grade = getStatusGrade(player.form || 80)
+            const gradeColor = getStatusGradeColor(grade)
+            const unavailable = !isPlayerAvailable(player.id)
+            const reason = getPlayerUnavailableReason(player.id)
+            return (
+              <div
+                key={player.id}
+                className={`bench-player ${unavailable ? 'bench-player-unavailable' : ''}`}
+                draggable={!unavailable}
+                onDragStart={(e) => { if (!unavailable) handleBenchDragStart(e, player) }}
+                onDragEnd={handleDragEnd}
+                onClick={() => {
+                  if (unavailable) {
+                    showToast(`${player.name} 因${reason}无法上场`)
+                  } else {
+                    handleBenchClick(player)
+                  }
+                }}
+                style={unavailable ? {
+                  background: '#4a1a1a',
+                  borderColor: '#882222',
+                  opacity: 0.7,
+                  cursor: 'not-allowed',
+                } : undefined}
+              >
+                <span className="bench-number">{player.number || '?'}</span>
+                <span className="bench-name" style={unavailable ? { textDecoration: 'line-through', color: '#888' } : undefined}>
+                  {player.name}
+                </span>
+                {unavailable ? (
+                  <span className="bench-unavailable-tag" style={{
+                    background: '#882222', color: '#ffaaaa', padding: '1px 4px', borderRadius: 2,
+                    fontFamily: 'Zpix, monospace', fontSize: 9,
+                  }}>{reason}</span>
+                ) : (
+                  <span className="bench-rating">
+                    {player.rating}<span className="bench-grade" style={{ color: gradeColor }}>{grade}</span>
+                  </span>
                 )}
-                <strong>{viewingOpponent ? '11人' : `${getBenchPlayers().length}人可选`}</strong>
               </div>
-            </div>
-
-            {!viewingOpponent && (
-              <div className="lineup-rating">
-                <span className="rating-overall">总评 <strong>{getOverallRating()}</strong></span>
-                <span className="rating-attack">进攻 <strong>{getAttackRating()}</strong></span>
-                <span className="rating-defense">防守 <strong>{getDefenseRating()}</strong></span>
-                <span className="rating-count">{startingLineup.length}/11</span>
-              </div>
-            )}
-
-            <div
-              className={`bench-section ${viewingOpponent ? 'opponent-roster-section' : ''}`}
-              onDrop={viewingOpponent ? undefined : handleBenchDrop}
-              onDragOver={viewingOpponent ? undefined : handleDragOver}
-            >
-              <div className="bench-list">
-                {(viewingOpponent ? opponentSetup.lineup : getBenchPlayers()).map(player => {
-                  const grade = getStatusGrade(player.form || 80)
-                  const gradeColor = getStatusGradeColor(grade)
-                  const unavailable = !viewingOpponent && !isPlayerAvailable(player.id)
-                  const reason = getPlayerUnavailableReason(player.id)
-                  return (
-                    <div
-                      key={player.id}
-                      className={`bench-player ${unavailable ? 'bench-player-unavailable' : ''} ${viewingOpponent ? 'opponent-player-row' : ''}`}
-                      draggable={!viewingOpponent && !unavailable}
-                      onDragStart={(e) => { if (!viewingOpponent && !unavailable) handleBenchDragStart(e, player) }}
-                      onDragEnd={handleDragEnd}
-                      onClick={() => {
-                        if (unavailable) showToast(`${player.name} 因${reason}无法上场`)
-                        else handleBenchClick(player)
-                      }}
-                    >
-                      <span className="bench-position-label">{POSITION_NAMES[player.position] || player.position}</span>
-                      <span className="bench-number">{player.number || '?'}</span>
-                      <span className="bench-name">{player.name}</span>
-                      {unavailable ? (
-                        <span className="bench-unavailable-tag">{reason}</span>
-                      ) : (
-                        <span className="bench-rating">
-                          {player.rating}
-                          <span className="bench-status-title">状态</span>
-                          <span className="bench-grade" style={{ color: gradeColor }}>{grade}</span>
-                        </span>
-                      )}
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
-          </section>
-        </aside>
+            )
+          })}
+        </div>
       </div>
 
       {/* 确认按钮 */}
       <div className="lineup-footer">
         <button
-          className="lineup-confirm-button"
+          className="PixelButton"
           onClick={handleConfirmLineup}
           disabled={startingLineup.length < 11}
         >
-          {startingLineup.length < 11 ? `还需选择 ${11 - startingLineup.length} 名球员` : '确认阵容 → 开始比赛'}
+          <span className="button-face" aria-hidden="true"></span>
+          <span className="button-label">
+            {startingLineup.length < 11 ? `还需选择 ${11 - startingLineup.length} 名球员` : '确认阵容 → 开始比赛'}
+          </span>
         </button>
       </div>
 
@@ -730,11 +696,9 @@ export default function LineupScreen({ saveData, updateSaveData, navigateTo, sho
             </div>
             <div className="player-info-body">
               <div className="player-info-top">
-                {showPlayerInfo.avatar && (
-                  <div className="player-info-portrait">
-                    <img src={showPlayerInfo.avatar} alt={showPlayerInfo.name} />
-                  </div>
-                )}
+                <div className="player-info-portrait">
+                  <img src={showPlayerInfo.avatar} alt={showPlayerInfo.name} />
+                </div>
                 <div className="player-info-basic">
                   <div className="player-info-meta">
                     <span className="info-position">{showPlayerInfo.position}</span>
@@ -748,7 +712,7 @@ export default function LineupScreen({ saveData, updateSaveData, navigateTo, sho
                     {showPlayerInfo.height && <span>📏 {showPlayerInfo.height}</span>}
                     {showPlayerInfo.weight && <span>⚖️ {showPlayerInfo.weight}</span>}
                   </div>
-                  {showPlayerInfo.price != null && <div className="player-info-price">💰 {showPlayerInfo.price} 金币</div>}
+                  <div className="player-info-price">💰 {showPlayerInfo.price} 金币</div>
                 </div>
               </div>
               <div className="player-info-chart">{renderHexagonChart(showPlayerInfo, 100)}</div>

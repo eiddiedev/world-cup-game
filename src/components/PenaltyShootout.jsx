@@ -19,8 +19,8 @@ export default function PenaltyShootout({ homeTeam, awayTeam, onComplete }) {
   const handleShoot = (direction) => {
     if (isFinished) return
 
-    // 点球大战保持高命中率，同时保留压力下罚失的可能。
-    const scored = Math.random() < 0.74
+    // 简化的点球逻辑：50%命中率
+    const scored = Math.random() > 0.5
 
     const newShots = [...shots, {
       round: currentRound + 1,

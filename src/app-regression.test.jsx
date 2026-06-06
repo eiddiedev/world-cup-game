@@ -8,28 +8,12 @@ import App from './App.jsx'
 import HomeScreen from './components/HomeScreen.jsx'
 import SettingsScreen from './components/SettingsScreen.jsx'
 import { DECISION_LIBRARY } from './data/decisionLibrary.js'
-import { getPlayerMarketScore } from './data/playerBalance.js'
 import { teams } from './data/teams.js'
-import { FORMATION_TACTICS } from './data/formationTactics.js'
 import { ANIMATION_TEMPLATES } from './utils/animationTemplates.js'
 import { BALL_ASSET_SRC, getResultAnimationKey } from './utils/animationResultMapper.js'
 import { AudioManager, audioManager } from './utils/audioManager.js'
 import { generateCommentaryEvent, generateRandomMatchEvent } from './utils/commentaryEngine.js'
-import {
-  outcomeConcedesPenalty,
-  resolveChoiceResult,
-  resolveDiveChoice,
-  resolveMatchPenaltyChoice,
-  resolveOpponentPenaltyChoice,
-  selectKeyPlayers,
-  shouldTriggerDecision,
-} from './utils/decisionSystem.js'
-import { calculateLineupRatings, calculateOpponentPressure } from './utils/lineupBalance.js'
-import {
-  getOpponentMatchSetup,
-  resolveOpponentStrength,
-} from './utils/opponentTactics.js'
-import { generateOpponentTeam } from './utils/matchEngine.js'
+import { selectKeyPlayers, shouldTriggerDecision } from './utils/decisionSystem.js'
 import { getFallbackKnockoutOpponents } from './utils/knockoutResolver.js'
 import {
   buildAnimationActors,
@@ -38,25 +22,7 @@ import {
   createVisualEvent,
 } from './utils/matchVisuals.js'
 import { createInitialSaveData, createNewRun, loadSaveData } from './utils/saveManager.js'
-import { buildPostMatchInsights } from './utils/postMatchInsights.js'
 import { getNextRunAfterMatch } from './utils/tournamentProgress.js'
-import { adaptLineupToFormation } from './utils/lineupFormation.js'
-import { getTeamDefaultFormation } from './data/teamFormations.js'
-import {
-  getFittedLandscapePitchSize,
-  mapPitchPointToLandscape,
-} from './utils/pitchRendering.js'
-import {
-  MATCH_EVENT_ASSETS,
-  getGoalOverlayLayers,
-  getMatchEventVisual,
-} from './utils/matchEventVisuals.js'
-import {
-  appendCommentaryEntry,
-  openChainedDecision,
-} from './utils/commentaryTimeline.js'
-import { getMatchKits, getTeamKit } from './data/teamKits.js'
-import { createPitchBounds, tacticalToPhaserPoint } from './utils/phaserPitch.js'
 
 afterEach(() => {
   cleanup()
@@ -257,119 +223,11 @@ describe('team and player data', () => {
       expect(low19, `${team.name} low19`).toBeGreaterThan(team.budget)
     }
   })
-
-  it('prices all 240 players in the same order as their market value score', () => {
-    const allPreparedPlayers = teams.flatMap(team => team.players)
-    expect(allPreparedPlayers).toHaveLength(240)
-
-    for (const team of teams) {
-      const ranked = [...team.players].sort((a, b) => getPlayerMarketScore(b) - getPlayerMarketScore(a))
-      for (let index = 1; index < ranked.length; index += 1) {
-        expect(
-          ranked[index - 1].price,
-          `${team.name}: ${ranked[index - 1].name} should not cost less than ${ranked[index].name}`,
-        ).toBeGreaterThanOrEqual(ranked[index].price)
-      }
-    }
-
-    const france = teams.find(team => team.id === 'france')
-    const firstKeeper = france.players.find(player => player.name === '铁臂门神')
-    const secondKeeper = france.players.find(player => player.name === '青春之盾')
-    expect(getPlayerMarketScore(firstKeeper)).toBeGreaterThan(getPlayerMarketScore(secondKeeper))
-    expect(firstKeeper.price).toBeGreaterThan(secondKeeper.price)
-  })
 })
 
 describe('match systems', () => {
-  it('documents every selectable formation with a tactical style and use case', () => {
-    const formationNames = ['4-3-3', '4-4-2', '4-2-3-1', '4-3-2-1', '3-5-2', '3-4-3', '3-4-2-1', '5-3-2', '4-1-4-1', '4-4-1-1']
-    expect(Object.keys(FORMATION_TACTICS)).toEqual(expect.arrayContaining(formationNames))
-    formationNames.forEach(name => {
-      expect(FORMATION_TACTICS[name].style).toBeTruthy()
-      expect(FORMATION_TACTICS[name].suitableFor).toBeTruthy()
-    })
-  })
-
-  it('keeps stronger players and opens new slots when changing formation', () => {
-    const players = [
-      { id: 'gk', position: 'GK', rating: 80 },
-      ...[79, 91, 84, 88].map((rating, index) => ({ id: `df-${index}`, position: 'DF', rating })),
-      ...[90, 85, 81].map((rating, index) => ({ id: `mf-${index}`, position: 'MF', rating })),
-      ...[94, 89, 72].map((rating, index) => ({ id: `fw-${index}`, position: 'FW', rating })),
-    ]
-    const lineup = players.map((player, index) => ({
-      playerId: player.id,
-      position: player.position,
-      slotId: `${player.position}-${players.slice(0, index).filter(item => item.position === player.position).length}`,
-    }))
-
-    const adapted = adaptLineupToFormation(lineup, players, '4-4-2')
-
-    expect(adapted).toHaveLength(10)
-    expect(adapted.filter(slot => slot.position === 'DF').map(slot => slot.playerId)).toEqual([
-      'df-0',
-      'df-1',
-      'df-2',
-      'df-3',
-    ])
-    expect(adapted.filter(slot => slot.position === 'MF')).toHaveLength(3)
-    expect(adapted.filter(slot => slot.position === 'FW').map(slot => slot.playerId)).toEqual([
-      'fw-0',
-      'fw-1',
-    ])
-    expect(adapted.some(slot => slot.playerId === 'fw-2')).toBe(false)
-  })
-
-  it('uses researched default formations for all ten playable teams', () => {
-    expect(getTeamDefaultFormation('france')).toBe('4-3-3')
-    expect(getTeamDefaultFormation('brazil')).toBe('4-2-3-1')
-    expect(getTeamDefaultFormation('argentina')).toBe('4-3-3')
-    expect(getTeamDefaultFormation('portugal')).toBe('4-2-3-1')
-    expect(getTeamDefaultFormation('germany')).toBe('4-2-3-1')
-    expect(getTeamDefaultFormation('japan')).toBe('3-4-2-1')
-    expect(getTeamDefaultFormation('norway')).toBe('4-3-3')
-    expect(getTeamDefaultFormation('morocco')).toBe('4-3-3')
-    expect(getTeamDefaultFormation('newzealand')).toBe('4-3-3')
-    expect(getTeamDefaultFormation('curacao')).toBe('4-3-3')
-    teams.forEach(team => {
-      expect(createNewRun(team.id).formation).toBe(getTeamDefaultFormation(team.id))
-    })
-  })
-
-  it('uses one stable opponent tactical lineup for preview and match simulation', () => {
-    const first = getOpponentMatchSetup('塞内加尔', null, 'medium')
-    const second = getOpponentMatchSetup('塞内加尔', null, 'medium')
-
-    expect(first.formation).toBe(second.formation)
-    expect(first.lineup).toHaveLength(11)
-    expect(first.lineup).toEqual(second.lineup)
-    expect(first.lineup.filter(player => player.position === 'GK')).toHaveLength(1)
-    expect(first.lineup.map(player => player.number)).toEqual(second.lineup.map(player => player.number))
-    expect(generateOpponentTeam('塞内加尔', null, 'medium')).toEqual(first.lineup)
-  })
-
-  it('resolves scheduled opponent strength by team and opponent name', () => {
-    expect(resolveOpponentStrength('france', '伊拉克', null)).toBe('weak')
-    expect(resolveOpponentStrength('france', '塞内加尔', null)).toBe('medium')
-  })
-
-  it('selects a position-correct best eleven from playable team rosters', () => {
-    const france = teams.find(team => team.id === 'france')
-    const setup = getOpponentMatchSetup('法国', france, 'strong')
-
-    expect(setup.lineup).toHaveLength(11)
-    expect(setup.lineup.filter(player => player.position === 'GK')).toHaveLength(1)
-    expect(setup.lineup.every(player => player.assignedPosition)).toBe(true)
-  })
-
-  it('keeps the designed 32 key decision scenarios available', () => {
-    expect(DECISION_LIBRARY).toHaveLength(32)
-    expect(DECISION_LIBRARY.map(scenario => scenario.id)).toEqual(expect.arrayContaining([
-      'penalty_area_dive',
-      'var_penalty_review',
-      'defend_dangerous_freekick',
-      'box_second_ball_chaos',
-    ]))
+  it('keeps the designed 28 key decision scenarios available', () => {
+    expect(DECISION_LIBRARY).toHaveLength(28)
   })
 
   it('selects key players using the canonical position field', () => {
@@ -439,11 +297,6 @@ describe('match systems', () => {
     expect(ANIMATION_TEMPLATES.penalty_shootout.result_animations.goal_placement).toBeTruthy()
     expect(ANIMATION_TEMPLATES.penalty_shootout.result_animations.saved_placement).toBeTruthy()
     expect(ANIMATION_TEMPLATES.penalty_shootout.result_animations.goal_panenka).toBeTruthy()
-    expect(ANIMATION_TEMPLATES.attack_dive.result_animations.penalty_won).toBeTruthy()
-    expect(ANIMATION_TEMPLATES.var_penalty.result_animations.penalty_awarded).toBeTruthy()
-    expect(ANIMATION_TEMPLATES.defend_freekick.result_animations.wall_block).toBeTruthy()
-    expect(ANIMATION_TEMPLATES.box_chaos.result_animations.cleared_second_ball).toBeTruthy()
-    expect(ANIMATION_TEMPLATES.defend_opponent_penalty.result_animations.opponent_saved_left).toBeTruthy()
   })
 
   it('keeps animation templates limited to engine-supported frame types', () => {
@@ -505,7 +358,7 @@ describe('match systems', () => {
       { id: 'opp-1', name: '对手门将', number: 1, position: 'GK' },
     ]
 
-    const redCardRolls = [0.01, 0, 0, 0, 0.001, 0]
+    const redCardRolls = [0.01, 0, 0, 0, 0.01, 0]
     const redCard = generateRandomMatchEvent(15, myPlayers, opponentPlayers, () => redCardRolls.shift() ?? 0)
     expect(redCard.type).toBe('red_card')
     expect(redCard.statsUpdate).toMatchObject({ fouls: 1, redCards: 1 })
@@ -562,294 +415,5 @@ describe('match systems', () => {
     expect(shouldTriggerDecision(20, 1, 20, 12, () => 0)).toBe(false)
     expect(shouldTriggerDecision(28, 1, 20, 12, () => 0)).toBe(false)
     expect(shouldTriggerDecision(32, 1, 20, 12, () => 0)).toBe(true)
-  })
-
-  it('punishes lineups that use midfielders as the entire back line', () => {
-    const gk = { id: 'gk', name: '门将', number: 1, position: 'GK', pos: 'GK', rating: 86, def: 90, phy: 82, spd: 70, sta: 88 }
-    const naturalBackLine = [
-      gk,
-      ...Array.from({ length: 4 }, (_, i) => ({
-        id: `df-${i}`,
-        name: `后卫${i}`,
-        number: i + 2,
-        position: 'DF',
-        pos: 'DF',
-        rating: 84,
-        def: 86,
-        phy: 82,
-        spd: 76,
-        sta: 86,
-      })),
-      ...Array.from({ length: 3 }, (_, i) => ({
-        id: `mf-${i}`,
-        name: `中场${i}`,
-        number: i + 6,
-        position: 'MF',
-        pos: 'MF',
-        rating: 84,
-        def: 72,
-        tec: 86,
-        spd: 78,
-        sta: 86,
-      })),
-      ...Array.from({ length: 3 }, (_, i) => ({
-        id: `fw-${i}`,
-        name: `前锋${i}`,
-        number: i + 9,
-        position: 'FW',
-        pos: 'FW',
-        rating: 84,
-        tec: 86,
-        spd: 86,
-        phy: 78,
-        sta: 84,
-      })),
-    ]
-    const midfieldBackLine = naturalBackLine.map((player, index) => (
-      index >= 1 && index <= 4
-        ? { ...player, position: 'MF', name: `客串后卫${index}`, def: 70, tec: 86 }
-        : player
-    ))
-
-    const normal = calculateLineupRatings(naturalBackLine, '4-3-3')
-    const broken = calculateLineupRatings(midfieldBackLine, '4-3-3')
-
-    expect(broken.defenderCoverage).toBe(0)
-    expect(broken.defense).toBeLessThan(normal.defense - 20)
-    expect(broken.defensiveIntegrity).toBeLessThan(normal.defensiveIntegrity)
-  })
-
-  it('raises opponent pressure when the defense is badly out of position', () => {
-    const opponentLineup = Array.from({ length: 10 }, (_, i) => ({
-      id: `opp-${i}`,
-      name: `对方${i}`,
-      position: i === 0 ? 'GK' : i < 5 ? 'FW' : 'MF',
-      rating: 82,
-      tec: 84,
-      spd: 84,
-      phy: 78,
-      sta: 82,
-      def: 70,
-    }))
-    const healthyLineup = [
-      { id: 'gk', position: 'GK', pos: 'GK', rating: 84, def: 88, phy: 80, spd: 70, sta: 86 },
-      ...Array.from({ length: 4 }, (_, i) => ({ id: `df-${i}`, position: 'DF', pos: 'DF', rating: 82, def: 86, phy: 80, spd: 74, sta: 82 })),
-      ...Array.from({ length: 6 }, (_, i) => ({ id: `midfw-${i}`, position: i < 3 ? 'MF' : 'FW', pos: i < 3 ? 'MF' : 'FW', rating: 82, def: 70, tec: 84, spd: 82, phy: 76, sta: 82 })),
-    ]
-    const brokenLineup = healthyLineup.map((player, index) => (
-      index >= 1 && index <= 4 ? { ...player, position: 'MF', def: 68, tec: 86 } : player
-    ))
-
-    const healthyPressure = calculateOpponentPressure({ myLineup: healthyLineup, opponentLineup, formation: '4-3-3' })
-    const brokenPressure = calculateOpponentPressure({ myLineup: brokenLineup, opponentLineup, formation: '4-3-3' })
-
-    expect(healthyPressure.chance).toBeLessThan(0.31)
-    expect(healthyPressure.goalChance).toBeLessThan(0.28)
-    expect(brokenPressure.chance).toBeGreaterThan(healthyPressure.chance)
-    expect(brokenPressure.goalChance).toBeGreaterThan(healthyPressure.goalChance)
-  })
-
-  it('keeps direct red-card outcomes in the high-risk failure tier', () => {
-    const lastDefender = DECISION_LIBRARY.find(decision => decision.id === 'last_defender_tackle')
-    const tacticalFoul = DECISION_LIBRARY.find(decision => decision.id === 'tactical_foul_counter')
-
-    expect(lastDefender.choices.find(choice => choice.id === 'last_man_tackle').possible_outcomes.at(-1)).toBe('red_card_penalty')
-    expect(tacticalFoul.choices.find(choice => choice.id === 'tactical_foul_commit').possible_outcomes.at(-1)).toBe('red_card_second_yellow')
-  })
-
-  it('does not make the near-post one-on-one choice a guaranteed goal', () => {
-    const scenario = DECISION_LIBRARY.find(decision => decision.id === 'solo_run_penalty')
-    const choice = scenario.choices.find(item => item.id === 'shoot_near_post')
-    const player = { tec: 92, spd: 94, sta: 88, star: 5, rating: 91 }
-    const gameState = { minute: 30, oppDefense: 65, teamAvgRating: 86 }
-
-    const goalRandom = vi.spyOn(Math, 'random')
-      .mockReturnValueOnce(0)
-      .mockReturnValueOnce(0)
-      .mockReturnValueOnce(0.1)
-    expect(resolveChoiceResult(choice, player, gameState).homeScoreChange).toBe(1)
-    goalRandom.mockRestore()
-
-    const saveRandom = vi.spyOn(Math, 'random')
-      .mockReturnValueOnce(0)
-      .mockReturnValueOnce(0)
-      .mockReturnValueOnce(0.99)
-    expect(resolveChoiceResult(choice, player, gameState)).toMatchObject({
-      outcome: 'saved_near',
-      homeScoreChange: 0,
-    })
-    saveRandom.mockRestore()
-  })
-
-  it('turns card penalties and dives into second-stage penalty logic', () => {
-    expect(outcomeConcedesPenalty('yellow_card_penalty')).toBe(true)
-    expect(outcomeConcedesPenalty('red_card_penalty')).toBe(true)
-
-    const keeper = { name: '门将', position: 'GK', def: 90, spd: 82, sta: 88 }
-    const saved = resolveOpponentPenaltyChoice({ side: 'left' }, keeper, { myDefense: 82 }, () => 0)
-    const scored = resolveOpponentPenaltyChoice({ side: 'right' }, keeper, { myDefense: 82 }, () => 0.99)
-
-    expect(saved).toMatchObject({ outcome: 'opponent_saved_left', awayScoreChange: 0 })
-    expect(scored).toMatchObject({ outcome: 'opponent_goal_right', awayScoreChange: 1 })
-
-    expect(resolveDiveChoice({ id: 'simulate_contact' }, { tec: 90, sta: 88 }, { isKnockout: false }, () => 0.05).outcome).toBe('penalty_won')
-    expect(resolveDiveChoice({ id: 'simulate_contact' }, { tec: 60, sta: 60 }, { isKnockout: false }, () => 0.99).outcome).toBe('yellow_card_dive')
-  })
-
-  it('gives normal penalty takers a realistic scoring chance instead of splitting successful rolls again', () => {
-    const penalty = DECISION_LIBRARY.find(decision => decision.id === 'match_penalty')
-    const placement = penalty.choices.find(choice => choice.id === 'penalty_left')
-    const panenka = penalty.choices.find(choice => choice.id === 'penalty_center')
-    const player = { tec: 86, sta: 84, star: 4, rating: 85 }
-
-    expect(resolveMatchPenaltyChoice(placement, player, {}, () => 0.70)).toMatchObject({
-      outcome: 'goal_placement',
-      homeScoreChange: 1,
-    })
-    expect(resolveMatchPenaltyChoice(placement, player, {}, () => 0.96)).toMatchObject({
-      outcome: 'miss_post',
-      homeScoreChange: 0,
-    })
-    expect(resolveMatchPenaltyChoice(panenka, player, {}, () => 0.74).homeScoreChange).toBe(0)
-  })
-})
-
-describe('post-match review', () => {
-  it('turns recorded choices into a decision recap and actionable advice', () => {
-    const insights = buildPostMatchInsights({
-      homeScore: 2,
-      awayScore: 1,
-      stats: {
-        myShots: 12,
-        oppShots: 10,
-        myShotsOnTarget: 5,
-        oppShotsOnTarget: 4,
-        myXG: 2.2,
-        oppXG: 1.4,
-        possession: 48,
-        fouls: 4,
-        yellowCards: 2,
-        redCards: 0,
-        penalties: 1,
-        corners: 3,
-      },
-      decisions: [
-        { minute: 32, situation: '获得点球', choiceLabel: '射向左下角', resultText: '点球罚进', isSuccess: true },
-        { minute: 74, situation: '对方快速反击', choiceLabel: '战术犯规', resultText: '吃到黄牌', isSuccess: false },
-      ],
-    }, '法国')
-
-    expect(insights.summary).toContain('2次临场决策')
-    expect(insights.decisionItems).toHaveLength(2)
-    expect(insights.decisionItems[0]).toContain('32′')
-    expect(insights.advice.join('')).toContain('纪律')
-  })
-})
-
-describe('landscape match presentation', () => {
-  it('maps tactical coordinates onto the same top-down horizontal pitch used by the Phaser demo', () => {
-    const pitch = createPitchBounds(780, 480)
-    const ownGoal = tacticalToPhaserPoint(50, 0, pitch)
-    const center = tacticalToPhaserPoint(50, 50, pitch)
-    const opponentGoal = tacticalToPhaserPoint(50, 100, pitch)
-
-    expect(pitch).toEqual({ x: 40, y: 60, width: 700, height: 360 })
-    expect(ownGoal.x).toBeLessThan(center.x)
-    expect(opponentGoal.x).toBeGreaterThan(center.x)
-    expect(ownGoal.y).toBe(center.y)
-  })
-
-  it('provides distinct pixel kits for all ten playable teams', () => {
-    const playableTeamIds = teams.map(team => team.id)
-    const kits = playableTeamIds.map(teamId => getTeamKit(teamId))
-
-    expect(kits).toHaveLength(10)
-    expect(new Set(kits.map(kit => kit.shirt)).size).toBeGreaterThanOrEqual(8)
-    kits.forEach(kit => {
-      expect(kit.shirt).toMatch(/^#/)
-      expect(kit.shorts).toMatch(/^#/)
-      expect(kit.socks).toMatch(/^#/)
-      expect(kit.goalkeeper).toMatch(/^#/)
-    })
-  })
-
-  it('switches the opponent to an alternate kit when the shirts would clash', () => {
-    const { home, away } = getMatchKits('france', '日本')
-
-    expect(home.shirt).not.toBe(away.shirt)
-    expect(away).toMatchObject(getTeamKit('japan').away)
-  })
-
-  it('maps tactical progress from left goal to right goal on a native landscape pitch', () => {
-    const myGoal = mapPitchPointToLandscape(50, 5, 900, 600)
-    const center = mapPitchPointToLandscape(50, 50, 900, 600)
-    const opponentGoal = mapPitchPointToLandscape(50, 95, 900, 600)
-
-    expect(myGoal.px).toBeLessThan(center.px)
-    expect(opponentGoal.px).toBeGreaterThan(center.px)
-    expect(myGoal.py).toBeCloseTo(center.py)
-  })
-
-  it('fits a complete 3:2 field inside the available match area', () => {
-    expect(getFittedLandscapePitchSize(960, 540)).toEqual({ width: 810, height: 540 })
-    expect(getFittedLandscapePitchSize(600, 600)).toEqual({ width: 600, height: 400 })
-  })
-
-  it('maps match outcomes to the supplied pixel event assets', () => {
-    expect(getMatchEventVisual('goal_placement', { homeScoreChange: 1 })).toEqual({
-      type: 'goal',
-      src: MATCH_EVENT_ASSETS.goal,
-      label: '进球',
-    })
-    expect(getMatchEventVisual('gk_reaction_save', {})).toMatchObject({
-      type: 'save',
-      src: MATCH_EVENT_ASSETS.save,
-    })
-    expect(getMatchEventVisual('red_card_penalty', {})).toMatchObject({
-      type: 'redCard',
-      src: MATCH_EVENT_ASSETS.redCard,
-    })
-    expect(getMatchEventVisual('yellow_card_dive', {})).toMatchObject({
-      type: 'yellowCard',
-      src: MATCH_EVENT_ASSETS.yellowCard,
-    })
-    expect(getMatchEventVisual('deflected_corner', {})).toMatchObject({
-      type: 'corner',
-      src: MATCH_EVENT_ASSETS.corner,
-    })
-  })
-
-  it('does not append the same commentary twice for one match minute', () => {
-    const first = appendCommentaryEntry([], {
-      id: 1,
-      text: "12' 本方4号正在带球推进 → 本方3号前插接应 → 对方5号上前封堵",
-      color: '#F3E3B4',
-    })
-    const repeated = appendCommentaryEntry(first, {
-      id: 2,
-      text: "12' 本方4号正在带球推进 → 本方3号前插接应 → 对方5号上前封堵",
-      color: '#F3E3B4',
-    })
-
-    expect(repeated).toHaveLength(1)
-  })
-
-  it('keeps the original goal text over the transparent goal image without a backdrop', () => {
-    expect(getGoalOverlayLayers()).toEqual({
-      image: true,
-      text: true,
-      backdrop: false,
-    })
-  })
-
-  it('clears the previous result before opening a chained penalty decision', () => {
-    const setDecisionResult = vi.fn()
-    const setCurrentDecision = vi.fn()
-    const penaltyDecision = { kind: 'opponent_penalty' }
-
-    openChainedDecision(penaltyDecision, { setDecisionResult, setCurrentDecision })
-
-    expect(setDecisionResult).toHaveBeenCalledWith(null)
-    expect(setCurrentDecision).toHaveBeenCalledWith(penaltyDecision)
   })
 })

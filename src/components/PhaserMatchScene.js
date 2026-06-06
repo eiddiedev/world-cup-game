@@ -22,16 +22,13 @@ export function createPhaserMatchScene(Phaser, controller) {
       this.effects = []
       this.ballPosition = { x: 50, y: 50, lift: 0 }
       this.ballZone = 'midfield'
-      this.ballCarrier = null
+      this.ballOwnerName = null
       this.possessionTeam = 'my'
       this.animating = false
       this.ambientPhase = 0
       this.lastAmbientSwitch = 0
       this.lastFreekickX = 50
       this.lastFreekickY = 75
-      this.playerVelocities = {}
-      this.kickCooldowns = {}
-      this._ballTarget = null
     }
 
     preload() {
@@ -193,8 +190,6 @@ export function createPhaserMatchScene(Phaser, controller) {
           position,
           team: 'my',
         }
-        this.playerVelocities[player.name] = { vx: 0, vy: 0 }
-        this.kickCooldowns[player.name] = 0
       })
 
       this.controller.opponentLineup.forEach((player) => {
@@ -202,8 +197,7 @@ export function createPhaserMatchScene(Phaser, controller) {
         const slot = awayPositions[position]?.[awayCounts[position] || 0]
         awayCounts[position] = (awayCounts[position] || 0) + 1
         if (!slot) return
-        const name = `opp_${player.name}`
-        nextPositions[name] = {
+        nextPositions[`opp_${player.name}`] = {
           x: 100 - slot[0],
           y: 100 - slot[1],
           anchorX: 100 - slot[0],
@@ -211,21 +205,12 @@ export function createPhaserMatchScene(Phaser, controller) {
           position,
           team: 'opponent',
         }
-        this.playerVelocities[name] = { vx: 0, vy: 0 }
-        this.kickCooldowns[name] = 0
       })
 
       this.playerPositions = nextPositions
       this.ballPosition = { x: 50, y: 50, lift: 0 }
-      this.ballCarrier = null
-      this.possessionTeam = 'my'
-
-      // 开球：让一名前锋持球
-      const myFWs = Object.entries(nextPositions).filter(([name, pos]) => pos.team === 'my' && pos.position === 'FW')
-      if (myFWs.length > 0) {
-        this.ballCarrier = myFWs[0][0]
-      }
-
+      this.ballOwnerName = null
+      this.ballZone = 'midfield'
       this.syncObjects()
     }
 
@@ -253,304 +238,48 @@ export function createPhaserMatchScene(Phaser, controller) {
       this.ballShadow.setScale(Math.max(0.45, 1 - this.ballPosition.lift / 80))
     }
 
-    update(time, delta) {
-      try {
-        this.ambientPhase = time / 900
-        const dt = Math.min((delta || 16.67) / 16.67, 3)
-        this.tickAmbient(time, dt)
-        this.syncObjects()
-      } catch (e) {
-        // 静默处理，防止崩溃
-      }
+    update(time) {
+      this.ambientPhase = time / 900
+      this.tickAmbient(time)
+      this.syncObjects()
     }
 
-    tickAmbient(now, dt) {
+    tickAmbient(now) {
       if (!this.controller.ambientEnabled) return
-      if (this.animating) return
-
-      try {
-        // 更新踢球冷却
-        Object.keys(this.kickCooldowns || {}).forEach(name => {
-          if (this.kickCooldowns[name] > 0) this.kickCooldowns[name] -= dt
+      if (!this.animating && now - this.lastAmbientSwitch > 1400) {
+        const zones = ['buildup', 'midfield', 'left_attack', 'right_attack', 'box', 'defend']
+        const currentIndex = zones.indexOf(this.ballZone)
+        this.ballZone = zones[(currentIndex + 1 + Math.floor(now / 1400)) % zones.length] || 'midfield'
+        this.lastAmbientSwitch = now
+        const candidates = Object.keys(this.playerPositions).filter((name) => {
+          const position = this.playerPositions[name]
+          return position.team === this.possessionTeam && position.position !== 'GK'
         })
-
-        // AI 决策
-        this.updateAI(dt)
-
-        // 更新球员位置
-        this.updatePlayerPositions(dt)
-
-        // 更新球位置
-        this.updateBall(dt)
-      } catch (e) {
-        // 静默处理
+        this.ballOwnerName = candidates[Math.floor((now / 1400) % Math.max(1, candidates.length))] || null
       }
-    }
 
-    updateAI(dt) {
-      Object.entries(this.playerPositions).forEach(([name, position]) => {
+      const targets = createAmbientTargets({
+        playerPositions: this.playerPositions,
+        ballZone: this.ballZone,
+        phase: this.ambientPhase,
+      })
+      Object.entries(targets).forEach(([name, target]) => {
         if (this.lockedPlayers.has(name)) return
-
-        const isMy = position.team === 'my'
-        const isGK = position.position === 'GK'
-        const vel = this.playerVelocities[name] || { vx: 0, vy: 0 }
-        const speed = isGK ? 0.6 : 1.2 + Math.random() * 0.3
-
-        // 计算到球的距离
-        const bx = this.ballPosition.x, by = this.ballPosition.y
-        const dx = bx - position.x, dy = by - position.y
-        const dist = Math.sqrt(dx * dx + dy * dy)
-
-        const isCarrier = name === this.ballCarrier
-        const carrierPos = this.ballCarrier ? this.playerPositions[this.ballCarrier] : null
-        const isTeammateOfCarrier = carrierPos && ((isMy && carrierPos.team === 'my') || (!isMy && carrierPos.team === 'opponent'))
-
-        if (isCarrier) {
-          // 持球 AI：带球推进
-          this.handleBallCarrier(name, position, vel, speed, dt)
-        } else if (isTeammateOfCarrier) {
-          // 队友跑位
-          this.handleTeammateMovement(name, position, vel, speed, dt)
-        } else {
-          // 防守/抢球
-          this.handleDefensiveMovement(name, position, vel, speed, dist, dx, dy, dt)
-        }
-
-        this.playerVelocities[name] = vel
-      })
-    }
-
-    handleBallCarrier(name, pos, vel, speed, dt) {
-      const isMy = pos.team === 'my'
-      const goalX = isMy ? 96 : 4
-      const goalY = 50
-
-      const toGoalX = goalX - pos.x
-      const toGoalY = goalY - pos.y
-      const toGoalDist = Math.sqrt(toGoalX * toGoalX + toGoalY * toGoalY)
-
-      // 检查前方是否有对方球员
-      let blocked = false
-      Object.entries(this.playerPositions).forEach(([otherName, other]) => {
-        if (otherName === name || other.team === pos.team || other.position === 'GK') return
-        const ox = other.x - pos.x, oy = other.y - pos.y
-        const od = Math.sqrt(ox * ox + oy * oy)
-        if (od < 12 && Math.sign(ox) === Math.sign(toGoalX)) blocked = true
+        const position = this.playerPositions[name]
+        if (!position) return
+        position.x += (target.x - position.x) * 0.022
+        position.y += (target.y - position.y) * 0.022
       })
 
-      // 射门（距离球门近时）
-      if (toGoalDist < 15 && this.kickCooldowns[name] <= 0) {
-        this.shoot(name, pos, goalX, goalY)
-        return
-      }
-
-      // 传球（被阻挡或随机）
-      if (this.kickCooldowns[name] <= 0) {
-        if (blocked && Math.random() < 0.04 * dt) {
-          this.pass(name, pos)
-          return
-        }
-        if (!blocked && Math.random() < 0.02 * dt) {
-          this.pass(name, pos)
-          return
-        }
-      }
-
-      // 带球推进
-      const ang = Math.atan2(toGoalY, toGoalX) + (Math.random() - 0.5) * 0.3
-      vel.vx += Math.cos(ang) * speed * 0.12 * dt
-      vel.vy += Math.sin(ang) * speed * 0.12 * dt
-    }
-
-    handleTeammateMovement(name, pos, vel, speed, dt) {
-      const isMy = pos.team === 'my'
-      const carrierPos = this.ballCarrier ? this.playerPositions[this.ballCarrier] : null
-
-      let targetX = pos.anchorX
-      let targetY = pos.anchorY
-
-      // 前锋和中场前插
-      if (['FW', 'MF'].includes(pos.position) && carrierPos) {
-        const pushX = isMy ? 12 : -12
-        targetX = pos.anchorX + pushX
-        targetY = pos.anchorY + (Math.random() - 0.5) * 20
-      }
-
-      const dx = targetX - pos.x
-      const dy = targetY - pos.y
-      const d = Math.sqrt(dx * dx + dy * dy)
-      if (d > 3) {
-        vel.vx += (dx / d) * speed * 0.06 * dt
-        vel.vy += (dy / d) * speed * 0.06 * dt
-      }
-    }
-
-    handleDefensiveMovement(name, pos, vel, speed, dist, dx, dy, dt) {
-      const isGK = pos.position === 'GK'
-      const isMy = pos.team === 'my'
-
-      if (isGK) {
-        // 门将 AI：沿球门线跟踪球的 y 坐标
-        const gkBaseX = isMy ? 6 : 94
-        const targetY = clamp(this.ballPosition.y, 35, 65)
-        vel.vx += (gkBaseX - pos.x) * 0.04 * dt
-        vel.vy += (targetY - pos.y) * 0.05 * dt
-      } else if (dist < 25) {
-        // 追球
-        vel.vx += (dx / dist) * speed * 0.1 * dt
-        vel.vy += (dy / dist) * speed * 0.1 * dt
-      } else {
-        // 回位
-        const rx = pos.anchorX - pos.x, ry = pos.anchorY - pos.y
-        const rd = Math.sqrt(rx * rx + ry * ry)
-        if (rd > 3) {
-          vel.vx += (rx / rd) * speed * 0.05 * dt
-          vel.vy += (ry / rd) * speed * 0.05 * dt
-        }
-      }
-
-      // 抢断（距离近且对方持球）
-      const carrierPos = this.ballCarrier ? this.playerPositions[this.ballCarrier] : null
-      if (dist < 8 && carrierPos && carrierPos.team !== pos.team && this.kickCooldowns[name] <= 0) {
-        if (Math.random() < 0.15) {
-          this.tackle(name, pos)
-        }
-      }
-    }
-
-    shoot(name, pos, goalX, goalY) {
-      const spread = (Math.random() - 0.5) * 15
-      const ang = Math.atan2(goalY + spread - pos.y, goalX - pos.x)
-      const power = 2.5 + Math.random() * 1.5
-
-      this.ballPosition.lift = 5 + Math.random() * 10
-      this.ballCarrier = null
-      this.kickCooldowns[name] = 30
-
-      // 球飞向球门（通过 updateBall 实现）
-      this._ballTarget = { x: goalX, y: goalY + spread, power }
-    }
-
-    pass(name, pos) {
-      const isMy = pos.team === 'my'
-      // 找队友
-      const teammates = Object.entries(this.playerPositions).filter(([n, p]) =>
-        n !== name && p.team === pos.team && p.position !== 'GK'
-      )
-      if (teammates.length === 0) return
-
-      // 选择最佳接球者（更靠前的）
-      let bestTarget = null
-      let bestScore = -Infinity
-      teammates.forEach(([n, p]) => {
-        const forwardBonus = isMy ? (p.x - pos.x) : (pos.x - p.x)
-        const dist = Math.sqrt((p.x - pos.x) ** 2 + (p.y - pos.y) ** 2)
-        const score = forwardBonus * 0.5 - dist * 0.1 + Math.random() * 10
-        if (score > bestScore) {
-          bestScore = score
-          bestTarget = { name: n, pos: p }
-        }
-      })
-
-      if (!bestTarget) return
-
-      this.ballCarrier = null
-      this.kickCooldowns[name] = 20
-
-      // 球飞向队友
-      this._ballTarget = { x: bestTarget.pos.x, y: bestTarget.pos.y, power: 1.5, newCarrier: bestTarget.name }
-    }
-
-    tackle(name, pos) {
-      const prevCarrier = this.ballCarrier
-      if (prevCarrier) {
-        this.kickCooldowns[prevCarrier] = 30
-      }
-      this.ballCarrier = name
-      this.kickCooldowns[name] = 15
-      this.possessionTeam = pos.team
-    }
-
-    updatePlayerPositions(dt) {
-      const friction = 0.92
-      const maxSpeed = 2.5
-
-      Object.entries(this.playerPositions).forEach(([name, position]) => {
-        if (this.lockedPlayers.has(name)) return
-
-        const vel = this.playerVelocities[name] || { vx: 0, vy: 0 }
-
-        // 摩擦力
-        vel.vx *= friction
-        vel.vy *= friction
-
-        // 速度限制
-        const spd = Math.sqrt(vel.vx * vel.vx + vel.vy * vel.vy)
-        if (spd > maxSpeed) {
-          vel.vx = (vel.vx / spd) * maxSpeed
-          vel.vy = (vel.vy / spd) * maxSpeed
-        }
-
-        // 应用速度
-        position.x += vel.vx * dt * 0.15
-        position.y += vel.vy * dt * 0.15
-
-        // 边界限制
-        position.x = clamp(position.x, 2, 98)
-        position.y = clamp(position.y, 5, 95)
-
-        // 碰撞排斥
-        Object.entries(this.playerPositions).forEach(([otherName, other]) => {
-          if (otherName === name) return
-          const cx = other.x - position.x, cy = other.y - position.y
-          const cd = Math.sqrt(cx * cx + cy * cy)
-          if (cd < 5 && cd > 0) {
-            const push = (5 - cd) * 0.3
-            position.x -= (cx / cd) * push
-            position.y -= (cy / cd) * push
-          }
-        })
-      })
-    }
-
-    updateBall(dt) {
-      const friction = 0.985
-      const speed = 0.12 * dt
-
-      if (this.ballCarrier) {
-        // 球跟随持球球员（吸附效果）
-        const carrier = this.playerPositions[this.ballCarrier]
-        if (carrier) {
-          const targetX = carrier.x + (carrier.team === 'my' ? 2 : -2)
-          const targetY = carrier.y + 1.5
-          this.ballPosition.x += (targetX - this.ballPosition.x) * speed
-          this.ballPosition.y += (targetY - this.ballPosition.y) * speed
-          this.ballPosition.lift *= 0.85
-        }
-      } else if (this._ballTarget) {
-        // 球飞向目标
-        const target = this._ballTarget
-        const dx = target.x - this.ballPosition.x
-        const dy = target.y - this.ballPosition.y
-        const dist = Math.sqrt(dx * dx + dy * dy)
-
-        if (dist < 3) {
-          // 到达目标
-          if (target.newCarrier) {
-            this.ballCarrier = target.newCarrier
-            this.possessionTeam = this.playerPositions[target.newCarrier]?.team || 'my'
-          }
-          this._ballTarget = null
-          this.ballPosition.lift *= 0.8
-        } else {
-          const power = target.power || 1.5
-          this.ballPosition.x += (dx / dist) * power * dt * 0.2
-          this.ballPosition.y += (dy / dist) * power * dt * 0.2
-          this.ballPosition.lift *= 0.95
-        }
-      } else {
-        // 无球状态：缓慢停止
-        this.ballPosition.lift *= 0.9
+      if (!this.animating) {
+        const owner = this.ballOwnerName ? this.playerPositions[this.ballOwnerName] : null
+        const zoneTarget = BALL_ZONES[this.ballZone] || BALL_ZONES.midfield
+        const target = owner
+          ? { x: owner.x, y: owner.y + (owner.team === 'my' ? 1.8 : -1.8) }
+          : zoneTarget
+        this.ballPosition.x += (target.x - this.ballPosition.x) * 0.07
+        this.ballPosition.y += (target.y - this.ballPosition.y) * 0.07
+        this.ballPosition.lift *= 0.82
       }
     }
 
@@ -657,52 +386,37 @@ export function createPhaserMatchScene(Phaser, controller) {
     async showGoalEffect(isOpponent) {
       if (isOpponent) this.controller.onOpponentGoalEffect?.()
       else this.controller.onGoalEffect?.()
-      await this.showCenteredEffect('goal', isOpponent ? '失球！' : '进球！', isOpponent ? '#B34235' : '#C99A2E', 2200)
+      await this.showCenteredEffect('goal', isOpponent ? '失球！' : '进球！', isOpponent ? '#B34235' : '#C99A2E', 1500)
     }
 
     showSaveEffect(eventAsset = false) {
       this.controller.onSaveEffect?.()
-      return this.showCenteredEffect(eventAsset ? 'save' : null, '扑出！', '#F3E3B4', 1600)
+      return this.showCenteredEffect(eventAsset ? 'save' : null, '扑出！', '#F3E3B4', 900)
     }
 
     showCenteredEffect(assetKey, text, color, duration) {
       const objects = []
-      const centerX = this.scale.width / 2
-      const centerY = this.scale.height / 2
-      const imgSize = this.scale.height * 0.28
-      const fontSize = Math.floor(this.scale.height * 0.12)
-
-      // 计算整体宽度，图片在左文字在右
-      const hasImage = assetKey && this.textures.exists(`event-${assetKey}`)
-      const gap = 12
-      const textWidth = text.length * fontSize * 0.6
-      const totalWidth = (hasImage ? imgSize + gap : 0) + textWidth
-      const startX = centerX - totalWidth / 2
-
-      if (hasImage) {
-        const image = this.add.image(startX + imgSize / 2, centerY, `event-${assetKey}`)
-          .setDisplaySize(imgSize, imgSize)
+      if (assetKey && this.textures.exists(`event-${assetKey}`)) {
+        const image = this.add.image(this.scale.width / 2, this.scale.height / 2, `event-${assetKey}`)
+          .setDisplaySize(this.scale.height * 0.34, this.scale.height * 0.34)
           .setDepth(70)
         objects.push(image)
       }
-
-      const labelX = hasImage ? startX + imgSize + gap + textWidth / 2 : centerX
-      const label = this.add.text(labelX, centerY, text, {
+      const label = this.add.text(this.scale.width / 2, this.scale.height / 2, text, {
         fontFamily: 'Zpix, monospace',
-        fontSize: `${fontSize}px`,
+        fontSize: `${Math.floor(this.scale.height * 0.16)}px`,
         color,
         stroke: '#1B3764',
         strokeThickness: 6,
       }).setOrigin(0.5).setDepth(72)
       objects.push(label)
-
       objects.forEach(object => object.setAlpha(0))
       this.tweens.add({
         targets: objects,
         alpha: 1,
-        duration: 200,
+        duration: 160,
         yoyo: true,
-        hold: Math.max(200, duration - 400),
+        hold: Math.max(100, duration - 320),
         onComplete: () => objects.forEach(object => object.destroy()),
       })
       return this.sleep(duration)
@@ -710,47 +424,19 @@ export function createPhaserMatchScene(Phaser, controller) {
 
     async showCard(color) {
       const key = color === 'yellow' ? 'yellowCard' : 'redCard'
-      const text = color === 'yellow' ? '黄牌！' : '红牌！'
-      const textColor = color === 'yellow' ? '#FFD700' : '#FF4444'
-      const objects = []
-      const centerX = this.scale.width / 2
-      const centerY = this.scale.height / 2
-      const imgSize = this.scale.height * 0.22
-      const fontSize = Math.floor(this.scale.height * 0.1)
-
-      const hasImage = this.textures.exists(`event-${key}`)
-      const gap = 12
-      const textWidth = text.length * fontSize * 0.6
-      const totalWidth = (hasImage ? imgSize + gap : 0) + textWidth
-      const startX = centerX - totalWidth / 2
-
-      if (hasImage) {
-        const image = this.add.image(startX + imgSize / 2, centerY, `event-${key}`)
-          .setDisplaySize(imgSize, imgSize * 1.3)
+      if (this.textures.exists(`event-${key}`)) {
+        const image = this.add.image(this.scale.width / 2, this.scale.height / 2, `event-${key}`)
+          .setDisplaySize(this.scale.height * 0.24, this.scale.height * 0.32)
           .setDepth(70)
-        objects.push(image)
+        this.tweens.add({
+          targets: image,
+          alpha: 0,
+          duration: 320,
+          delay: 850,
+          onComplete: () => image.destroy(),
+        })
       }
-
-      const labelX = hasImage ? startX + imgSize + gap + textWidth / 2 : centerX
-      const label = this.add.text(labelX, centerY, text, {
-        fontFamily: 'Zpix, monospace',
-        fontSize: `${fontSize}px`,
-        color: textColor,
-        stroke: '#1B3764',
-        strokeThickness: 5,
-      }).setOrigin(0.5).setDepth(72)
-      objects.push(label)
-
-      objects.forEach(object => object.setAlpha(0))
-      this.tweens.add({
-        targets: objects,
-        alpha: 1,
-        duration: 200,
-        yoyo: true,
-        hold: 1400,
-        onComplete: () => objects.forEach(object => object.destroy()),
-      })
-      await this.sleep(1800)
+      await this.sleep(1200)
     }
 
     async showFoul(x = 50, y = 50) {
@@ -860,7 +546,7 @@ export function createPhaserMatchScene(Phaser, controller) {
       if (!primary) return
       this.animating = true
       this.ballZone = primary.position === 'GK' ? 'defend' : primary.y > 62 ? 'box' : 'midfield'
-      this.ballCarrier = primaryName
+      this.ballOwnerName = primaryName
       const actions = [this.moveBall({ x: primary.x, y: primary.y + (primary.team === 'my' ? 1.8 : -1.8) }, 520)]
       const second = this.playerPositions[secondName]
       if (second && secondName !== primaryName) {
@@ -908,7 +594,7 @@ export function createPhaserMatchScene(Phaser, controller) {
       const supportName = event.supportName
       const opponentName = event.opponentName
       this.ballZone = event.ballZone || 'midfield'
-      this.ballCarrier = actorName || this.ballCarrier
+      this.ballOwnerName = actorName || this.ballOwnerName
       this.possessionTeam = event.teamSide || 'my'
       const actor = this.playerPositions[actorName]
       const support = this.playerPositions[supportName]
@@ -930,7 +616,7 @@ export function createPhaserMatchScene(Phaser, controller) {
       const zoneTarget = BALL_ZONES[event.ballZone] || BALL_ZONES.midfield
       if (['pass', 'through', 'cross', 'corner', 'throw_in'].includes(event.visualKind) && support) {
         actions.push(this.moveBall({ x: support.x, y: support.y }, 360, event.visualKind))
-        this.ballCarrier = supportName
+        this.ballOwnerName = supportName
       } else if (event.visualKind === 'yellow_card' || event.visualKind === 'red_card') {
         this.showCard(event.visualKind === 'red_card' ? 'red' : 'yellow')
       } else if (event.visualKind === 'corner') {
@@ -951,7 +637,7 @@ export function createPhaserMatchScene(Phaser, controller) {
         ballPosition: this.ballPosition,
         animating: this.animating,
         ballZone: this.ballZone,
-        ballOwnerName: this.ballCarrier,
+        ballOwnerName: this.ballOwnerName,
       }
     }
   }

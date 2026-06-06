@@ -1,5 +1,5 @@
 /**
- * 决策库 — 32个预设决策场景
+ * 决策库 — 28个预设决策场景
  * 所有决策数据本地化，不依赖AI
  */
 
@@ -33,8 +33,6 @@ export const DECISION_LIBRARY = [
         ],
         outcome_deltas: { goal: 0.28, goal_against: 0.0, win_delta: 0.12 },
         possible_outcomes: ['goal', 'goal', 'goal', 'saved_near', 'miss_near'],
-        goal_conversion: 0.56,
-        conversion_miss_outcome: 'saved_near',
       },
       {
         id: 'chip_shot',
@@ -537,7 +535,7 @@ export const DECISION_LIBRARY = [
           { attr: 'sta', weight: 0.20 },
         ],
         outcome_deltas: { goal: 0.0, goal_against: -0.10, win_delta: 0.08 },
-        possible_outcomes: ['tackle_hero', 'tackle_partial', 'red_card_penalty'],
+        possible_outcomes: ['tackle_hero', 'red_card_penalty', 'tackle_partial'],
       },
       {
         id: 'jockey_to_corner',
@@ -618,7 +616,7 @@ export const DECISION_LIBRARY = [
           { attr: 'sta', weight: 0.20 },
         ],
         outcome_deltas: { goal: 0.0, goal_against: -0.12, win_delta: 0.05 },
-        possible_outcomes: ['yellow_card_stop', 'foul_not_called', 'red_card_second_yellow'],
+        possible_outcomes: ['yellow_card_stop', 'red_card_second_yellow', 'foul_not_called'],
       },
       {
         id: 'chase_back',
@@ -1307,229 +1305,6 @@ export const DECISION_LIBRARY = [
         ],
         outcome_deltas: { goal: 0.0, goal_against: 0.04, win_delta: 0.02 },
         possible_outcomes: ['claim_cross', 'safe', 'goal_against'],
-      },
-    ],
-  },
-
-  {
-    id: 'penalty_area_dive',
-    trigger: '禁区内轻微接触，前锋是否假摔',
-    minute_range: [1, 90],
-    animation_type: 'attack_dive',
-    situation_variants: [
-      '{player}突入禁区，对方后卫手上有轻微动作，射门角度已经被封死——继续带球还是顺势倒地？',
-      '{player}在禁区内被贴身干扰，裁判位置很好，这一下接触要不要放大？',
-      '禁区争议瞬间！{player}还能勉强站住，但对方动作确实不干净。',
-    ],
-    choices: [
-      {
-        id: 'keep_dribbling',
-        label: '继续带球',
-        desc: '不冒假摔风险，强行把球从人缝里带出来。',
-        risk: '射门角度已经很小，很可能被封堵',
-        reward: '成功就是硬实力破局，不会吃牌',
-        weight_formula: [
-          { attr: 'tec', weight: 0.50 },
-          { attr: 'spd', weight: 0.30 },
-          { attr: 'sta', weight: 0.20 },
-        ],
-        outcome_deltas: { goal: 0.08, goal_against: 0.02, win_delta: 0.04 },
-        possible_outcomes: ['goal_closer', 'corner_won', 'shot_blocked', 'possession_lost'],
-      },
-      {
-        id: 'simulate_contact',
-        label: '顺势倒地',
-        desc: '利用对方轻微接触制造争议，赌裁判给点球。',
-        risk: '裁判看穿会给假摔黄牌',
-        reward: '判点球就能得到最高价值机会',
-        weight_formula: [
-          { attr: 'tec', weight: 0.60 },
-          { attr: 'sta', weight: 0.40 },
-        ],
-        outcome_deltas: { goal: 0.0, goal_against: 0.01, win_delta: 0.08 },
-        possible_outcomes: ['penalty_won', 'play_on_lost', 'yellow_card_dive'],
-      },
-      {
-        id: 'shield_for_cutback',
-        label: '护球回做',
-        desc: '站住身体，把球回给弧顶队友重新组织。',
-        risk: '节奏变慢，对手防线回收',
-        reward: '保留球权，避免假摔吃牌',
-        weight_formula: [
-          { attr: 'phy', weight: 0.35 },
-          { attr: 'tec', weight: 0.45 },
-          { attr: 'sta', weight: 0.20 },
-        ],
-        outcome_deltas: { goal: 0.06, goal_against: 0.0, win_delta: 0.03 },
-        possible_outcomes: ['shot_created', 'possession_maintained', 'tackled_advance'],
-      },
-    ],
-  },
-
-  {
-    id: 'var_penalty_review',
-    trigger: 'VAR检查禁区疑似犯规',
-    minute_range: [1, 90],
-    animation_type: 'var_penalty',
-    situation_variants: [
-      '禁区里出现疑似手球，VAR正在回看，{player}和队友围向裁判。',
-      '{player}倒在禁区内，主裁按住耳机听VAR，这可能是点球，也可能什么都没有。',
-      '慢镜头显示对方有拉拽动作，{player}该怎么影响这个判罚？',
-    ],
-    choices: [
-      {
-        id: 'calm_appeal',
-        label: '冷静申诉',
-        desc: '队长式沟通，不激怒裁判，只强调对方动作。',
-        risk: '裁判可能维持原判',
-        reward: '不吃牌，还有机会得到VAR点球',
-        weight_formula: [
-          { attr: 'sta', weight: 0.55 },
-          { attr: 'tec', weight: 0.45 },
-        ],
-        outcome_deltas: { goal: 0.0, goal_against: 0.0, win_delta: 0.06 },
-        possible_outcomes: ['penalty_awarded', 'play_continues', 'possession_maintained'],
-      },
-      {
-        id: 'surround_referee',
-        label: '集体施压',
-        desc: '全队围住裁判，试图把争议推向点球。',
-        risk: '容易因为抗议过激吃黄牌',
-        reward: '增加判罚压力，点球概率更高',
-        weight_formula: [
-          { attr: 'sta', weight: 0.45 },
-          { attr: 'phy', weight: 0.25 },
-          { attr: 'tec', weight: 0.30 },
-        ],
-        outcome_deltas: { goal: 0.0, goal_against: 0.01, win_delta: 0.07 },
-        possible_outcomes: ['penalty_awarded', 'yellow_card_dissent', 'play_continues'],
-      },
-      {
-        id: 'reset_shape',
-        label: '迅速回防',
-        desc: '不纠缠裁判，先防住对方快发和反击。',
-        risk: '基本放弃争取点球',
-        reward: '避免VAR无果后被偷反击',
-        weight_formula: [
-          { attr: 'def', weight: 0.45 },
-          { attr: 'sta', weight: 0.35 },
-          { attr: 'spd', weight: 0.20 },
-        ],
-        outcome_deltas: { goal: 0.0, goal_against: 0.0, win_delta: 0.02 },
-        possible_outcomes: ['shape_held', 'play_continues', 'opponent_counter'],
-      },
-    ],
-  },
-
-  {
-    id: 'defend_dangerous_freekick',
-    trigger: '对方获得禁区前沿危险任意球',
-    minute_range: [1, 90],
-    animation_type: 'defend_freekick',
-    situation_variants: [
-      '对方在禁区弧顶获得任意球，距离球门太近了，{player}正在指挥人墙。',
-      '危险任意球！对方主罚手站在球前，{player}必须决定门将站位和人墙高度。',
-      '对方获得绝佳定位球，{player2}盯着后点高点，禁区里一触即发。',
-    ],
-    choices: [
-      {
-        id: 'tall_wall',
-        label: '加高人墙',
-        desc: '多放一名高点进人墙，优先封直接射门。',
-        risk: '后点盯防人数变少',
-        reward: '能挡住弧线球和低平球',
-        weight_formula: [
-          { attr: 'def', weight: 0.45 },
-          { attr: 'phy', weight: 0.35 },
-          { attr: 'sta', weight: 0.20 },
-        ],
-        outcome_deltas: { goal: 0.0, goal_against: 0.05, win_delta: 0.02 },
-        possible_outcomes: ['wall_block', 'saved_freekick_against', 'opponent_goal_freekick'],
-      },
-      {
-        id: 'keeper_shift',
-        label: '门将提前站位',
-        desc: '门将预判弧线球方向，提前向远角移动半步。',
-        risk: '被打反方向会很难救',
-        reward: '猜对就能直接扑出死角球',
-        weight_formula: [
-          { attr: 'def', weight: 0.55 },
-          { attr: 'spd', weight: 0.25 },
-          { attr: 'sta', weight: 0.20 },
-        ],
-        outcome_deltas: { goal: 0.0, goal_against: 0.06, win_delta: 0.02 },
-        possible_outcomes: ['keeper_save_freekick', 'miss_over_against', 'opponent_goal_freekick'],
-      },
-      {
-        id: 'mark_far_post',
-        label: '盯死后点',
-        desc: '防对方任意球传后点争顶，牺牲一部分人墙厚度。',
-        risk: '直接射门路线会更宽',
-        reward: '能破坏传中和二点球',
-        weight_formula: [
-          { attr: 'def', weight: 0.50 },
-          { attr: 'phy', weight: 0.35 },
-          { attr: 'sta', weight: 0.15 },
-        ],
-        outcome_deltas: { goal: 0.0, goal_against: 0.04, win_delta: 0.02 },
-        possible_outcomes: ['cleared_header', 'opponent_header_saved', 'opponent_goal_header'],
-      },
-    ],
-  },
-
-  {
-    id: 'box_second_ball_chaos',
-    trigger: '禁区二点球混战',
-    minute_range: [1, 90],
-    animation_type: 'box_chaos',
-    situation_variants: [
-      '角球第一点被顶出来，但球落在禁区线附近，对方准备抢二点，{player}必须立刻处理。',
-      '任意球传入后没有解围干净，禁区里全是人，{player}和{player2}都在混战中心。',
-      '门前乱战！皮球弹到六码区外，{player}要在对手补射前做决定。',
-    ],
-    choices: [
-      {
-        id: 'clear_first_time',
-        label: '第一时间解围',
-        desc: '不等球落稳，直接把二点球踢出危险区。',
-        risk: '踢疵会变成更危险的折射',
-        reward: '最快结束禁区混战',
-        weight_formula: [
-          { attr: 'def', weight: 0.55 },
-          { attr: 'phy', weight: 0.25 },
-          { attr: 'sta', weight: 0.20 },
-        ],
-        outcome_deltas: { goal: 0.0, goal_against: 0.03, win_delta: 0.03 },
-        possible_outcomes: ['cleared_second_ball', 'corner_against', 'opponent_goal_scramble'],
-      },
-      {
-        id: 'body_on_line',
-        label: '门线封堵',
-        desc: '身体横在射门线路上，赌自己挡住补射。',
-        risk: '折射方向不可控',
-        reward: '能把必进球挡出去',
-        weight_formula: [
-          { attr: 'def', weight: 0.60 },
-          { attr: 'sta', weight: 0.25 },
-          { attr: 'phy', weight: 0.15 },
-        ],
-        outcome_deltas: { goal: 0.0, goal_against: 0.04, win_delta: 0.03 },
-        possible_outcomes: ['blocked_second_ball', 'deflected_corner', 'opponent_goal_scramble'],
-      },
-      {
-        id: 'launch_counter',
-        label: '顺势反击',
-        desc: '抢到二点后不解围，直接找前场队友打反击。',
-        risk: '禁区里丢球就是近距离补射',
-        reward: '能把对方定位球变成己方反击',
-        weight_formula: [
-          { attr: 'tec', weight: 0.40 },
-          { attr: 'spd', weight: 0.25 },
-          { attr: 'sta', weight: 0.20 },
-          { attr: 'def', weight: 0.15 },
-        ],
-        outcome_deltas: { goal: 0.08, goal_against: 0.06, win_delta: 0.04 },
-        possible_outcomes: ['counter_chance', 'possession_lost', 'opponent_goal_scramble'],
       },
     ],
   },
