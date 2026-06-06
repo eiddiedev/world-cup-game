@@ -91,15 +91,40 @@ function sum(players) {
   return players.reduce((total, player) => total + player.price, 0)
 }
 
+const POSITION_VALUE_WEIGHTS = {
+  GK: { def: 0.42, phy: 0.16, sta: 0.14, tec: 0.10, spd: 0.06 },
+  DF: { def: 0.34, phy: 0.18, sta: 0.14, spd: 0.12, tec: 0.08 },
+  MF: { tec: 0.28, sta: 0.18, spd: 0.12, def: 0.12, phy: 0.08 },
+  FW: { tec: 0.26, spd: 0.22, phy: 0.12, sta: 0.10, def: 0.02 },
+}
+
+export function getPlayerMarketScore(player) {
+  const position = player.position || player.pos || 'MF'
+  const weights = POSITION_VALUE_WEIGHTS[position] || POSITION_VALUE_WEIGHTS.MF
+  const attributeScore = Object.entries(weights).reduce(
+    (total, [attribute, weight]) => total + (player[attribute] || 60) * weight,
+    0,
+  )
+  const ratingScore = (player.rating || 60) * 0.58
+  const starBonus = Math.max(0, (player.star || 1) - 2) * 1.5
+  const goldenBonus = player.isGolden ? 4 : 0
+  return Math.round((ratingScore + attributeScore + starBonus + goldenBonus) * 100) / 100
+}
+
 function rebalancePrices(players, budget) {
-  const byPrice = [...players].sort((a, b) => b.price - a.price)
+  const byValue = [...players].sort((a, b) => {
+    const scoreDiff = getPlayerMarketScore(b) - getPlayerMarketScore(a)
+    return scoreDiff || (b.rating || 0) - (a.rating || 0)
+  })
   const descendingPrices = [
     0.095, 0.09, 0.085, 0.08, 0.075, 0.072, 0.068, 0.064,
     0.06, 0.056, 0.052, 0.048, 0.044, 0.040, 0.038, 0.036,
     0.034, 0.032, 0.080, 0.078, 0.076, 0.074, 0.072, 0.070,
-  ].map((ratio) => Math.max(38, Math.round(budget * ratio)))
+  ]
+    .map((ratio) => Math.max(38, Math.round(budget * ratio)))
+    .sort((a, b) => b - a)
 
-  byPrice.forEach((player, index) => {
+  byValue.forEach((player, index) => {
     player.price = descendingPrices[index]
   })
 

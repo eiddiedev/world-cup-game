@@ -212,13 +212,13 @@ export function generateRandomMatchEvent(minute, myPlayers = [], opponentPlayers
 
     const cardRoll = randomFn()
     // 直接红牌很少见，但必须能进入完整事件链路
-    if (cardRoll < 0.05) {
+    if (cardRoll < 0.025) {
       const cardText = pickRandom(RED_CARDS, randomFn)
       text += ` ${cardText({ a: sideAwareLabel(a, myPlayers, opponentPlayers) })}`
       color = '#ff4444'
       eventType = 'red_card'
       statsUpdate = { fouls: 1, redCards: 1 }
-    } else if (cardRoll < 0.35) {
+    } else if (cardRoll < 0.36) {
       const cardText = pickRandom(YELLOW_CARDS, randomFn)
       text += ` ${cardText({ a: sideAwareLabel(a, myPlayers, opponentPlayers) })}`
       color = '#ffcc00'

@@ -89,151 +89,103 @@ export default function RecruitmentScreen({ saveData, updateSaveData, navigateTo
     navigateTo('tournament')
   }
 
-  // 属性图标映射
-  const statIcons = {
-    spd: '/assets/属性/速度.png',
-    phy: '/assets/属性/身体.png',
-    tec: '/assets/属性/技术.png',
-    def: '/assets/属性/防守.png',
-    sta: '/assets/属性/体能.png',
-    status: '/assets/属性/状态.png',
-  }
-
-  // 绘制六维属性图（带属性图标）
-  // 6个属性：速度、身体、技术、防守、体能、状态
-  const renderHexagonChart = (player, size = 70) => {
+  // 六维图渲染
+  const renderRadarChart = (player) => {
     const stats = [
-      { label: 'SPD', value: player.spd, icon: statIcons.spd },
-      { label: 'PHY', value: player.phy, icon: statIcons.phy },
-      { label: 'TEC', value: player.tec, icon: statIcons.tec },
-      { label: 'DEF', value: player.def, icon: statIcons.def },
-      { label: 'STA', value: player.sta, icon: statIcons.sta },
-      { label: 'FOR', value: player.form || 80, icon: statIcons.status },
+      { label: '速度', value: player.spd, icon: '/assets/属性/速度.png' },
+      { label: '身体', value: player.phy, icon: '/assets/属性/身体.png' },
+      { label: '技术', value: player.tec, icon: '/assets/属性/技术.png' },
+      { label: '防守', value: player.def, icon: '/assets/属性/防守.png' },
+      { label: '体能', value: player.sta, icon: '/assets/属性/体能.png' },
+      { label: '状态', value: player.form || 80, icon: '/assets/属性/状态.png' },
     ]
+    const cx = 150, cy = 150, r = 80
+    const angles = stats.map((_, i) => (Math.PI * 2 * i) / 6 - Math.PI / 2)
+    const gridLevels = [0.2, 0.4, 0.6, 0.8, 1.0]
 
-    const center = size / 2
-    const radius = size / 2 - 10
-    const angleStep = (Math.PI * 2) / 6
-
-    const points = stats.map((stat, i) => {
-      const angle = angleStep * i - Math.PI / 2
-      const r = (stat.value / 100) * radius
-      return {
-        x: center + r * Math.cos(angle),
-        y: center + r * Math.sin(angle),
-      }
+    const getPoint = (ratio, angle) => ({
+      x: cx + r * ratio * Math.cos(angle),
+      y: cy + r * ratio * Math.sin(angle),
     })
 
-    const bgPoints = stats.map((_, i) => {
-      const angle = angleStep * i - Math.PI / 2
-      return {
-        x: center + radius * Math.cos(angle),
-        y: center + radius * Math.sin(angle),
-      }
-    })
-
-    const pathData = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ') + ' Z'
-    const bgPathData = bgPoints.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ') + ' Z'
-
-    // 属性图标位置（在六边形顶点外侧）
-    const iconSize = size * 0.16
-    const iconOffset = radius + iconSize * 0.3
-    const iconPositions = stats.map((_, i) => {
-      const angle = angleStep * i - Math.PI / 2
-      return {
-        x: center + iconOffset * Math.cos(angle) - iconSize / 2,
-        y: center + iconOffset * Math.sin(angle) - iconSize / 2,
-      }
-    })
-
-    // 扩大SVG viewBox以容纳图标
-    const padding = iconSize * 1.2
+    const dataPoints = stats.map((s, i) => getPoint(s.value / 100, angles[i]))
 
     return (
-      <svg width={size} height={size} viewBox={`${-padding} ${-padding} ${size + padding * 2} ${size + padding * 2}`}>
-        {/* 背景六边形 */}
-        <path d={bgPathData} fill="none" stroke="var(--pixel-shadow)" strokeWidth="1" opacity="0.3" />
-        {/* 属性区域 */}
-        <path d={pathData} fill="var(--pixel-gold)" fillOpacity="0.3" stroke="var(--pixel-gold)" strokeWidth="2" />
-        {/* 中心点 */}
-        <circle cx={center} cy={center} r="2" fill="var(--pixel-main)" />
-        {/* 属性图标 */}
-        {stats.map((stat, i) => (
-          stat.icon ? (
-            <image
-              key={i}
-              href={stat.icon}
-              x={iconPositions[i].x}
-              y={iconPositions[i].y}
-              width={iconSize}
-              height={iconSize}
-            />
-          ) : (
-            <text
-              key={i}
-              x={center + iconOffset * Math.cos(angleStep * i - Math.PI / 2)}
-              y={center + iconOffset * Math.sin(angleStep * i - Math.PI / 2)}
-              textAnchor="middle"
-              dominantBaseline="middle"
-              fontSize={iconSize * 0.8}
-              fill="var(--pixel-gold)"
-            >
-              ★
-            </text>
+      <svg viewBox="0 0 300 300" className="radar-chart">
+        {/* 网格层 */}
+        {gridLevels.map(level => {
+          const pts = angles.map(a => getPoint(level, a))
+          return <polygon key={level} points={pts.map(p => `${p.x},${p.y}`).join(' ')} className="radar-grid" />
+        })}
+        {/* 轴线 */}
+        {angles.map(a => {
+          const p = getPoint(1, a)
+          return <line key={a} x1={cx} y1={cy} x2={p.x} y2={p.y} className="radar-axis" />
+        })}
+        {/* 数据多边形 */}
+        <polygon points={dataPoints.map(p => `${p.x},${p.y}`).join(' ')} className="radar-data" />
+        {/* 数据点 */}
+        {dataPoints.map((p, i) => <circle key={i} cx={p.x} cy={p.y} r="3" className="radar-dot" />)}
+        {/* 标签 + 图标 + 数值 */}
+        {stats.map((s, i) => {
+          const lp = getPoint(1.35, angles[i])
+          const iconSize = 14
+          return (
+            <g key={i}>
+              <image href={s.icon} x={lp.x - 38} y={lp.y - 7} width={iconSize} height={iconSize} />
+              <text x={lp.x - 14} y={lp.y} textAnchor="middle" dominantBaseline="middle" className="radar-label">{s.label}</text>
+              <text x={lp.x} y={lp.y + 14} textAnchor="middle" dominantBaseline="middle" className="radar-value">{s.value}</text>
+            </g>
           )
-        ))}
+        })}
       </svg>
     )
   }
 
-  // 渲染属性条（带图标）
-  const renderStatBar = (label, value, iconPath) => (
-    <div className="stat-row">
-      <img src={iconPath} alt={label} className="stat-icon" />
-      <span className="stat-label">{label}</span>
-      <div className="stat-bar-bg">
-        <div className="stat-bar-fill" style={{ width: `${value}%` }}></div>
-      </div>
-      <span className="stat-value">{value}</span>
-    </div>
-  )
-
   return (
     <div className="screen recruitment-screen">
-      <div className="screen-header">
-        <button className="back-button" onClick={() => navigateTo('team-select')}>
-          ←
-        </button>
-        <h1>球员招募 - {team.name}</h1>
-      </div>
-
-      <div className="recruitment-stats">
-        <div className="stat-item">
-          <span className="stat-label">预算</span>
-          <span className="stat-value budget">{remainingBudget}<img src="/assets/金币.png" alt="金币" className="coin-icon" /></span>
-        </div>
-        <div className="stat-item">
-          <span className="stat-label">已购</span>
-          <span className="stat-value">{purchasedPlayers.length}/24</span>
-        </div>
-        {positionOrder.map(pos => (
-          <div key={pos} className="stat-item">
-            <span className="stat-label">{positionNames[pos]}</span>
-            <span className="stat-value">{purchasedByPosition[pos]}</span>
-          </div>
-        ))}
-      </div>
-
-      <div className="position-tabs">
-        {positionOrder.map(pos => (
-          <button
-            key={pos}
-            className={`position-tab ${activePosition === pos ? 'active' : ''}`}
-            onClick={() => setActivePosition(pos)}
-          >
-            {positionNames[pos]}
+      <div className="recruitment-top">
+        <div className="screen-header">
+          <button className="back-button" onClick={() => navigateTo('team-select')}>
+            ←
           </button>
-        ))}
+          <h1>球员招募 - {team.name}</h1>
+        </div>
+
+        <div style={{ textAlign: 'center' }}>
+          <p className="recruitment-hint">
+            超跑闪击，球王绝杀，金色卡面自带隐藏神技 ！但要小心预算空置与下半场的疲劳危机，是堆砌球星还是平衡深度？现在，行使你的主帅特权 ！
+          </p>
+        </div>
+
+        <div className="recruitment-stats">
+          <div className="stat-item">
+            <span className="stat-label">预算</span>
+            <span className="stat-value budget">{remainingBudget}<img src="/assets/金币.png" alt="金币" className="coin-icon" /></span>
+          </div>
+          <div className="stat-item">
+            <span className="stat-label">已购</span>
+            <span className="stat-value">{purchasedPlayers.length}/24</span>
+          </div>
+          {positionOrder.map(pos => (
+            <div key={pos} className="stat-item">
+              <span className="stat-label">{positionNames[pos]}</span>
+              <span className="stat-value">{purchasedByPosition[pos]}</span>
+            </div>
+          ))}
+        </div>
+
+        <div className="position-tabs">
+          {positionOrder.map(pos => (
+            <button
+              key={pos}
+              className={`position-tab ${activePosition === pos ? 'active' : ''}`}
+              onClick={() => setActivePosition(pos)}
+            >
+              {positionNames[pos]}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className="player-grid">
@@ -248,53 +200,64 @@ export default function RecruitmentScreen({ saveData, updateSaveData, navigateTo
             return (
               <div
                 key={player.id}
-                className={`game-card ${isPurchased ? 'purchased' : ''} ${player.isGolden ? 'golden' : ''}`}
+                className={`game-card-v2 ${player.isGolden ? 'golden' : ''} ${isPurchased ? 'purchased' : ''}`}
                 onClick={() => setSelectedPlayer(player)}
               >
-                {/* 卡片上半部分：头像 */}
-                <div className="game-card-portrait">
-                  {player.avatar ? (
-                    <img src={player.avatar} alt={player.name} />
-                  ) : (
-                    <div className="avatar-placeholder">{player.position}</div>
-                  )}
-                  <div className="card-number-badge">#{player.number || '?'}</div>
-                  <div className={`card-rating-badge rating-${ratingColor}`}>{player.rating}</div>
+                {/* 区域1：上半区 */}
+                <div className="card-v2-top">
+                  <div className="card-v2-avatar">
+                    {player.avatar ? (
+                      <img src={player.avatar} alt={player.name} />
+                    ) : (
+                      <div className="avatar-placeholder">{player.position}</div>
+                    )}
+                  </div>
+                  <div className={`card-v2-rating rating-${ratingColor}`}>
+                    {player.rating}
+                  </div>
+                  <div className="card-v2-price">
+                    {player.price}
+                    <img src="/assets/金币.png" className="coin-icon" alt="金币" />
+                  </div>
+                  <div className="card-v2-name-row">
+                    <span className="card-v2-name">{player.name}</span>
+                    <span className="card-v2-number">#{player.number || '?'}</span>
+                  </div>
                 </div>
 
-                {/* 卡片下半部分：信息 */}
-                <div className="game-card-info">
-                  <div className="card-name-row">
-                    <h4 className="card-name">{player.name}</h4>
-                    <span className="card-stars-display">{'★'.repeat(player.star)}</span>
-                  </div>
-                  <div className="card-chart-price">
-                    <div className="card-chart">
-                      {renderHexagonChart(player, 80)}
+                {/* 区域3：分隔线 */}
+                <div className="card-v2-divider" />
+
+                {/* 区域4：六维属性 */}
+                <div className="card-v2-stats">
+                  {[
+                    ['速度', player.spd],
+                    ['身体', player.phy],
+                    ['技术', player.tec],
+                    ['防守', player.def],
+                    ['体能', player.sta],
+                    ['状态', player.form],
+                  ].map(([label, value]) => (
+                    <div className="card-v2-stat" key={label}>
+                      <span className="stat-label">{label}</span>
+                      <span className="stat-value">{value}</span>
                     </div>
-                    <div className="card-price">{player.price}<img src="/assets/金币.png" alt="金币" className="coin-icon-small" /></div>
-                  </div>
+                  ))}
                 </div>
 
-                {/* 购买/出售按钮 */}
-                <div className="card-action">
+                {/* 区域5：操作按钮 */}
+                <div className="card-v2-action">
                   {isPurchased ? (
                     <button
-                      className="btn-card-sell"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleSellPlayer(player)
-                      }}
+                      className="btn-v2-sell"
+                      onClick={(e) => { e.stopPropagation(); handleSellPlayer(player); }}
                     >
                       出售
                     </button>
                   ) : (
                     <button
-                      className="btn-card-buy"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleBuyPlayer(player)
-                      }}
+                      className="btn-v2-buy"
+                      onClick={(e) => { e.stopPropagation(); handleBuyPlayer(player); }}
                       disabled={player.price > remainingBudget}
                     >
                       购买
@@ -313,18 +276,10 @@ export default function RecruitmentScreen({ saveData, updateSaveData, navigateTo
             <button className="modal-close" onClick={() => setSelectedPlayer(null)}>✕</button>
             <h3>{selectedPlayer.name}</h3>
             <p className="player-description">{selectedPlayer.description}</p>
-            <div className="player-detail-stats">
-              {renderStatBar('速度', selectedPlayer.spd, statIcons.spd)}
-              {renderStatBar('身体', selectedPlayer.phy, statIcons.phy)}
-              {renderStatBar('技术', selectedPlayer.tec, statIcons.tec)}
-              {renderStatBar('防守', selectedPlayer.def, statIcons.def)}
-              {renderStatBar('体能', selectedPlayer.sta, statIcons.sta)}
-              {renderStatBar('状态', selectedPlayer.form || 80, statIcons.status)}
-              <div className="stat-row">
-                <img src="/assets/星星.png" alt="关键时刻" className="stat-star-img" />
-                <span className="stat-label">关键时刻</span>
-                <span className="stat-stars">{'★'.repeat(selectedPlayer.star)}</span>
-              </div>
+            {renderRadarChart(selectedPlayer)}
+            <div className="player-detail-stars">
+              <span className="stat-label">关键时刻</span>
+              <span className="stat-stars">{'★'.repeat(selectedPlayer.star)}</span>
             </div>
             <div className="player-detail-physical">
               {selectedPlayer.height && <span>📏 {selectedPlayer.height}</span>}

@@ -1,60 +1,7 @@
 import React, { useMemo } from 'react'
 import { getTeamById } from '../data/teams'
+import { buildPostMatchInsights } from '../utils/postMatchInsights'
 import { getNextRunAfterMatch } from '../utils/tournamentProgress'
-
-/**
- * 生成赛后总结文字
- */
-function generateMatchSummary(result, teamName) {
-  const { homeScore, awayScore, stats } = result
-  const isWin = homeScore > awayScore
-  const isDraw = homeScore === awayScore
-  const diff = Math.abs(homeScore - awayScore)
-
-  const parts = []
-
-  // 比分描述
-  if (isWin) {
-    if (diff >= 3) parts.push(`${teamName}取得了一场酣畅淋漓的大胜。`)
-    else if (diff === 2) parts.push(`${teamName}稳稳拿下比赛。`)
-    else parts.push(`${teamName}艰难取胜。`)
-  } else if (isDraw) {
-    parts.push(`双方势均力敌，握手言和。`)
-  } else {
-    if (diff >= 3) parts.push(`${teamName}遭遇惨败。`)
-    else parts.push(`${teamName}遗憾落败。`)
-  }
-
-  // 射门分析
-  if (stats) {
-    if (stats.myShots > stats.oppShots + 5) {
-      parts.push(`全场占据主动，射门${stats.myShots}次远超对手。`)
-    } else if (stats.oppShots > stats.myShots + 5) {
-      parts.push(`被对手压制，射门次数处于劣势。`)
-    }
-
-    // xG分析
-    if (stats.myXG > homeScore + 1) {
-      parts.push(`预期进球${stats.myXG}，把握机会能力有待提高。`)
-    } else if (stats.myXG < homeScore - 0.5) {
-      parts.push(`高效把握住了为数不多的机会。`)
-    }
-
-    // 控球率
-    if (stats.possession > 58) {
-      parts.push(`控球率${stats.possession}%，牢牢掌控比赛节奏。`)
-    } else if (stats.possession < 42) {
-      parts.push(`控球率仅${stats.possession}%，依靠反击寻找机会。`)
-    }
-
-    // 纪律
-    if (stats.yellowCards >= 3) {
-      parts.push(`犯规较多，需要注意纪律问题。`)
-    }
-  }
-
-  return parts.join('')
-}
 
 /**
  * 赛后结算页面
@@ -124,6 +71,7 @@ export default function PostMatchScreen({ saveData, updateSaveData, navigateTo }
   const resultEmoji = isWin ? '🎉' : isDraw ? '🤝' : '😢'
   const mvp = lineup.length > 0 ? lineup[Math.floor(Math.random() * lineup.length)] : null
   const injuredCount = statusChanges.filter(p => p.isInjured).length
+  const insights = buildPostMatchInsights(result, team?.name)
 
   const handleNextMatch = () => {
     try {
@@ -174,23 +122,21 @@ export default function PostMatchScreen({ saveData, updateSaveData, navigateTo }
         </div>
       </div>
 
-      {/* 可滚动内容区 */}
       <div className="post-match-content">
-        {/* MVP */}
-        {mvp && (
-          <div className="PixelPanel post-mini-panel post-mvp-panel">
-            <div className="post-panel-title">最佳球员</div>
-            <div className="post-player-name">
-              {mvp.name} <span>{mvp.position || mvp.pos}</span>
+        <div className="post-match-column">
+          {mvp && (
+            <div className="PixelPanel post-mini-panel post-mvp-panel">
+              <div className="post-panel-title">最佳球员</div>
+              <div className="post-player-name">
+                {mvp.name} <span>{mvp.position || mvp.pos}</span>
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* 比赛数据 */}
-        {result.stats && (
-          <div className="PixelPanel post-mini-panel">
-            <div className="post-panel-title">比赛数据</div>
-            <div className="post-stats-grid">
+          {result.stats && (
+            <div className="PixelPanel post-mini-panel">
+              <div className="post-panel-title">比赛数据</div>
+              <div className="post-stats-grid">
               <div className="post-stat-row">
                 <span className="post-stat-val">{result.stats.myShots}</span>
                 <span className="post-stat-label">射门</span>
@@ -222,56 +168,70 @@ export default function PostMatchScreen({ saveData, updateSaveData, navigateTo }
                 <span className="post-stat-val">-</span>
               </div>
               <div className="post-stat-row">
+                <span className="post-stat-val">{result.stats.penalties || 0}</span>
+                <span className="post-stat-label">点球</span>
+                <span className="post-stat-val">-</span>
+              </div>
+              <div className="post-stat-row">
                 <span className="post-stat-val">{result.stats.yellowCards}</span>
                 <span className="post-stat-label">黄牌</span>
                 <span className="post-stat-val">{result.stats.redCards > 0 ? result.stats.redCards : 0}</span>
               </div>
+              </div>
+              <div className="post-match-summary">{insights.summary}</div>
             </div>
-            {/* 赛后总结 */}
-            <div className="post-match-summary">
-              {generateMatchSummary(result, team?.name)}
-            </div>
-          </div>
-        )}
+          )}
 
-        {/* 状态变化 */}
-        <div className="PixelPanel post-mini-panel">
-          <div className="post-panel-title">
-            状态变化
-            {injuredCount > 0 && <span className="post-alert-text">{injuredCount}人受伤</span>}
+          <div className="PixelPanel post-mini-panel post-advice-panel">
+            <div className="post-panel-title">教练组建议</div>
+            {insights.advice.map((advice, index) => <div key={index} className="post-review-line">{advice}</div>)}
           </div>
-          {statusChanges.slice(0, 6).map((player) => (
-            <div key={player.id} className="post-status-row">
-              <span className="post-status-name">
-                {player.name}
-                {player.isInjured && <span className="post-alert-text">伤</span>}
-              </span>
-              <span className={getStatusColorHex(player.oldStatus)}>{player.oldStatus}</span>
-              <span className="status-arrow">→</span>
-              <span className={getStatusColorHex(player.newStatus)}>{player.newStatus}</span>
-              <span className={player.change >= 0 ? 'status-high' : 'status-low'}>
-                ({player.change >= 0 ? '+' : ''}{player.change})
-              </span>
-            </div>
-          ))}
         </div>
 
-        {/* 比赛伤停 */}
-        {(uniqueMatchInjuries.length > 0 || uniqueMatchRedCards.length > 0) && (
-          <div className="PixelPanel post-mini-panel post-warning-panel">
-            <div className="post-panel-title">比赛伤停或红牌罚下</div>
-            {uniqueMatchRedCards.map((t, i) => <div key={`rc-${i}`}>🟥 {t}</div>)}
-            {uniqueMatchInjuries.map((t, i) => <div key={`inj-${i}`}>🤕 {t}</div>)}
+        <div className="post-match-column">
+          <div className="PixelPanel post-mini-panel post-decision-panel">
+            <div className="post-panel-title">关键决策复盘</div>
+            {insights.decisionItems.length > 0
+              ? insights.decisionItems.map((item, index) => <div key={index} className="post-review-line">{item}</div>)
+              : <div className="post-review-empty">本场没有触发临场决策。</div>}
           </div>
-        )}
 
-        {/* 受伤球员 */}
-        {injuredCount > 0 && (
-          <div className="PixelPanel post-mini-panel post-warning-panel">
-            以下球员无法参加下一场：
-            <div className="post-warning-names">{statusChanges.filter(p => p.isInjured).map(p => p.name).join('、')}</div>
+          <div className="PixelPanel post-mini-panel">
+            <div className="post-panel-title">
+              状态变化
+              {injuredCount > 0 && <span className="post-alert-text">{injuredCount}人受伤</span>}
+            </div>
+            {statusChanges.map((player) => (
+              <div key={player.id} className="post-status-row">
+                <span className="post-status-name">
+                  {player.name}
+                  {player.isInjured && <span className="post-alert-text">伤</span>}
+                </span>
+                <span className={getStatusColorHex(player.oldStatus)}>{player.oldStatus}</span>
+                <span className="status-arrow">→</span>
+                <span className={getStatusColorHex(player.newStatus)}>{player.newStatus}</span>
+                <span className={player.change >= 0 ? 'status-high' : 'status-low'}>
+                  ({player.change >= 0 ? '+' : ''}{player.change})
+                </span>
+              </div>
+            ))}
           </div>
-        )}
+
+          {(uniqueMatchInjuries.length > 0 || uniqueMatchRedCards.length > 0) && (
+            <div className="PixelPanel post-mini-panel post-warning-panel">
+              <div className="post-panel-title">比赛伤停或红牌罚下</div>
+              {uniqueMatchRedCards.map((t, i) => <div key={`rc-${i}`}>🟥 {t}</div>)}
+              {uniqueMatchInjuries.map((t, i) => <div key={`inj-${i}`}>🤕 {t}</div>)}
+            </div>
+          )}
+
+          {injuredCount > 0 && (
+            <div className="PixelPanel post-mini-panel post-warning-panel">
+              以下球员无法参加下一场：
+              <div className="post-warning-names">{statusChanges.filter(p => p.isInjured).map(p => p.name).join('、')}</div>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* 操作按钮 - 固定在底部 */}
