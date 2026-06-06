@@ -103,18 +103,18 @@ button {
 .logo-animation {
   position: relative;
   width: 100%;
-  height: 200px;
+  height: 170px;
   pointer-events: none;
 }
 
 .logo-frame {
   width: 100%;
-  height: 300px;
+  height: 170px;
   object-fit: contain;
   image-rendering: pixelated;
   position: absolute;
-  top: 10px;
-  left: 2%;
+  top: 25px;
+  left: 1%;
 }
 
 .logo-frame-1 {
@@ -320,6 +320,38 @@ button {
   color: var(--pixel-bg);
 }
 
+/* Secondary Pixel Button */
+.PixelButton.secondary-button .button-face {
+  background: #4a6a8a;
+  border-color: #2a4a6a;
+}
+
+.PixelButton.secondary-button::before {
+  background: var(--pixel-bg);
+  box-shadow:
+    8px 0 0 var(--pixel-bg),
+    16px 0 0 #2a4a6a,
+    0 8px 0 var(--pixel-bg),
+    8px 8px 0 #2a4a6a,
+    16px 8px 0 #4a6a8a,
+    0 16px 0 #2a4a6a,
+    8px 16px 0 #4a6a8a,
+    16px 16px 0 #4a6a8a;
+}
+
+.PixelButton.secondary-button::after {
+  background: var(--pixel-shadow);
+  box-shadow:
+    -8px 0 0 var(--pixel-shadow),
+    -16px 0 0 #2a4a6a,
+    0 -8px 0 var(--pixel-shadow),
+    -8px -8px 0 #2a4a6a,
+    -16px -8px 0 #4a6a8a,
+    0 -16px 0 #2a4a6a,
+    -8px -16px 0 #4a6a8a,
+    -16px -16px 0 #4a6a8a;
+}
+
 /* Pixel Panel */
 .PixelPanel {
   border: 4px solid var(--pixel-main);
@@ -395,7 +427,7 @@ button {
 
 .settings-copy strong {
   font-family: "Zpix", "Microsoft YaHei", "PingFang SC", sans-serif;
-  font-size: 18px;
+  font-size: 16px;
   line-height: 1;
 }
 
@@ -473,6 +505,7 @@ button {
   gap: 16px;
   width: min(512px, 92vw);
   padding: 16px;
+  margin-top: 4px;
 }
 
 .unlock-copy {
@@ -531,6 +564,23 @@ button {
   color: var(--pixel-bg);
   font-family: "Zpix", "Microsoft YaHei", "PingFang SC", sans-serif;
   font-size: 16px;
+}
+
+.flag-chip.is-champion {
+  background: var(--pixel-gold);
+}
+
+.flag-chip.is-normal {
+  position: relative;
+}
+
+.lock-icon {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 8px;
+  height: 8px;
+  image-rendering: pixelated;
 }
 
 /* Toast */
@@ -825,13 +875,13 @@ button {
 
 .stat-label {
   font-size: 12px;
-  color: var(--pixel-shadow);
+  color: #F3E3B4;
 }
 
 .stat-value {
   font-family: "Zpix", monospace;
   font-size: 20px;
-  color: var(--pixel-main);
+  color: #ffffff;
 }
 
 .stat-value.budget {
@@ -2251,15 +2301,15 @@ button {
 }
 
 .match-result.win {
-  color: #33ff66;
+  color: #1a9e42;
 }
 
 .match-result.draw {
-  color: #ffcc00;
+  color: #c49800;
 }
 
 .match-result.loss {
-  color: #ff4444;
+  color: #cc2222;
 }
 
 /* Tournament new styles */
@@ -2344,18 +2394,21 @@ button {
 }
 
 .strength-weak {
-  color: #33ff66;
-  border-color: #33ff66;
+  color: #1a9e42;
+  border-color: #1a9e42;
+  background: rgba(26, 158, 66, 0.15);
 }
 
 .strength-medium {
-  color: #ffcc00;
-  border-color: #ffcc00;
+  color: #c49800;
+  border-color: #c49800;
+  background: rgba(196, 152, 0, 0.15);
 }
 
 .strength-strong {
-  color: #ff4444;
-  border-color: #ff4444;
+  color: #cc2222;
+  border-color: #cc2222;
+  background: rgba(204, 34, 34, 0.15);
 }
 
 .group-standings {
@@ -2363,14 +2416,15 @@ button {
   justify-content: space-around;
   padding: 12px;
   margin-top: 16px;
-  background: var(--pixel-shadow);
+  background: rgba(27, 55, 100, 0.4);
+  border: 1px solid rgba(201, 154, 46, 0.3);
   font-family: "Zpix", monospace;
 }
 
 .eliminated-message {
   text-align: center;
   padding: 24px;
-  color: #ff4444;
+  color: #cc2222;
 }
 
 .knockout-message {
@@ -2379,9 +2433,9 @@ button {
   margin-bottom: 16px;
   font-family: "Zpix", monospace;
   font-size: 16px;
-  color: #33ff66;
-  background: rgba(51, 255, 102, 0.1);
-  border: 2px solid #33ff66;
+  color: #1a9e42;
+  background: rgba(26, 158, 66, 0.12);
+  border: 2px solid #1a9e42;
 }
 
 /* Group table */
@@ -2425,6 +2479,7 @@ button {
 
 .group-table-row .team-name {
   flex: 1;
+  color: #F3E3B4;
 }
 
 .group-table-row .points {
@@ -2569,12 +2624,32 @@ button {
   font-weight: 700;
   font-size: 14px;
   color: var(--pixel-gold);
+  position: relative;
+  z-index: 1;
+}
+
+.bench-position-label {
+  position: absolute;
+  top: 50%;
+  left: 22px;
+  transform: translateY(-50%);
+  font-family: "Zpix", "Microsoft YaHei", sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--pixel-main);
+  opacity: 0.12;
+  pointer-events: none;
+  z-index: 0;
+  white-space: nowrap;
+  letter-spacing: 2px;
 }
 
 .bench-name {
   font-size: 11px;
   text-align: center;
   white-space: nowrap;
+  position: relative;
+  z-index: 1;
 }
 
 .bench-rating {
@@ -3437,7 +3512,7 @@ button {
 
 .ending-message {
   font-size: 18px;
-  color: var(--pixel-bg);
+  color: #F3E3B4;
   margin-bottom: 24px;
   line-height: 1.6;
 }
@@ -3459,7 +3534,7 @@ button {
 
 .ending-stats h3 {
   font-family: "Zpix", monospace;
-  color: var(--pixel-bg);
+  color: var(--pixel-gold);
   margin-bottom: 16px;
 }
 
@@ -3467,6 +3542,55 @@ button {
   display: flex;
   justify-content: center;
   gap: 32px;
+  flex-wrap: wrap;
+}
+
+.ending-journey {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px dashed rgba(243, 227, 180, 0.3);
+}
+
+.ending-journey h4 {
+  font-family: "Zpix", monospace;
+  color: var(--pixel-gold);
+  margin-bottom: 12px;
+  font-size: 14px;
+}
+
+.journey-matches {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.journey-result {
+  font-family: "Zpix", monospace;
+  font-size: 14px;
+  font-weight: 700;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--pixel-main);
+  background: var(--pixel-bg);
+}
+
+.journey-result.win {
+  color: #1a9e42;
+  border-color: #1a9e42;
+}
+
+.journey-result.draw {
+  color: #c49800;
+  border-color: #c49800;
+}
+
+.journey-result.loss {
+  color: #cc2222;
+  border-color: #cc2222;
 }
 
 .ending-actions {
@@ -3583,142 +3707,4 @@ button {
   .flag-strip {
     gap: 4px;
   }
-}
-/* Partner additions: Team Select & Recruitment */
-
-:root {
-  --card-bg-gold: #C99A2E;
-  --card-shadow-gold: #8a6d1b;
-  --card-text-gold: #4a3b1f;
-  --card-bg-normal: #3d4a5c;
-  --card-shadow-normal: #2a3340;
-  --card-text-normal: #e8e0d0;
-  --card-btn-buy: #2a5caa;
-  --card-btn-buy-hover: #3a6cba;
-  --card-btn-buy-border: #1e4a8a;
-  --card-btn-sell: #5a6a7a;
-  --card-btn-sell-hover: #6a7a8a;
-  --card-btn-sell-border: #4a5a6a;
-}
-
-.team-select-hint,
-.recruitment-hint {
-  font-size: 14px;
-  color: var(--pixel-bg);
-  background: #1C3764;
-  padding: 12px 16px;
-  margin: 12px 0 16px 0;
-  text-align: center;
-  display: inline-block;
-  border-radius: 4px;
-}
-
-.team-card-left {
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-.team-card-hover-info {
-  flex-shrink: 0;
-  place-items: center;
-  width: min(400px, 90vw);
-  max-height: 85vh;
-  padding: 24px;
-}
-
-/* 六维雷达图 */
-.radar-chart {
-  width: 300px;
-  height: 300px;
-  display: block;
-  margin: 0 auto 16px;
-}
-
-.radar-grid {
-  fill: none;
-  stroke: rgba(27, 55, 100, 0.15);
-  stroke-width: 1;
-}
-
-.radar-axis {
-  stroke: rgba(27, 55, 100, 0.2);
-  stroke-width: 1;
-}
-
-.radar-data {
-  fill: rgba(201, 154, 46, 0.25);
-  stroke: var(--pixel-gold);
-  stroke-width: 2;
-}
-
-.radar-dot {
-  fill: var(--pixel-gold);
-}
-
-.radar-label {
-  font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
-  font-size: 12px;
-  fill: var(--pixel-main);
-}
-
-.radar-value {
-  font-family: "Zpix", monospace;
-  font-size: 13px;
-  font-weight: 700;
-  fill: var(--pixel-main);
-}
-
-.recruitment-screen {
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-.recruitment-top {
-  flex-shrink: 0;
-  place-items: center;
-  width: min(400px, 90vw);
-  max-height: 85vh;
-  padding: 24px;
-}
-
-.recruitment-stats {
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-.recruitment-footer {
-  flex-shrink: 0;
-}
-
-.player-detail-stars {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 8px;
-  font-size: 14px;
-}
-
-.player-detail-stars .stat-label {
-  font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
-  color: var(--pixel-main);
-}
-
-.player-detail-stars .stat-stars {
-  color: var(--pixel-gold);
-  font-size: 16px;
-  letter-spacing: 2px;
-}
-
-/* 浅色队伍卡片 */
-.team-card--light .hover-info-block {
-  color: #1a1a1a;
-  text-shadow: none;
-}
-
-.team-card--light .hover-info-label {
-  color: #333;
 }

@@ -140,16 +140,17 @@ function findScenario(id) {
  */
 export function selectKeyPlayers(scenario, lineup) {
   const getPos = (player) => player?.position || player?.pos;
+  const fallback = lineup[0] || { name: '球员', position: 'FW', number: 10, sta: 80, tec: 70, spd: 70, phy: 70, def: 70 };
   const topPlayer = (pos, scoreFn) => {
     const filtered = lineup.filter(p => getPos(p) === pos);
-    if (!filtered.length) return lineup[0];
+    if (!filtered.length) return fallback;
     return filtered.reduce((best, p) => (scoreFn(p) > scoreFn(best)) ? p : best);
   };
 
   const worstForm = () => {
-    return lineup
-      .filter(p => getPos(p) !== 'GK')
-      .reduce((worst, p) => (p.sta || 80) < (worst.sta || 80) ? p : worst);
+    const outfield = lineup.filter(p => getPos(p) !== 'GK');
+    if (!outfield.length) return fallback;
+    return outfield.reduce((worst, p) => (p.sta || 80) < (worst.sta || 80) ? p : worst);
   };
 
   const fwBySpd = topPlayer('FW', p => (p.spd || 70) * ((p.sta || 80) / 100));
@@ -159,7 +160,7 @@ export function selectKeyPlayers(scenario, lineup) {
   const mfByDef = topPlayer('MF', p => (p.def || 70) * ((p.sta || 80) / 100));
   const dfByDef = topPlayer('DF', p => (p.def || 70) * ((p.sta || 80) / 100));
   const dfByPhy = topPlayer('DF', p => p.phy || 70);
-  const gk = lineup.find(p => getPos(p) === 'GK') || lineup[0];
+  const gk = lineup.find(p => getPos(p) === 'GK') || fallback;
 
   const maps = {
     solo_run_penalty: { default: fwBySpd, second: mfByTec },
@@ -199,9 +200,11 @@ export function selectKeyPlayers(scenario, lineup) {
  * 填充模板中的占位符
  */
 export function fillTemplate(template, keyPlayers, gameState) {
+  const playerName = keyPlayers.default?.name || keyPlayers.default?.player?.name || '队长';
+  const player2Name = keyPlayers.second?.name || keyPlayers.second?.player?.name || '搭档';
   return template
-    .replace(/\{player\}/g, keyPlayers.default?.name || '队长')
-    .replace(/\{player2\}/g, keyPlayers.second?.name || '搭档')
+    .replace(/\{player\}/g, playerName)
+    .replace(/\{player2\}/g, player2Name)
     .replace(/\{opponent\}/g, (gameState.opponentName || '对方') + '前锋')
     .replace(/\{minute\}/g, String(gameState.minute || 60))
     .replace(/\{diff\}/g, String(Math.abs(gameState.scoreDiff || 0)))

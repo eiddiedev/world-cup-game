@@ -324,16 +324,16 @@ export default function TournamentScreen({ saveData, updateSaveData, navigateTo 
                     {team.name}
                     <span className="vs-small">VS</span>
                     <FlagImg name={match.opponent} size={16} />
-                    {match.opponent}
+                    {OPPONENT_ID_TO_NAME[match.opponent] || match.opponent}
                   </span>
                   <span className={`strength-badge strength-${match.opponentStrength}`}>
-                    {match.opponentStrength === 'weak' ? '弱' : match.opponentStrength === 'medium' ? '中' : '强'}
+                    实力：{match.opponentStrength === 'weak' ? '弱' : match.opponentStrength === 'medium' ? '中' : '强'}
                   </span>
                 </div>
 
                 {isCompleted && (
                   <div className={`match-result ${result}`}>
-                    {result === 'win' ? '✅ 胜' : result === 'draw' ? '🟡 平' : '🔴 负'}
+                    {result === 'win' ? 'W 胜' : result === 'draw' ? 'D 平' : 'L 负'}
                   </div>
                 )}
 
@@ -363,12 +363,12 @@ export default function TournamentScreen({ saveData, updateSaveData, navigateTo 
             <h4>小组排名</h4>
             {groupTeams.map((t, i) => {
               const displayName = t.isPlayer ? team.name : t.name
-              const flag = t.isPlayer ? null : <FlagImg name={displayName} size={16} />
+              const flagSrc = t.isPlayer ? team.flag : getTeamFlag(displayName)
 
               return (
                 <div key={t.id} className={`group-table-row ${t.isPlayer ? 'player-row' : ''}`}>
                   <span className="rank">{i + 1}</span>
-                  {flag}
+                  {flagSrc ? <img src={flagSrc} alt="" className="inline-flag" style={{ width: 16, height: 16 }} /> : <span style={{ fontSize: 12 }}>🏳️</span>}
                   <span className="team-name">{displayName}</span>
                   <span className="points">{t.points}分</span>
                   <span className="goal-diff">{t.goalDiff > 0 ? '+' : ''}{t.goalDiff}</span>

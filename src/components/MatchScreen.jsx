@@ -716,41 +716,7 @@ export default function MatchScreen({ saveData, updateSaveData, navigateTo, show
         </div>
       )}
 
-      {/* ── 控制按钮 ── */}
-      <div className="match-controls">
-        {!showPenalty && !showSubModal && (
-          <>
-            {matchTime === 0 && !isPlaying && (
-              <button onClick={handleStartMatch} style={{
-                width: '100%', background: 'var(--pixel-accent)', color: '#F3E3B4',
-                border: '2px solid var(--pixel-gold)', borderRadius: 4, padding: '5px 10px',
-                fontFamily: 'Zpix, monospace', fontSize: 13, cursor: 'pointer',
-              }}>⚽ 开始比赛</button>
-            )}
-            {isPlaying && !currentDecision && (
-              <button onClick={() => setIsPlaying(false)} style={{
-                width: '100%', background: 'var(--pixel-main)', color: '#F3E3B4',
-                border: '2px solid var(--pixel-gold)', borderRadius: 4, padding: '5px 10px',
-                fontFamily: 'Zpix, monospace', fontSize: 13, cursor: 'pointer',
-              }}>⏸ 暂停</button>
-            )}
-            {!isPlaying && matchTime > 0 && matchTime < 90 && !currentDecision && (
-              <button onClick={() => setIsPlaying(true)} style={{
-                width: '100%', background: 'var(--pixel-main)', color: '#F3E3B4',
-                border: '2px solid var(--pixel-gold)', borderRadius: 4, padding: '5px 10px',
-                fontFamily: 'Zpix, monospace', fontSize: 13, cursor: 'pointer',
-              }}>▶ 继续</button>
-            )}
-            {!isPlaying && matchTime >= 90 && !currentDecision && (
-              <button onClick={handleEndMatch} style={{
-                width: '100%', background: 'var(--pixel-accent)', color: '#F3E3B4',
-                border: '2px solid var(--pixel-gold)', borderRadius: 4, padding: '5px 10px',
-                fontFamily: 'Zpix, monospace', fontSize: 13, cursor: 'pointer',
-              }}>🏁 查看结算</button>
-            )}
-          </>
-        )}
-      </div>
+
 
       {/* ═══════════════════════════════════════ */}
       {/* 决策弹窗 */}
@@ -830,107 +796,7 @@ export default function MatchScreen({ saveData, updateSaveData, navigateTo, show
         </div>
       )}
 
-      {/* ═══════════════════════════════════════ */}
-      {/* 换人弹窗 */}
-      {/* ═══════════════════════════════════════ */}
-      {showSubModal && (
-        <div style={{
-          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-          background: 'rgba(0,0,0,0.8)', zIndex: 110,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          padding: 16,
-        }}>
-          <div style={{
-            background: 'var(--pixel-bg)', border: '3px solid var(--pixel-gold)',
-            borderRadius: 8, padding: 16, width: '100%', maxWidth: 380,
-            maxHeight: '85vh', overflowY: 'auto',
-          }}>
-            <div style={{
-              display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12,
-            }}>
-              <span style={{ fontFamily: 'Zpix, monospace', fontSize: 14, color: 'var(--pixel-main)', fontWeight: 'bold' }}>
-                🔄 换人 (剩余{substitutionsLeft}次)
-              </span>
-              <button onClick={() => setShowSubModal(false)} style={{
-                background: 'none', border: 'none', color: 'var(--pixel-main)',
-                fontFamily: 'Zpix, monospace', fontSize: 14, cursor: 'pointer',
-              }}>✕</button>
-            </div>
 
-            {/* 当前阵容（可点击换下） */}
-            <div style={{ marginBottom: 12 }}>
-              <div style={{ fontFamily: 'Zpix, monospace', fontSize: 10, color: 'var(--pixel-shadow)', marginBottom: 6 }}>
-                点击场上球员换下 ↓
-              </div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                {currentLineup.map(p => {
-                  const sta = playerStamina[p.id] || 80
-                  return (
-                    <div key={p.id} style={{
-                      background: 'var(--pixel-main)', border: `2px solid ${getStaminaColor(sta)}`,
-                      borderRadius: 4, padding: '4px 8px', cursor: 'pointer',
-                      fontFamily: 'Zpix, monospace', fontSize: 10, color: '#F3E3B4',
-                      minWidth: 60, textAlign: 'center',
-                    }}
-                    onClick={() => {
-                      if (benchPlayers.length === 0) { showToast('没有可用替补'); return }
-                      // 标记要换下的球员
-                      setStaminaEvent(prev => ({ ...prev, _outPlayer: p }))
-                    }}
-                    >
-                      <div style={{ fontWeight: 'bold' }}>#{p.number || '?'} {p.name}</div>
-                      <div style={{ color: getStaminaColor(sta), fontSize: 9 }}>体力 {sta}</div>
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
-
-            {/* 替补席 */}
-            <div>
-              <div style={{ fontFamily: 'Zpix, monospace', fontSize: 10, color: 'var(--pixel-shadow)', marginBottom: 6 }}>
-                替补席（点击上场）↓
-              </div>
-              {benchPlayers.length === 0 && (
-                <div style={{ fontFamily: 'Zpix, monospace', fontSize: 10, color: '#aaa', textAlign: 'center', padding: 12 }}>
-                  无可用替补
-                </div>
-              )}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                {benchPlayers.map(bp => (
-                  <div key={bp.id} style={{
-                    background: 'rgba(27,55,100,0.08)', border: '2px solid var(--pixel-main)',
-                    borderRadius: 4, padding: '6px 10px', cursor: 'pointer',
-                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                    fontFamily: 'Zpix, monospace', fontSize: 10,
-                  }}
-                  onClick={() => {
-                    // 如果已选中要换下的球员，直接换
-                    const outPlayer = staminaEvent?._outPlayer
-                    if (outPlayer) {
-                      handleSubstitute(bp, outPlayer)
-                    } else {
-                      // 否则提示先选场上球员
-                      showToast('请先点击要换下的场上球员')
-                    }
-                  }}
-                  >
-                    <div>
-                      <span style={{ color: 'var(--pixel-main)', fontWeight: 'bold' }}>
-                        #{bp.number || '?'} {bp.name}
-                      </span>
-                      <span style={{ color: 'var(--pixel-shadow)', marginLeft: 8 }}>{bp.position || bp.pos}</span>
-                    </div>
-                    <span style={{ color: 'var(--pixel-gold)', fontSize: 9 }}>
-                      {bp.position || bp.pos} · 体力80
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* 点球大战 */}
       {showPenalty && (
