@@ -2,6 +2,7 @@
  * 比赛模拟引擎
  * 基于球员属性和阵型计算比赛结果
  */
+import { getOpponentMatchSetup } from './opponentTactics.js'
 
 // 阵型系数配置
 export const formations = {
@@ -11,8 +12,8 @@ export const formations = {
   '4-3-2-1': { attack: 1.1, defense: 0.95, midfield: 1.2 },
   '3-5-2': { attack: 1.05, defense: 0.9, midfield: 1.25 },
   '3-4-3': { attack: 1.25, defense: 0.8, midfield: 1.05 },
+  '3-4-2-1': { attack: 1.12, defense: 0.92, midfield: 1.16 },
   '5-3-2': { attack: 0.9, defense: 1.2, midfield: 1.0 },
-  '5-4-1': { attack: 0.8, defense: 1.25, midfield: 1.05 },
   '4-1-4-1': { attack: 1.0, defense: 1.1, midfield: 1.1 },
   '4-4-1-1': { attack: 1.05, defense: 1.0, midfield: 1.1 },
 }
@@ -278,33 +279,5 @@ export function simulateMatch(homeTeam, awayTeam, homeFormation, awayFormation, 
  * 根据 opponentStrength 调整属性范围，拉大强弱差距
  */
 export function generateOpponentTeam(teamId, teamData, opponentStrength) {
-  // 使用球队数据中的球员，如果没有则生成简化数据
-  if (teamData.players && teamData.players.length > 0) {
-    return teamData.players.slice(0, 11)
-  }
-
-  // 根据对手强度调整属性范围
-  const strengthRanges = {
-    weak:   { min: 50, range: 20, starMax: 2 },
-    medium: { min: 58, range: 25, starMax: 3 },
-    strong: { min: 65, range: 25, starMax: 4 },
-  };
-  const sr = strengthRanges[opponentStrength] || strengthRanges.medium;
-
-  // 生成简化球员数据（含标准球衣号码）
-  const positions = ['GK', 'DF', 'DF', 'DF', 'DF', 'MF', 'MF', 'MF', 'FW', 'FW', 'FW']
-  const standardNumbers = [1, 2, 3, 4, 5, 6, 8, 10, 7, 9, 11]
-  return positions.map((pos, i) => ({
-    id: `${teamId}_player_${i}`,
-    name: `${teamData.name}球员${i + 1}`,
-    position: pos,
-    number: standardNumbers[i],
-    spd: sr.min + Math.floor(Math.random() * sr.range),
-    phy: sr.min + Math.floor(Math.random() * sr.range),
-    tec: sr.min + Math.floor(Math.random() * sr.range),
-    def: sr.min + Math.floor(Math.random() * sr.range),
-    sta: sr.min + Math.floor(Math.random() * sr.range),
-    star: Math.floor(Math.random() * sr.starMax) + 1,
-    isGolden: false,
-  }))
+  return getOpponentMatchSetup(teamData?.name || teamId, teamData, opponentStrength).lineup
 }

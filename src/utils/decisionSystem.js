@@ -14,7 +14,15 @@ import { DECISION_LIBRARY } from '../data/decisionLibrary.js';
  * @param {number} opponentAvgDef - 对手平均防守值 (默认70)
  * @param {number} teamDepthBonus - 球队深度加成 (0-0.08，默认0)
  */
-export function calcSuccessProb(choice, keyPlayer, isKnockout, isExtraTime, opponentAvgDef = 70, teamDepthBonus = 0) {
+export function calcSuccessProb(
+  choice,
+  keyPlayer,
+  isKnockout,
+  isExtraTime,
+  opponentAvgDef = 70,
+  teamDepthBonus = 0,
+  teamDifficulty = 3,
+) {
   if (!keyPlayer) return 0.5;
 
   const formMult = Math.max(0.75, (keyPlayer.sta || 80) / 100);
@@ -55,7 +63,14 @@ export function calcSuccessProb(choice, keyPlayer, isKnockout, isExtraTime, oppo
 
   // 最终概率
   const goldenMult = keyPlayer.isGolden ? 1.08 : 1.0;
-  return Math.min(0.90, Math.max(0.10, baseProb * formMult * clutchMult * goldenMult * opponentMult + teamDepthBonus));
+  const difficultyModifier = {
+    1: 0.04,
+    2: 0.02,
+    3: 0,
+    4: -0.08,
+    5: -0.22,
+  }[teamDifficulty] ?? 0;
+  return Math.min(0.90, Math.max(0.10, baseProb * formMult * clutchMult * goldenMult * opponentMult + teamDepthBonus + difficultyModifier));
 }
 
 /**
@@ -91,35 +106,39 @@ export function selectScenario(minute, gameState) {
 
   const pool = [];
   if (attackAdvantage) {
-    pool.push(['solo_run_penalty', 0.14]);
-    pool.push(['penalty_area_cross', 0.15]);
+    pool.push(['solo_run_penalty', 0.16]);
+    pool.push(['penalty_area_cross', 0.14]);
     pool.push(['counter_attack_3v2', 0.12]);
     pool.push(['through_ball_chance', 0.10]);
-    pool.push(['freekick_dangerous', 0.08]);
+    pool.push(['freekick_dangerous', 0.09]);
     pool.push(['long_shot_opportunity', 0.07]);
     pool.push(['header_corner', 0.06]);
     pool.push(['midfield_press_trigger', 0.05]);
-    pool.push(['penalty_area_foul_risk', 0.05]);
-    pool.push(['indirect_freekick_box', 0.06]);
-    pool.push(['match_penalty', 0.04]);
+    pool.push(['penalty_area_foul_risk', 0.12]);
+    pool.push(['indirect_freekick_box', 0.08]);
+    pool.push(['match_penalty', 0.18]);
     pool.push(['defender_last_ditch', 0.04]);
     pool.push(['throwin_attack', 0.04]);
     pool.push(['var_goal_review', 0.03]);
+    pool.push(['penalty_area_dive', 0.13]);
+    pool.push(['var_penalty_review', 0.10]);
     pool.push(['keeper_distribution', 0.03]);
     pool.push(['midfield_second_ball', 0.04]);
     pool.push(['box_scramble_clearance', 0.03]);
+    pool.push(['box_second_ball_chaos', 0.03]);
   } else {
-    pool.push(['penalty_area_foul_risk', 0.15]);
+    pool.push(['penalty_area_foul_risk', 0.18]);
     pool.push(['gk_one_on_one', 0.12]);
     pool.push(['last_defender_tackle', 0.10]);
     pool.push(['tactical_foul_counter', 0.12]);
     pool.push(['aerial_duel_corner_defending', 0.08]);
+    pool.push(['defend_dangerous_freekick', 0.11]);
     pool.push(['offside_trap', 0.08]);
     pool.push(['counter_attack_3v2', 0.08]);
     pool.push(['stamina_collapse_sub', 0.06]);
     pool.push(['defender_last_ditch', 0.08]);
-    pool.push(['match_penalty', 0.05]);
-    pool.push(['indirect_freekick_box', 0.05]);
+    pool.push(['match_penalty', 0.07]);
+    pool.push(['indirect_freekick_box', 0.06]);
     pool.push(['throwin_attack', 0.03]);
     pool.push(['keeper_distribution', 0.05]);
     pool.push(['midfield_second_ball', 0.05]);
@@ -140,16 +159,17 @@ function findScenario(id) {
  */
 export function selectKeyPlayers(scenario, lineup) {
   const getPos = (player) => player?.position || player?.pos;
+  const fallback = lineup[0] || { name: '球员', position: 'FW', number: 10, sta: 80, tec: 70, spd: 70, phy: 70, def: 70 };
   const topPlayer = (pos, scoreFn) => {
     const filtered = lineup.filter(p => getPos(p) === pos);
-    if (!filtered.length) return lineup[0];
+    if (!filtered.length) return fallback;
     return filtered.reduce((best, p) => (scoreFn(p) > scoreFn(best)) ? p : best);
   };
 
   const worstForm = () => {
-    return lineup
-      .filter(p => getPos(p) !== 'GK')
-      .reduce((worst, p) => (p.sta || 80) < (worst.sta || 80) ? p : worst);
+    const outfield = lineup.filter(p => getPos(p) !== 'GK');
+    if (!outfield.length) return fallback;
+    return outfield.reduce((worst, p) => (p.sta || 80) < (worst.sta || 80) ? p : worst);
   };
 
   const fwBySpd = topPlayer('FW', p => (p.spd || 70) * ((p.sta || 80) / 100));
@@ -159,7 +179,7 @@ export function selectKeyPlayers(scenario, lineup) {
   const mfByDef = topPlayer('MF', p => (p.def || 70) * ((p.sta || 80) / 100));
   const dfByDef = topPlayer('DF', p => (p.def || 70) * ((p.sta || 80) / 100));
   const dfByPhy = topPlayer('DF', p => p.phy || 70);
-  const gk = lineup.find(p => getPos(p) === 'GK') || lineup[0];
+  const gk = lineup.find(p => getPos(p) === 'GK') || fallback;
 
   const maps = {
     solo_run_penalty: { default: fwBySpd, second: mfByTec },
@@ -184,12 +204,16 @@ export function selectKeyPlayers(scenario, lineup) {
     penalty_shootout_round: { default: fwByTec },
     indirect_freekick_box: { default: mfByTec, second: fwByPhy },
     match_penalty: { default: fwByTec },
+    penalty_area_dive: { default: fwByTec, second: mfByTec },
+    var_penalty_review: { default: fwByTec, second: mfByTec },
+    defend_dangerous_freekick: { default: gk, second: dfByPhy },
     defender_last_ditch: { default: dfByDef },
     throwin_attack: { default: mfByTec, second: fwByPhy },
     var_goal_review: { default: fwByTec, second: mfByTec },
     keeper_distribution: { default: gk, second: fwByPhy },
     midfield_second_ball: { default: mfByDef, second: mfByTec },
     box_scramble_clearance: { default: dfByDef, second: gk },
+    box_second_ball_chaos: { default: dfByDef, second: gk },
   };
 
   return maps[scenario.id] || { default: fwByTec };
@@ -199,9 +223,11 @@ export function selectKeyPlayers(scenario, lineup) {
  * 填充模板中的占位符
  */
 export function fillTemplate(template, keyPlayers, gameState) {
+  const playerName = keyPlayers.default?.name || keyPlayers.default?.player?.name || '队长';
+  const player2Name = keyPlayers.second?.name || keyPlayers.second?.player?.name || '搭档';
   return template
-    .replace(/\{player\}/g, keyPlayers.default?.name || '队长')
-    .replace(/\{player2\}/g, keyPlayers.second?.name || '搭档')
+    .replace(/\{player\}/g, playerName)
+    .replace(/\{player2\}/g, player2Name)
     .replace(/\{opponent\}/g, (gameState.opponentName || '对方') + '前锋')
     .replace(/\{minute\}/g, String(gameState.minute || 60))
     .replace(/\{diff\}/g, String(Math.abs(gameState.scoreDiff || 0)))
@@ -223,7 +249,7 @@ export function weightedRandom(pool) {
 }
 
 /**
- * 判断是否触发决策（全场5-6次）
+ * 判断是否触发决策（全场约6次，最多8次）
  */
 export function shouldTriggerDecision(
   minute,
@@ -235,7 +261,7 @@ export function shouldTriggerDecision(
   if (triggeredThisHalf >= 4) return false; // 每半场最多4次，全场6-8次
   if (minute < 8) return false;
   if (minute - lastDecisionMinute < minGap) return false;
-  return randomFn() < 0.07;
+  return randomFn() < 0.17;
 }
 
 /**
@@ -249,7 +275,15 @@ export function executeDecision(scenario, lineup, gameState) {
   // 为每个选项计算成功概率和提示
   const enrichedChoices = scenario.choices.map(choice => {
     const keyPlayer = keyPlayers.default;
-    const successProb = calcSuccessProb(choice, keyPlayer, isKnockout, isExtraTime);
+    const successProb = calcSuccessProb(
+      choice,
+      keyPlayer,
+      isKnockout,
+      isExtraTime,
+      gameState.oppDefense || 70,
+      0,
+      gameState.teamDifficulty || 3,
+    );
     return {
       ...choice,
       successProb,
@@ -285,9 +319,24 @@ export function resolveChoiceResult(choice, keyPlayer, gameState) {
   const opponentAvgDef = gameState.oppDefense || 70;
   // 球队深度加成：全队平均rating越高，加成越大（max +0.06）
   const teamAvgRating = gameState.teamAvgRating || 70;
-  const teamDepthBonus = Math.max(0, (teamAvgRating - 70) * 0.006);
-  const successProb = calcSuccessProb(choice, keyPlayer, isKnockout, isExtraTime, opponentAvgDef, teamDepthBonus);
-  const outcome = resolveOutcome(choice, successProb);
+  const teamDepthBonus = Math.min(0.06, Math.max(0, (teamAvgRating - 70) * 0.006));
+  const successProb = calcSuccessProb(
+    choice,
+    keyPlayer,
+    isKnockout,
+    isExtraTime,
+    opponentAvgDef,
+    teamDepthBonus,
+    gameState.teamDifficulty || 3,
+  );
+  let outcome = resolveOutcome(choice, successProb);
+  if (
+    typeof choice.goal_conversion === 'number'
+    && outcome.startsWith('goal')
+    && Math.random() > choice.goal_conversion
+  ) {
+    outcome = choice.conversion_miss_outcome || 'saved';
+  }
   const isSuccess = choice.possible_outcomes.indexOf(outcome) < Math.ceil(choice.possible_outcomes.length / 2);
 
   // 计算比分变化
@@ -303,7 +352,7 @@ export function resolveChoiceResult(choice, keyPlayer, gameState) {
   const goalAgainstOutcomes = ['counter_sealed', 'counter_golden_goal', 'goal_against'];
 
   if (goalOutcomes.includes(outcome)) homeScoreChange = 1;
-  if (goalAgainstOutcomes.includes(outcome)) awayScoreChange = 1;
+  if (goalAgainstOutcomes.includes(outcome) || outcome?.startsWith('opponent_goal')) awayScoreChange = 1;
 
   return {
     outcome,
@@ -312,4 +361,104 @@ export function resolveChoiceResult(choice, keyPlayer, gameState) {
     homeScoreChange,
     awayScoreChange,
   };
+}
+
+export function resolveMatchPenaltyChoice(choice, keyPlayer, gameState = {}, randomFn = Math.random) {
+  const technique = keyPlayer?.tec || 70
+  const composure = keyPlayer?.sta || 70
+  const starBonus = Math.max(0, (keyPlayer?.star || 3) - 3) * 0.02
+  const pressurePenalty = gameState.isKnockout || gameState.minute >= 75 ? 0.02 : 0
+  const isPanenka = choice?.id === 'penalty_center'
+  const baseGoalChance = isPanenka ? 0.64 : 0.76
+  const goalChance = Math.min(
+    isPanenka ? 0.80 : 0.90,
+    Math.max(
+      isPanenka ? 0.55 : 0.68,
+      baseGoalChance
+        + (technique - 70) * 0.003
+        + (composure - 70) * 0.0015
+        + starBonus
+        - pressurePenalty,
+    ),
+  )
+  const missChance = Math.min(
+    isPanenka ? 0.12 : 0.08,
+    Math.max(0.04, (isPanenka ? 0.09 : 0.06) - (technique - 70) * 0.001),
+  )
+  const roll = randomFn()
+  let outcome
+
+  if (roll < goalChance) {
+    outcome = choice?.id === 'penalty_right'
+      ? 'goal_power'
+      : isPanenka ? 'goal_panenka' : 'goal_placement'
+  } else if (roll >= 1 - missChance) {
+    outcome = choice?.id === 'penalty_right'
+      ? 'miss_wide_power'
+      : isPanenka ? 'miss_panenka' : 'miss_post'
+  } else {
+    outcome = choice?.id === 'penalty_right'
+      ? 'saved_power'
+      : isPanenka ? 'saved_panenka' : 'saved_placement'
+  }
+
+  const scored = outcome.startsWith('goal')
+  return {
+    outcome,
+    successProb: goalChance,
+    isSuccess: scored,
+    homeScoreChange: scored ? 1 : 0,
+    awayScoreChange: 0,
+  }
+}
+
+export function outcomeConcedesPenalty(outcome) {
+  return typeof outcome === 'string' && outcome.includes('_penalty')
+}
+
+export function outcomeWinsPenalty(outcome) {
+  return outcome === 'penalty_won' || outcome === 'penalty_awarded'
+}
+
+export function resolveDiveChoice(choice, keyPlayer, gameState = {}, randomFn = Math.random) {
+  const technique = keyPlayer?.tec || 70
+  const composure = keyPlayer?.sta || 70
+  const starBonus = (keyPlayer?.star || 3) >= 4 ? 0.04 : 0
+  const varPressure = gameState.isKnockout ? -0.03 : 0
+  const basePenaltyProb = choice?.id === 'simulate_contact'
+    ? 0.34 + (technique - 70) * 0.0045 + (composure - 70) * 0.002 + starBonus + varPressure
+    : 0.10
+  const penaltyProb = Math.min(0.58, Math.max(0.18, basePenaltyProb))
+  const yellowProb = choice?.id === 'simulate_contact'
+    ? Math.min(0.38, Math.max(0.12, 0.24 - (technique - 70) * 0.002))
+    : 0.06
+  const roll = randomFn()
+  let outcome = 'play_on_lost'
+  if (roll < penaltyProb) outcome = 'penalty_won'
+  else if (roll > 1 - yellowProb) outcome = 'yellow_card_dive'
+  else if (choice?.id !== 'simulate_contact') outcome = 'shot_blocked'
+
+  return {
+    outcome,
+    successProb: penaltyProb,
+    isSuccess: outcome === 'penalty_won',
+    homeScoreChange: 0,
+    awayScoreChange: 0,
+  }
+}
+
+export function resolveOpponentPenaltyChoice(choice, goalkeeper, gameState = {}, randomFn = Math.random) {
+  const keeperScore = (goalkeeper?.def || 70) * 0.55 + (goalkeeper?.spd || 70) * 0.25 + (goalkeeper?.sta || 70) * 0.20
+  const defenseSupport = gameState.myDefense ? (gameState.myDefense - 70) * 0.002 : 0
+  const pressurePenalty = gameState.isKnockout || gameState.minute >= 75 ? -0.03 : 0
+  const saveProb = Math.min(0.58, Math.max(0.16, 0.30 + (keeperScore - 70) * 0.004 + defenseSupport + pressurePenalty))
+  const saved = randomFn() < saveProb
+  const side = choice?.side || 'center'
+  return {
+    outcome: saved ? `opponent_saved_${side}` : `opponent_goal_${side}`,
+    successProb: saveProb,
+    isSuccess: saved,
+    homeScoreChange: 0,
+    awayScoreChange: saved ? 0 : 1,
+  }
 }

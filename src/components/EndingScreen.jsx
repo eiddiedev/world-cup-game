@@ -8,6 +8,14 @@ import { getTeamById } from '../data/teams'
 export default function EndingScreen({ saveData, updateSaveData, navigateTo, showToast }) {
   const team = getTeamById(saveData.currentRun?.teamId)
   const matchIndex = saveData.currentRun?.matchIndex || 0
+  const matchResults = saveData.currentRun?.matchResults || []
+  const knockoutResults = saveData.currentRun?.knockoutResults || []
+
+  // 统计小组赛数据
+  const winCount = matchResults.filter(r => r === 'win').length
+  const drawCount = matchResults.filter(r => r === 'draw').length
+  const lossCount = matchResults.filter(r => r === 'loss').length
+  const groupPoints = winCount * 3 + drawCount
 
   // 根据比赛场次判断最终成绩
   const getFinalResult = () => {
@@ -119,21 +127,50 @@ export default function EndingScreen({ saveData, updateSaveData, navigateTo, sho
           <div className="stats-grid">
             <div className="stat-item">
               <span className="stat-label">比赛场次</span>
-              <span className="stat-value">{matchIndex + 1}</span>
+              <span className="stat-value">{matchResults.length}</span>
             </div>
             <div className="stat-item">
               <span className="stat-label">最终成绩</span>
               <span className="stat-value">{ending.title}</span>
             </div>
+            <div className="stat-item">
+              <span className="stat-label">小组赛</span>
+              <span className="stat-value">{winCount}胜{drawCount}平{lossCount}负</span>
+            </div>
+            <div className="stat-item">
+              <span className="stat-label">积分</span>
+              <span className="stat-value">{groupPoints}分</span>
+            </div>
           </div>
+
+          {/* 晋级之路 */}
+          {matchResults.length > 0 && (
+            <div className="ending-journey">
+              <h4>晋级之路</h4>
+              <div className="journey-matches">
+                {matchResults.map((result, i) => (
+                  <span key={i} className={`journey-result ${result}`}>
+                    {result === 'win' ? 'W' : result === 'draw' ? 'D' : 'L'}
+                  </span>
+                ))}
+                {knockoutResults.map((r, i) => (
+                  <span key={`ko-${i}`} className={`journey-result ${r}`}>
+                    {r === 'win' ? 'W' : 'L'}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="ending-actions">
-          <button className="btn btn-primary btn-large" onClick={handleNewGame}>
-            重新挑战
+          <button className="PixelButton" onClick={handleNewGame}>
+            <span className="button-face" aria-hidden="true"></span>
+            <span className="button-label">重新挑战</span>
           </button>
-          <button className="btn btn-secondary" onClick={() => navigateTo('home')}>
-            返回首页
+          <button className="PixelButton secondary-button" onClick={() => navigateTo('home')}>
+            <span className="button-face" aria-hidden="true"></span>
+            <span className="button-label">返回首页</span>
           </button>
         </div>
       </div>

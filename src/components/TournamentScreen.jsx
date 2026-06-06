@@ -324,23 +324,22 @@ export default function TournamentScreen({ saveData, updateSaveData, navigateTo 
                     {team.name}
                     <span className="vs-small">VS</span>
                     <FlagImg name={match.opponent} size={16} />
-                    {match.opponent}
+                    {OPPONENT_ID_TO_NAME[match.opponent] || match.opponent}
                   </span>
                   <span className={`strength-badge strength-${match.opponentStrength}`}>
-                    {match.opponentStrength === 'weak' ? '弱' : match.opponentStrength === 'medium' ? '中' : '强'}
+                    实力：{match.opponentStrength === 'weak' ? '弱' : match.opponentStrength === 'medium' ? '中' : '强'}
                   </span>
                 </div>
 
                 {isCompleted && (
                   <div className={`match-result ${result}`}>
-                    {result === 'win' ? '✅ 胜' : result === 'draw' ? '🟡 平' : '🔴 负'}
+                    {result === 'win' ? 'W 胜' : result === 'draw' ? 'D 平' : 'L 负'}
                   </div>
                 )}
 
                 {isCurrent && (
-                  <button className="PixelButton compact-button table-action-button" onClick={() => handlePrepareMatch(index)}>
-                    <span className="button-face" aria-hidden="true"></span>
-                    <span className="button-label">排兵布阵</span>
+                  <button className="table-action-button tournament-action-button" onClick={() => handlePrepareMatch(index)}>
+                    排兵布阵
                   </button>
                 )}
               </div>
@@ -363,12 +362,12 @@ export default function TournamentScreen({ saveData, updateSaveData, navigateTo 
             <h4>小组排名</h4>
             {groupTeams.map((t, i) => {
               const displayName = t.isPlayer ? team.name : t.name
-              const flag = t.isPlayer ? null : <FlagImg name={displayName} size={16} />
+              const flagSrc = t.isPlayer ? team.flag : getTeamFlag(displayName)
 
               return (
                 <div key={t.id} className={`group-table-row ${t.isPlayer ? 'player-row' : ''}`}>
                   <span className="rank">{i + 1}</span>
-                  {flag}
+                  {flagSrc ? <img src={flagSrc} alt="" className="inline-flag" style={{ width: 16, height: 16 }} /> : <span style={{ fontSize: 12 }}>🏳️</span>}
                   <span className="team-name">{displayName}</span>
                   <span className="points">{t.points}分</span>
                   <span className="goal-diff">{t.goalDiff > 0 ? '+' : ''}{t.goalDiff}</span>
@@ -389,18 +388,25 @@ export default function TournamentScreen({ saveData, updateSaveData, navigateTo 
                 🎉 恭喜晋级！小组第{playerRank}名出线
               </div>
               <div className="knockout-bracket">
-                {KNOCKOUT_ROUNDS.map((round) => {
+                {KNOCKOUT_ROUNDS.map((round, roundIndex) => {
                   const currentKnockoutRound = saveData.currentRun?.knockoutRound || 'r16'
+                  const currentRoundIndex = KNOCKOUT_ROUNDS.findIndex(r => r.id === currentKnockoutRound)
                   const isCurrent = currentKnockoutRound === round.id
+                  const isCompleted = roundIndex < currentRoundIndex
+                  const isFuture = roundIndex > currentRoundIndex
+                  // 只有已完成的轮次和当前轮次才显示对手，未来的轮次显示"？"
+                  const opponentName = isFuture ? '？' : (knockoutOpponents[round.id] || '待定')
+                  const opponentFlag = (!isFuture && opponentName !== '待定') ? getTeamFlag(opponentName) : null
 
                   return (
-                    <div key={round.id} className={`knockout-round ${isCurrent ? 'current' : ''}`}>
+                    <div key={round.id} className={`knockout-round ${isCurrent ? 'current' : ''} ${isCompleted ? 'completed' : ''}`}>
                       <span className="round-name">{round.name}</span>
-                      <span className="round-opponent">VS {knockoutOpponents[round.id] || '待定'}</span>
+                      <span className="round-opponent">
+                        VS {opponentFlag ? <img src={opponentFlag} alt="" className="inline-flag" style={{ width: 16, height: 16, marginRight: 4 }} /> : null}{opponentName}
+                      </span>
                       {isCurrent && (
-                        <button className="PixelButton compact-button table-action-button" onClick={() => handleKnockout(round.id)}>
-                          <span className="button-face" aria-hidden="true"></span>
-                          <span className="button-label">排兵布阵</span>
+                        <button className="table-action-button tournament-action-button" onClick={() => handleKnockout(round.id)}>
+                          排兵布阵
                         </button>
                       )}
                     </div>

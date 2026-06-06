@@ -1,3 +1,5 @@
+import { getTeamDefaultFormation } from '../data/teamFormations.js'
+
 const STORAGE_KEY = 'targeting-2026-save'
 
 /**
@@ -55,6 +57,7 @@ export function persistSaveData(saveData) {
 export function createNewRun(teamId) {
   return {
     teamId,
+    formation: getTeamDefaultFormation(teamId),
     stage: 'recruitment',
     startedAt: new Date().toISOString(),
     purchasedPlayerIds: [],
@@ -69,14 +72,14 @@ export function createNewRun(teamId) {
  * 获取主页进度信息
  */
 export function getHomeProgress(saveData, allTeams) {
-  const unlockedTeamIds = saveData.unlockTeams.filter((teamId) =>
+  const championTeamIds = (saveData.championshipHistory || []).filter((teamId) =>
     allTeams.some((team) => team.id === teamId)
   )
 
   return {
-    unlocked: unlockedTeamIds.length,
+    champion: championTeamIds.length,
     total: allTeams.length,
-    unlockedTeamIds,
+    championTeamIds,
   }
 }
 

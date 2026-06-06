@@ -69,24 +69,23 @@ export default function HomeScreen({ saveData, navigateTo, showToast }) {
           ))}
         </nav>
 
-        <aside className="PixelPanel unlock-panel" aria-label="解锁进度">
+        <aside className="PixelPanel unlock-panel" aria-label="通关进度">
           <div className="unlock-copy">
-            <span>已解锁球队</span>
-            <strong>{progress.unlocked} / {progress.total}</strong>
+            <span>通关球队</span>
+            <strong>{progress.champion} / {progress.total}</strong>
           </div>
           <ul className="flag-strip">
             {teams.map((team) => {
-              const isUnlocked = progress.unlockedTeamIds.includes(team.id)
+              const isChampion = progress.championTeamIds.includes(team.id)
               return (
                 <li
                   key={team.id}
-                  className={`PixelBadge flag-chip ${isUnlocked ? 'is-unlocked' : 'is-locked'}`}
-                  aria-label={isUnlocked ? '已解锁球队' : '未解锁球队'}
+                  className={`PixelBadge flag-chip ${isChampion ? 'is-champion' : 'is-normal'}`}
+                  aria-label={isChampion ? '通关球队' : '未通关球队'}
                 >
-                  {isUnlocked ? (
-                    <img src={team.flag} alt="" />
-                  ) : (
-                    <span aria-hidden="true">?</span>
+                  <img src={team.flag} alt="" />
+                  {!isChampion && (
+                    <img src="/assets/锁.png" alt="" className="lock-icon" />
                   )}
                 </li>
               )

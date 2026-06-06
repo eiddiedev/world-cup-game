@@ -1,16 +1,30 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { getTeamById, getTeamFlag } from '../data/teams'
 import { generateOpponentTeam } from '../utils/matchEngine'
-import { TEAM_SCHEDULES } from '../data/schedules'
 import {
   selectScenario,
   executeDecision,
+  outcomeConcedesPenalty,
+  outcomeWinsPenalty,
+  resolveDiveChoice,
+  resolveMatchPenaltyChoice,
+  resolveOpponentPenaltyChoice,
   resolveChoiceResult,
   shouldTriggerDecision,
 } from '../utils/decisionSystem'
+import { getScenarioById } from '../data/decisionLibrary'
 import { createOpeningCommentary, generateCommentaryEvent, generateRandomMatchEvent } from '../utils/commentaryEngine'
 import { buildAnimationActors, createVisualEvent } from '../utils/matchVisuals.js'
+import { calculateLineupRatings, calculateOpponentAttackRating, calculateOpponentPressure } from '../utils/lineupBalance.js'
+import {
+  getOpponentMatchSetup,
+  resolveOpponentStrength,
+} from '../utils/opponentTactics.js'
+import { getTeamDefaultFormation } from '../data/teamFormations.js'
 import { audioManager } from '../utils/audioManager.js'
+import { getFittedLandscapePitchSize } from '../utils/pitchRendering.js'
+import { getMatchEventVisual } from '../utils/matchEventVisuals.js'
+import { appendCommentaryEntry, openChainedDecision } from '../utils/commentaryTimeline.js'
 import PenaltyShootout from './PenaltyShootout'
 import AnimationEngine from './AnimationEngine'
 
@@ -25,6 +39,7 @@ const createEmptyMatchStats = () => ({
   fouls: 0,
   yellowCards: 0,
   redCards: 0,
+  penalties: 0,
   corners: 0,
 })
 
@@ -41,6 +56,47 @@ const appendUniqueIncident = (list, incident) => {
   return [...list, incident]
 }
 
+const pickOutfield = (players) => {
+  const outfield = players.filter(p => (p.pos || p.position) !== 'GK')
+  return outfield[Math.floor(Math.random() * outfield.length)] || players[0]
+}
+
+const OPPONENT_SHOT_OUTCOMES = new Set([
+  'goal_against',
+  'counter_sealed',
+  'counter_golden_goal',
+  'opponent_shoots',
+  'gk_reaction_save',
+  'goal_chip_over',
+  'goal_corner',
+  'goal_saved_post',
+  'goal_tight_angle',
+  'solo_against_gk',
+  'lost_runner_chance',
+  'goal_zone_gap',
+  'offside_fail_solo',
+  'saved_freekick_against',
+  'keeper_save_freekick',
+  'miss_over_against',
+  'opponent_header_saved',
+  'blocked_second_ball',
+])
+
+const isOpponentShotOutcome = (outcome = '') => (
+  outcome.startsWith('opponent_goal')
+  || OPPONENT_SHOT_OUTCOMES.has(outcome)
+)
+
+const getShotXG = (outcome = '', successProb = 0.5) => {
+  if (outcome.includes('penalty')) return 0.76
+  if (outcome.includes('long')) return 0.08
+  if (outcome.includes('freekick')) return 0.12
+  if (outcome.includes('header')) return 0.20
+  if (outcome.includes('chip')) return 0.32
+  if (outcome.includes('near') || outcome.includes('close') || outcome.includes('tap_in')) return 0.42
+  return Math.min(0.48, Math.max(0.10, successProb * 0.48))
+}
+
 /**
  * 比赛页面 — 决策弹窗 + 弹幕事件 + 换人系统 + 体力事件
  */
@@ -52,11 +108,15 @@ export default function MatchScreen({ saveData, updateSaveData, navigateTo, show
   const availablePlayers = fullRoster.filter(p => !injuredSet.has(p.id) && !suspendedSet.has(p.id))
   const lineup = (saveData.currentRun?.lineup || []).filter(p => !injuredSet.has(p.id) && !suspendedSet.has(p.id))
   const starterIds = new Set(lineup.map(p => p.id))
+  // 所有非首发球员（包括被罚下的）
+  const allNonStarters = fullRoster.filter(p => !starterIds.has(p.id))
   const benchPlayers = availablePlayers.filter(p => !starterIds.has(p.id))
-  const formation = saveData.currentRun?.formation || '4-3-3'
+  const formation = saveData.currentRun?.formation
+    || getTeamDefaultFormation(saveData.currentRun?.teamId)
   const opponentName = saveData.currentRun?.currentOpponent || '未知对手'
 
   const [matchTime, setMatchTime] = useState(0)
+  const matchTimeRef = useRef(0)
   const [homeScore, setHomeScore] = useState(0)
   const [awayScore, setAwayScore] = useState(0)
   const [, setEvents] = useState([])
@@ -66,10 +126,12 @@ export default function MatchScreen({ saveData, updateSaveData, navigateTo, show
   // 决策状态
   const [currentDecision, setCurrentDecision] = useState(null)
   const [decisionResult, setDecisionResult] = useState(null)
+  const [fieldDecisionMessage, setFieldDecisionMessage] = useState(null)
 
   // 弹幕
   const [danmaku, setDanmaku] = useState([])
   const danmakuId = useRef(0)
+  const commentaryRef = useRef(null)
 
   // 换人
   const [showSubModal, setShowSubModal] = useState(false)
@@ -79,7 +141,9 @@ export default function MatchScreen({ saveData, updateSaveData, navigateTo, show
   // 比赛统计
   const matchStatsRef = useRef(createEmptyMatchStats())
   const matchRedCardsRef = useRef([])
+  const [redCardedPlayerIds, setRedCardedPlayerIds] = useState([])
   const matchInjuriesRef = useRef([])
+  const matchDecisionsRef = useRef([])
 
   // 体力事件
   const [staminaEvent, setStaminaEvent] = useState(null)
@@ -89,6 +153,7 @@ export default function MatchScreen({ saveData, updateSaveData, navigateTo, show
   const [notification, setNotification] = useState(null)
 
   const animRef = useRef(null)
+  const canvasHostRef = useRef(null)
   const ambientAnimationRef = useRef(Promise.resolve())
   const triggeredRef = useRef({ first: 0, second: 0 })
   const lastDecisionMinuteRef = useRef(-99)
@@ -104,66 +169,94 @@ export default function MatchScreen({ saveData, updateSaveData, navigateTo, show
 
   // 对手（根据赛程获取对手强度）
   const opponentTeam = getTeamById(opponentName)
-  const matchIndex = saveData.currentRun?.matchIndex || 0
-  const schedule = TEAM_SCHEDULES[saveData.currentRun?.teamId]
-  const opponentStrength = schedule?.groupStage?.[matchIndex]?.opponentStrength || 'medium'
-  const [opponentPlayers] = useState(() => {
+  const opponentStrength = resolveOpponentStrength(
+    saveData.currentRun?.teamId,
+    opponentName,
+    opponentTeam,
+  )
+  const opponentSetup = getOpponentMatchSetup(opponentName, opponentTeam, opponentStrength)
+  const [opponentPlayers, setOpponentPlayers] = useState(() => {
     if (opponentTeam) return generateOpponentTeam(opponentName, opponentTeam, opponentStrength)
     return generateOpponentTeam(opponentName, { name: opponentName }, opponentStrength)
   })
 
-  // 画布尺寸：优先保留球场空间，同时兼容矮屏手机
-  const [canvasSize, setCanvasSize] = useState({ width: 340, height: 340 })
+  // 画布尺寸：读取左侧真实空间，完整显示原生 3:2 横向球场。
+  const [canvasSize, setCanvasSize] = useState({ width: 720, height: 480 })
   useEffect(() => {
     const updateSize = () => {
-      const availableHeight = Math.max(260, window.innerHeight - 250)
-      const w = Math.min(window.innerWidth - 24, 420, Math.floor(availableHeight / 1.08))
-      setCanvasSize({ width: w, height: Math.floor(w * 0.95) })
+      const host = canvasHostRef.current
+      if (!host) return
+      const rect = host.getBoundingClientRect()
+      const nextSize = getFittedLandscapePitchSize(
+        Math.max(300, rect.width),
+        Math.max(200, rect.height),
+      )
+      setCanvasSize(previous => (
+        previous.width === nextSize.width && previous.height === nextSize.height
+          ? previous
+          : nextSize
+      ))
     }
-    updateSize()
-    window.addEventListener('resize', updateSize)
-    return () => window.removeEventListener('resize', updateSize)
+    const observer = new ResizeObserver(updateSize)
+    if (canvasHostRef.current) observer.observe(canvasHostRef.current)
+    const frame = requestAnimationFrame(updateSize)
+    return () => {
+      cancelAnimationFrame(frame)
+      observer.disconnect()
+    }
   }, [])
 
   // 添加弹幕（保留在列表中，不自动消失）
   const addDanmaku = useCallback((text, color = 'var(--pixel-bg)') => {
     const id = danmakuId.current++
-    setDanmaku(prev => {
-      const next = [...prev, { id, text, color, createdAt: Date.now() }]
-      // 最多保留8条
-      return next.length > 8 ? next.slice(-8) : next
-    })
+    setDanmaku(prev => appendCommentaryEntry(prev, {
+      id,
+      text,
+      color,
+      createdAt: Date.now(),
+    }))
   }, [])
+
+  useEffect(() => {
+    const panel = commentaryRef.current
+    if (panel) panel.scrollTop = panel.scrollHeight
+  }, [danmaku])
 
   // 比赛时钟 + 体力消耗 + 随机事件
   useEffect(() => {
     if (!isPlaying || currentDecision || showSubModal) return
     const interval = setInterval(() => {
-      setMatchTime(prev => {
-        if (prev >= 90) { setIsPlaying(false); return 90 }
-        const next = prev + 1
+      if (matchTimeRef.current >= 90) {
+        setIsPlaying(false)
+        return
+      }
+      const next = matchTimeRef.current + 1
+      matchTimeRef.current = next
+      setMatchTime(next)
 
-        // 每10分钟消耗体力（半场约掉5-8点，全场约掉10-16点）
-        if (next % 10 === 0) {
-          setPlayerStamina(prevStamina => {
-            const newStamina = { ...prevStamina }
-            currentLineupRef.current.forEach(p => {
-              if ((p.pos || p.position) !== 'GK') {
-                const loss = Math.floor(Math.random() * 2) + 1 // 1-2点
-                newStamina[p.id] = Math.max(35, (newStamina[p.id] || 80) - loss)
-              }
-            })
-            return newStamina
+      // 每10分钟消耗体力（半场约掉5-8点，全场约掉10-16点）
+      if (next % 10 === 0) {
+        setPlayerStamina(prevStamina => {
+          const newStamina = { ...prevStamina }
+          currentLineupRef.current.forEach(p => {
+            if ((p.pos || p.position) !== 'GK') {
+              const loss = Math.floor(Math.random() * 2) + 1 // 1-2点
+              newStamina[p.id] = Math.max(35, (newStamina[p.id] || 80) - loss)
+            }
           })
-        }
+          return newStamina
+        })
+      }
 
-        // 随机弹幕事件（每3-6分钟一次）
-        if (next > 3 && next % (3 + Math.floor(Math.random() * 4)) === 0) {
-          generateRandomEvent(next)
-        }
+      // 随机弹幕事件（每3-6分钟一次）
+      if (next > 3 && next % (3 + Math.floor(Math.random() * 4)) === 0) {
+        generateRandomEvent(next)
+      }
 
-        return next
-      })
+      // 对手自然进攻：阵容越失衡、越缺真正后卫，对手越容易获得射门。
+      if (next >= 12 && next % 6 === 0) {
+        maybeGenerateOpponentChance(next)
+      }
     }, 500)
     return () => clearInterval(interval)
   }, [isPlaying, currentDecision, showSubModal])
@@ -231,6 +324,16 @@ export default function MatchScreen({ saveData, updateSaveData, navigateTo, show
             teamSide: ev.teamSide,
           },
         )
+        if (ev.teamSide === 'my' && ev.playerId) {
+          setRedCardedPlayerIds(ids => ids.includes(ev.playerId) ? ids : [...ids, ev.playerId])
+          const reducedLineup = currentLineupRef.current.filter(player => player.id !== ev.playerId)
+          if (reducedLineup.length > 0) {
+            currentLineupRef.current = reducedLineup
+            setCurrentLineup(reducedLineup)
+          }
+        } else if (ev.teamSide === 'opponent' && ev.playerId) {
+          setOpponentPlayers(players => players.filter(player => player.id !== ev.playerId))
+        }
       }
       if (ev.type === 'injury') {
         matchInjuriesRef.current = appendUniqueIncident(
@@ -254,6 +357,60 @@ export default function MatchScreen({ saveData, updateSaveData, navigateTo, show
     }
   }
 
+  const maybeGenerateOpponentChance = (minute) => {
+    const pressure = calculateOpponentPressure({
+      myLineup: currentLineupRef.current,
+      opponentLineup: opponentPlayers,
+      formation,
+      teamDifficulty: team?.difficulty,
+    })
+    if (Math.random() > pressure.chance) return
+
+    const shooter = pickOutfield(opponentPlayers)
+    const gk = currentLineupRef.current.find(p => (p.pos || p.position) === 'GK') || currentLineupRef.current[0]
+    const scored = Math.random() < pressure.goalChance
+    const shotOnTarget = scored || Math.random() < 0.72
+    const stats = matchStatsRef.current
+    stats.oppShots++
+    stats.oppXG += pressure.goalChance
+    if (shotOnTarget) stats.oppShotsOnTarget++
+    stats.myPossession = Math.max(34, stats.myPossession - 1)
+
+    const pressureText = pressure.lineupRatings.dfWrongCount > 0 || pressure.lineupRatings.defenderCoverage < 0.75
+      ? `防线错位被抓住，对方${shooter?.number || '?'}号突入禁区`
+      : `对方${shooter?.number || '?'}号突然前插，形成一次射门`
+
+    if (scored) {
+      setAwayScore(prev => prev + 1)
+      addDanmaku(`${minute}' ${pressureText}，低射破门！`, 'var(--pixel-accent)')
+    } else if (shotOnTarget) {
+      addDanmaku(`${minute}' ${pressureText}，被本方${gk?.number || 1}号门将扑出！`, 'var(--pixel-bg)')
+    } else {
+      addDanmaku(`${minute}' ${pressureText}，射门偏出！`, 'var(--pixel-bg)')
+    }
+
+    if (animRef.current) {
+      const orderedOpponents = [shooter, ...opponentPlayers.filter(p => p.id !== shooter?.id)]
+      const actors = buildAnimationActors(
+        { id: 'gk_one_on_one', animation_type: 'defend_gk_rush' },
+        { default: gk },
+        currentLineupRef.current,
+        orderedOpponents,
+      )
+      ambientAnimationRef.current = animRef.current.playResult(
+        'defend_gk_rush',
+        scored ? 'goal_against' : shotOnTarget ? 'gk_reaction_save' : 'miss',
+        actors,
+        { eventAsset: false },
+      )
+    }
+
+    setEvents(prev => [...prev, {
+      minute,
+      text: scored ? `${pressureText}，对方进球` : `${pressureText}，没有进`,
+    }])
+  }
+
   // 触发决策：按最小间隔分散，避免同一分钟堆叠
   useEffect(() => {
     if (matchTime > 0 && !currentDecision && isPlaying && matchTime <= 90) {
@@ -266,19 +423,53 @@ export default function MatchScreen({ saveData, updateSaveData, navigateTo, show
     }
   }, [matchTime, currentDecision, isPlaying])
 
-  const getGameState = useCallback(() => ({
-    minute: matchTime,
-    myScore: homeScore,
-    oppScore: awayScore,
-    scoreDiff: homeScore - awayScore,
-    myAttack: currentLineupRef.current.reduce((s, p) => s + (p.tec || 70) + (p.spd || 70), 0) / 11,
-    oppDefense: opponentPlayers.reduce((s, p) => s + (p.def || 70), 0) / 11,
-    teamAvgRating: currentLineupRef.current.reduce((s, p) => s + (p.rating || 70), 0) / currentLineupRef.current.length,
-    isKnockout: Boolean(saveData.currentRun?.isKnockoutMatch),
-    isExtraTime: matchTime > 90,
-    opponentName,
-    subBonus,
-  }), [matchTime, homeScore, awayScore, opponentPlayers, saveData, opponentName, subBonus])
+  const getGameState = useCallback(() => {
+    const lineupAssessment = calculateLineupRatings(currentLineupRef.current, formation)
+    return {
+      minute: matchTime,
+      myScore: homeScore,
+      oppScore: awayScore,
+      scoreDiff: homeScore - awayScore,
+      myAttack: lineupAssessment.attack,
+      myDefense: lineupAssessment.defense,
+      oppAttack: calculateOpponentAttackRating(opponentPlayers),
+      oppDefense: opponentPlayers.reduce((s, p) => s + (p.def || 70), 0) / Math.max(1, opponentPlayers.length),
+      teamAvgRating: lineupAssessment.overall,
+      teamDifficulty: team?.difficulty || 3,
+      lineupAssessment,
+      isKnockout: Boolean(saveData.currentRun?.isKnockoutMatch),
+      isExtraTime: matchTime > 90,
+      opponentName,
+      subBonus,
+    }
+  }, [matchTime, homeScore, awayScore, opponentPlayers, saveData, opponentName, subBonus, formation, team?.difficulty])
+
+  const createOpponentPenaltyDecision = useCallback((foulPlayer, foulOutcome) => {
+    const goalkeeper = currentLineupRef.current.find(p => (p.pos || p.position) === 'GK') || currentLineupRef.current[0]
+    const shooter = pickOutfield(opponentPlayers)
+    return {
+      kind: 'opponent_penalty',
+      scenario: { id: 'opponent_penalty_defense', animation_type: 'defend_opponent_penalty' },
+      situation: `${foulOutcome.includes('red') ? '红牌加点球！' : '黄牌加点球！'}${foulPlayer?.name || '防守球员'}禁区内犯规。对方${shooter?.number || '?'}号站上点球点，${goalkeeper?.name || '门将'}判断扑救方向！`,
+      keyPlayers: { default: goalkeeper, second: shooter },
+      choices: [
+        { id: 'dive_left', label: '扑向左侧', side: 'left', desc: '提前压低重心扑左下角。', risk: '猜错方向几乎必丢', reward: '猜中就能把点球封出去', keyPlayerName: goalkeeper?.name || '门将', successHint: '赌方向' },
+        { id: 'stay_center', label: '守住中路', side: 'center', desc: '等主罚球员出脚后再反应。', risk: '两侧死角覆盖不足', reward: '能克制勺子和中路推射', keyPlayerName: goalkeeper?.name || '门将', successHint: '稳反应' },
+        { id: 'dive_right', label: '扑向右侧', side: 'right', desc: '全力扑向右下角。', risk: '猜错方向几乎必丢', reward: '猜中就能把点球封出去', keyPlayerName: goalkeeper?.name || '门将', successHint: '赌方向' },
+      ],
+      animation_type: 'defend_opponent_penalty',
+    }
+  }, [opponentPlayers])
+
+  const createAwardedPenaltyDecision = useCallback((reasonText) => {
+    const scenario = getScenarioById('match_penalty')
+    const decision = executeDecision(scenario, currentLineupRef.current, getGameState())
+    return {
+      ...decision,
+      kind: 'awarded_penalty',
+      situation: `${reasonText} ${decision.keyPlayers?.default?.name || '主罚手'}站上点球点，选择射门方向！`,
+    }
+  }, [getGameState])
 
   const triggerDecision = useCallback(async () => {
     setIsPlaying(false)
@@ -297,17 +488,31 @@ export default function MatchScreen({ saveData, updateSaveData, navigateTo, show
 
     await new Promise(r => setTimeout(r, 500))
     setDecisionResult(null)
+    setFieldDecisionMessage(null)
     setCurrentDecision(decision)
   }, [matchTime, opponentPlayers, getGameState])
 
   // 玩家选择
   const handleChoice = useCallback(async (choice) => {
     if (!currentDecision) return
+    if (currentDecision.kind === 'opponent_penalty') {
+      await handleOpponentPenaltyChoice(choice)
+      return
+    }
     const keyPlayer = currentDecision.keyPlayers?.default || currentLineupRef.current[0]
     const gameState = getGameState()
-    const result = resolveChoiceResult(choice, keyPlayer, gameState)
+    const result = currentDecision.scenario?.id === 'penalty_area_dive' && choice.id === 'simulate_contact'
+      ? resolveDiveChoice(choice, keyPlayer, gameState)
+      : currentDecision.scenario?.id === 'match_penalty'
+        ? resolveMatchPenaltyChoice(choice, keyPlayer, gameState)
+        : resolveChoiceResult(choice, keyPlayer, gameState)
+    const resultText = generateResultText(choice, result, keyPlayer)
     setCurrentDecision(null)
-    setDecisionResult(null)
+    setDecisionResult(result)
+    setFieldDecisionMessage({
+      text: resultText,
+      visual: getMatchEventVisual(result.outcome, result),
+    })
 
     if (animRef.current) {
       const actors = buildAnimationActors(currentDecision.scenario, currentDecision.keyPlayers, currentLineupRef.current, opponentPlayers)
@@ -320,26 +525,30 @@ export default function MatchScreen({ saveData, updateSaveData, navigateTo, show
     // 更新比赛统计
     const stats = matchStatsRef.current
     const outcome = result.outcome
+    if (currentDecision.scenario?.id === 'match_penalty' && currentDecision.kind !== 'awarded_penalty') {
+      stats.penalties++
+    }
     // 射门判定（含封堵射门）
-    const isShot = outcome.includes('goal') || outcome.includes('saved') || outcome.includes('miss') ||
+    const opponentShotOutcome = isOpponentShotOutcome(outcome)
+    const isShot = !opponentShotOutcome && (outcome.includes('goal') || outcome.includes('saved') || outcome.includes('miss') ||
       outcome.includes('over') || outcome.includes('wide') || outcome.includes('post') ||
       outcome.includes('shot') || outcome.includes('header') || outcome.includes('freekick') ||
       outcome.includes('volley') || outcome.includes('placement') || outcome.includes('power') ||
-      outcome.includes('panenka') || outcome.includes('chip') || outcome.includes('blocked')
+      outcome.includes('panenka') || outcome.includes('chip') || outcome.includes('blocked'))
     const isGoal = result.homeScoreChange > 0
     const isOnTarget = outcome.includes('saved') || isGoal
 
     if (isShot) {
       stats.myShots++
       if (isOnTarget) stats.myShotsOnTarget++
-      // xG估算：基于成功概率
-      stats.myXG += result.successProb * 0.3
+      const isPenaltyAttempt = currentDecision.scenario?.id === 'match_penalty'
+        || currentDecision.kind === 'awarded_penalty'
+      stats.myXG += isPenaltyAttempt ? 0.76 : getShotXG(outcome, result.successProb)
     }
-    // 对方射门（goal_against相关）
-    if (outcome.includes('goal_against') || outcome.includes('counter_sealed')) {
+    if (opponentShotOutcome) {
       stats.oppShots++
-      stats.oppShotsOnTarget++
-      stats.oppXG += 0.3
+      if (!outcome.includes('miss') && !outcome.includes('over')) stats.oppShotsOnTarget++
+      stats.oppXG += getShotXG(outcome, result.successProb)
     }
     // 控球率微调
     stats.myPossession = Math.min(65, Math.max(35, stats.myPossession + (result.isSuccess ? 1 : -1)))
@@ -358,6 +567,9 @@ export default function MatchScreen({ saveData, updateSaveData, navigateTo, show
           teamSide: 'my',
         },
       )
+      if (keyPlayer?.id) {
+        setRedCardedPlayerIds(ids => ids.includes(keyPlayer.id) ? ids : [...ids, keyPlayer.id])
+      }
       const reducedLineup = currentLineupRef.current.filter(p => p.id !== keyPlayer?.id)
       if (reducedLineup.length > 0) {
         currentLineupRef.current = reducedLineup
@@ -373,7 +585,16 @@ export default function MatchScreen({ saveData, updateSaveData, navigateTo, show
     // 解围产生角球
     if (outcome.includes('deflected') || outcome.includes('cleared')) stats.corners++
 
-    const resultText = generateResultText(choice, result, keyPlayer)
+    matchDecisionsRef.current.push({
+      minute: matchTime,
+      scenarioId: currentDecision.scenario?.id,
+      situation: currentDecision.situation,
+      choiceLabel: choice.label,
+      resultText,
+      outcome: result.outcome,
+      isSuccess: result.isSuccess,
+      playerName: keyPlayer?.name,
+    })
     addDanmaku(resultText, result.homeScoreChange > 0 ? 'var(--pixel-gold)' : result.awayScoreChange > 0 ? 'var(--pixel-accent)' : 'var(--pixel-bg)')
     setEvents(prev => [...prev, { minute: matchTime, text: resultText }])
 
@@ -381,11 +602,104 @@ export default function MatchScreen({ saveData, updateSaveData, navigateTo, show
       setNotification({ type: 'red_card', text: `🟥 红牌！${keyPlayer.name}被罚下！` })
     }
 
+    if (outcomeConcedesPenalty(outcome)) {
+      stats.penalties++
+      const penaltyDecision = createOpponentPenaltyDecision(keyPlayer, outcome)
+      setNotification({ type: 'penalty', text: `点球！对方获得十二码机会！` })
+      if (animRef.current) {
+        const actors = buildAnimationActors(
+          penaltyDecision.scenario,
+          penaltyDecision.keyPlayers,
+          currentLineupRef.current,
+          opponentPlayers,
+        )
+        await animRef.current.playEvent('defend_opponent_penalty', actors)
+      }
+      await new Promise(r => setTimeout(r, 500))
+      setNotification(null)
+      setFieldDecisionMessage(null)
+      openChainedDecision(penaltyDecision, { setDecisionResult, setCurrentDecision })
+      return
+    }
+
+    if (outcomeWinsPenalty(outcome)) {
+      stats.penalties++
+      const penaltyDecision = createAwardedPenaltyDecision(
+        outcome === 'penalty_awarded' ? 'VAR改判点球！' : '裁判指向点球点！',
+      )
+      setNotification({ type: 'penalty', text: '点球！本方获得十二码机会！' })
+      if (animRef.current) {
+        const actors = buildAnimationActors(
+          penaltyDecision.scenario,
+          penaltyDecision.keyPlayers,
+          currentLineupRef.current,
+          opponentPlayers,
+        )
+        await animRef.current.playEvent('penalty_shootout', actors)
+      }
+      await new Promise(r => setTimeout(r, 500))
+      setNotification(null)
+      setFieldDecisionMessage(null)
+      openChainedDecision(penaltyDecision, { setDecisionResult, setCurrentDecision })
+      return
+    }
+
     await new Promise(r => setTimeout(r, 1800))
     setNotification(null)
     setDecisionResult(null)
+    setFieldDecisionMessage(null)
     setIsPlaying(true)
-  }, [currentDecision, matchTime, opponentPlayers, getGameState, addDanmaku])
+  }, [currentDecision, matchTime, opponentPlayers, getGameState, addDanmaku, createOpponentPenaltyDecision, createAwardedPenaltyDecision])
+
+  const handleOpponentPenaltyChoice = useCallback(async (choice) => {
+    if (!currentDecision) return
+    const goalkeeper = currentDecision.keyPlayers?.default || currentLineupRef.current[0]
+    const result = resolveOpponentPenaltyChoice(choice, goalkeeper, getGameState())
+    const resultText = result.awayScoreChange > 0
+      ? `对方点球罚进，本方${goalkeeper?.number || 1}号判断错方向。`
+      : `本方${goalkeeper?.number || 1}号扑出点球！`
+    setCurrentDecision(null)
+    setDecisionResult(result)
+    setFieldDecisionMessage({
+      text: resultText,
+      visual: getMatchEventVisual(result.outcome, result),
+    })
+    const actors = buildAnimationActors(
+      currentDecision.scenario,
+      currentDecision.keyPlayers,
+      currentLineupRef.current,
+      opponentPlayers,
+    )
+    if (animRef.current) {
+      await animRef.current.playResult('defend_opponent_penalty', result.outcome, actors)
+    }
+
+    const stats = matchStatsRef.current
+    stats.oppShots++
+    stats.oppShotsOnTarget++
+    stats.oppXG += 0.76
+    if (result.awayScoreChange > 0) {
+      setAwayScore(prev => prev + 1)
+      addDanmaku(`${matchTime}' ${resultText}`, 'var(--pixel-accent)')
+    } else {
+      addDanmaku(`${matchTime}' ${resultText}`, 'var(--pixel-gold)')
+      audioManager.playSave()
+    }
+    matchDecisionsRef.current.push({
+      minute: matchTime,
+      scenarioId: 'opponent_penalty_defense',
+      situation: currentDecision.situation,
+      choiceLabel: choice.label,
+      resultText: result.awayScoreChange > 0 ? '对方点球罚进' : `${goalkeeper?.name || '门将'}扑出点球`,
+      outcome: result.outcome,
+      isSuccess: result.isSuccess,
+      playerName: goalkeeper?.name,
+    })
+    await new Promise(r => setTimeout(r, 1200))
+    setDecisionResult(null)
+    setFieldDecisionMessage(null)
+    setIsPlaying(true)
+  }, [currentDecision, getGameState, matchTime, opponentPlayers, addDanmaku])
 
   const generateResultText = (choice, result, keyPlayer) => {
     const name = keyPlayer?.name || '球员'
@@ -402,8 +716,24 @@ export default function MatchScreen({ saveData, updateSaveData, navigateTo, show
       const texts = [`⚽ ${name}射门得分！球进了！`, `⚽ 精彩的进球！${name}打破僵局！`, `⚽ 球进了！${name}立功了！`]
       return texts[Math.floor(Math.random() * texts.length)]
     }
+    if (outcome === 'penalty_won') return `裁判指向点球点！${name}禁区内倒地为球队赢得点球。`
+    if (outcome === 'penalty_awarded') return `VAR改判点球！${name}的申诉奏效。`
+    if (outcome === 'yellow_card_dive') return `🟨 ${name}被裁判认定假摔，吃到黄牌！`
+    if (outcome === 'play_on_lost') return `${name}倒在禁区内，裁判示意比赛继续，球权丢了。`
+    if (outcome === 'yellow_card_penalty') return `🟨 ${name}禁区内犯规，黄牌并送给对方点球！`
+    if (outcome === 'red_card_penalty') return `🟥 ${name}禁区内犯规，红牌并送给对方点球！`
     // 对方进球
-    if (result.awayScoreChange > 0) return `对手反击得手……`
+    if (result.awayScoreChange > 0) {
+      if (outcome.includes('freekick')) return `对方任意球直接破门，本方人墙和门将都没能挡住。`
+      if (outcome.includes('header')) return `对方后点头球破门，定位球防守漏人了。`
+      if (outcome.includes('scramble')) return `禁区二点球没处理干净，对方乱战中补射得手。`
+      return `对手反击得手……`
+    }
+    if (outcome === 'wall_block') return `人墙挡住对方任意球！`
+    if (outcome === 'keeper_save_freekick' || outcome === 'saved_freekick_against') return `门将判断准确，扑出对方任意球！`
+    if (outcome === 'cleared_second_ball') return `${name}第一时间解围，把二点球踢出危险区。`
+    if (outcome === 'blocked_second_ball') return `${name}门前封堵成功，挡住对方补射！`
+    if (outcome === 'corner_against' || outcome === 'deflected_corner') return `球被挡出底线，对方获得角球。`
     // 被扑
     if (outcome.includes('saved')) return `${name}的射门被门将神勇扑出！`
     // 被封堵
@@ -477,6 +807,7 @@ export default function MatchScreen({ saveData, updateSaveData, navigateTo, show
     audioManager.playSound('whistle')
     setIsPlaying(true)
     setMatchTime(0)
+    matchTimeRef.current = 0
     setHomeScore(0)
     setAwayScore(0)
     const kickoffText = createOpeningCommentary(team?.name || '我方', opponentName)
@@ -489,6 +820,7 @@ export default function MatchScreen({ saveData, updateSaveData, navigateTo, show
     matchStatsRef.current = createEmptyMatchStats()
     matchRedCardsRef.current = []
     matchInjuriesRef.current = []
+    matchDecisionsRef.current = []
     setSubstitutionsLeft(3)
     setSubBonus(0)
     setStaminaEvent(null)
@@ -549,6 +881,7 @@ export default function MatchScreen({ saveData, updateSaveData, navigateTo, show
         matchRedCards: matchRedCardsRef.current.map(card => card.text),
         lastMatchResult: {
           homeScore: h, awayScore: a, opponent: opponentName, result,
+          decisions: matchDecisionsRef.current,
           stats: {
             myShots: stats.myShots,
             oppShots: stats.oppShots,
@@ -560,6 +893,7 @@ export default function MatchScreen({ saveData, updateSaveData, navigateTo, show
             fouls: stats.fouls,
             yellowCards: stats.yellowCards,
             redCards: stats.redCards,
+            penalties: stats.penalties,
             corners: stats.corners,
           },
         },
@@ -591,66 +925,30 @@ export default function MatchScreen({ saveData, updateSaveData, navigateTo, show
 
   return (
     <div className="screen match-screen" style={{
-      display: 'flex', flexDirection: 'column', height: '100vh',
+      display: 'grid', gridTemplateRows: 'minmax(0, 1fr)',
+      height: '100dvh',
       background: 'var(--pixel-bg)', overflow: 'hidden', position: 'relative',
     }}>
-      {/* ── 比分头部 ── */}
-      <div style={{
-        background: 'var(--pixel-main)', padding: '8px 12px',
-        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-        flexShrink: 0, borderBottom: '3px solid var(--pixel-gold)',
-      }}>
-        <button onClick={() => navigateTo('tournament')} style={{
-          position: 'absolute', left: 8, top: 8,
-          background: 'none', border: '2px solid var(--pixel-gold)',
-          color: 'var(--pixel-gold)', fontFamily: 'Zpix, monospace',
-          fontSize: 11, padding: '4px 8px', cursor: 'pointer',
-        }}>←</button>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <FlagImg nameOrId={saveData.currentRun?.teamId} size={22} />
-          <span style={{ color: '#F3E3B4', fontFamily: 'Zpix, monospace', fontSize: 13 }}>{team?.name}</span>
-        </div>
-        <div style={{
-          background: 'rgba(0,0,0,0.4)', padding: '4px 16px', borderRadius: 4,
-          border: '2px solid var(--pixel-gold)', display: 'flex', alignItems: 'center', gap: 10,
-        }}>
-          <span style={{ color: '#F3E3B4', fontFamily: 'Zpix, monospace', fontSize: 22, fontWeight: 'bold' }}>{homeScore}</span>
-          <span style={{ color: 'var(--pixel-gold)', fontFamily: 'Zpix, monospace', fontSize: 11 }}>:</span>
-          <span style={{ color: '#F3E3B4', fontFamily: 'Zpix, monospace', fontSize: 22, fontWeight: 'bold' }}>{awayScore}</span>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <span style={{ color: '#F3E3B4', fontFamily: 'Zpix, monospace', fontSize: 13 }}>{opponentName}</span>
-          <FlagImg nameOrId={opponentName} size={22} />
-        </div>
-      </div>
+      {/* 返回按钮 */}
+      <button onClick={() => navigateTo('tournament')} style={{
+        position: 'absolute', left: 8, top: 8, zIndex: 10,
+        background: 'none', border: '2px solid var(--pixel-gold)',
+        color: 'var(--pixel-gold)', fontFamily: 'Zpix, monospace',
+        fontSize: 11, padding: '4px 8px', cursor: 'pointer',
+      }}>←</button>
 
-      {/* ── 时间 + 换人按钮 ── */}
-      <div style={{
-        textAlign: 'center', padding: '4px 12px', background: 'var(--pixel-shadow)',
-        flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12,
-      }}>
-        <span style={{ color: 'var(--pixel-gold)', fontFamily: 'Zpix, monospace', fontSize: 14 }}>⏱ {matchTime}'</span>
-        {isPlaying && !currentDecision && substitutionsLeft > 0 && (
-          <button onClick={() => setShowSubModal(true)} style={{
-            background: 'var(--pixel-accent)', color: '#F3E3B4',
-            border: '1px solid var(--pixel-gold)', borderRadius: 4,
-            padding: '2px 8px', fontFamily: 'Zpix, monospace', fontSize: 10, cursor: 'pointer',
-          }}>🔄 换人({substitutionsLeft})</button>
-        )}
-        {subBonus > 0 && (
-          <span style={{ color: '#00cc44', fontFamily: 'Zpix, monospace', fontSize: 9 }}>+{Math.round(subBonus * 100)}%加成</span>
-        )}
-      </div>
-
-      {/* ── 球场 + 事件列表 ── */}
-      <div style={{ flex: '1 1 auto', padding: '10px 12px 96px', position: 'relative', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-        {/* 球场 */}
-        <div className="match-canvas-wrap">
+      {/* ── 主内容区域：左右布局 ── */}
+      <div className="match-play-area" style={{ marginTop: '8px' }}>
+        {/* 左边：横过来的足球场 */}
+        <div className="match-canvas-wrap" ref={canvasHostRef}>
           <AnimationEngine
             ref={animRef}
             myLineup={currentLineup}
             opponentLineup={opponentPlayers}
             formation={formation}
+            opponentFormation={opponentSetup.formation}
+            myTeam={saveData.currentRun?.teamId}
+            opponentTeam={opponentName}
             width={canvasSize.width}
             height={canvasSize.height}
             ambientEnabled={isPlaying && !showSubModal && !showPenalty}
@@ -666,15 +964,154 @@ export default function MatchScreen({ saveData, updateSaveData, navigateTo, show
               audioManager.playSave()
             }}
           />
-          <div className="match-commentary-panel" aria-live="polite">
+          {fieldDecisionMessage && (
+            <div className="field-decision-message" role="status">
+              {fieldDecisionMessage.visual && (
+                <img
+                  src={fieldDecisionMessage.visual.src}
+                  alt={fieldDecisionMessage.visual.label}
+                  className="field-decision-icon"
+                />
+              )}
+              <span>{fieldDecisionMessage.text}</span>
+            </div>
+          )}
+        </div>
+
+        {/* 右边：比赛信息 */}
+        <div className="match-info-panel">
+          {/* 比分 + 国旗 */}
+          <div className="match-score-panel">
+            <div className="score-team">
+              <FlagImg nameOrId={saveData.currentRun?.teamId} size={20} />
+              <span className="team-name">{team?.name}</span>
+            </div>
+            <div className="score-display">
+              <span className="score-number">{homeScore}</span>
+              <span className="score-divider">:</span>
+              <span className="score-number">{awayScore}</span>
+            </div>
+            <div className="score-team">
+              <span className="team-name">{opponentName}</span>
+              <FlagImg nameOrId={opponentName} size={20} />
+            </div>
+          </div>
+
+          {/* 时间 */}
+          <div className="match-time-bar">
+            <span className="match-time">⏱ {matchTime}'</span>
+            {subBonus > 0 && (
+              <span className="sub-bonus">+{Math.round(subBonus * 100)}%加成</span>
+            )}
+          </div>
+
+          {/* 比赛播报 */}
+          <div className="match-commentary-panel" ref={commentaryRef} aria-live="polite">
             {danmaku.length === 0 && (
               <div className="match-commentary-empty">等待开球...</div>
             )}
-            {danmaku.slice(-3).map(d => (
+            {danmaku.map(d => (
               <div key={d.id} className="match-commentary-line">
                 <span style={{ color: d.color }}>{d.text}</span>
               </div>
             ))}
+          </div>
+
+          {/* 控制按钮 */}
+          <div className="match-controls">
+            {!showPenalty && !showSubModal && (
+              <>
+                {matchTime === 0 && !isPlaying && (
+                  <button onClick={handleStartMatch} className="match-action-btn start-btn">
+                    ⚽ 开始比赛
+                  </button>
+                )}
+                {isPlaying && !currentDecision && (
+                  <button onClick={() => setIsPlaying(false)} className="match-action-btn pause-btn">
+                    ⏸ 暂停
+                  </button>
+                )}
+                {!isPlaying && matchTime > 0 && matchTime < 90 && !currentDecision && (
+                  <button onClick={() => setIsPlaying(true)} className="match-action-btn continue-btn">
+                    ▶ 继续
+                  </button>
+                )}
+                {!isPlaying && matchTime >= 90 && !currentDecision && (
+                  <button onClick={handleEndMatch} className="match-action-btn end-btn">
+                    🏁 查看结算
+                  </button>
+                )}
+              </>
+            )}
+          </div>
+
+          {/* 换人板块 */}
+          <div className="sub-panel">
+            <div className="sub-panel-title">
+              🔄 换人机会
+              <span className="sub-count">剩余 {substitutionsLeft} 次</span>
+            </div>
+            {/* 当前阵容 */}
+            <div className="sub-lineup-section">
+              <div className="sub-section-label">场上球员（点击换下）</div>
+              <div className="sub-lineup-grid">
+                {currentLineup.map(p => {
+                  const sta = playerStamina[p.id] || 80
+                  return (
+                    <div
+                      key={p.id}
+                      className="sub-player-card"
+                      style={{ borderColor: getStaminaColor(sta) }}
+                      onClick={() => {
+                        if (benchPlayers.length === 0) { showToast('没有可用替补'); return }
+                        setStaminaEvent(prev => ({ ...prev, _outPlayer: p }))
+                      }}
+                    >
+                      <span className="sub-player-number">#{p.number || '?'}</span>
+                      <span className="sub-player-name">{p.name}</span>
+                      <span className="sub-player-sta" style={{ color: getStaminaColor(sta) }}>{sta}</span>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+            {/* 替补席 */}
+            <div className="sub-bench-section">
+              <div className="sub-section-label">替补席（点击上场）</div>
+              {allNonStarters.length === 0 && (
+                <div className="sub-empty">无可用替补</div>
+              )}
+              <div className="sub-bench-grid">
+                {allNonStarters.map(bp => {
+                  const isSuspended = suspendedSet.has(bp.id)
+                  const isRedCarded = redCardedPlayerIds.includes(bp.id)
+                  const isUnavailable = isSuspended || isRedCarded
+                  return (
+                    <div
+                      key={bp.id}
+                      className={`sub-bench-card ${isUnavailable ? 'sub-bench-disabled' : ''}`}
+                      onClick={() => {
+                        if (isUnavailable) {
+                          showToast(`${bp.name} 因红牌停赛无法上场`)
+                          return
+                        }
+                        const outPlayer = staminaEvent?._outPlayer
+                        if (outPlayer) {
+                          handleSubstitute(bp, outPlayer)
+                        } else {
+                          showToast('请先点击要换下的场上球员')
+                        }
+                      }}
+                    >
+                      <span className="sub-bench-number">#{bp.number || '?'}</span>
+                      <span className="sub-bench-name">{bp.name}</span>
+                      <span className="sub-bench-pos">{bp.position || bp.pos}</span>
+                      {isUnavailable && <span className="sub-bench-status">停赛</span>}
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -716,41 +1153,6 @@ export default function MatchScreen({ saveData, updateSaveData, navigateTo, show
         </div>
       )}
 
-      {/* ── 控制按钮 ── */}
-      <div className="match-controls">
-        {!showPenalty && !showSubModal && (
-          <>
-            {matchTime === 0 && !isPlaying && (
-              <button onClick={handleStartMatch} style={{
-                width: '100%', background: 'var(--pixel-accent)', color: '#F3E3B4',
-                border: '2px solid var(--pixel-gold)', borderRadius: 4, padding: '5px 10px',
-                fontFamily: 'Zpix, monospace', fontSize: 13, cursor: 'pointer',
-              }}>⚽ 开始比赛</button>
-            )}
-            {isPlaying && !currentDecision && (
-              <button onClick={() => setIsPlaying(false)} style={{
-                width: '100%', background: 'var(--pixel-main)', color: '#F3E3B4',
-                border: '2px solid var(--pixel-gold)', borderRadius: 4, padding: '5px 10px',
-                fontFamily: 'Zpix, monospace', fontSize: 13, cursor: 'pointer',
-              }}>⏸ 暂停</button>
-            )}
-            {!isPlaying && matchTime > 0 && matchTime < 90 && !currentDecision && (
-              <button onClick={() => setIsPlaying(true)} style={{
-                width: '100%', background: 'var(--pixel-main)', color: '#F3E3B4',
-                border: '2px solid var(--pixel-gold)', borderRadius: 4, padding: '5px 10px',
-                fontFamily: 'Zpix, monospace', fontSize: 13, cursor: 'pointer',
-              }}>▶ 继续</button>
-            )}
-            {!isPlaying && matchTime >= 90 && !currentDecision && (
-              <button onClick={handleEndMatch} style={{
-                width: '100%', background: 'var(--pixel-accent)', color: '#F3E3B4',
-                border: '2px solid var(--pixel-gold)', borderRadius: 4, padding: '5px 10px',
-                fontFamily: 'Zpix, monospace', fontSize: 13, cursor: 'pointer',
-              }}>🏁 查看结算</button>
-            )}
-          </>
-        )}
-      </div>
 
       {/* ═══════════════════════════════════════ */}
       {/* 决策弹窗 */}
@@ -764,18 +1166,19 @@ export default function MatchScreen({ saveData, updateSaveData, navigateTo, show
         }}>
           <div style={{
             background: 'var(--pixel-bg)', border: '3px solid var(--pixel-gold)',
-            borderRadius: 8, padding: 16, width: '100%', maxWidth: 380,
-            maxHeight: '80vh', overflowY: 'auto',
+            borderRadius: 0, padding: 20, width: '100%', maxWidth: 460,
+            maxHeight: '86vh', overflowY: 'auto',
+            boxShadow: '6px 6px 0 var(--pixel-shadow)',
           }}>
             {/* 情境文字 */}
             <div style={{
-              background: 'var(--pixel-main)', padding: '10px 12px', borderRadius: 4,
+              background: 'var(--pixel-main)', padding: '14px 16px', borderRadius: 0,
               marginBottom: 12, border: '2px solid var(--pixel-gold)',
             }}>
-              <div style={{ color: 'var(--pixel-gold)', fontFamily: 'Zpix, monospace', fontSize: 12, marginBottom: 6, fontWeight: 'bold' }}>
+              <div style={{ color: 'var(--pixel-gold)', fontFamily: 'Zpix, monospace', fontSize: 13, marginBottom: 8, fontWeight: 'bold' }}>
                 ⚡ 第{matchTime}分钟 · 关键时刻
               </div>
-              <div style={{ color: '#F3E3B4', fontFamily: 'Zpix, monospace', fontSize: 11, lineHeight: 1.7 }}>
+              <div style={{ color: '#F3E3B4', fontFamily: '"Microsoft YaHei", "PingFang SC", "SimHei", sans-serif', fontSize: 15, lineHeight: 1.65, fontWeight: 600 }}>
                 {currentDecision.situation}
               </div>
             </div>
@@ -800,17 +1203,18 @@ export default function MatchScreen({ saveData, updateSaveData, navigateTo, show
                 onClick={() => handleChoice(choice)}
                 style={{
                   display: 'block', width: '100%', background: 'var(--pixel-main)',
-                  border: '2px solid var(--pixel-gold)', borderRadius: 4,
-                  padding: '10px 12px', cursor: 'pointer', textAlign: 'left',
-                  color: '#F3E3B4', fontFamily: 'Zpix, monospace', marginBottom: 8,
+                  border: '3px solid var(--pixel-gold)', borderRadius: 0,
+                  padding: '12px 14px', cursor: 'pointer', textAlign: 'left',
+                  color: '#F3E3B4', fontFamily: '"Microsoft YaHei", "PingFang SC", "SimHei", sans-serif', marginBottom: 10,
+                  boxShadow: '3px 3px 0 var(--pixel-shadow)',
                 }}
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                  <span style={{ fontWeight: 'bold', fontSize: 13, color: 'var(--pixel-gold)' }}>{choice.label}</span>
-                  <span style={{ fontSize: 9, color: '#aaa' }}>关键: {choice.keyPlayerName}</span>
+                  <span style={{ fontWeight: 'bold', fontSize: 15, color: 'var(--pixel-gold)' }}>{choice.label}</span>
+                  <span style={{ fontSize: 11, color: '#F3E3B4' }}>关键: {choice.keyPlayerName}</span>
                 </div>
-                <div style={{ fontSize: 10, color: '#ccc', marginBottom: 6, lineHeight: 1.5 }}>{choice.desc}</div>
-                <div style={{ display: 'flex', gap: 10, fontSize: 9 }}>
+                <div style={{ fontSize: 13, color: '#F3E3B4', marginBottom: 8, lineHeight: 1.55 }}>{choice.desc}</div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px 12px', fontSize: 11, lineHeight: 1.4 }}>
                   <span style={{ color: choice.risk.includes('高') || choice.risk.includes('极') ? '#ff6644' : '#88cc88' }}>
                     风险: {choice.risk}
                   </span>
@@ -830,107 +1234,6 @@ export default function MatchScreen({ saveData, updateSaveData, navigateTo, show
         </div>
       )}
 
-      {/* ═══════════════════════════════════════ */}
-      {/* 换人弹窗 */}
-      {/* ═══════════════════════════════════════ */}
-      {showSubModal && (
-        <div style={{
-          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-          background: 'rgba(0,0,0,0.8)', zIndex: 110,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          padding: 16,
-        }}>
-          <div style={{
-            background: 'var(--pixel-bg)', border: '3px solid var(--pixel-gold)',
-            borderRadius: 8, padding: 16, width: '100%', maxWidth: 380,
-            maxHeight: '85vh', overflowY: 'auto',
-          }}>
-            <div style={{
-              display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12,
-            }}>
-              <span style={{ fontFamily: 'Zpix, monospace', fontSize: 14, color: 'var(--pixel-main)', fontWeight: 'bold' }}>
-                🔄 换人 (剩余{substitutionsLeft}次)
-              </span>
-              <button onClick={() => setShowSubModal(false)} style={{
-                background: 'none', border: 'none', color: 'var(--pixel-main)',
-                fontFamily: 'Zpix, monospace', fontSize: 14, cursor: 'pointer',
-              }}>✕</button>
-            </div>
-
-            {/* 当前阵容（可点击换下） */}
-            <div style={{ marginBottom: 12 }}>
-              <div style={{ fontFamily: 'Zpix, monospace', fontSize: 10, color: 'var(--pixel-shadow)', marginBottom: 6 }}>
-                点击场上球员换下 ↓
-              </div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                {currentLineup.map(p => {
-                  const sta = playerStamina[p.id] || 80
-                  return (
-                    <div key={p.id} style={{
-                      background: 'var(--pixel-main)', border: `2px solid ${getStaminaColor(sta)}`,
-                      borderRadius: 4, padding: '4px 8px', cursor: 'pointer',
-                      fontFamily: 'Zpix, monospace', fontSize: 10, color: '#F3E3B4',
-                      minWidth: 60, textAlign: 'center',
-                    }}
-                    onClick={() => {
-                      if (benchPlayers.length === 0) { showToast('没有可用替补'); return }
-                      // 标记要换下的球员
-                      setStaminaEvent(prev => ({ ...prev, _outPlayer: p }))
-                    }}
-                    >
-                      <div style={{ fontWeight: 'bold' }}>#{p.number || '?'} {p.name}</div>
-                      <div style={{ color: getStaminaColor(sta), fontSize: 9 }}>体力 {sta}</div>
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
-
-            {/* 替补席 */}
-            <div>
-              <div style={{ fontFamily: 'Zpix, monospace', fontSize: 10, color: 'var(--pixel-shadow)', marginBottom: 6 }}>
-                替补席（点击上场）↓
-              </div>
-              {benchPlayers.length === 0 && (
-                <div style={{ fontFamily: 'Zpix, monospace', fontSize: 10, color: '#aaa', textAlign: 'center', padding: 12 }}>
-                  无可用替补
-                </div>
-              )}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                {benchPlayers.map(bp => (
-                  <div key={bp.id} style={{
-                    background: 'rgba(27,55,100,0.08)', border: '2px solid var(--pixel-main)',
-                    borderRadius: 4, padding: '6px 10px', cursor: 'pointer',
-                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                    fontFamily: 'Zpix, monospace', fontSize: 10,
-                  }}
-                  onClick={() => {
-                    // 如果已选中要换下的球员，直接换
-                    const outPlayer = staminaEvent?._outPlayer
-                    if (outPlayer) {
-                      handleSubstitute(bp, outPlayer)
-                    } else {
-                      // 否则提示先选场上球员
-                      showToast('请先点击要换下的场上球员')
-                    }
-                  }}
-                  >
-                    <div>
-                      <span style={{ color: 'var(--pixel-main)', fontWeight: 'bold' }}>
-                        #{bp.number || '?'} {bp.name}
-                      </span>
-                      <span style={{ color: 'var(--pixel-shadow)', marginLeft: 8 }}>{bp.position || bp.pos}</span>
-                    </div>
-                    <span style={{ color: 'var(--pixel-gold)', fontSize: 9 }}>
-                      {bp.position || bp.pos} · 体力80
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* 点球大战 */}
       {showPenalty && (
