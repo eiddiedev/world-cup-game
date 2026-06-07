@@ -59,7 +59,7 @@ function calcSuccessProb(
   const opponentMult = Math.min(1.12, Math.max(0.85, 1.0 + attrDiff * 0.003));
 
   // 基础成功率
-  const baseProb = 0.30 + (normalizedAttr / 99) * 0.60;
+  const baseProb = 0.25 + (normalizedAttr / 99) * 0.55;
 
   // 最终概率
   const goldenMult = keyPlayer.isGolden ? 1.08 : 1.0;

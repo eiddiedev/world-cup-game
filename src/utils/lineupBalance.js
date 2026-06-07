@@ -139,9 +139,9 @@ export function calculateOpponentPressure({
     0.42,
   )
   const goalChance = clamp(
-    (0.22 + gap * 0.0038 + structuralRisk * 0.15 + coverageRisk * 0.04 + lineupRatings.dfWrongCount * 0.018 + difficultyPressure * 0.8) * stableBackLineFactor,
-    0.06,
-    0.48,
+    (0.16 + gap * 0.0038 + structuralRisk * 0.15 + coverageRisk * 0.04 + lineupRatings.dfWrongCount * 0.018 + difficultyPressure * 0.8) * stableBackLineFactor,
+    0.04,
+    0.42,
   )
   return {
     chance: Math.round(chance * 1000) / 1000,
