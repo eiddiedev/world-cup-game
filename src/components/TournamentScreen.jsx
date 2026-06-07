@@ -324,8 +324,17 @@ export default function TournamentScreen({ saveData, updateSaveData, navigateTo 
               <span style={{ fontFamily: 'Zpix, monospace', fontSize: 12, color: '#F3E3B4' }}>征程进度</span>
               <span style={{ fontFamily: 'Zpix, monospace', fontSize: 12, color: '#C99A2E' }}>{completedMatches}/{totalMatches} 场</span>
             </div>
-            <div style={{ width: '100%', height: 10, background: '#1B3764', borderRadius: 5, border: '1px solid #2a4a7a', overflow: 'hidden' }}>
-              <div style={{ width: `${pct}%`, height: '100%', background: 'linear-gradient(90deg, #C99A2E, #F3E3B4)', borderRadius: 5, transition: 'width 0.4s ease' }} />
+            <div style={{
+              width: '100%', height: 12, background: '#1B3764',
+              border: '2px solid #2a4a7a', imageRendering: 'pixelated',
+              position: 'relative', overflow: 'hidden',
+            }}>
+              <div style={{
+                position: 'absolute', left: 0, top: 0,
+                width: `${pct}%`, height: '100%',
+                background: '#C99A2E',
+                imageRendering: 'pixelated',
+              }} />
             </div>
           </div>
         )
