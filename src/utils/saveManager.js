@@ -1,13 +1,14 @@
 import { getTeamDefaultFormation } from '../data/teamFormations.js'
+import { getPlayableTeamIds, getStorageKey } from '../config/runtime.js'
 
-const STORAGE_KEY = 'targeting-2026-save'
+const STORAGE_KEY = getStorageKey()
 
 /**
  * 创建初始存档数据
  */
 export function createInitialSaveData() {
   return {
-    unlockTeams: ['france', 'brazil', 'argentina', 'portugal', 'germany', 'japan', 'norway', 'morocco', 'newzealand', 'curacao'],
+    unlockTeams: getPlayableTeamIds(),
     championshipHistory: [],
     currentRun: null,
     settings: {
@@ -29,8 +30,7 @@ export function loadSaveData() {
   try {
     const initial = createInitialSaveData()
     const saved = JSON.parse(raw)
-    // 强制更新解锁球队为全部10支
-    saved.unlockTeams = ['france', 'brazil', 'argentina', 'portugal', 'germany', 'japan', 'norway', 'morocco', 'newzealand', 'curacao']
+    saved.unlockTeams = getPlayableTeamIds()
     return {
       ...initial,
       ...saved,

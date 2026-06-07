@@ -68,6 +68,7 @@ import {
   resolveUserShootoutKick,
 } from './utils/penaltyShootout.js'
 import { getMatchBench, swapMatchPlayer } from './utils/substitution.js'
+import { getStorageKey, selectPlayableTeams } from './config/runtime.js'
 
 afterEach(() => {
   cleanup()
@@ -231,6 +232,26 @@ describe('settings and audio', () => {
 })
 
 describe('team and player data', () => {
+  it('limits the Douyin demo to France and Curacao with an isolated save', () => {
+    const sourceTeams = [
+      { id: 'france' },
+      { id: 'brazil' },
+      { id: 'curacao' },
+    ]
+
+    expect(selectPlayableTeams(sourceTeams, false).map(team => team.id)).toEqual([
+      'france',
+      'brazil',
+      'curacao',
+    ])
+    expect(selectPlayableTeams(sourceTeams, true).map(team => team.id)).toEqual([
+      'france',
+      'curacao',
+    ])
+    expect(getStorageKey(false)).toBe('targeting-2026-save')
+    expect(getStorageKey(true)).toBe('targeting-2026-douyin-demo-save')
+  })
+
   it('keeps every selectable team at a 24-player roster with one named golden star', () => {
     const goldenNames = [
       '法国超跑',

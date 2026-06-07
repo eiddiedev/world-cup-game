@@ -1,11 +1,12 @@
 import { allPlayers } from './players/index.js'
 import { prepareTeamPlayers } from './playerBalance.js'
+import { selectPlayableTeams } from '../config/runtime.js'
 
 /**
  * 球队配置数据
  * 10支国家队，各有不同的难度、预算、特色技能
  */
-export const teams = [
+const allTeams = [
   {
     id: 'france',
     name: '法国',
@@ -240,6 +241,8 @@ export const teams = [
     players: prepareTeamPlayers(allPlayers.curacao || [], 'curacao', 1170)
   },
 ]
+
+export const teams = selectPlayableTeams(allTeams)
 
 /**
  * 48支世界杯球队国旗映射（中文名 → 图片路径）

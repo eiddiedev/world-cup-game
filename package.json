@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build:demo": "node scripts/build-douyin-demo.mjs",
     "balance": "node scripts/balance-sim.mjs",
     "lint": "eslint .",
     "preview": "vite preview",

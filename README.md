@@ -27,8 +27,18 @@ npm run dev
 npm test -- --run
 npm run lint
 npm run build
+npm run build:demo
 npm run balance -- --teams france,curacao --runs 100 --strategy balanced
 ```
+
+## 抖音互动空间 Demo
+
+`npm run build:demo` 会生成法国与库拉索可玩的横屏多文件 Demo：
+
+- `dist-douyin/`：使用相对路径的提交目录
+- `deliverables/剑指美加墨-抖音互动空间-Demo.zip`：可交付 ZIP
+
+构建会保留完整比赛流程和两队原始球员图片，对中文像素字体做字符子集，并在未压缩目录或 ZIP 超过 `8,000,000` bytes 时直接失败。脚本依赖 Python 的 `fontTools` 与 `Pillow`。
 
 ## 目录说明
 
