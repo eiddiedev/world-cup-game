@@ -158,6 +158,18 @@ export default function MatchScreen({ saveData, updateSaveData, navigateTo, show
   const lastDecisionMinuteRef = useRef(-99)
   const currentLineupRef = useRef([...lineup])
   const [currentLineup, setCurrentLineup] = useState([...lineup])
+
+  // 演示用：按 P 键强制触发点球大战
+  useEffect(() => {
+    const handler = (e) => {
+      if (e.key === 'p' || e.key === 'P') {
+        setIsPlaying(false)
+        setShowPenalty(true)
+      }
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [])
   const unavailableSubIds = [
     ...injuredSet,
     ...suspendedSet,
