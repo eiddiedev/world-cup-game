@@ -210,8 +210,8 @@ export function createPhaserMatchScene(Phaser, controller) {
             stroke: '#1B3764',
             strokeThickness: 2,
           }).setOrigin(0.5).setDepth(7)
-          const leftEye = this.add.rectangle(0, 0, 3, 3, 0x111111).setDepth(8)
-          const rightEye = this.add.rectangle(0, 0, 3, 3, 0x111111).setDepth(8)
+          const leftEye = this.add.rectangle(0, 0, 2, 4, 0x111111).setDepth(8)
+          const rightEye = this.add.rectangle(0, 0, 2, 4, 0x111111).setDepth(8)
           this.playerObjects.set(name, {
             player,
             sprite,
@@ -314,7 +314,7 @@ export function createPhaserMatchScene(Phaser, controller) {
         const ballPoint = tacticalToPhaserPoint(this.ballPosition.x, this.ballPosition.y, this.pitch)
         const eyeDirection = Math.sign(ballPoint.x - point.x) || objects.facing
         objects.facing = eyeDirection
-        const eyeY = point.y + bob - Math.max(12, displayHeight * 0.52)
+        const eyeY = point.y + bob - Math.max(14, displayHeight * 0.62)
         const eyeShift = eyeDirection * Math.max(0.5, this.scale.height / 600)
         objects.leftEye.setPosition(point.x - 2 + eyeShift, eyeY)
         objects.rightEye.setPosition(point.x + 2 + eyeShift, eyeY)
