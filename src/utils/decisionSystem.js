@@ -159,7 +159,9 @@ function findScenario(id) {
  */
 export function selectKeyPlayers(scenario, lineup) {
   const getPos = (player) => player?.position || player?.pos;
-  const fallback = lineup[0] || { name: '球员', position: 'FW', number: 10, sta: 80, tec: 70, spd: 70, phy: 70, def: 70 };
+  // Better fallback: pick highest-rated outfield player, then any player
+  const bestOutfield = lineup.filter(p => getPos(p) !== 'GK').sort((a, b) => (b.rating || 0) - (a.rating || 0))[0];
+  const fallback = bestOutfield || lineup[0] || { name: '队长', position: 'FW', number: 10, sta: 80, tec: 70, spd: 70, phy: 70, def: 70 };
   const topPlayer = (pos, scoreFn) => {
     const filtered = lineup.filter(p => getPos(p) === pos);
     if (!filtered.length) return fallback;

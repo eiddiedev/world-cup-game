@@ -63,14 +63,17 @@ export default function App() {
     setTimeout(() => setToast(null), 2200)
   }
 
-  const navigateTo = (screen) => {
+  const navigateTo = (screen, { skipRecruitmentGuard = false } = {}) => {
     // 防止在比赛进行中返回招募页面（但允许返回首页）
-    const stage = saveData?.currentRun?.stage
-    const isRecruitmentDone = stage && ['tournament', 'lineup', 'match', 'post-match', 'knockout', 'ending'].includes(stage)
-
-    if (screen === 'recruitment' && isRecruitmentDone) {
-      showToast('阵容已确认，无法返回招募页面')
-      return
+    if (screen === 'recruitment' && !skipRecruitmentGuard) {
+      // Use latest save data to check stage (avoids stale closure issue)
+      const latestData = loadSaveData()
+      const stage = latestData?.currentRun?.stage
+      const isRecruitmentDone = stage && ['tournament', 'lineup', 'match', 'post-match', 'knockout', 'ending'].includes(stage)
+      if (isRecruitmentDone) {
+        showToast('阵容已确认，无法返回招募页面')
+        return
+      }
     }
 
     setCurrentScreen(screen)

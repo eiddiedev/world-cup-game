@@ -107,40 +107,82 @@ export function createPhaserMatchScene(Phaser, controller) {
       const shirt = isGoalkeeper ? kit.goalkeeper : kit.shirt
 
       context.imageSmoothingEnabled = false
-      context.fillStyle = '#5B4630'
+      // Hair
+      context.fillStyle = '#3D2B1F'
       context.fillRect(3, 0, 6, 2)
+      // Face (skin)
+      context.fillStyle = '#D4A574'
+      context.fillRect(3, 2, 6, 4)
+      // Eyes (bigger, 2x2 each)
+      context.fillStyle = '#FFFFFF'
+      context.fillRect(3, 3, 2, 2)
+      context.fillRect(7, 3, 2, 2)
+      context.fillStyle = '#1B3764'
+      context.fillRect(4, 3, 1, 2)
+      context.fillRect(8, 3, 1, 2)
+      // Mouth
       context.fillStyle = '#C68642'
-      context.fillRect(3, 2, 6, 5)
+      context.fillRect(5, 5, 2, 1)
+      // Shirt
       context.fillStyle = shirt
-      context.fillRect(1, 7, 10, 6)
+      context.fillRect(1, 7, 10, 5)
+      // Accent stripe
       context.fillStyle = kit.accent
       context.fillRect(4, 8, 4, 2)
+      // Arms (skin)
+      context.fillStyle = '#D4A574'
+      context.fillRect(0, 7, 1, 4)
+      context.fillRect(11, 7, 1, 4)
+      // Shorts
       context.fillStyle = kit.shorts
-      context.fillRect(2, 13, 4, 2)
-      context.fillRect(6, 13, 4, 2)
+      context.fillRect(2, 12, 4, 2)
+      context.fillRect(6, 12, 4, 2)
+      // Socks
       context.fillStyle = kit.socks
-      context.fillRect(2, 15, 3, 2)
-      context.fillRect(7, 15, 3, 2)
+      context.fillRect(2, 14, 3, 2)
+      context.fillRect(7, 14, 3, 2)
+      // Boots
       context.fillStyle = '#111111'
-      context.fillRect(1, 17, 4, 1)
-      context.fillRect(7, 17, 4, 1)
+      context.fillRect(1, 16, 4, 2)
+      context.fillRect(7, 16, 4, 2)
       texture.refresh()
     }
 
     createBallTexture() {
       if (this.textures.exists('match-ball')) return
-      const texture = this.textures.createCanvas('match-ball', 8, 8)
-      const context = texture.context
-      context.imageSmoothingEnabled = false
-      context.fillStyle = '#F3E3B4'
-      context.fillRect(1, 0, 6, 8)
-      context.fillRect(0, 1, 8, 6)
-      context.fillStyle = '#1B3764'
-      context.fillRect(3, 2, 2, 2)
-      context.fillRect(1, 4, 2, 2)
-      context.fillRect(5, 5, 2, 2)
-      context.fillStyle = '#5B4630'
-      context.fillRect(3, 7, 2, 1)
+      const texture = this.textures.createCanvas('match-ball', 10, 10)
+      const ctx = texture.context
+      ctx.imageSmoothingEnabled = false
+      // White ball body
+      ctx.fillStyle = '#FFFFFF'
+      ctx.fillRect(2, 0, 6, 10)
+      ctx.fillRect(0, 2, 10, 6)
+      // Pentagon panel (dark)
+      ctx.fillStyle = '#1B3764'
+      ctx.fillRect(4, 2, 2, 2)
+      ctx.fillRect(3, 4, 1, 1)
+      ctx.fillRect(6, 4, 1, 1)
+      ctx.fillRect(4, 5, 2, 1)
+      // Panel lines
+      ctx.fillStyle = '#C0C0C0'
+      ctx.fillRect(3, 1, 1, 1)
+      ctx.fillRect(6, 1, 1, 1)
+      ctx.fillRect(1, 3, 1, 1)
+      ctx.fillRect(8, 3, 1, 1)
+      ctx.fillRect(1, 6, 1, 1)
+      ctx.fillRect(8, 6, 1, 1)
+      ctx.fillRect(3, 8, 1, 1)
+      ctx.fillRect(6, 8, 1, 1)
+      // Subtle outline
+      ctx.fillStyle = '#888888'
+      ctx.fillRect(3, 0, 1, 1)
+      ctx.fillRect(6, 0, 1, 1)
+      ctx.fillRect(0, 3, 1, 1)
+      ctx.fillRect(9, 3, 1, 1)
+      ctx.fillRect(0, 6, 1, 1)
+      ctx.fillRect(9, 6, 1, 1)
+      ctx.fillRect(3, 9, 1, 1)
+      ctx.fillRect(6, 9, 1, 1)
       texture.refresh()
     }
 
@@ -173,8 +215,8 @@ export function createPhaserMatchScene(Phaser, controller) {
             stroke: '#1B3764',
             strokeThickness: 2,
           }).setOrigin(0.5).setDepth(7)
-          const leftEye = this.add.rectangle(0, 0, 2, 2, 0x111111).setDepth(8)
-          const rightEye = this.add.rectangle(0, 0, 2, 2, 0x111111).setDepth(8)
+          const leftEye = this.add.rectangle(0, 0, 3, 3, 0x111111).setDepth(8)
+          const rightEye = this.add.rectangle(0, 0, 3, 3, 0x111111).setDepth(8)
           this.playerObjects.set(name, {
             player,
             sprite,
@@ -277,10 +319,10 @@ export function createPhaserMatchScene(Phaser, controller) {
         const ballPoint = tacticalToPhaserPoint(this.ballPosition.x, this.ballPosition.y, this.pitch)
         const eyeDirection = Math.sign(ballPoint.x - point.x) || objects.facing
         objects.facing = eyeDirection
-        const eyeY = point.y + bob - Math.max(14, displayHeight * 0.60)
+        const eyeY = point.y + bob - Math.max(12, displayHeight * 0.52)
         const eyeShift = eyeDirection * Math.max(0.5, this.scale.height / 600)
-        objects.leftEye.setPosition(point.x - 3 + eyeShift, eyeY)
-        objects.rightEye.setPosition(point.x + 3 + eyeShift, eyeY)
+        objects.leftEye.setPosition(point.x - 2 + eyeShift, eyeY)
+        objects.rightEye.setPosition(point.x + 2 + eyeShift, eyeY)
       })
 
       const ballPoint = tacticalToPhaserPoint(this.ballPosition.x, this.ballPosition.y, this.pitch)
@@ -320,13 +362,20 @@ export function createPhaserMatchScene(Phaser, controller) {
         if (isOwner) {
           targetX = clamp(position.x + Math.sin(this.ambientPhase * 3.4) * 2.5, 7, 93)
           targetY = clamp(position.y + direction * 7, 6, 94)
+        } else if (position.position === 'GK') {
+          // GK stays near own goal — limited lateral movement, minimal forward push
+          const gkAnchorX = position.anchorX
+          const gkMinY = position.team === 'my' ? 4 : 85
+          const gkMaxY = position.team === 'my' ? 18 : 96
+          targetX = clamp(gkAnchorX + lateralWave * 0.6, 38, 62)
+          targetY = clamp(position.anchorY + teamPush * 0.15, gkMinY, gkMaxY)
         } else if (isDefending && owner) {
           const distance = Math.hypot(position.x - owner.x, position.y - owner.y)
-          if (distance < 25 && position.position !== 'GK') {
+          if (distance < 25) {
             targetX = clamp(owner.x + (position.anchorX < owner.x ? -4 : 4), 5, 95)
             targetY = clamp(owner.y - direction * 3, 5, 95)
           }
-        } else if (!isDefending && position.position !== 'GK') {
+        } else if (!isDefending) {
           targetY = clamp(targetY + direction * (position.position === 'FW' ? 6 : 3), 5, 95)
         }
 
@@ -519,7 +568,7 @@ export function createPhaserMatchScene(Phaser, controller) {
         return { x: Number(x), y: Number(y) }
       }
       if (moveTo === 'penalty_area_edge') return { x: this.playerPositions[actorName]?.x ?? 50, y: 80 }
-      if (moveTo === 'gk_rush') return { x: 50, y: 85 }
+      if (moveTo === 'gk_rush') return { x: 50, y: 22 }
       if (moveTo === 'penalty_area_center') return { x: this.playerPositions[actorName]?.x ?? 50, y: 88 }
       return { x: 50, y: 50 }
     }

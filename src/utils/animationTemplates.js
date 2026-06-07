@@ -20,7 +20,7 @@ export const ANIMATION_TEMPLATES = {
     },
     result_animations: {
       goal: [
-        { t: 0, actor: 0, moveTo: { x: 50, y: 97 }, duration: 400, type: 'shot' },
+        { t: 0, actor: 0, moveTo: { x: 50, y: 100 }, duration: 400, type: 'shot' },
         { t: 400, type: 'GOAL_EFFECT' },
       ],
       miss: [
@@ -43,7 +43,7 @@ export const ANIMATION_TEMPLATES = {
     ],
     result_animations: {
       goal: [
-        { t: 0, ball: true, moveTo: { x: 48, y: 98 }, duration: 300, type: 'header_shot' },
+        { t: 0, ball: true, moveTo: { x: 50, y: 100 }, duration: 300, type: 'header_shot' },
         { t: 300, type: 'GOAL_EFFECT' },
       ],
       miss: [
@@ -62,7 +62,7 @@ export const ANIMATION_TEMPLATES = {
     ],
     result_animations: {
       goal: [
-        { t: 0, ball: true, moveTo: { x: 50, y: 98 }, duration: 400, type: 'shot' },
+        { t: 0, ball: true, moveTo: { x: 50, y: 100 }, duration: 400, type: 'shot' },
         { t: 400, type: 'GOAL_EFFECT' },
       ],
       counter_saved: [
@@ -82,7 +82,7 @@ export const ANIMATION_TEMPLATES = {
     ],
     result_animations: {
       goal_freekick: [
-        { t: 0, ball: true, moveTo: { x: 52, y: 99 }, duration: 520, type: 'freekick_curve' },
+        { t: 0, ball: true, moveTo: { x: 50, y: 100 }, duration: 520, type: 'freekick_curve' },
         { t: 520, type: 'GOAL_EFFECT' },
       ],
       saved_freekick: [
@@ -101,7 +101,7 @@ export const ANIMATION_TEMPLATES = {
       goal_header: [
         { t: 0, ball: true, moveTo: { x: 55, y: 88 }, duration: 420, type: 'cross' },
         { t: 120, actor: 1, moveTo: { x: 55, y: 90 }, duration: 320, type: 'header_shot' },
-        { t: 420, ball: true, moveTo: { x: 50, y: 99 }, duration: 300, type: 'header_shot' },
+        { t: 420, ball: true, moveTo: { x: 50, y: 100 }, duration: 300, type: 'header_shot' },
         { t: 720, type: 'GOAL_EFFECT' },
       ],
       saved_header: [
@@ -115,7 +115,7 @@ export const ANIMATION_TEMPLATES = {
       ],
       goal_reorganized: [
         { t: 0, ball: true, moveTo: { x: 42, y: 72 }, duration: 260, type: 'recycle' },
-        { t: 260, ball: true, moveTo: { x: 50, y: 98 }, duration: 440, type: 'shot' },
+        { t: 260, ball: true, moveTo: { x: 50, y: 100 }, duration: 440, type: 'shot' },
         { t: 700, type: 'GOAL_EFFECT' },
       ],
       shot_blocked: [
@@ -130,7 +130,7 @@ export const ANIMATION_TEMPLATES = {
         { t: 0, ball: true, moveTo: { x: 53, y: 91 }, duration: 320, type: 'claim' },
       ],
       goal: [
-        { t: 0, ball: true, moveTo: { x: 52, y: 99 }, duration: 500, type: 'freekick_curve' },
+        { t: 0, ball: true, moveTo: { x: 50, y: 100 }, duration: 500, type: 'freekick_curve' },
         { t: 500, type: 'GOAL_EFFECT' },
       ],
       saved: [
@@ -165,7 +165,7 @@ export const ANIMATION_TEMPLATES = {
         { t: 0, ball: true, moveTo: { x: 42, y: 70 }, duration: 360, type: 'clearance' },
       ],
       goal_closer: [
-        { t: 0, ball: true, moveTo: { x: 50, y: 98 }, duration: 360, type: 'shot' },
+        { t: 0, ball: true, moveTo: { x: 50, y: 100 }, duration: 360, type: 'shot' },
         { t: 360, type: 'GOAL_EFFECT' },
       ],
       corner_won: [
@@ -260,7 +260,7 @@ export const ANIMATION_TEMPLATES = {
         { t: 0, actor: 0, moveTo: { x: 48, y: 79 }, duration: 300, type: 'save_rush' },
       ],
       goal: [
-        { t: 0, opponent: 0, moveTo: { x: 50, y: 97 }, duration: 400, type: 'shot' },
+        { t: 0, opponent: 0, moveTo: { x: 50, y: 0 }, duration: 400, type: 'shot' },
         { t: 400, type: 'OPPONENT_GOAL_EFFECT' },
       ],
       counter_chance: [
@@ -285,7 +285,7 @@ export const ANIMATION_TEMPLATES = {
         { t: 200, type: 'CARD_EFFECT', color: 'yellow', actor: 0 },
       ],
       goal_against: [
-        { t: 0, opponent: 0, moveTo: { x: 50, y: 97 }, duration: 400, type: 'shot' },
+        { t: 0, opponent: 0, moveTo: { x: 50, y: 0 }, duration: 400, type: 'shot' },
         { t: 400, type: 'OPPONENT_GOAL_EFFECT' },
       ],
     },
@@ -434,7 +434,7 @@ export const ANIMATION_TEMPLATES = {
     ],
     result_animations: {
       goal: [
-        { t: 0, ball: true, moveTo: { x: 50, y: 98 }, duration: 400, type: 'shot' },
+        { t: 0, ball: true, moveTo: { x: 50, y: 100 }, duration: 400, type: 'shot' },
         { t: 400, type: 'GOAL_EFFECT' },
       ],
       counter_against: [
@@ -596,8 +596,8 @@ const DEFENSE_RESULTS = {
     { t: 0, ball: true, moveTo: { x: 65, y: 101 }, duration: 360, type: 'shot_miss' },
   ],
   goal_against: [
-    { t: 0, opponent: 0, moveTo: { x: 50, y: 92 }, duration: 360, type: 'shot' },
-    { t: 0, ball: true, moveTo: { x: 50, y: 98 }, duration: 360, type: 'shot' },
+    { t: 0, opponent: 0, moveTo: { x: 50, y: 15 }, duration: 360, type: 'shot' },
+    { t: 0, ball: true, moveTo: { x: 50, y: 0 }, duration: 360, type: 'shot' },
     { t: 360, type: 'OPPONENT_GOAL_EFFECT' },
   ],
   yellow_card: [

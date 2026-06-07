@@ -120,6 +120,8 @@ export default function MatchScreen({ saveData, updateSaveData, navigateTo, show
   const [isPlaying, setIsPlaying] = useState(false)
   const [matchSpeed, setMatchSpeed] = useState(1)
   const [showPenalty, setShowPenalty] = useState(false)
+  const [showMatchEnd, setShowMatchEnd] = useState(false)
+  const [matchEndResult, setMatchEndResult] = useState(null)
 
   // 决策状态
   const [currentDecision, setCurrentDecision] = useState(null)
@@ -571,7 +573,10 @@ export default function MatchScreen({ saveData, updateSaveData, navigateTo, show
     // 控球率微调
     stats.myPossession = Math.min(65, Math.max(35, stats.myPossession + (result.isSuccess ? 1 : -1)))
     // 犯规/牌
-    if (outcome.includes('foul') || outcome.includes('yellow')) stats.fouls++
+    if (outcome.includes('foul') || outcome.includes('yellow')) {
+      stats.fouls++
+      audioManager.playSound('whistle')
+    }
     if (outcome.includes('yellow')) stats.yellowCards++
     if (outcome.includes('red_card')) {
       stats.redCards++; stats.fouls++
@@ -860,15 +865,21 @@ export default function MatchScreen({ saveData, updateSaveData, navigateTo, show
 
   const finishMatch = (h, a) => {
     const result = h > a ? 'win' : h < a ? 'loss' : 'draw'
-    if (result === 'win') {
-      audioManager.playWin()
-      audioManager.vibrate([24, 44, 24])
-    } else if (result === 'loss') {
-      audioManager.playLose()
-      audioManager.vibrate(44)
-    } else {
-      audioManager.playSound('whistle')
-    }
+    // Always play final whistle
+    audioManager.playSound('whistle')
+    // Show match-end overlay with whistle image
+    setMatchEndResult(result)
+    setShowMatchEnd(true)
+    setTimeout(() => {
+      setShowMatchEnd(false)
+      if (result === 'win') {
+        audioManager.playWin()
+        audioManager.vibrate([24, 44, 24])
+      } else if (result === 'loss') {
+        audioManager.playLose()
+        audioManager.vibrate(44)
+      }
+    }, 1800)
     const matchResults = saveData.currentRun?.matchResults || []
     const isKnockout = Boolean(saveData.currentRun?.isKnockoutMatch)
     const stats = matchStatsRef.current
@@ -1300,6 +1311,25 @@ export default function MatchScreen({ saveData, updateSaveData, navigateTo, show
           awayFormation={opponentSetup.formation}
           onComplete={handlePenaltyComplete}
         />
+      )}
+
+      {/* 比赛结束遮罩 */}
+      {showMatchEnd && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 200,
+          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+          background: 'rgba(0,0,0,0.65)',
+        }}>
+          <img src="/assets/哨子.png" alt="终场哨" style={{
+            width: 80, height: 80, imageRendering: 'pixelated', marginBottom: 16,
+          }} />
+          <div style={{
+            fontFamily: 'Zpix, monospace', fontSize: 28, color: '#F3E3B4',
+            textShadow: '3px 3px 0 #1B3764',
+          }}>
+            {matchEndResult === 'win' ? '终场哨响！胜利！' : matchEndResult === 'loss' ? '终场哨响！' : '终场哨响！平局'}
+          </div>
+        </div>
       )}
 
       <style>{`

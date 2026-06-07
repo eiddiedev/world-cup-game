@@ -303,6 +303,34 @@ export default function TournamentScreen({ saveData, updateSaveData, navigateTo 
         <span className="team-group">小组 {schedule.group}</span>
       </div>
 
+      {/* 进度条 */}
+      {(() => {
+        const totalMatches = 7
+        const knockoutRoundIndex = (() => {
+          const round = saveData.currentRun?.knockoutRound
+          if (round === 'r16') return 0
+          if (round === 'qf') return 1
+          if (round === 'sf') return 2
+          if (round === 'final') return 3
+          return -1
+        })()
+        const completedMatches = groupFinished
+          ? 3 + (knockoutRoundIndex >= 0 ? knockoutRoundIndex : 0)
+          : results.length
+        const pct = Math.min(100, (completedMatches / totalMatches) * 100)
+        return (
+          <div style={{ padding: '8px 16px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+              <span style={{ fontFamily: 'Zpix, monospace', fontSize: 12, color: '#F3E3B4' }}>征程进度</span>
+              <span style={{ fontFamily: 'Zpix, monospace', fontSize: 12, color: '#C99A2E' }}>{completedMatches}/{totalMatches} 场</span>
+            </div>
+            <div style={{ width: '100%', height: 10, background: '#1B3764', borderRadius: 5, border: '1px solid #2a4a7a', overflow: 'hidden' }}>
+              <div style={{ width: `${pct}%`, height: '100%', background: 'linear-gradient(90deg, #C99A2E, #F3E3B4)', borderRadius: 5, transition: 'width 0.4s ease' }} />
+            </div>
+          </div>
+        )
+      })()}
+
       {/* 小组赛 */}
       <div className="group-stage">
         <h3>🏟️ 小组赛</h3>

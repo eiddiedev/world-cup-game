@@ -19,7 +19,7 @@ export default function TeamSelectScreen({ saveData, updateSaveData, navigateTo,
       currentRun: newRun,
     })
     showToast(`${team.name}征程已开始！`)
-    navigateTo('recruitment')
+    navigateTo('recruitment', { skipRecruitmentGuard: true })
   }
 
   return (

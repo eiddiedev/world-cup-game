@@ -40,8 +40,8 @@ export default function EndingScreen({ saveData, updateSaveData, navigateTo, sho
     champion: {
       emoji: '🏆',
       title: '冠军！',
-      message: '冠军庆典像素动画 + 完整数据回顾 + 你的征程故事',
-      showCelebration: true,
+      message: '你带领球队站上了世界之巅。',
+      showCelebration: false,
       special: team?.id === 'newzealand'
         ? '大洋洲的骄傲，比任何奖杯都重要。'
         : team?.id === 'curacao'
@@ -78,23 +78,27 @@ export default function EndingScreen({ saveData, updateSaveData, navigateTo, sho
   const ending = endings[finalResult]
 
   const handleNewGame = () => {
-    // 如果夺冠，解锁新球队
+    // 如果夺冠，记录冠军历史并解锁新球队
     if (finalResult === 'champion') {
       const allTeamIds = ['france', 'brazil', 'argentina', 'portugal', 'germany', 'japan', 'norway', 'morocco', 'newzealand', 'curacao']
-      const nextUnlock = allTeamIds.find((id) => !saveData.unlockTeams.includes(id))
+      const currentTeamId = team?.id
+      const nextUnlock = allTeamIds.find((id) => !saveData.unlockTeams.includes(id) && id !== currentTeamId)
+
+      const newData = {
+        ...saveData,
+        championshipHistory: [
+          ...saveData.championshipHistory,
+          currentTeamId,
+        ],
+        currentRun: null,
+      }
 
       if (nextUnlock) {
-        updateSaveData({
-          ...saveData,
-          unlockTeams: [...saveData.unlockTeams, nextUnlock],
-          championshipHistory: [
-            ...saveData.championshipHistory,
-            { team: team?.id, year: 2026 },
-          ],
-          currentRun: null,
-        })
+        newData.unlockTeams = [...saveData.unlockTeams, nextUnlock]
         showToast(`解锁新球队：${nextUnlock}`)
       }
+
+      updateSaveData(newData)
     } else {
       updateSaveData({
         ...saveData,
