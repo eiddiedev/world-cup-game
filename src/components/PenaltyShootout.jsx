@@ -1,165 +1,199 @@
-import React, { useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { audioManager } from '../utils/audioManager'
+import {
+  getShootoutWinner,
+  resolveOpponentShootoutKick,
+  resolveUserShootoutKick,
+} from '../utils/penaltyShootout.js'
+import AnimationEngine from './AnimationEngine'
 
-/**
- * 点球大战组件
- * 淘汰赛平局时触发
- */
-export default function PenaltyShootout({ homeTeam, awayTeam, onComplete }) {
-  const [homeScore, setHomeScore] = useState(0)
-  const [awayScore, setAwayScore] = useState(0)
-  const [currentRound, setCurrentRound] = useState(0)
-  const [isHomeTurn, setIsHomeTurn] = useState(true)
+const getPosition = player => player?.pos || player?.position
+
+function pickGoalkeeper(lineup = []) {
+  return lineup.find(player => getPosition(player) === 'GK') || lineup[0]
+}
+
+function pickShooter(lineup = [], index = 0) {
+  const candidates = lineup
+    .filter(player => getPosition(player) !== 'GK')
+    .sort((a, b) => (
+      (b.tec || b.rating || 70) + (b.att || 0)
+      - (a.tec || a.rating || 70) - (a.att || 0)
+    ))
+  return candidates[index % Math.max(1, candidates.length)] || lineup[0]
+}
+
+export default function PenaltyShootout({
+  homeTeam,
+  awayTeam,
+  homeTeamId,
+  awayTeamId,
+  homeLineup = [],
+  awayLineup = [],
+  homeFormation = '4-3-3',
+  awayFormation = '4-3-3',
+  onComplete,
+}) {
+  const animationRef = useRef(null)
+  const completeTimerRef = useRef(null)
   const [shots, setShots] = useState([])
-  const [isFinished, setIsFinished] = useState(false)
-  const [showResult, setShowResult] = useState(false)
+  const [isHomeTurn, setIsHomeTurn] = useState(true)
+  const [isAnimating, setIsAnimating] = useState(false)
+  const [lastResult, setLastResult] = useState(null)
+  const [finishedWinner, setFinishedWinner] = useState(null)
 
-  const maxRounds = 5
+  const homeShots = shots.filter(shot => shot.team === 'home')
+  const awayShots = shots.filter(shot => shot.team === 'away')
+  const homeScore = homeShots.filter(shot => shot.scored).length
+  const awayScore = awayShots.filter(shot => shot.scored).length
+  const currentRound = Math.max(homeShots.length, awayShots.length) + 1
+  const shooter = useMemo(() => (
+    isHomeTurn
+      ? pickShooter(homeLineup, homeShots.length)
+      : pickShooter(awayLineup, awayShots.length)
+  ), [awayLineup, awayShots.length, homeLineup, homeShots.length, isHomeTurn])
+  const goalkeeper = useMemo(() => (
+    isHomeTurn ? pickGoalkeeper(awayLineup) : pickGoalkeeper(homeLineup)
+  ), [awayLineup, homeLineup, isHomeTurn])
 
-  const handleShoot = (direction) => {
-    if (isFinished) return
+  useEffect(() => () => {
+    if (completeTimerRef.current) clearTimeout(completeTimerRef.current)
+  }, [])
 
-    // 点球大战保持高命中率，同时保留压力下罚失的可能。
-    const scored = Math.random() < 0.74
+  useEffect(() => {
+    if (!shooter || !goalkeeper || finishedWinner) return
+    animationRef.current?.preparePenalty({
+      shooterTeam: isHomeTurn ? 'my' : 'opponent',
+      shooterName: shooter.name,
+      goalkeeperName: goalkeeper.name,
+    })
+  }, [finishedWinner, goalkeeper, isHomeTurn, shooter])
 
-    const newShots = [...shots, {
-      round: currentRound + 1,
+  const finishTurn = async (choiceDirection) => {
+    if (isAnimating || finishedWinner || !shooter || !goalkeeper) return
+    setIsAnimating(true)
+    setLastResult(null)
+    const result = isHomeTurn
+      ? resolveUserShootoutKick(choiceDirection)
+      : resolveOpponentShootoutKick(choiceDirection)
+    const shot = {
+      round: currentRound,
       team: isHomeTurn ? 'home' : 'away',
-      direction,
-      scored,
-    }]
-    setShots(newShots)
-
-    if (scored) {
-      if (isHomeTurn) {
-        setHomeScore(prev => prev + 1)
-        audioManager.playGoal()
-        audioManager.vibrate([20, 36, 20])
-      } else {
-        setAwayScore(prev => prev + 1)
-        audioManager.playSound('opponentGoal')
-        audioManager.vibrate(32)
-      }
-    } else {
-      audioManager.playSound('whistle')
+      ...result,
     }
 
-    // 判断是否结束
-    const homeShots = newShots.filter(s => s.team === 'home').length
-    const awayShots = newShots.filter(s => s.team === 'away').length
+    await animationRef.current?.playPenaltyKick({
+      shooterTeam: isHomeTurn ? 'my' : 'opponent',
+      shooterName: shooter.name,
+      goalkeeperName: goalkeeper.name,
+      ...result,
+    })
 
-    // 计算当前比分
-    const currentHomeScore = newShots.filter(s => s.team === 'home' && s.scored).length
-    const currentAwayScore = newShots.filter(s => s.team === 'away' && s.scored).length
+    if (result.missed) audioManager.playSound('whistle')
 
-    // 检查是否可以提前结束（一方已经无法追平）
-    const homeRemaining = maxRounds - homeShots
-    const awayRemaining = maxRounds - awayShots
+    const nextShots = [...shots, shot]
+    const winner = getShootoutWinner(nextShots)
+    setShots(nextShots)
+    setLastResult({
+      ...shot,
+      text: result.scored
+        ? `${shooter.number || '?'}号罚进！`
+        : result.saved
+          ? `${goalkeeper.number || 1}号判断正确，扑出点球！`
+          : `${shooter.number || '?'}号射偏！`,
+    })
 
-    if (homeShots >= maxRounds && awayShots >= maxRounds) {
-      // 5轮结束
-      if (currentHomeScore !== currentAwayScore) {
-        setIsFinished(true)
-        setTimeout(() => {
-          setShowResult(true)
-          onComplete(currentHomeScore > currentAwayScore ? 'home' : 'away')
-        }, 1000)
-      } else {
-        // 平局，进入突然死亡
-        setCurrentRound(prev => prev + 1)
-      }
-    } else if (currentHomeScore > currentAwayScore + awayRemaining) {
-      // 主队领先且客队无法追平
-      setIsFinished(true)
-      setTimeout(() => {
-        setShowResult(true)
-        onComplete('home')
-      }, 1000)
-    } else if (currentAwayScore > currentHomeScore + homeRemaining) {
-      // 客队领先且主队无法追平
-      setIsFinished(true)
-      setTimeout(() => {
-        setShowResult(true)
-        onComplete('away')
-      }, 1000)
+    if (winner) {
+      setFinishedWinner(winner)
+      completeTimerRef.current = setTimeout(() => onComplete(winner), 1500)
     } else {
-      // 切换到另一队
-      if (isHomeTurn) {
-        setIsHomeTurn(false)
-      } else {
-        setIsHomeTurn(true)
-        setCurrentRound(prev => prev + 1)
-      }
+      setIsHomeTurn(turn => !turn)
     }
+    setIsAnimating(false)
   }
 
-  const getShotResult = (round, team) => {
-    const shot = shots.find(s => s.round === round && s.team === team)
-    if (!shot) return null
-    return shot.scored
-  }
+  const roundCount = Math.max(5, currentRound)
 
   return (
-    <div className="screen penalty-screen">
-      <div className="penalty-header">
-        <h2>点球大战</h2>
-        <div className="penalty-score">
-          <div className="penalty-team">
-            <span className="team-name">{homeTeam}</span>
-            <span className="team-score">{homeScore}</span>
-          </div>
-          <span className="penalty-vs">VS</span>
-          <div className="penalty-team">
-            <span className="team-score">{awayScore}</span>
-            <span className="team-name">{awayTeam}</span>
-          </div>
+    <div className="penalty-screen" role="dialog" aria-label="点球大战">
+      <div className="penalty-stage">
+        <div className="penalty-pitch">
+          <AnimationEngine
+            ref={animationRef}
+            myLineup={homeLineup}
+            opponentLineup={awayLineup}
+            formation={homeFormation}
+            opponentFormation={awayFormation}
+            myTeam={homeTeamId}
+            opponentTeam={awayTeamId}
+            width={780}
+            height={480}
+            ambientEnabled={false}
+            onGoalEffect={() => audioManager.playGoal()}
+            onOpponentGoalEffect={() => audioManager.playSound('opponentGoal')}
+            onSaveEffect={() => audioManager.playSave()}
+          />
         </div>
-      </div>
 
-      <div className="penalty-rounds">
-        {Array.from({ length: Math.max(maxRounds, currentRound + 1) }, (_, i) => i + 1).map(round => (
-          <div key={round} className={`penalty-round ${round <= currentRound ? 'completed' : ''}`}>
-            <span className="round-number">第{round}轮</span>
-            <div className="round-shots">
-              <span className={`shot-result ${getShotResult(round, 'home') === true ? 'goal' : getShotResult(round, 'home') === false ? 'miss' : ''}`}>
-                {getShotResult(round, 'home') === true ? '⚽' : getShotResult(round, 'home') === false ? '❌' : '·'}
-              </span>
-              <span className={`shot-result ${getShotResult(round, 'away') === true ? 'goal' : getShotResult(round, 'away') === false ? 'miss' : ''}`}>
-                {getShotResult(round, 'away') === true ? '⚽' : getShotResult(round, 'away') === false ? '❌' : '·'}
+        <aside className="penalty-sidebar">
+          <header className="penalty-header">
+            <h2>点球大战</h2>
+            <div className="penalty-score">
+              <span>{homeTeam}</span>
+              <strong>{homeScore} : {awayScore}</strong>
+              <span>{awayTeam}</span>
+            </div>
+          </header>
+
+          <div className="penalty-rounds">
+            {Array.from({ length: roundCount }, (_, index) => index + 1).map(round => {
+              const homeShot = shots.find(shot => shot.round === round && shot.team === 'home')
+              const awayShot = shots.find(shot => shot.round === round && shot.team === 'away')
+              return (
+                <div key={round} className="penalty-round">
+                  <span>{round}</span>
+                  <span className={homeShot ? (homeShot.scored ? 'goal' : 'miss') : ''}>
+                    {homeShot ? (homeShot.scored ? '进' : '失') : '·'}
+                  </span>
+                  <span className={awayShot ? (awayShot.scored ? 'goal' : 'miss') : ''}>
+                    {awayShot ? (awayShot.scored ? '进' : '失') : '·'}
+                  </span>
+                </div>
+              )
+            })}
+          </div>
+
+          <div className="penalty-controls">
+            <div className="penalty-turn">
+              <strong>{isHomeTurn ? '本方主罚' : '控制门将'}</strong>
+              <span>
+                {isHomeTurn
+                  ? `${shooter?.number || '?'}号选择射门方向`
+                  : `对手方向不可见，控制${goalkeeper?.number || 1}号扑救`}
               </span>
             </div>
+            {lastResult && <div className="penalty-last-result">{lastResult.text}</div>}
+            {!finishedWinner && (
+              <div className="penalty-directions">
+                <button disabled={isAnimating} onClick={() => finishTurn('left')}>
+                  ← {isHomeTurn ? '射左侧' : '扑左侧'}
+                </button>
+                <button disabled={isAnimating} onClick={() => finishTurn('center')}>
+                  ↑ {isHomeTurn ? '射中路' : '守中路'}
+                </button>
+                <button disabled={isAnimating} onClick={() => finishTurn('right')}>
+                  {isHomeTurn ? '射右侧' : '扑右侧'} →
+                </button>
+              </div>
+            )}
+            {finishedWinner && (
+              <div className="penalty-winner">
+                {finishedWinner === 'home' ? `${homeTeam}晋级！` : `${awayTeam}晋级`}
+              </div>
+            )}
           </div>
-        ))}
+        </aside>
       </div>
-
-      {!isFinished && (
-        <div className="penalty-controls">
-          <p className="penalty-turn">
-            {isHomeTurn ? homeTeam : awayTeam}的点球
-          </p>
-          <div className="penalty-directions">
-            <button className="btn-gold" onClick={() => handleShoot('left')}>
-              ⬅️ 左侧
-            </button>
-            <button className="btn-gold" onClick={() => handleShoot('center')}>
-              ⬆️ 中路
-            </button>
-            <button className="btn-gold" onClick={() => handleShoot('right')}>
-              ➡️ 右侧
-            </button>
-          </div>
-        </div>
-      )}
-
-      {showResult && (
-        <div className="penalty-result">
-          <div className="result-emoji">{homeScore > awayScore ? '🎉' : '😢'}</div>
-          <h2 className="result-text">
-            {homeScore > awayScore ? `${homeTeam}获胜！` : `${awayTeam}获胜！`}
-          </h2>
-          <p>点球比分: {homeScore} - {awayScore}</p>
-        </div>
-      )}
     </div>
   )
 }

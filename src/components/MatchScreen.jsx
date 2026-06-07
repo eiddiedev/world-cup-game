@@ -25,6 +25,8 @@ import { audioManager } from '../utils/audioManager.js'
 import { getFittedLandscapePitchSize } from '../utils/pitchRendering.js'
 import { getMatchEventVisual } from '../utils/matchEventVisuals.js'
 import { appendCommentaryEntry, openChainedDecision } from '../utils/commentaryTimeline.js'
+import { getNextMatchSpeed } from '../utils/liveMatchSimulation.js'
+import { getMatchBench, swapMatchPlayer } from '../utils/substitution.js'
 import PenaltyShootout from './PenaltyShootout'
 import AnimationEngine from './AnimationEngine'
 
@@ -105,12 +107,7 @@ export default function MatchScreen({ saveData, updateSaveData, navigateTo, show
   const fullRoster = saveData.currentRun?.roster || saveData.currentRun?.purchasedPlayerIds || []
   const injuredSet = new Set(saveData.currentRun?.injuredPlayers || [])
   const suspendedSet = new Set(saveData.currentRun?.suspendedPlayers || [])
-  const availablePlayers = fullRoster.filter(p => !injuredSet.has(p.id) && !suspendedSet.has(p.id))
   const lineup = (saveData.currentRun?.lineup || []).filter(p => !injuredSet.has(p.id) && !suspendedSet.has(p.id))
-  const starterIds = new Set(lineup.map(p => p.id))
-  // 所有非首发球员（包括被罚下的）
-  const allNonStarters = fullRoster.filter(p => !starterIds.has(p.id))
-  const benchPlayers = availablePlayers.filter(p => !starterIds.has(p.id))
   const formation = saveData.currentRun?.formation
     || getTeamDefaultFormation(saveData.currentRun?.teamId)
   const opponentName = saveData.currentRun?.currentOpponent || '未知对手'
@@ -121,6 +118,7 @@ export default function MatchScreen({ saveData, updateSaveData, navigateTo, show
   const [awayScore, setAwayScore] = useState(0)
   const [, setEvents] = useState([])
   const [isPlaying, setIsPlaying] = useState(false)
+  const [matchSpeed, setMatchSpeed] = useState(1)
   const [showPenalty, setShowPenalty] = useState(false)
 
   // 决策状态
@@ -136,6 +134,7 @@ export default function MatchScreen({ saveData, updateSaveData, navigateTo, show
   // 换人
   const [showSubModal, setShowSubModal] = useState(false)
   const [substitutionsLeft, setSubstitutionsLeft] = useState(3)
+  const [draggedBenchId, setDraggedBenchId] = useState(null)
   const [, setSubEvents] = useState([]) // 换人记录
 
   // 比赛统计
@@ -159,6 +158,13 @@ export default function MatchScreen({ saveData, updateSaveData, navigateTo, show
   const lastDecisionMinuteRef = useRef(-99)
   const currentLineupRef = useRef([...lineup])
   const [currentLineup, setCurrentLineup] = useState([...lineup])
+  const unavailableSubIds = [
+    ...injuredSet,
+    ...suspendedSet,
+    ...redCardedPlayerIds,
+  ]
+  const benchPlayers = getMatchBench(fullRoster, currentLineup, unavailableSubIds)
+  const allNonStarters = getMatchBench(fullRoster, currentLineup)
 
   // 球员状态（体力值）
   const [playerStamina, setPlayerStamina] = useState(() => {
@@ -257,9 +263,9 @@ export default function MatchScreen({ saveData, updateSaveData, navigateTo, show
       if (next >= 12 && next % 6 === 0) {
         maybeGenerateOpponentChance(next)
       }
-    }, 500)
+    }, Math.max(80, 500 / matchSpeed))
     return () => clearInterval(interval)
-  }, [isPlaying, currentDecision, showSubModal])
+  }, [isPlaying, currentDecision, showSubModal, matchSpeed])
 
   // 体力事件检测（体力低于30的球员触发，概率降低）
   useEffect(() => {
@@ -772,10 +778,11 @@ export default function MatchScreen({ saveData, updateSaveData, navigateTo, show
   // 换人
   const handleSubstitute = (benchPlayer, outPlayer) => {
     if (substitutionsLeft <= 0) return
-
-    const newLineup = currentLineupRef.current.map(p =>
-      p.id === outPlayer.id ? { ...benchPlayer, pos: outPlayer.pos } : p
-    )
+    const newLineup = swapMatchPlayer(currentLineupRef.current, benchPlayer, outPlayer)
+    if (!newLineup) {
+      showToast('该球员已在场上，无法重复换入')
+      return
+    }
     currentLineupRef.current = newLineup
     setCurrentLineup(newLineup)
     setSubstitutionsLeft(prev => prev - 1)
@@ -799,6 +806,7 @@ export default function MatchScreen({ saveData, updateSaveData, navigateTo, show
     setSubEvents(prev => [...prev, { minute: matchTime, in: benchPlayer.name, out: outPlayer.name }])
     audioManager.playSound('substitution')
     audioManager.vibrate(18)
+    setDraggedBenchId(null)
     setShowSubModal(false)
   }
 
@@ -952,6 +960,7 @@ export default function MatchScreen({ saveData, updateSaveData, navigateTo, show
             width={canvasSize.width}
             height={canvasSize.height}
             ambientEnabled={isPlaying && !showSubModal && !showPenalty}
+            simulationSpeed={matchSpeed}
             onGoalEffect={() => {
               audioManager.playGoal()
               audioManager.vibrate([22, 36, 22])
@@ -1027,9 +1036,18 @@ export default function MatchScreen({ saveData, updateSaveData, navigateTo, show
                   </button>
                 )}
                 {isPlaying && !currentDecision && (
-                  <button onClick={() => setIsPlaying(false)} className="match-action-btn pause-btn">
-                    ⏸ 暂停
-                  </button>
+                  <>
+                    <button
+                      onClick={() => setMatchSpeed(speed => getNextMatchSpeed(speed))}
+                      className="match-action-btn speed-btn"
+                      title="切换比赛速度"
+                    >
+                      {matchSpeed}×
+                    </button>
+                    <button onClick={() => setIsPlaying(false)} className="match-action-btn pause-btn">
+                      ⏸ 暂停
+                    </button>
+                  </>
                 )}
                 {!isPlaying && matchTime > 0 && matchTime < 90 && !currentDecision && (
                   <button onClick={() => setIsPlaying(true)} className="match-action-btn continue-btn">
@@ -1053,18 +1071,32 @@ export default function MatchScreen({ saveData, updateSaveData, navigateTo, show
             </div>
             {/* 当前阵容 */}
             <div className="sub-lineup-section">
-              <div className="sub-section-label">场上球员（点击换下）</div>
+              <div className="sub-section-label">场上球员（将替补拖到这里）</div>
               <div className="sub-lineup-grid">
                 {currentLineup.map(p => {
                   const sta = playerStamina[p.id] || 80
                   return (
                     <div
                       key={p.id}
-                      className="sub-player-card"
+                      className={`sub-player-card ${draggedBenchId ? 'sub-drop-ready' : ''}`}
                       style={{ borderColor: getStaminaColor(sta) }}
+                      onDragOver={event => {
+                        if (draggedBenchId && substitutionsLeft > 0) event.preventDefault()
+                      }}
+                      onDrop={event => {
+                        event.preventDefault()
+                        const benchId = draggedBenchId || event.dataTransfer.getData('text/player-id')
+                        const benchPlayer = benchPlayers.find(player => String(player.id) === String(benchId))
+                        if (benchPlayer) handleSubstitute(benchPlayer, p)
+                      }}
                       onClick={() => {
+                        if (draggedBenchId) {
+                          const benchPlayer = benchPlayers.find(player => String(player.id) === String(draggedBenchId))
+                          if (benchPlayer) handleSubstitute(benchPlayer, p)
+                          return
+                        }
                         if (benchPlayers.length === 0) { showToast('没有可用替补'); return }
-                        setStaminaEvent(prev => ({ ...prev, _outPlayer: p }))
+                        showToast('请把下方替补拖到这名球员上')
                       }}
                     >
                       <span className="sub-player-number">#{p.number || '?'}</span>
@@ -1077,7 +1109,7 @@ export default function MatchScreen({ saveData, updateSaveData, navigateTo, show
             </div>
             {/* 替补席 */}
             <div className="sub-bench-section">
-              <div className="sub-section-label">替补席（点击上场）</div>
+              <div className="sub-section-label">替补席（拖拽到场上球员；触屏可先点替补）</div>
               {allNonStarters.length === 0 && (
                 <div className="sub-empty">无可用替补</div>
               )}
@@ -1085,28 +1117,36 @@ export default function MatchScreen({ saveData, updateSaveData, navigateTo, show
                 {allNonStarters.map(bp => {
                   const isSuspended = suspendedSet.has(bp.id)
                   const isRedCarded = redCardedPlayerIds.includes(bp.id)
-                  const isUnavailable = isSuspended || isRedCarded
+                  const isInjured = injuredSet.has(bp.id)
+                  const isUnavailable = isSuspended || isRedCarded || isInjured
                   return (
                     <div
                       key={bp.id}
-                      className={`sub-bench-card ${isUnavailable ? 'sub-bench-disabled' : ''}`}
-                      onClick={() => {
-                        if (isUnavailable) {
-                          showToast(`${bp.name} 因红牌停赛无法上场`)
+                      className={`sub-bench-card ${isUnavailable ? 'sub-bench-disabled' : ''} ${String(draggedBenchId) === String(bp.id) ? 'sub-bench-selected' : ''}`}
+                      draggable={!isUnavailable && substitutionsLeft > 0}
+                      onDragStart={event => {
+                        if (isUnavailable || substitutionsLeft <= 0) {
+                          event.preventDefault()
                           return
                         }
-                        const outPlayer = staminaEvent?._outPlayer
-                        if (outPlayer) {
-                          handleSubstitute(bp, outPlayer)
-                        } else {
-                          showToast('请先点击要换下的场上球员')
+                        event.dataTransfer.effectAllowed = 'move'
+                        event.dataTransfer.setData('text/player-id', String(bp.id))
+                        setDraggedBenchId(bp.id)
+                      }}
+                      onDragEnd={() => setDraggedBenchId(null)}
+                      onClick={() => {
+                        if (isUnavailable) {
+                          showToast(`${bp.name}${isInjured ? '因伤' : '因停赛'}无法上场`)
+                          return
                         }
+                        if (substitutionsLeft <= 0) return
+                        setDraggedBenchId(current => String(current) === String(bp.id) ? null : bp.id)
                       }}
                     >
                       <span className="sub-bench-number">#{bp.number || '?'}</span>
                       <span className="sub-bench-name">{bp.name}</span>
                       <span className="sub-bench-pos">{bp.position || bp.pos}</span>
-                      {isUnavailable && <span className="sub-bench-status">停赛</span>}
+                      {isUnavailable && <span className="sub-bench-status">{isInjured ? '伤停' : '停赛'}</span>}
                     </div>
                   )
                 })}
@@ -1240,6 +1280,12 @@ export default function MatchScreen({ saveData, updateSaveData, navigateTo, show
         <PenaltyShootout
           homeTeam={team?.name || '主队'}
           awayTeam={opponentName}
+          homeTeamId={saveData.currentRun?.teamId}
+          awayTeamId={opponentName}
+          homeLineup={currentLineup}
+          awayLineup={opponentPlayers}
+          homeFormation={formation}
+          awayFormation={opponentSetup.formation}
           onComplete={handlePenaltyComplete}
         />
       )}

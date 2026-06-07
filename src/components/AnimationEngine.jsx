@@ -18,6 +18,7 @@ const AnimationEngine = forwardRef(({
   width = 780,
   height = 480,
   ambientEnabled = true,
+  simulationSpeed = 1,
   onGoalEffect,
   onOpponentGoalEffect,
   onSaveEffect,
@@ -51,6 +52,7 @@ const AnimationEngine = forwardRef(({
       homeKit: kits.home,
       awayKit: kits.away,
       ambientEnabled,
+      simulationSpeed,
       get onGoalEffect() { return callbacksRef.current.onGoalEffect },
       get onOpponentGoalEffect() { return callbacksRef.current.onOpponentGoalEffect },
       get onSaveEffect() { return callbacksRef.current.onSaveEffect },
@@ -118,6 +120,12 @@ const AnimationEngine = forwardRef(({
     }
   }, [ambientEnabled])
 
+  useEffect(() => {
+    if (sceneRef.current) {
+      sceneRef.current.setSimulationSpeed?.(simulationSpeed)
+    }
+  }, [simulationSpeed])
+
   const withScene = async (method, ...args) => {
     const scene = sceneRef.current || await readyRef.current
     if (!scene || typeof scene[method] !== 'function') return undefined
@@ -128,6 +136,9 @@ const AnimationEngine = forwardRef(({
     playEvent: (...args) => withScene('playEvent', ...args),
     playResult: (...args) => withScene('playResult', ...args),
     playAmbientEvent: (...args) => withScene('playAmbientEvent', ...args),
+    preparePenalty: (...args) => withScene('preparePenalty', ...args),
+    playPenaltyKick: (...args) => withScene('playPenaltyKick', ...args),
+    setSimulationSpeed: (...args) => withScene('setSimulationSpeed', ...args),
     resetPositions: (...args) => withScene('resetPositions', ...args),
     getState: () => sceneRef.current?.getState() || null,
   }))

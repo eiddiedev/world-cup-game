@@ -5373,6 +5373,265 @@ button {
   margin-top: 0 !important;
 }
 
+/* Live match controls and drag substitutions */
+.match-controls {
+  flex-direction: row !important;
+  gap: 8px !important;
+}
+
+.match-controls .speed-btn {
+  flex: 0 0 64px;
+  background: var(--pixel-gold);
+  color: var(--pixel-main);
+}
+
+.match-controls .pause-btn,
+.match-controls .continue-btn,
+.match-controls .start-btn,
+.match-controls .end-btn {
+  flex: 1 1 auto;
+}
+
+.sub-player-card,
+.sub-bench-card {
+  border-radius: 0 !important;
+  transition: none !important;
+}
+
+.sub-player-card.sub-drop-ready {
+  outline: 3px dashed var(--pixel-gold);
+  outline-offset: 2px;
+}
+
+.sub-player-card.sub-drop-ready:hover {
+  background: var(--pixel-gold);
+  transform: translateY(-2px);
+}
+
+.sub-bench-card {
+  cursor: grab;
+  user-select: none;
+}
+
+.sub-bench-card:active {
+  cursor: grabbing;
+}
+
+.sub-bench-card.sub-bench-selected {
+  background: var(--pixel-gold);
+  box-shadow: 3px 3px 0 var(--pixel-shadow);
+}
+
+/* Penalty shootout uses the same Phaser pitch and kit system as the match. */
+.penalty-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: var(--pixel-bg);
+  overflow: hidden;
+}
+
+.penalty-stage {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(300px, 1fr);
+  gap: 16px;
+  width: min(1500px, 100%);
+  height: min(880px, 100%);
+  min-height: 0;
+}
+
+.penalty-pitch {
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  min-height: 0;
+  border: 4px solid var(--pixel-main);
+  background: #163d20;
+  box-shadow: 6px 6px 0 var(--pixel-shadow);
+  overflow: hidden;
+}
+
+.penalty-sidebar {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  min-width: 0;
+  min-height: 0;
+  border: 4px solid var(--pixel-main);
+  background: var(--pixel-bg);
+  box-shadow: 6px 6px 0 var(--pixel-shadow);
+}
+
+.penalty-header {
+  padding: 16px;
+  background: var(--pixel-main);
+  color: var(--pixel-bg);
+  border-bottom: 4px solid var(--pixel-gold);
+}
+
+.penalty-header h2 {
+  margin: 0 0 12px;
+  color: var(--pixel-gold);
+  font-family: "Zpix", monospace;
+  font-size: 24px;
+  text-align: center;
+}
+
+.penalty-score {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  font-family: "Zpix", "Microsoft YaHei", sans-serif;
+  font-size: 12px;
+  text-align: center;
+}
+
+.penalty-score strong {
+  padding: 8px 12px;
+  border: 3px solid var(--pixel-gold);
+  font-size: 20px;
+  white-space: nowrap;
+}
+
+.penalty-rounds {
+  display: grid;
+  align-content: start;
+  gap: 6px;
+  padding: 12px;
+  overflow-y: auto;
+}
+
+.penalty-round {
+  display: grid;
+  grid-template-columns: 1fr 44px 44px;
+  border: 2px solid var(--pixel-main);
+  font-family: "Zpix", monospace;
+  font-size: 12px;
+}
+
+.penalty-round span {
+  padding: 8px;
+  text-align: center;
+  border-right: 2px solid var(--pixel-main);
+}
+
+.penalty-round span:last-child {
+  border-right: 0;
+}
+
+.penalty-round .goal {
+  background: var(--pixel-gold);
+  color: var(--pixel-main);
+}
+
+.penalty-round .miss {
+  background: var(--pixel-accent);
+  color: var(--pixel-bg);
+}
+
+.penalty-controls {
+  padding: 12px;
+  border-top: 4px solid var(--pixel-main);
+}
+
+.penalty-turn {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 10px;
+  font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.penalty-turn strong {
+  color: var(--pixel-accent);
+  font-family: "Zpix", monospace;
+  font-size: 16px;
+}
+
+.penalty-last-result,
+.penalty-winner {
+  margin-bottom: 10px;
+  padding: 8px;
+  border: 2px solid var(--pixel-gold);
+  color: var(--pixel-main);
+  font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+  font-size: 13px;
+  text-align: center;
+}
+
+.penalty-directions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.penalty-directions button {
+  min-height: 48px;
+  padding: 6px;
+  border: 3px solid var(--pixel-main);
+  border-radius: 0;
+  background: var(--pixel-gold);
+  color: var(--pixel-main);
+  box-shadow: 3px 3px 0 var(--pixel-shadow);
+  font-family: "Zpix", "Microsoft YaHei", sans-serif;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.penalty-directions button:active {
+  transform: translate(3px, 3px);
+  box-shadow: none;
+}
+
+.penalty-directions button:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+
+@media (max-width: 900px), (orientation: portrait) {
+  .penalty-screen {
+    padding: 8px;
+  }
+
+  .penalty-stage {
+    grid-template-columns: 1fr;
+    grid-template-rows: minmax(0, 55fr) minmax(0, 45fr);
+    gap: 8px;
+  }
+
+  .penalty-sidebar {
+    grid-template-columns: minmax(170px, 0.8fr) minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) auto;
+  }
+
+  .penalty-header {
+    grid-row: 1 / 3;
+    padding: 10px;
+    border-right: 4px solid var(--pixel-gold);
+    border-bottom: 0;
+  }
+
+  .penalty-header h2 {
+    font-size: 18px;
+  }
+
+  .penalty-score {
+    grid-template-columns: 1fr;
+  }
+
+  .penalty-rounds {
+    padding: 8px;
+  }
+
+  .penalty-controls {
+    padding: 8px;
+  }
+}
+
 @media (max-width: 900px) {
   .match-play-area {
     grid-template-columns: minmax(0, 1fr) !important;

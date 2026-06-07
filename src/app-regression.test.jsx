@@ -57,6 +57,17 @@ import {
 } from './utils/commentaryTimeline.js'
 import { getMatchKits, getTeamKit } from './data/teamKits.js'
 import { createPitchBounds, tacticalToPhaserPoint } from './utils/phaserPitch.js'
+import {
+  getBallAttachmentPoint,
+  getDecisionBridge,
+  getNextMatchSpeed,
+} from './utils/liveMatchSimulation.js'
+import {
+  getShootoutWinner,
+  resolveOpponentShootoutKick,
+  resolveUserShootoutKick,
+} from './utils/penaltyShootout.js'
+import { getMatchBench, swapMatchPlayer } from './utils/substitution.js'
 
 afterEach(() => {
   cleanup()
@@ -747,6 +758,65 @@ describe('post-match review', () => {
 })
 
 describe('landscape match presentation', () => {
+  it('cycles the retained match acceleration controls', () => {
+    expect(getNextMatchSpeed(1)).toBe(3)
+    expect(getNextMatchSpeed(3)).toBe(6)
+    expect(getNextMatchSpeed(6)).toBe(1)
+  })
+
+  it('attaches the ball at the carrier feet and bridges decisions with a pass', () => {
+    expect(getBallAttachmentPoint({ x: 40, y: 55 }, 1)).toEqual({ x: 41.35, y: 56.1 })
+    expect(getDecisionBridge('6号', '10号', {
+      '6号': { x: 30, y: 50, team: 'my' },
+      '10号': { x: 60, y: 50, team: 'my' },
+    })).toMatchObject({
+      type: 'pass',
+      fromName: '6号',
+      targetName: '10号',
+    })
+  })
+
+  it('keeps opponent penalty direction hidden behind the goalkeeper choice', () => {
+    const opponentKick = resolveOpponentShootoutKick('left', vi.fn()
+      .mockReturnValueOnce(0.9)
+      .mockReturnValueOnce(0.5))
+    const userKick = resolveUserShootoutKick('right', vi.fn()
+      .mockReturnValueOnce(0.2)
+      .mockReturnValueOnce(0.5))
+
+    expect(opponentKick).toMatchObject({
+      keeperDirection: 'left',
+      shooterDirection: 'right',
+      scored: true,
+    })
+    expect(userKick).toMatchObject({
+      shooterDirection: 'right',
+      keeperDirection: 'left',
+      scored: true,
+    })
+  })
+
+  it('ends a shootout only after both sides have taken equal sudden-death kicks', () => {
+    const shots = [
+      ...Array.from({ length: 5 }, (_, index) => ({ team: 'home', scored: index < 4 })),
+      ...Array.from({ length: 5 }, (_, index) => ({ team: 'away', scored: index < 4 })),
+      { team: 'home', scored: true },
+    ]
+    expect(getShootoutWinner(shots)).toBeNull()
+    expect(getShootoutWinner([...shots, { team: 'away', scored: false }])).toBe('home')
+  })
+
+  it('moves the outgoing player to the live bench and rejects duplicate substitutions', () => {
+    const starter = { id: 'starter', name: '首发', pos: 'MF' }
+    const bench = { id: 'bench', name: '替补', position: 'FW' }
+    const roster = [starter, bench]
+    const swapped = swapMatchPlayer([starter], bench, starter)
+
+    expect(swapped).toEqual([{ ...bench, pos: 'MF', position: 'MF' }])
+    expect(getMatchBench(roster, swapped)).toEqual([starter])
+    expect(swapMatchPlayer(swapped, bench, swapped[0])).toBeNull()
+  })
+
   it('maps tactical coordinates onto the same top-down horizontal pitch used by the Phaser demo', () => {
     const pitch = createPitchBounds(780, 480)
     const ownGoal = tacticalToPhaserPoint(50, 0, pitch)

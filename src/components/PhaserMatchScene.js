@@ -1,9 +1,10 @@
 import { FORMATION_POSITIONS } from '../utils/formationPositions.js'
 import { ANIMATION_TEMPLATES } from '../utils/animationTemplates.js'
-import { BALL_ASSET_SRC, getResultAnimationKey } from '../utils/animationResultMapper.js'
-import { BALL_ZONES, createAmbientTargets } from '../utils/matchVisuals.js'
+import { getResultAnimationKey } from '../utils/animationResultMapper.js'
+import { BALL_ZONES } from '../utils/matchVisuals.js'
 import { MATCH_EVENT_ASSETS } from '../utils/matchEventVisuals.js'
 import { createPitchBounds, tacticalToPhaserPoint } from '../utils/phaserPitch.js'
+import { getBallAttachmentPoint, getDecisionBridge } from '../utils/liveMatchSimulation.js'
 
 const clamp = (value, min = 4, max = 96) => Math.max(min, Math.min(max, value))
 
@@ -27,12 +28,14 @@ export function createPhaserMatchScene(Phaser, controller) {
       this.animating = false
       this.ambientPhase = 0
       this.lastAmbientSwitch = 0
+      this.lastAmbientAction = 0
+      this.ballTransit = null
+      this.simulationSpeed = 1
       this.lastFreekickX = 50
       this.lastFreekickY = 75
     }
 
     preload() {
-      this.load.image('match-ball', BALL_ASSET_SRC)
       Object.entries(MATCH_EVENT_ASSETS).forEach(([key, src]) => {
         this.load.image(`event-${key}`, src)
       })
@@ -42,6 +45,7 @@ export function createPhaserMatchScene(Phaser, controller) {
       this.pitch = createPitchBounds(this.scale.width, this.scale.height)
       this.drawPitch()
       this.createPlayerTextures()
+      this.createBallTexture()
       this.createPlayers()
       this.createBall()
       this.resetPositions()
@@ -107,9 +111,6 @@ export function createPhaserMatchScene(Phaser, controller) {
       context.fillRect(3, 0, 6, 2)
       context.fillStyle = '#C68642'
       context.fillRect(3, 2, 6, 5)
-      context.fillStyle = '#111111'
-      context.fillRect(4, 4, 1, 1)
-      context.fillRect(7, 4, 1, 1)
       context.fillStyle = shirt
       context.fillRect(1, 7, 10, 6)
       context.fillStyle = kit.accent
@@ -123,6 +124,23 @@ export function createPhaserMatchScene(Phaser, controller) {
       context.fillStyle = '#111111'
       context.fillRect(1, 17, 4, 1)
       context.fillRect(7, 17, 4, 1)
+      texture.refresh()
+    }
+
+    createBallTexture() {
+      if (this.textures.exists('match-ball')) return
+      const texture = this.textures.createCanvas('match-ball', 8, 8)
+      const context = texture.context
+      context.imageSmoothingEnabled = false
+      context.fillStyle = '#F3E3B4'
+      context.fillRect(1, 0, 6, 8)
+      context.fillRect(0, 1, 8, 6)
+      context.fillStyle = '#1B3764'
+      context.fillRect(3, 2, 2, 2)
+      context.fillRect(1, 4, 2, 2)
+      context.fillRect(5, 5, 2, 2)
+      context.fillStyle = '#5B4630'
+      context.fillRect(3, 7, 2, 1)
       texture.refresh()
     }
 
@@ -150,12 +168,23 @@ export function createPhaserMatchScene(Phaser, controller) {
             .setDepth(5)
           const label = this.add.text(0, 0, String(player.number || (isGoalkeeper ? 1 : '?')), {
             fontFamily: 'Zpix, monospace',
-            fontSize: `${labelSize}px`,
-            color: team === 'my' ? '#F3E3B4' : '#FFFFFF',
-            stroke: team === 'my' ? '#1B3764' : '#5B1E1E',
-            strokeThickness: 3,
+            fontSize: `${Math.max(8, labelSize - 1)}px`,
+            color: '#FFFFFF',
+            stroke: '#1B3764',
+            strokeThickness: 2,
           }).setOrigin(0.5).setDepth(7)
-          this.playerObjects.set(name, { player, sprite, shadow, label, team })
+          const leftEye = this.add.rectangle(0, 0, 2, 2, 0x111111).setDepth(8)
+          const rightEye = this.add.rectangle(0, 0, 2, 2, 0x111111).setDepth(8)
+          this.playerObjects.set(name, {
+            player,
+            sprite,
+            shadow,
+            label,
+            leftEye,
+            rightEye,
+            team,
+            facing: team === 'my' ? 1 : -1,
+          })
         })
       }
 
@@ -166,7 +195,7 @@ export function createPhaserMatchScene(Phaser, controller) {
     createBall() {
       this.ballShadow = this.add.ellipse(0, 0, 16, 7, 0x000000, 0.28).setDepth(8)
       this.ball = this.add.image(0, 0, 'match-ball')
-        .setDisplaySize(Math.max(14, this.scale.height * 0.036), Math.max(14, this.scale.height * 0.036))
+        .setDisplaySize(Math.max(9, this.scale.height * 0.023), Math.max(9, this.scale.height * 0.023))
         .setDepth(20)
     }
 
@@ -187,6 +216,10 @@ export function createPhaserMatchScene(Phaser, controller) {
           y: slot[1],
           anchorX: slot[0],
           anchorY: slot[1],
+          targetX: slot[0],
+          targetY: slot[1],
+          vx: 0,
+          vy: 0,
           position,
           team: 'my',
         }
@@ -202,6 +235,10 @@ export function createPhaserMatchScene(Phaser, controller) {
           y: 100 - slot[1],
           anchorX: 100 - slot[0],
           anchorY: 100 - slot[1],
+          targetX: 100 - slot[0],
+          targetY: 100 - slot[1],
+          vx: 0,
+          vy: 0,
           position,
           team: 'opponent',
         }
@@ -209,7 +246,11 @@ export function createPhaserMatchScene(Phaser, controller) {
 
       this.playerPositions = nextPositions
       this.ballPosition = { x: 50, y: 50, lift: 0 }
-      this.ballOwnerName = null
+      this.ballOwnerName = Object.keys(nextPositions).find(name => (
+        nextPositions[name].team === 'my' && nextPositions[name].position === 'MF'
+      )) || Object.keys(nextPositions).find(name => nextPositions[name].team === 'my') || null
+      this.possessionTeam = 'my'
+      this.ballTransit = null
       this.ballZone = 'midfield'
       this.syncObjects()
     }
@@ -221,6 +262,8 @@ export function createPhaserMatchScene(Phaser, controller) {
           objects.sprite.setVisible(false)
           objects.shadow.setVisible(false)
           objects.label.setVisible(false)
+          objects.leftEye.setVisible(false)
+          objects.rightEye.setVisible(false)
           return
         }
         const point = tacticalToPhaserPoint(position.x, position.y, this.pitch)
@@ -229,7 +272,15 @@ export function createPhaserMatchScene(Phaser, controller) {
           : 0
         objects.sprite.setPosition(point.x, point.y + bob)
         objects.shadow.setPosition(point.x + 2, point.y + 4)
-        objects.label.setPosition(point.x, point.y - Math.max(19, this.scale.height * 0.047))
+        const displayHeight = objects.sprite.displayHeight
+        objects.label.setPosition(point.x, point.y + bob - Math.max(8, displayHeight * 0.26))
+        const ballPoint = tacticalToPhaserPoint(this.ballPosition.x, this.ballPosition.y, this.pitch)
+        const eyeDirection = Math.sign(ballPoint.x - point.x) || objects.facing
+        objects.facing = eyeDirection
+        const eyeY = point.y + bob - Math.max(14, displayHeight * 0.60)
+        const eyeShift = eyeDirection * Math.max(0.5, this.scale.height / 600)
+        objects.leftEye.setPosition(point.x - 3 + eyeShift, eyeY)
+        objects.rightEye.setPosition(point.x + 3 + eyeShift, eyeY)
       })
 
       const ballPoint = tacticalToPhaserPoint(this.ballPosition.x, this.ballPosition.y, this.pitch)
@@ -238,49 +289,151 @@ export function createPhaserMatchScene(Phaser, controller) {
       this.ballShadow.setScale(Math.max(0.45, 1 - this.ballPosition.lift / 80))
     }
 
-    update(time) {
+    update(time, delta) {
       this.ambientPhase = time / 900
-      this.tickAmbient(time)
+      this.tickAmbient(time, delta)
       this.syncObjects()
     }
 
-    tickAmbient(now) {
-      if (!this.controller.ambientEnabled) return
-      if (!this.animating && now - this.lastAmbientSwitch > 1400) {
-        const zones = ['buildup', 'midfield', 'left_attack', 'right_attack', 'box', 'defend']
-        const currentIndex = zones.indexOf(this.ballZone)
-        this.ballZone = zones[(currentIndex + 1 + Math.floor(now / 1400)) % zones.length] || 'midfield'
-        this.lastAmbientSwitch = now
-        const candidates = Object.keys(this.playerPositions).filter((name) => {
-          const position = this.playerPositions[name]
-          return position.team === this.possessionTeam && position.position !== 'GK'
-        })
-        this.ballOwnerName = candidates[Math.floor((now / 1400) % Math.max(1, candidates.length))] || null
+    tickAmbient(now, delta = 16) {
+      if (!this.controller.ambientEnabled || this.animating) return
+      const speed = this.controller.simulationSpeed || this.simulationSpeed || 1
+      const frameSeconds = Math.min(0.05, delta / 1000) * speed
+      const owner = this.ballOwnerName ? this.playerPositions[this.ballOwnerName] : null
+
+      if (owner && now - this.lastAmbientAction > 1050 / speed) {
+        this.chooseAmbientAction(now)
       }
 
-      const targets = createAmbientTargets({
-        playerPositions: this.playerPositions,
-        ballZone: this.ballZone,
-        phase: this.ambientPhase,
-      })
-      Object.entries(targets).forEach(([name, target]) => {
+      const ballY = owner?.y ?? this.ballPosition.y
+      Object.entries(this.playerPositions).forEach(([name, position], index) => {
         if (this.lockedPlayers.has(name)) return
-        const position = this.playerPositions[name]
-        if (!position) return
-        position.x += (target.x - position.x) * 0.022
-        position.y += (target.y - position.y) * 0.022
+        const direction = position.team === 'my' ? 1 : -1
+        const isOwner = name === this.ballOwnerName
+        const isDefending = position.team !== this.possessionTeam
+        const lateralWave = Math.sin(this.ambientPhase * 1.8 + index * 0.85)
+          * (position.position === 'GK' ? 1.2 : 3.5)
+        const teamPush = clamp((ballY - 50) * 0.25, -12, 12)
+        let targetX = clamp(position.anchorX + lateralWave, 5, 95)
+        let targetY = clamp(position.anchorY + teamPush, 5, 95)
+
+        if (isOwner) {
+          targetX = clamp(position.x + Math.sin(this.ambientPhase * 3.4) * 2.5, 7, 93)
+          targetY = clamp(position.y + direction * 7, 6, 94)
+        } else if (isDefending && owner) {
+          const distance = Math.hypot(position.x - owner.x, position.y - owner.y)
+          if (distance < 25 && position.position !== 'GK') {
+            targetX = clamp(owner.x + (position.anchorX < owner.x ? -4 : 4), 5, 95)
+            targetY = clamp(owner.y - direction * 3, 5, 95)
+          }
+        } else if (!isDefending && position.position !== 'GK') {
+          targetY = clamp(targetY + direction * (position.position === 'FW' ? 6 : 3), 5, 95)
+        }
+
+        position.targetX = targetX
+        position.targetY = targetY
+        const acceleration = isOwner ? 22 : 14
+        position.vx += (targetX - position.x) * acceleration * frameSeconds
+        position.vy += (targetY - position.y) * acceleration * frameSeconds
+        const maxSpeed = isOwner ? 11 : position.position === 'GK' ? 5 : 8.5
+        const magnitude = Math.hypot(position.vx, position.vy)
+        if (magnitude > maxSpeed) {
+          position.vx = position.vx / magnitude * maxSpeed
+          position.vy = position.vy / magnitude * maxSpeed
+        }
+        position.vx *= Math.pow(0.17, frameSeconds)
+        position.vy *= Math.pow(0.17, frameSeconds)
+        position.x = clamp(position.x + position.vx * frameSeconds, 4, 96)
+        position.y = clamp(position.y + position.vy * frameSeconds, 4, 96)
       })
 
-      if (!this.animating) {
-        const owner = this.ballOwnerName ? this.playerPositions[this.ballOwnerName] : null
-        const zoneTarget = BALL_ZONES[this.ballZone] || BALL_ZONES.midfield
-        const target = owner
-          ? { x: owner.x, y: owner.y + (owner.team === 'my' ? 1.8 : -1.8) }
-          : zoneTarget
-        this.ballPosition.x += (target.x - this.ballPosition.x) * 0.07
-        this.ballPosition.y += (target.y - this.ballPosition.y) * 0.07
-        this.ballPosition.lift *= 0.82
+      if (this.ballTransit) {
+        const transit = this.ballTransit
+        transit.elapsed += delta * speed
+        const progress = Math.min(1, transit.elapsed / transit.duration)
+        const target = this.playerPositions[transit.targetName] || transit.target
+        this.ballPosition.x = transit.start.x + (target.x - transit.start.x) * progress
+        this.ballPosition.y = transit.start.y + (target.y - transit.start.y) * progress
+        this.ballPosition.lift = Math.sin(progress * Math.PI) * transit.arc
+        if (progress >= 1) {
+          this.ballOwnerName = transit.targetName || null
+          this.possessionTeam = target.team || this.possessionTeam
+          this.ballTransit = null
+        }
+      } else if (owner) {
+        const direction = owner.team === 'my' ? 1 : -1
+        const attached = getBallAttachmentPoint(owner, direction)
+        this.ballPosition.x += (attached.x - this.ballPosition.x) * 0.45
+        this.ballPosition.y += (attached.y - this.ballPosition.y) * 0.45
+        this.ballPosition.lift = Math.abs(Math.sin(this.ambientPhase * 8)) * 1.2
       }
+    }
+
+    chooseAmbientAction(now) {
+      const owner = this.playerPositions[this.ballOwnerName]
+      if (!owner) return
+      const direction = owner.team === 'my' ? 1 : -1
+      const teammates = Object.entries(this.playerPositions)
+        .filter(([name, position]) => (
+          name !== this.ballOwnerName
+          && position.team === owner.team
+          && position.position !== 'GK'
+        ))
+        .sort(([, a], [, b]) => (
+          Math.abs(a.x - owner.x) + Math.abs(a.y - (owner.y + direction * 12))
+          - Math.abs(b.x - owner.x) - Math.abs(b.y - (owner.y + direction * 12))
+        ))
+      const nearestDefender = Object.entries(this.playerPositions)
+        .filter(([, position]) => position.team !== owner.team && position.position !== 'GK')
+        .sort(([, a], [, b]) => (
+          Math.hypot(a.x - owner.x, a.y - owner.y)
+          - Math.hypot(b.x - owner.x, b.y - owner.y)
+        ))[0]
+      const pressured = nearestDefender && Math.hypot(
+        nearestDefender[1].x - owner.x,
+        nearestDefender[1].y - owner.y,
+      ) < 10
+      const nearGoal = owner.team === 'my' ? owner.y > 82 : owner.y < 18
+
+      if ((pressured || nearGoal || Math.random() < 0.58) && teammates[0]) {
+        const candidateCount = Math.min(3, teammates.length)
+        this.startBallTransit(
+          teammates[Math.floor(Math.random() * candidateCount)][0],
+          nearGoal ? 360 : 520,
+        )
+      } else if (pressured && nearestDefender && Math.random() < 0.22) {
+        this.startBallTransit(nearestDefender[0], 300)
+      }
+      this.lastAmbientAction = now
+    }
+
+    startBallTransit(targetName, duration = 480, arc = 4) {
+      const target = this.playerPositions[targetName]
+      if (!target) return
+      this.ballTransit = {
+        start: { x: this.ballPosition.x, y: this.ballPosition.y },
+        targetName,
+        target,
+        duration,
+        elapsed: 0,
+        arc,
+      }
+      this.ballOwnerName = null
+    }
+
+    claimNearestBall(preferredTeam = null) {
+      const candidates = Object.entries(this.playerPositions)
+        .filter(([, position]) => !preferredTeam || position.team === preferredTeam)
+        .sort(([, a], [, b]) => (
+          Math.hypot(a.x - this.ballPosition.x, a.y - this.ballPosition.y)
+          - Math.hypot(b.x - this.ballPosition.x, b.y - this.ballPosition.y)
+        ))
+      const [name, position] = candidates[0] || []
+      if (!name || !position) return
+      this.ballOwnerName = name
+      this.possessionTeam = position.team
+      const attached = getBallAttachmentPoint(position, position.team === 'my' ? 1 : -1)
+      this.ballPosition = { ...attached, lift: 0 }
     }
 
     movePlayer(name, target, duration = 400, easing = 'Sine.easeInOut') {
@@ -303,6 +456,8 @@ export function createPhaserMatchScene(Phaser, controller) {
     }
 
     moveBall(target, duration = 320, type = 'pass') {
+      this.ballOwnerName = null
+      this.ballTransit = null
       const startLift = this.ballPosition.lift || 0
       const arc = ['pass', 'cross', 'freekick_curve', 'header_shot', 'penalty_shot'].includes(type)
         ? (type === 'cross' || type === 'header_shot' ? 30 : 16)
@@ -546,8 +701,9 @@ export function createPhaserMatchScene(Phaser, controller) {
       if (!primary) return
       this.animating = true
       this.ballZone = primary.position === 'GK' ? 'defend' : primary.y > 62 ? 'box' : 'midfield'
-      this.ballOwnerName = primaryName
-      const actions = [this.moveBall({ x: primary.x, y: primary.y + (primary.team === 'my' ? 1.8 : -1.8) }, 520)]
+      const bridge = getDecisionBridge(this.ballOwnerName, primaryName, this.playerPositions)
+      const bridgeDuration = bridge.type === 'turnover' ? 820 : bridge.type === 'pass' ? 680 : 360
+      const actions = [this.moveBall({ x: primary.x, y: primary.y }, bridgeDuration, 'pass')]
       const second = this.playerPositions[secondName]
       if (second && secondName !== primaryName) {
         actions.push(this.movePlayer(secondName, { x: clamp(primary.x + (second.x <= primary.x ? -8 : 8)), y: clamp(primary.y - 8) }, 520))
@@ -557,6 +713,10 @@ export function createPhaserMatchScene(Phaser, controller) {
         actions.push(this.movePlayer(opponentName, { x: clamp(primary.x + (opponent.x <= primary.x ? -7 : 7)), y: clamp(primary.y + 7) }, 520))
       }
       await Promise.all(actions)
+      this.ballOwnerName = primaryName
+      this.possessionTeam = primary.team
+      const attached = getBallAttachmentPoint(primary, primary.team === 'my' ? 1 : -1)
+      this.ballPosition = { ...attached, lift: 0 }
     }
 
     async playEvent(eventType, actors) {
@@ -578,6 +738,12 @@ export function createPhaserMatchScene(Phaser, controller) {
         this.time.delayedCall(260, () => this.showCorner())
       }
       await this.runTimeline(frames, actors)
+      const preferredTeam = normalizedKey.includes('opponent_goal') || normalizedKey.includes('goal_against')
+        ? 'my'
+        : normalizedKey.includes('goal') || normalizedKey.includes('saved') || normalizedKey.includes('save')
+          ? 'opponent'
+          : null
+      this.claimNearestBall(preferredTeam)
     }
 
     async showCorner() {
@@ -594,7 +760,6 @@ export function createPhaserMatchScene(Phaser, controller) {
       const supportName = event.supportName
       const opponentName = event.opponentName
       this.ballZone = event.ballZone || 'midfield'
-      this.ballOwnerName = actorName || this.ballOwnerName
       this.possessionTeam = event.teamSide || 'my'
       const actor = this.playerPositions[actorName]
       const support = this.playerPositions[supportName]
@@ -603,7 +768,9 @@ export function createPhaserMatchScene(Phaser, controller) {
       const actions = []
 
       if (actor) {
-        actions.push(this.moveBall({ x: actor.x, y: actor.y + (actor.team === 'my' ? 1.8 : -1.8) }, 320))
+        if (this.ballOwnerName !== actorName) {
+          actions.push(this.moveBall({ x: actor.x, y: actor.y }, 520, 'pass'))
+        }
         actions.push(this.movePlayer(actorName, { x: clamp(actor.x + (event.visualKind === 'cross' ? 8 : 2)), y: clamp(actor.y + direction * 5) }, 360, 'easeOut'))
       }
       if (support) {
@@ -615,8 +782,11 @@ export function createPhaserMatchScene(Phaser, controller) {
 
       const zoneTarget = BALL_ZONES[event.ballZone] || BALL_ZONES.midfield
       if (['pass', 'through', 'cross', 'corner', 'throw_in'].includes(event.visualKind) && support) {
-        actions.push(this.moveBall({ x: support.x, y: support.y }, 360, event.visualKind))
+        await Promise.all(actions)
+        await this.moveBall({ x: support.x, y: support.y }, 420, event.visualKind)
         this.ballOwnerName = supportName
+        this.possessionTeam = support.team
+        return
       } else if (event.visualKind === 'yellow_card' || event.visualKind === 'red_card') {
         this.showCard(event.visualKind === 'red_card' ? 'red' : 'yellow')
       } else if (event.visualKind === 'corner') {
@@ -629,6 +799,76 @@ export function createPhaserMatchScene(Phaser, controller) {
         actions.push(this.moveBall(zoneTarget, 380))
       }
       await Promise.all(actions)
+      if (actor) this.ballOwnerName = actorName
+    }
+
+    setSimulationSpeed(speed = 1) {
+      this.simulationSpeed = speed
+      this.controller.simulationSpeed = speed
+    }
+
+    async preparePenalty({ shooterTeam = 'my', shooterName, goalkeeperName } = {}) {
+      this.animating = true
+      const isMyShot = shooterTeam === 'my'
+      const shooterKey = isMyShot ? shooterName : `opp_${shooterName}`
+      const goalkeeperKey = isMyShot ? `opp_${goalkeeperName}` : goalkeeperName
+      const shooter = this.playerPositions[shooterKey]
+      const goalkeeper = this.playerPositions[goalkeeperKey]
+      if (!shooter || !goalkeeper) {
+        this.animating = false
+        return
+      }
+      this.playerObjects.forEach((objects, name) => {
+        const visible = name === shooterKey || name === goalkeeperKey
+        objects.sprite.setVisible(visible)
+        objects.shadow.setVisible(visible)
+        objects.label.setVisible(visible)
+        objects.leftEye.setVisible(visible)
+        objects.rightEye.setVisible(visible)
+      })
+      const shotY = isMyShot ? 88 : 12
+      const goalY = isMyShot ? 96 : 4
+      await Promise.all([
+        this.movePlayer(shooterKey, { x: 50, y: shotY - (isMyShot ? 7 : -7) }, 520),
+        this.movePlayer(goalkeeperKey, { x: 50, y: goalY }, 520),
+      ])
+      this.ballPosition = { x: 50, y: shotY, lift: 0 }
+      this.ballOwnerName = null
+      this.animating = false
+    }
+
+    async playPenaltyKick({
+      shooterTeam = 'my',
+      shooterName,
+      goalkeeperName,
+      shooterDirection = 'center',
+      keeperDirection = 'center',
+      scored = false,
+      saved = false,
+    } = {}) {
+      const isMyShot = shooterTeam === 'my'
+      const shooterKey = isMyShot ? shooterName : `opp_${shooterName}`
+      const goalkeeperKey = isMyShot ? `opp_${goalkeeperName}` : goalkeeperName
+      const shooter = this.playerPositions[shooterKey]
+      const goalkeeper = this.playerPositions[goalkeeperKey]
+      if (!shooter || !goalkeeper) return
+      this.animating = true
+      const shotX = shooterDirection === 'left' ? 36 : shooterDirection === 'right' ? 64 : 50
+      const keeperX = keeperDirection === 'left' ? 38 : keeperDirection === 'right' ? 62 : 50
+      const goalY = isMyShot ? 98 : 2
+      const missY = isMyShot ? 101 : -1
+      await Promise.all([
+        this.movePlayer(shooterKey, { x: 50, y: isMyShot ? 86 : 14 }, 260, 'easeIn'),
+        this.movePlayer(goalkeeperKey, { x: keeperX, y: isMyShot ? 95 : 5 }, 430, 'easeOut'),
+        this.moveBall({
+          x: saved ? keeperX : shotX,
+          y: scored ? goalY : saved ? (isMyShot ? 94 : 6) : missY,
+        }, 520, 'penalty_shot'),
+      ])
+      if (scored) await this.showGoalEffect(!isMyShot)
+      else if (saved) await this.showSaveEffect(true)
+      else await this.showCenteredEffect(null, '射失！', '#B34235', 850)
+      this.animating = false
     }
 
     getState() {
@@ -638,6 +878,7 @@ export function createPhaserMatchScene(Phaser, controller) {
         animating: this.animating,
         ballZone: this.ballZone,
         ballOwnerName: this.ballOwnerName,
+        simulationSpeed: this.controller.simulationSpeed || this.simulationSpeed,
       }
     }
   }
