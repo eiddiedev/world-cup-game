@@ -1,4 +1,4 @@
-export const MATCH_SPEEDS = [1, 3, 6]
+const MATCH_SPEEDS = [1, 3, 6]
 
 export function getNextMatchSpeed(currentSpeed = 1) {
   const index = MATCH_SPEEDS.indexOf(currentSpeed)

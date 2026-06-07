@@ -71,17 +71,3 @@ export const FORMATION_POSITIONS = {
     FW: [[50, 60], [50, 76]],
   },
 };
-
-/**
- * 获取默认阵型（4-3-3）
- */
-export function getDefaultFormation() {
-  return '4-3-3';
-}
-
-/**
- * 验证阵型名称是否有效
- */
-export function isValidFormation(name) {
-  return name in FORMATION_POSITIONS;
-}

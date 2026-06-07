@@ -147,5 +147,3 @@ export function getMatchKits(homeTeam, awayTeam) {
     : awayBase
   return { home, away }
 }
-
-export const PLAYABLE_TEAM_KITS = BASE_KITS

@@ -99,15 +99,3 @@ export const KNOCKOUT_ROUNDS = [
 export function getTeamSchedule(teamId) {
   return TEAM_SCHEDULES[teamId] || null
 }
-
-/**
- * 根据对手强度生成对手实力系数
- */
-export function getOpponentStrengthMultiplier(strength) {
-  switch (strength) {
-    case 'weak': return 0.7
-    case 'medium': return 0.85
-    case 'strong': return 1.0
-    default: return 0.85
-  }
-}

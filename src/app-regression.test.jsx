@@ -12,7 +12,7 @@ import { getPlayerMarketScore } from './data/playerBalance.js'
 import { teams } from './data/teams.js'
 import { FORMATION_TACTICS } from './data/formationTactics.js'
 import { ANIMATION_TEMPLATES } from './utils/animationTemplates.js'
-import { BALL_ASSET_SRC, getResultAnimationKey } from './utils/animationResultMapper.js'
+import { getResultAnimationKey } from './utils/animationResultMapper.js'
 import { AudioManager, audioManager } from './utils/audioManager.js'
 import { generateCommentaryEvent, generateRandomMatchEvent } from './utils/commentaryEngine.js'
 import {
@@ -563,10 +563,6 @@ describe('match systems', () => {
       phase: 2,
     })
     expect(Object.keys(targets)).toEqual(['八号', 'opp_四号'])
-  })
-
-  it('uses the prepared football sprite instead of a drawn white dot', () => {
-    expect(BALL_ASSET_SRC).toBe('/assets/足球透明.png')
   })
 
   it('does not trigger stacked decisions in the same minute or too close together', () => {

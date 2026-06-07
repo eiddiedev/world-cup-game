@@ -14,7 +14,7 @@ import { DECISION_LIBRARY } from '../data/decisionLibrary.js';
  * @param {number} opponentAvgDef - 对手平均防守值 (默认70)
  * @param {number} teamDepthBonus - 球队深度加成 (0-0.08，默认0)
  */
-export function calcSuccessProb(
+function calcSuccessProb(
   choice,
   keyPlayer,
   isKnockout,
@@ -76,7 +76,7 @@ export function calcSuccessProb(
 /**
  * 根据选择结果决定outcome类型
  */
-export function resolveOutcome(choice, successProb) {
+function resolveOutcome(choice, successProb) {
   const roll = Math.random();
   const isSuccess = roll < successProb;
   const outcomes = choice.possible_outcomes;
@@ -222,7 +222,7 @@ export function selectKeyPlayers(scenario, lineup) {
 /**
  * 填充模板中的占位符
  */
-export function fillTemplate(template, keyPlayers, gameState) {
+function fillTemplate(template, keyPlayers, gameState) {
   const playerName = keyPlayers.default?.name || keyPlayers.default?.player?.name || '队长';
   const player2Name = keyPlayers.second?.name || keyPlayers.second?.player?.name || '搭档';
   return template
@@ -238,7 +238,7 @@ export function fillTemplate(template, keyPlayers, gameState) {
 /**
  * 加权随机选择
  */
-export function weightedRandom(pool) {
+function weightedRandom(pool) {
   const total = pool.reduce((s, [, w]) => s + w, 0);
   let r = Math.random() * total;
   for (const [id, w] of pool) {

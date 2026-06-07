@@ -27,6 +27,7 @@ npm run dev
 npm test -- --run
 npm run lint
 npm run build
+npm run balance -- --teams france,curacao --runs 100 --strategy balanced
 ```
 
 ## 目录说明
@@ -36,5 +37,4 @@ npm run build
 - `docs/`：测试、平衡性与协作说明
 - `scripts/`：文档同步与模拟辅助脚本
 
-根目录旧原型文件与重复资产未纳入 git，当前可运行版本以 `src/` 和 `public/assets/` 为准。
-
+旧原型、重复源码、一次性迁移脚本和未使用资源已经清理；当前可运行版本以 `src/` 和 `public/assets/` 为准。

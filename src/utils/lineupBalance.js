@@ -1,11 +1,11 @@
-export const POSITION_COMPAT = {
+const POSITION_COMPAT = {
   GK: { GK: 1.0, DF: 0.18, MF: 0.15, FW: 0.12 },
   DF: { GK: 0.25, DF: 1.0, MF: 0.62, FW: 0.42 },
   MF: { GK: 0.18, DF: 0.55, MF: 1.0, FW: 0.68 },
   FW: { GK: 0.12, DF: 0.35, MF: 0.62, FW: 1.0 },
 }
 
-export const FORMATION_PROFILE = {
+const FORMATION_PROFILE = {
   '4-3-3': { attack: 1.15, defense: 0.95, midfield: 1.0, expectedDF: 4 },
   '4-4-2': { attack: 1.0, defense: 1.0, midfield: 1.1, expectedDF: 4 },
   '4-2-3-1': { attack: 1.08, defense: 1.05, midfield: 1.05, expectedDF: 4 },
@@ -20,15 +20,15 @@ export const FORMATION_PROFILE = {
 
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value))
 
-export function getAssignedPosition(player) {
+function getAssignedPosition(player) {
   return player?.pos || player?.assignedPosition || player?.slotPosition || player?.position || 'MF'
 }
 
-export function getNaturalPosition(player) {
+function getNaturalPosition(player) {
   return player?.position || player?.pos || 'MF'
 }
 
-export function getPositionCompatibility(player, assignedPosition) {
+function getPositionCompatibility(player, assignedPosition) {
   const natural = getNaturalPosition(player)
   return POSITION_COMPAT[natural]?.[assignedPosition] ?? 0.45
 }

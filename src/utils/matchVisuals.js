@@ -14,7 +14,7 @@ export const BALL_ZONES = {
   defend: { x: 50, y: 28 },
 }
 
-export const SUPPORTED_ANIMATION_FRAME_TYPES = new Set([
+const SUPPORTED_ANIMATION_FRAME_TYPES = new Set([
   'PAUSE_FOR_CHOICE',
   'TEAM_PUSH_UP',
   'TEAM_PUSH_DOWN',

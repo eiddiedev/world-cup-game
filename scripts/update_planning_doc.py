@@ -13,7 +13,6 @@ ROOT = Path("/Users/a1234/Documents/ZZhackerthon")
 SOURCE = Path("/Users/a1234/Desktop/资产/剑指美加墨_完整游戏策划书_最终命名版.docx")
 TARGETS = [
     SOURCE,
-    ROOT / "assets/剑指美加墨_完整游戏策划书_最终命名版.docx",
     ROOT / "public/assets/剑指美加墨_完整游戏策划书_最终命名版.docx",
 ]
 

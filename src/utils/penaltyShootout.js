@@ -1,6 +1,6 @@
-export const PENALTY_DIRECTIONS = ['left', 'center', 'right']
+const PENALTY_DIRECTIONS = ['left', 'center', 'right']
 
-export function pickPenaltyDirection(random = Math.random) {
+function pickPenaltyDirection(random = Math.random) {
   return PENALTY_DIRECTIONS[Math.min(2, Math.floor(random() * 3))]
 }
 

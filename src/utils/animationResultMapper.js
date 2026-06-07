@@ -1,7 +1,5 @@
 import { ANIMATION_TEMPLATES } from './animationTemplates.js'
 
-export const BALL_ASSET_SRC = '/assets/足球透明.png'
-
 const RESULT_CANDIDATES = {
   goal: ['goal', 'goal_left', 'goal_center', 'good_impact'],
   goal_against: ['goal_against', 'counter_against', 'opponent_goal'],

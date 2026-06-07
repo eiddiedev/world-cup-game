@@ -244,7 +244,7 @@ export const teams = [
 /**
  * 48支世界杯球队国旗映射（中文名 → 图片路径）
  */
-export const FLAG_MAP = {
+const FLAG_MAP = {
   // A组
   '墨西哥': '/assets/国旗/墨西哥.png',
   '南非': '/assets/国旗/南非.png',
@@ -305,7 +305,6 @@ export const FLAG_MAP = {
   // L组
   '英格兰': '/assets/国旗/英格兰.png',
   '克罗地亚': '/assets/国旗/克罗地亚.png',
-  '加纳': '/assets/国旗/加纳.png',
   '巴拿马': '/assets/国旗/巴拿马.png',
 }
 

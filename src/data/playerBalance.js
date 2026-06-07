@@ -145,7 +145,3 @@ export function prepareTeamPlayers(players, teamId, budget) {
   const roster = ensureRosterSize(players, teamId)
   return rebalancePrices(roster, budget)
 }
-
-export function getGoldenSkill(player) {
-  return GOLDEN_SKILLS[player?.name] || player?.hiddenSkill || null
-}

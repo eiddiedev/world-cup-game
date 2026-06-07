@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "balance": "node scripts/balance-sim.mjs",
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest"

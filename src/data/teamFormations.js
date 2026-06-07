@@ -1,4 +1,4 @@
-export const TEAM_DEFAULT_FORMATIONS = {
+const TEAM_DEFAULT_FORMATIONS = {
   france: '4-3-3',
   brazil: '4-2-3-1',
   argentina: '4-3-3',
