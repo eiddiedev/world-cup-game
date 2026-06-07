@@ -5898,8 +5898,84 @@ button {
   overflow: hidden;
 }
 
-.demo-lineup-left,
+/* ── 排兵布阵：demo替补席基础样式 ── */
+.demo-lineup-left {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 6px;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+
 .demo-bench-dock {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 6px;
+  border: 2px solid var(--pixel-main);
+  background: var(--pixel-shadow);
+  max-height: 80px;
+  overflow-y: auto;
+}
+
+.demo-bench-title {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--pixel-bg);
+  font-family: "Zpix", "Microsoft YaHei", sans-serif;
+  font-size: 11px;
+  margin-bottom: 2px;
+}
+
+.demo-bench-title strong {
+  color: var(--pixel-gold);
+}
+
+.demo-bench-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  width: 100%;
+}
+
+.demo-bench-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 6px;
+  background: var(--pixel-bg);
+  border: 2px solid var(--pixel-main);
+  font-family: "Zpix", "Microsoft YaHei", sans-serif;
+  font-size: 10px;
+  color: var(--pixel-main);
+  cursor: grab;
+  white-space: nowrap;
+}
+
+.demo-bench-position {
+  color: var(--pixel-gold);
+  font-weight: bold;
+}
+
+.demo-bench-name {
+  color: var(--pixel-main);
+}
+
+.demo-bench-meta {
+  color: var(--pixel-accent);
+  font-size: 9px;
+}
+
+.demo-bench-meta strong {
+  color: var(--pixel-gold);
+}
+
+/* 抖音版覆盖为纵向布局 */
+.douyin-demo .demo-lineup-left,
+.douyin-demo .demo-bench-dock {
   display: contents;
 }
 
