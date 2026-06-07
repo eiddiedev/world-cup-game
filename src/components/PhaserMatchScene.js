@@ -103,86 +103,81 @@ export function createPhaserMatchScene(Phaser, controller) {
     createPlayerTexture(key, kit, isGoalkeeper = false) {
       if (this.textures.exists(key)) return
       const texture = this.textures.createCanvas(key, 12, 18)
-      const context = texture.context
+      const ctx = texture.context
       const shirt = isGoalkeeper ? kit.goalkeeper : kit.shirt
 
-      context.imageSmoothingEnabled = false
+      ctx.imageSmoothingEnabled = false
       // Hair
-      context.fillStyle = '#3D2B1F'
-      context.fillRect(3, 0, 6, 2)
-      // Face (skin)
-      context.fillStyle = '#D4A574'
-      context.fillRect(3, 2, 6, 4)
-      // Eyes (bigger, 2x2 each)
-      context.fillStyle = '#FFFFFF'
-      context.fillRect(3, 3, 2, 2)
-      context.fillRect(7, 3, 2, 2)
-      context.fillStyle = '#1B3764'
-      context.fillRect(4, 3, 1, 2)
-      context.fillRect(8, 3, 1, 2)
-      // Mouth
-      context.fillStyle = '#C68642'
-      context.fillRect(5, 5, 2, 1)
+      ctx.fillStyle = '#3D2B1F'
+      ctx.fillRect(3, 0, 6, 2)
+      // Face (skin) — no eyes drawn here, Phaser objects handle eyes
+      ctx.fillStyle = '#D4A574'
+      ctx.fillRect(3, 2, 6, 4)
       // Shirt
-      context.fillStyle = shirt
-      context.fillRect(1, 7, 10, 5)
+      ctx.fillStyle = shirt
+      ctx.fillRect(1, 7, 10, 5)
       // Accent stripe
-      context.fillStyle = kit.accent
-      context.fillRect(4, 8, 4, 2)
+      ctx.fillStyle = kit.accent
+      ctx.fillRect(4, 8, 4, 2)
       // Arms (skin)
-      context.fillStyle = '#D4A574'
-      context.fillRect(0, 7, 1, 4)
-      context.fillRect(11, 7, 1, 4)
+      ctx.fillStyle = '#D4A574'
+      ctx.fillRect(0, 7, 1, 4)
+      ctx.fillRect(11, 7, 1, 4)
       // Shorts
-      context.fillStyle = kit.shorts
-      context.fillRect(2, 12, 4, 2)
-      context.fillRect(6, 12, 4, 2)
+      ctx.fillStyle = kit.shorts
+      ctx.fillRect(2, 12, 4, 2)
+      ctx.fillRect(6, 12, 4, 2)
       // Socks
-      context.fillStyle = kit.socks
-      context.fillRect(2, 14, 3, 2)
-      context.fillRect(7, 14, 3, 2)
+      ctx.fillStyle = kit.socks
+      ctx.fillRect(2, 14, 3, 2)
+      ctx.fillRect(7, 14, 3, 2)
       // Boots
-      context.fillStyle = '#111111'
-      context.fillRect(1, 16, 4, 2)
-      context.fillRect(7, 16, 4, 2)
+      ctx.fillStyle = '#111111'
+      ctx.fillRect(1, 16, 4, 2)
+      ctx.fillRect(7, 16, 4, 2)
       texture.refresh()
     }
 
     createBallTexture() {
       if (this.textures.exists('match-ball')) return
-      const texture = this.textures.createCanvas('match-ball', 10, 10)
+      const size = 12
+      const texture = this.textures.createCanvas('match-ball', size, size)
       const ctx = texture.context
       ctx.imageSmoothingEnabled = false
-      // White ball body
-      ctx.fillStyle = '#FFFFFF'
-      ctx.fillRect(2, 0, 6, 10)
-      ctx.fillRect(0, 2, 10, 6)
-      // Pentagon panel (dark)
-      ctx.fillStyle = '#1B3764'
-      ctx.fillRect(4, 2, 2, 2)
-      ctx.fillRect(3, 4, 1, 1)
-      ctx.fillRect(6, 4, 1, 1)
-      ctx.fillRect(4, 5, 2, 1)
-      // Panel lines
-      ctx.fillStyle = '#C0C0C0'
-      ctx.fillRect(3, 1, 1, 1)
-      ctx.fillRect(6, 1, 1, 1)
-      ctx.fillRect(1, 3, 1, 1)
-      ctx.fillRect(8, 3, 1, 1)
-      ctx.fillRect(1, 6, 1, 1)
-      ctx.fillRect(8, 6, 1, 1)
-      ctx.fillRect(3, 8, 1, 1)
-      ctx.fillRect(6, 8, 1, 1)
-      // Subtle outline
-      ctx.fillStyle = '#888888'
-      ctx.fillRect(3, 0, 1, 1)
-      ctx.fillRect(6, 0, 1, 1)
-      ctx.fillRect(0, 3, 1, 1)
-      ctx.fillRect(9, 3, 1, 1)
-      ctx.fillRect(0, 6, 1, 1)
-      ctx.fillRect(9, 6, 1, 1)
-      ctx.fillRect(3, 9, 1, 1)
-      ctx.fillRect(6, 9, 1, 1)
+      const c = (x, y, w, h, color) => { ctx.fillStyle = color; ctx.fillRect(x, y, w, h) }
+      const W = '#FFFFFF', G = '#C0C0C0', D = '#1B3764', B = '#888888'
+      // Outline circle
+      c(3,0,1,1,B); c(4,0,1,1,B); c(7,0,1,1,B); c(8,0,1,1,B)
+      c(1,1,1,1,B); c(10,1,1,1,B)
+      c(0,2,1,1,B); c(11,2,1,1,B)
+      c(0,3,1,1,B); c(11,3,1,1,B)
+      c(0,4,1,1,B); c(11,4,1,1,B)
+      c(0,5,1,1,B); c(11,5,1,1,B)
+      c(0,6,1,1,B); c(11,6,1,1,B)
+      c(0,7,1,1,B); c(11,7,1,1,B)
+      c(0,8,1,1,B); c(11,8,1,1,B)
+      c(1,9,1,1,B); c(10,9,1,1,B)
+      c(3,10,1,1,B); c(4,10,1,1,B); c(7,10,1,1,B); c(8,10,1,1,B)
+      // White hexagon panels
+      c(2,1,8,1,W); c(1,2,1,1,W); c(10,2,1,1,W)
+      c(1,3,1,1,W); c(10,3,1,1,W)
+      c(1,4,1,1,W); c(10,4,1,1,W)
+      c(1,5,1,1,W); c(10,5,1,1,W)
+      c(1,6,1,1,W); c(10,6,1,1,W)
+      c(1,7,1,1,W); c(10,7,1,1,W)
+      c(1,8,1,1,W); c(10,8,1,1,W)
+      c(2,9,8,1,W)
+      // Fill center white
+      c(2,2,8,7,W)
+      // Dark pentagon in center
+      c(5,3,2,1,D); c(4,4,4,1,D); c(4,5,4,1,D); c(5,6,2,1,D)
+      // Panel seam lines (light gray)
+      c(3,1,1,1,G); c(8,1,1,1,G)
+      c(2,2,1,1,G); c(9,2,1,1,G)
+      c(2,7,1,1,G); c(9,7,1,1,G)
+      c(3,9,1,1,G); c(8,9,1,1,G)
+      // Highlight
+      c(3,2,1,1,W); c(4,2,1,1,W)
       texture.refresh()
     }
 

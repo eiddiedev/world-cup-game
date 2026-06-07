@@ -1,5 +1,7 @@
 import React, { useState } from 'react'
 import { getTeamById } from '../data/teams'
+import { getTeamDefaultFormation } from '../data/teamFormations'
+import { FORMATION_TACTICS } from '../data/formationTactics'
 
 /**
  * 球员招募页面
@@ -87,6 +89,62 @@ export default function RecruitmentScreen({ saveData, updateSaveData, navigateTo
       },
     })
     navigateTo('tournament')
+  }
+
+  // 一键招募：按阵型自动选购最高价球员，把预算花完
+  const handleAutoRecruit = () => {
+    const formation = saveData.currentRun?.formation || getTeamDefaultFormation(team.id)
+    const counts = FORMATION_TACTICS[formation]?.counts || { GK: 1, DF: 4, MF: 3, FW: 3 }
+    const budget = team.budget
+
+    // 按位置分组，按价格从高到低排序
+    const byPosition = { GK: [], DF: [], MF: [], FW: [] }
+    availablePlayers.forEach(p => {
+      if (byPosition[p.position]) byPosition[p.position].push(p)
+    })
+    Object.keys(byPosition).forEach(pos => {
+      byPosition[pos].sort((a, b) => b.price - a.price)
+    })
+
+    const selected = []
+    let remaining = budget
+
+    // 第一步：按阵型买首发（每个位置最贵的）
+    for (const [pos, count] of Object.entries(counts)) {
+      const pool = byPosition[pos] || []
+      for (let i = 0; i < count && i < pool.length; i++) {
+        if (pool[i].price <= remaining) {
+          selected.push(pool[i])
+          remaining -= pool[i].price
+        }
+      }
+    }
+
+    // 第二步：如果预算还有剩余，按优先级补人：DF > MF > FW > GK
+    const depthPriority = ['DF', 'MF', 'FW', 'GK']
+    let boughtMore = true
+    while (boughtMore && remaining > 0) {
+      boughtMore = false
+      for (const pos of depthPriority) {
+        const pool = byPosition[pos] || []
+        for (const player of pool) {
+          if (selected.some(p => p.id === player.id)) continue
+          if (player.price <= remaining && selected.length < 24) {
+            selected.push(player)
+            remaining -= player.price
+            boughtMore = true
+          }
+        }
+      }
+    }
+
+    if (selected.length === 0) {
+      showToast('无法招募任何球员')
+      return
+    }
+
+    setPurchasedPlayers(selected)
+    showToast(`一键招募完成！签下 ${selected.length} 名球员`)
   }
 
   // 六维图渲染
@@ -306,6 +364,10 @@ export default function RecruitmentScreen({ saveData, updateSaveData, navigateTo
       )}
 
       <div className="recruitment-footer">
+        <button className="PixelButton secondary-button" onClick={handleAutoRecruit}>
+          <span className="button-face" aria-hidden="true"></span>
+          <span className="button-label">一键招募</span>
+        </button>
         <button className="PixelButton" onClick={handleConfirmRoster}>
           <span className="button-face" aria-hidden="true"></span>
           <span className="button-label">确认阵容</span>
