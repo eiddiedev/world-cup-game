@@ -38,7 +38,7 @@ npm run balance -- --teams france,curacao --runs 100 --strategy balanced
 - `dist-douyin/`：使用相对路径的提交目录
 - `deliverables/剑指美加墨-抖音互动空间-Demo.zip`：可交付 ZIP
 
-构建会保留完整比赛流程和两队原始球员图片，对中文像素字体做字符子集，并在未压缩目录或 ZIP 超过 `8,000,000` bytes 时直接失败。脚本依赖 Python 的 `fontTools` 与 `Pillow`。
+构建会保留完整比赛流程、首页背景、双帧 Logo 动画和两队原始球员图片，对大型首页素材生成像素化轻量副本、对中文像素字体做字符子集，并在未压缩目录或 ZIP 超过 `8,000,000` bytes 时直接失败。脚本依赖 Python 的 `fontTools` 与 `Pillow`。
 
 ## 目录说明
 

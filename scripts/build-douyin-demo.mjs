@@ -9,12 +9,13 @@ import {
   statSync,
   writeFileSync,
 } from 'node:fs'
-import { dirname, extname, join, resolve } from 'node:path'
+import { dirname, extname, join, relative, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const outputRoot = join(projectRoot, 'dist-douyin')
 const deliverablesRoot = join(projectRoot, 'deliverables')
+const deliveryDirectory = join(deliverablesRoot, '剑指美加墨-抖音互动空间-Demo')
 const zipPath = join(deliverablesRoot, '剑指美加墨-抖音互动空间-Demo.zip')
 const maxBytes = 8_000_000
 
@@ -58,7 +59,6 @@ const demoFlags = [
 ]
 
 const assetFiles = [
-  'logo.png',
   '金币.png',
   '锁.png',
   '庆祝.gif',
@@ -92,7 +92,11 @@ function makeAssetPathsRelative() {
   for (const path of walkFiles(outputRoot)) {
     if (!['.html', '.css', '.js'].includes(extname(path))) continue
     const source = readFileSync(path, 'utf8')
-    const relativePrefix = extname(path) === '.css' ? '../assets/' : './assets/'
+    const relativeAssetDirectory = relative(dirname(path), join(outputRoot, 'assets'))
+      .replaceAll('\\', '/')
+    const relativePrefix = relativeAssetDirectory
+      ? `${relativeAssetDirectory.startsWith('.') ? '' : './'}${relativeAssetDirectory}/`
+      : './'
     const updated = source.replace(
       /(^|[^.])\/assets\//gm,
       (_, prefix) => `${prefix}${relativePrefix}`,
@@ -102,6 +106,15 @@ function makeAssetPathsRelative() {
 }
 
 function validateOutput() {
+  const indexHtml = readFileSync(join(outputRoot, 'index.html'), 'utf8')
+  if (/type=["']module["']/.test(indexHtml)) {
+    throw new Error('Demo index.html must use a classic script so it can run without an HTTP server')
+  }
+  const gameScript = readFileSync(join(outputRoot, 'game.js'), 'utf8')
+  if (gameScript.includes('process.env')) {
+    throw new Error('Demo game.js contains unresolved process.env references')
+  }
+
   const textFiles = walkFiles(outputRoot).filter(path =>
     ['.html', '.css', '.js'].includes(extname(path)),
   )
@@ -135,12 +148,28 @@ function validateOutput() {
 
 rmSync(outputRoot, { recursive: true, force: true })
 mkdirSync(deliverablesRoot, { recursive: true })
+rmSync(deliveryDirectory, { recursive: true, force: true })
 rmSync(zipPath, { force: true })
 
 execFileSync('npx', ['vite', 'build', '--mode', 'douyin'], {
   cwd: projectRoot,
   stdio: 'inherit',
 })
+
+writeFileSync(join(outputRoot, 'index.html'), `<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>剑指美加墨 — Targeting 2026</title>
+    <link rel="stylesheet" href="./game.css" />
+    <script defer src="./game.js"></script>
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>
+`)
 
 assetDirectories.forEach(copyAsset)
 assetFiles.forEach(copyAsset)
@@ -158,8 +187,10 @@ execFileSync('python3', [
 makeAssetPathsRelative()
 const outputBytes = validateOutput()
 
+cpSync(outputRoot, deliveryDirectory, { recursive: true })
+
 execFileSync('zip', ['-qry', zipPath, '.'], {
-  cwd: outputRoot,
+  cwd: deliveryDirectory,
   stdio: 'inherit',
 })
 
@@ -171,4 +202,5 @@ if (zipBytes > maxBytes) {
 console.log(`Douyin Demo directory: ${formatMiB(outputBytes)}`)
 console.log(`Douyin Demo ZIP:       ${formatMiB(zipBytes)}`)
 console.log(`Output: ${outputRoot}`)
+console.log(`Folder: ${deliveryDirectory}`)
 console.log(`ZIP:    ${zipPath}`)

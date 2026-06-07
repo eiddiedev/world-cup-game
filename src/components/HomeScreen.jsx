@@ -1,7 +1,6 @@
 import React, { useState } from 'react'
 import { teams } from '../data/teams'
 import { getHomeProgress, hasContinueGame } from '../utils/saveManager'
-import { IS_DOUYIN_DEMO } from '../config/runtime.js'
 
 /**
  * 首页组件
@@ -46,16 +45,12 @@ export default function HomeScreen({ saveData, navigateTo, showToast }) {
 
   return (
     <main className="screen home-screen">
-      {!IS_DOUYIN_DEMO && (
-        <img className="home-bg" src="/assets/背景图.png" alt="" aria-hidden="true" />
-      )}
+      <img className="home-bg" src="/assets/背景图.png" alt="" aria-hidden="true" />
       <section className="home-stage" aria-label="剑指美加墨">
         <h1 className="PixelTitle title-lockup">
           <div className="logo-animation">
             <img className="logo-frame logo-frame-1" src="/assets/logo.png" alt="剑指美加墨" />
-            {!IS_DOUYIN_DEMO && (
-              <img className="logo-frame logo-frame-2" src="/assets/logo2.png" alt="" />
-            )}
+            <img className="logo-frame logo-frame-2" src="/assets/logo2.png" alt="" />
           </div>
         </h1>
 

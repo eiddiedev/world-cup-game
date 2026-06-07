@@ -7,6 +7,7 @@ import React, {
 } from 'react'
 import { getMatchKits } from '../data/teamKits.js'
 import { createPhaserMatchScene } from './PhaserMatchScene.js'
+import { loadPhaser } from '@phaser-loader'
 
 const AnimationEngine = forwardRef(({
   myLineup = [],
@@ -61,9 +62,8 @@ const AnimationEngine = forwardRef(({
     }
 
     async function mountGame() {
-      const module = await import('phaser')
+      const Phaser = await loadPhaser()
       if (disposed || !containerRef.current) return
-      const Phaser = module.default || module
       const MatchScene = createPhaserMatchScene(Phaser, controller)
       const game = new Phaser.Game({
         type: Phaser.CANVAS,

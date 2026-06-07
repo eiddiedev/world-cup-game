@@ -49,13 +49,44 @@ def build_pitch(project_root: Path, output_root: Path) -> None:
         resized.save(target, "PNG", optimize=True, compress_level=9)
 
 
+def build_pixel_image(
+    project_root: Path,
+    output_root: Path,
+    filename: str,
+    size: tuple[int, int],
+    colors: int = 128,
+) -> None:
+    source = project_root / "public/assets" / filename
+    target = output_root / "assets" / filename
+    target.parent.mkdir(parents=True, exist_ok=True)
+    with Image.open(source) as image:
+        image.thumbnail(size, Image.Resampling.NEAREST)
+        if image.mode == "RGBA":
+            alpha = image.getchannel("A")
+            quantized = image.convert("RGB").quantize(
+                colors=colors,
+                method=Image.Quantize.MEDIANCUT,
+                dither=Image.Dither.NONE,
+            ).convert("RGBA")
+            quantized.putalpha(alpha)
+        else:
+            quantized = image.quantize(
+                colors=colors,
+                method=Image.Quantize.MEDIANCUT,
+                dither=Image.Dither.NONE,
+            )
+        quantized.save(target, "PNG", optimize=True, compress_level=9)
+
+
 def main() -> None:
     project_root = Path(sys.argv[1]).resolve()
     output_root = Path(sys.argv[2]).resolve()
     subset_font(project_root, output_root)
     build_pitch(project_root, output_root)
+    build_pixel_image(project_root, output_root, "背景图.png", (960, 540))
+    build_pixel_image(project_root, output_root, "logo.png", (900, 244))
+    build_pixel_image(project_root, output_root, "logo2.png", (900, 244))
 
 
 if __name__ == "__main__":
     main()
-
