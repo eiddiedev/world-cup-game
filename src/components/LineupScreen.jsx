@@ -528,14 +528,6 @@ export default function LineupScreen({ saveData, updateSaveData, navigateTo, sho
         </span>
       </div>
 
-      {/* 操作提示 */}
-      <div style={{
-        textAlign: 'center', padding: '4px 12px', fontSize: 12, color: '#C99A2E',
-        fontFamily: 'Zpix, monospace', lineHeight: 1.5,
-      }}>
-        拖拽右侧球员到战术面板，点击球员查看详情
-      </div>
-
       <div className="lineup-workspace">
         <section className="lineup-pitch-pane">
           <div className="pitch-view-title">
@@ -617,13 +609,18 @@ export default function LineupScreen({ saveData, updateSaveData, navigateTo, sho
               <span>{viewingOpponent ? '对手首发' : '球员选择'}</span>
               <div className="lineup-section-actions">
                 {!viewingOpponent && (
-                  <button
-                    className="auto-lineup-btn"
-                    onClick={handleAutoLineup}
-                    title="按能力值自动选择最佳阵容"
-                  >
-                    一键布阵
-                  </button>
+                  <>
+                    <span style={{ fontSize: 11, color: '#C99A2E', fontFamily: 'Zpix, monospace', whiteSpace: 'nowrap' }}>
+                      拖拽球员到战术面板，点击查看详情
+                    </span>
+                    <button
+                      className="auto-lineup-btn"
+                      onClick={handleAutoLineup}
+                      title="按能力值自动选择最佳阵容"
+                    >
+                      一键布阵
+                    </button>
+                  </>
                 )}
                 <strong>{viewingOpponent ? '11人' : `${getBenchPlayers().length}人可选`}</strong>
               </div>
