@@ -123,6 +123,7 @@ export default function LineupScreen({ saveData, updateSaveData, navigateTo, sho
   const [viewingOpponent, setViewingOpponent] = useState(false)
   const [showPlayerInfo, setShowPlayerInfo] = useState(null)
   const [draggedPlayer, setDraggedPlayer] = useState(null)
+  const [selectedBenchPlayerId, setSelectedBenchPlayerId] = useState(null)
   const [showPositionWarning, setShowPositionWarning] = useState(null)
   const [dragSource, setDragSource] = useState(null) // 'bench' or 'pitch'
 
@@ -244,31 +245,37 @@ export default function LineupScreen({ saveData, updateSaveData, navigateTo, sho
   }
 
   // 拖拽到球场位置
-  const handleDrop = (e, positionType, slotIndex) => {
-    e.preventDefault()
-    if (!draggedPlayer) return
-
+  const preparePlayerPlacement = (player, positionType, slotIndex) => {
+    if (!player) return
     const slotId = `${positionType}-${slotIndex}`
 
     // 检查位置兼容性
-    const isWrongPosition = draggedPlayer.position !== positionType
+    const isWrongPosition = player.position !== positionType
     if (isWrongPosition) {
-      const effectiveRating = getEffectiveRating(draggedPlayer, positionType)
+      const effectiveRating = getEffectiveRating(player, positionType)
       setShowPositionWarning({
-        player: draggedPlayer,
+        player,
         targetPosition: positionType,
         effectiveRating,
         onConfirm: () => {
-          performDrop(draggedPlayer, slotId, positionType)
+          performDrop(player, slotId, positionType)
           setShowPositionWarning(null)
         },
-        onCancel: () => setShowPositionWarning(null),
+        onCancel: () => {
+          setShowPositionWarning(null)
+          setSelectedBenchPlayerId(null)
+        },
       })
       setDraggedPlayer(null)
       return
     }
 
-    performDrop(draggedPlayer, slotId, positionType)
+    performDrop(player, slotId, positionType)
+  }
+
+  const handleDrop = (e, positionType, slotIndex) => {
+    e.preventDefault()
+    preparePlayerPlacement(draggedPlayer, positionType, slotIndex)
   }
 
   // 执行放置
@@ -286,6 +293,7 @@ export default function LineupScreen({ saveData, updateSaveData, navigateTo, sho
     setStartingLineup([...filtered, { slotId, playerId: player.id, position: positionType }])
     setDraggedPlayer(null)
     setDragSource(null)
+    setSelectedBenchPlayerId(null)
   }
 
   // 拖拽到替补席（从球场拖回来）
@@ -324,6 +332,67 @@ export default function LineupScreen({ saveData, updateSaveData, navigateTo, sho
   }
 
   const handleBenchClick = (player) => setShowPlayerInfo(player)
+
+  const renderBenchPlayer = (player, extraClassName = '') => {
+    const grade = getStatusGrade(player.form || 80)
+    const gradeColor = getStatusGradeColor(grade)
+    const unavailable = !isPlayerAvailable(player.id)
+    const reason = getPlayerUnavailableReason(player.id)
+
+    return (
+      <div
+        key={player.id}
+        className={`bench-player ${unavailable ? 'bench-player-unavailable' : ''} ${extraClassName}`.trim()}
+        draggable={!unavailable}
+        onDragStart={(e) => { if (!unavailable) handleBenchDragStart(e, player) }}
+        onDragEnd={handleDragEnd}
+        onClick={() => {
+          if (unavailable) showToast(`${player.name} 因${reason}无法上场`)
+          else handleBenchClick(player)
+        }}
+      >
+        <span className="bench-position-label">{POSITION_NAMES[player.position] || player.position}</span>
+        <span className="bench-number">{player.number || '?'}</span>
+        <span className="bench-name">{player.name}</span>
+        {unavailable ? (
+          <span className="bench-unavailable-tag">{reason}</span>
+        ) : (
+          <span className="bench-rating">
+            {player.rating}
+            <span className="bench-status-title">状态</span>
+            <span className="bench-grade" style={{ color: gradeColor }}>{grade}</span>
+          </span>
+        )}
+      </div>
+    )
+  }
+
+  const renderDemoBenchPlayer = (player) => {
+    const grade = getStatusGrade(player.form || 80)
+    const gradeColor = getStatusGradeColor(grade)
+    const isSelected = selectedBenchPlayerId === player.id
+
+    return (
+      <button
+        type="button"
+        key={player.id}
+        className={`demo-bench-row${isSelected ? ' is-selected' : ''}`}
+        draggable
+        aria-label={`选择${player.name}，然后点击战术板位置`}
+        aria-pressed={isSelected}
+        onDragStart={(e) => handleBenchDragStart(e, player)}
+        onDragEnd={handleDragEnd}
+        onClick={() => setSelectedBenchPlayerId(current => current === player.id ? null : player.id)}
+      >
+        <span className="demo-bench-position">{POSITION_NAMES[player.position] || player.position}</span>
+        <span className="demo-bench-name">{player.name}</span>
+        <span className="demo-bench-meta">
+          <strong>{player.rating}</strong>
+          <span style={{ color: gradeColor }}>{grade}</span>
+        </span>
+      </button>
+    )
+  }
 
   // 一键布阵 - 按能力值自动选择最佳阵容
   const handleAutoLineup = () => {
@@ -468,9 +537,13 @@ export default function LineupScreen({ saveData, updateSaveData, navigateTo, sho
             key={slotId}
             className={`pitch-slot ${player ? 'filled' : 'empty'} ${isWrongPos ? 'wrong-position' : ''} ${viewingOpponent ? 'opponent-slot' : ''}`}
             style={{ left: `${pos.x}%`, top: `${pos.y}%` }}
+            data-slot-id={slotId}
             onClick={() => {
               if (viewingOpponent && player) {
                 setShowPlayerInfo(player)
+              } else if (selectedBenchPlayerId) {
+                const selectedPlayer = allPlayers.find(candidate => candidate.id === selectedBenchPlayerId)
+                preparePlayerPlacement(selectedPlayer, positionType, idx)
               } else if (!isDragging) {
                 handleSlotClick(positionType, idx)
               }
@@ -534,9 +607,26 @@ export default function LineupScreen({ saveData, updateSaveData, navigateTo, sho
             <span>{viewingOpponent ? `${opponent}首发阵容` : `${currentTeam?.name || '我方'}战术板`}</span>
             <strong>{viewingOpponent ? opponentSetup.formation : selectedFormation}</strong>
           </div>
-          <div className="pitch-container">
-            <img src="/assets/足球场.png" alt="球场" className="pitch-bg" />
-            <div className="pitch-overlay">{renderPitchSlots()}</div>
+          <div className="demo-lineup-left">
+            {!viewingOpponent && (
+              <section
+                className="demo-bench-dock"
+                onDrop={handleBenchDrop}
+                onDragOver={handleDragOver}
+              >
+                <div className="demo-bench-title">
+                  <span>{selectedBenchPlayerId ? '点击场上位置' : '替补席'}</span>
+                  <strong>{getBenchPlayers().length}</strong>
+                </div>
+                <div className="demo-bench-list">
+                  {getBenchPlayers().map(renderDemoBenchPlayer)}
+                </div>
+              </section>
+            )}
+            <div className="pitch-container">
+              <img src="/assets/足球场.png" alt="球场" className="pitch-bg" />
+              <div className="pitch-overlay">{renderPitchSlots()}</div>
+            </div>
           </div>
         </section>
 
@@ -642,34 +732,24 @@ export default function LineupScreen({ saveData, updateSaveData, navigateTo, sho
             >
               <div className="bench-list">
                 {(viewingOpponent ? opponentSetup.lineup : getBenchPlayers()).map(player => {
+                  if (!viewingOpponent) return renderBenchPlayer(player)
+
                   const grade = getStatusGrade(player.form || 80)
                   const gradeColor = getStatusGradeColor(grade)
-                  const unavailable = !viewingOpponent && !isPlayerAvailable(player.id)
-                  const reason = getPlayerUnavailableReason(player.id)
                   return (
                     <div
                       key={player.id}
-                      className={`bench-player ${unavailable ? 'bench-player-unavailable' : ''} ${viewingOpponent ? 'opponent-player-row' : ''}`}
-                      draggable={!viewingOpponent && !unavailable}
-                      onDragStart={(e) => { if (!viewingOpponent && !unavailable) handleBenchDragStart(e, player) }}
-                      onDragEnd={handleDragEnd}
-                      onClick={() => {
-                        if (unavailable) showToast(`${player.name} 因${reason}无法上场`)
-                        else handleBenchClick(player)
-                      }}
+                      className="bench-player opponent-player-row"
+                      onClick={() => handleBenchClick(player)}
                     >
                       <span className="bench-position-label">{POSITION_NAMES[player.position] || player.position}</span>
                       <span className="bench-number">{player.number || '?'}</span>
                       <span className="bench-name">{player.name}</span>
-                      {unavailable ? (
-                        <span className="bench-unavailable-tag">{reason}</span>
-                      ) : (
-                        <span className="bench-rating">
-                          {player.rating}
-                          <span className="bench-status-title">状态</span>
-                          <span className="bench-grade" style={{ color: gradeColor }}>{grade}</span>
-                        </span>
-                      )}
+                      <span className="bench-rating">
+                        {player.rating}
+                        <span className="bench-status-title">状态</span>
+                        <span className="bench-grade" style={{ color: gradeColor }}>{grade}</span>
+                      </span>
                     </div>
                   )
                 })}

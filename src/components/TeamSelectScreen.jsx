@@ -1,6 +1,7 @@
 import React from 'react'
 import { teams, getDifficultyStars } from '../data/teams'
 import { createNewRun } from '../utils/saveManager'
+import { IS_DOUYIN_DEMO } from '../config/runtime'
 
 /**
  * 国家队选择页面
@@ -37,7 +38,7 @@ export default function TeamSelectScreen({ saveData, updateSaveData, navigateTo,
         </p>
       </div>
 
-      <div className="team-list">
+      <div className={`team-list${IS_DOUYIN_DEMO ? ' is-demo-team-list' : ''}`}>
         {unlockedTeams.map((team) => (
           <div
             key={team.id}

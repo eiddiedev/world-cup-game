@@ -6,6 +6,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import App from './App.jsx'
 import HomeScreen from './components/HomeScreen.jsx'
+import LineupScreen from './components/LineupScreen.jsx'
 import SettingsScreen from './components/SettingsScreen.jsx'
 import { DECISION_LIBRARY } from './data/decisionLibrary.js'
 import { getPlayerMarketScore } from './data/playerBalance.js'
@@ -136,6 +137,56 @@ describe('home screen', () => {
     fireEvent.click(startButton)
 
     expect(navigateTo).toHaveBeenCalledWith('team-select')
+  })
+})
+
+describe('mobile lineup interaction', () => {
+  it('lets a touch user select a bench player and place them on the pitch', () => {
+    const goalkeeper = {
+      id: 'touch-gk',
+      name: '触屏门将',
+      number: 1,
+      position: 'GK',
+      rating: 82,
+      form: 84,
+      speed: 50,
+      physical: 80,
+      technique: 70,
+      defense: 84,
+      stamina: 78,
+    }
+    const saveData = {
+      currentRun: {
+        teamId: 'france',
+        currentOpponent: '伊拉克',
+        roster: [goalkeeper],
+        lineup: [],
+        formation: '4-3-3',
+        injuredPlayers: [],
+        suspendedPlayers: [],
+      },
+    }
+
+    const { container } = render(
+      <LineupScreen
+        saveData={saveData}
+        updateSaveData={vi.fn()}
+        navigateTo={vi.fn()}
+        showToast={vi.fn()}
+      />,
+    )
+
+    const benchPlayer = screen.getByRole('button', { name: /选择触屏门将/ })
+    fireEvent.pointerDown(benchPlayer, { pointerType: 'touch' })
+    fireEvent.click(benchPlayer)
+    expect(benchPlayer).toHaveAttribute('aria-pressed', 'true')
+
+    const goalkeeperSlot = container.querySelector('[data-slot-id="GK-0"]')
+    expect(goalkeeperSlot).toBeInTheDocument()
+    fireEvent.click(goalkeeperSlot)
+
+    expect(goalkeeperSlot).toHaveTextContent('1')
+    expect(screen.queryByRole('button', { name: /选择触屏门将/ })).not.toBeInTheDocument()
   })
 })
 

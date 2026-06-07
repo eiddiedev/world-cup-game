@@ -5880,3 +5880,1046 @@ button {
     overflow-x: hidden !important;
   }
 }
+
+/* ══════════════════════════════════════════════════════════════════════
+   Douyin package: short landscape client layout
+   Keep the desktop game composition while fitting phone webviews.
+   ══════════════════════════════════════════════════════════════════════ */
+.douyin-demo {
+  width: 100%;
+  height: 100dvh;
+  overflow: hidden;
+}
+
+.douyin-demo .screen {
+  width: 100%;
+  height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.demo-lineup-left,
+.demo-bench-dock {
+  display: contents;
+}
+
+.douyin-demo .team-list,
+.douyin-demo .player-grid,
+.douyin-demo .bench-list,
+.douyin-demo .match-commentary-panel,
+.douyin-demo .sub-panel,
+.douyin-demo .tournament-scroll-region {
+  scrollbar-width: none;
+}
+
+.douyin-demo .team-list::-webkit-scrollbar,
+.douyin-demo .player-grid::-webkit-scrollbar,
+.douyin-demo .bench-list::-webkit-scrollbar,
+.douyin-demo .match-commentary-panel::-webkit-scrollbar,
+.douyin-demo .sub-panel::-webkit-scrollbar,
+.douyin-demo .tournament-scroll-region::-webkit-scrollbar {
+  display: none;
+}
+
+@media (orientation: landscape) and (max-height: 600px) {
+  .douyin-demo .screen-header {
+    min-height: 28px;
+    margin: 0;
+    padding-left: clamp(80px, 13vw, 128px);
+    gap: 8px;
+  }
+
+  .douyin-demo .screen-header h1 {
+    margin: 0;
+    font-size: clamp(18px, 3.2vh, 24px);
+    line-height: 1;
+  }
+
+  .douyin-demo .screen-header .back-button {
+    padding: 0 4px;
+    font-size: 20px;
+  }
+
+  /* Home */
+  .douyin-demo .home-screen {
+    padding: 8px 20px 6px;
+  }
+
+  .douyin-demo .home-stage {
+    grid-template-rows: minmax(0, 37fr) minmax(0, 44fr) minmax(0, 19fr);
+    width: min(720px, 74vw);
+    height: 100%;
+    padding-top: 0;
+  }
+
+  .douyin-demo .PixelTitle {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+  }
+
+  .douyin-demo .logo-animation {
+    width: 100%;
+    height: 100%;
+  }
+
+  .douyin-demo .logo-frame {
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+  }
+
+  .douyin-demo .main-menu {
+    align-self: center;
+    gap: 4px;
+    width: min(360px, 48vw);
+  }
+
+  .douyin-demo .main-menu .PixelButton {
+    min-height: 56px;
+    height: 56px;
+    padding: 0 28px;
+    font-size: 18px;
+  }
+
+  .douyin-demo .main-menu .PixelButton .button-label {
+    z-index: 2;
+    color: var(--pixel-main);
+    line-height: 1;
+  }
+
+  .douyin-demo .unlock-panel {
+    align-self: end;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: 8px;
+    width: min(520px, 64vw);
+    min-height: 0;
+    margin: 0;
+    padding: 3px 8px;
+  }
+
+  .douyin-demo .unlock-copy {
+    gap: 6px;
+    white-space: nowrap;
+  }
+
+  .douyin-demo .unlock-copy span {
+    font-size: 10px;
+  }
+
+  .douyin-demo .unlock-copy strong {
+    font-size: 14px;
+  }
+
+  .douyin-demo .flag-strip {
+    gap: 3px;
+  }
+
+  /* Team selection */
+  .douyin-demo .team-select-screen {
+    display: grid;
+    grid-template-rows: 30px auto minmax(0, 1fr);
+    gap: 6px;
+    padding: 6px 12px 8px;
+  }
+
+  .douyin-demo .team-select-hint {
+    display: block;
+    max-width: min(880px, 86vw);
+    margin: 0 auto;
+    padding: 6px 12px;
+    font-size: clamp(10px, 2.35vh, 13px);
+    line-height: 1.35;
+  }
+
+  .douyin-demo .team-select-screen .team-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: minmax(0, 1fr);
+    gap: 12px;
+    width: min(1040px, 94vw);
+    max-width: none;
+    max-height: none;
+    min-height: 0;
+    margin: 0 auto;
+    padding: 0 4px 4px 0;
+    overflow: hidden;
+  }
+
+  .douyin-demo .team-select-screen .team-card {
+    min-height: 0;
+    height: 100%;
+    aspect-ratio: auto;
+  }
+
+  .douyin-demo .team-select-screen .team-card-logo {
+    width: 72%;
+    height: 72%;
+  }
+
+  .douyin-demo .team-select-screen .team-card-right {
+    padding: 8px 10px;
+  }
+
+  .douyin-demo .team-select-screen .stat-label {
+    font-size: 11px;
+  }
+
+  .douyin-demo .team-select-screen .stat-stars,
+  .douyin-demo .team-select-screen .stat-budget {
+    font-size: clamp(14px, 3vh, 18px);
+  }
+
+  .douyin-demo .team-select-screen .team-name-cn {
+    font-size: clamp(16px, 3.5vh, 22px);
+  }
+
+  .douyin-demo .team-select-screen .team-name-en,
+  .douyin-demo .team-select-screen .team-card-flavor {
+    font-size: 10px;
+  }
+
+  .douyin-demo .team-select-screen .team-card-hover-info {
+    display: none;
+  }
+
+  .douyin-demo .team-select-screen .is-demo-team-list {
+    width: min(1120px, 96vw);
+    gap: 16px;
+  }
+
+  .douyin-demo .team-select-screen .is-demo-team-list .team-card-left {
+    flex-basis: 44%;
+  }
+
+  .douyin-demo .team-select-screen .is-demo-team-list .team-card-logo {
+    width: 88%;
+    height: 88%;
+  }
+
+  .douyin-demo .team-select-screen .is-demo-team-list .team-card-right {
+    padding: 12px 16px;
+  }
+
+  .douyin-demo .team-select-screen .is-demo-team-list .team-name-cn {
+    font-size: clamp(20px, 4.5vh, 28px);
+  }
+
+  .douyin-demo .team-select-screen .is-demo-team-list .team-name-en {
+    font-size: 13px;
+  }
+
+  /* Recruitment */
+  .douyin-demo .recruitment-screen {
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr) 52px;
+    height: 100dvh !important;
+    padding: 5px 10px 4px !important;
+    overflow: hidden !important;
+  }
+
+  .douyin-demo .recruitment-top {
+    display: grid;
+    grid-template-rows: 24px 24px 34px 24px;
+    gap: 2px;
+    min-height: 0;
+  }
+
+  .douyin-demo .recruitment-hint {
+    display: block;
+    max-width: min(920px, 88vw);
+    max-height: 24px;
+    margin: 0 auto;
+    padding: 3px 8px;
+    overflow: hidden;
+    font-size: clamp(9px, 2.2vh, 12px);
+    line-height: 1.3;
+  }
+
+  .douyin-demo .recruitment-screen .recruitment-stats {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 2px;
+    height: 34px;
+    margin: 0;
+    padding: 3px 8px;
+    border-width: 3px;
+    box-shadow: 3px 3px 0 var(--pixel-shadow);
+  }
+
+  .douyin-demo .recruitment-screen .stat-item {
+    gap: 1px;
+  }
+
+  .douyin-demo .recruitment-screen .stat-label {
+    font-size: 8px;
+  }
+
+  .douyin-demo .recruitment-screen .stat-value,
+  .douyin-demo .recruitment-screen .stat-value.budget {
+    font-size: clamp(11px, 2.8vh, 14px);
+  }
+
+  .douyin-demo .recruitment-screen .position-tabs {
+    gap: 4px;
+    height: 24px;
+    margin: 0;
+  }
+
+  .douyin-demo .recruitment-screen .position-tab {
+    height: 24px;
+    padding: 0;
+    font-size: 11px;
+  }
+
+  .douyin-demo .recruitment-screen .player-grid {
+    display: grid !important;
+    grid-auto-flow: column;
+    grid-auto-columns: clamp(124px, 16vw, 176px);
+    grid-template-columns: none !important;
+    grid-template-rows: minmax(0, 1fr);
+    gap: 8px !important;
+    min-height: 0;
+    max-height: none !important;
+    padding: 5px 4px !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    scroll-snap-type: x proximity;
+    touch-action: pan-x;
+  }
+
+  .douyin-demo .recruitment-screen .game-card-v2 {
+    height: 100%;
+    min-height: 0;
+    scroll-snap-align: start;
+  }
+
+  .douyin-demo .recruitment-screen .card-v2-top {
+    flex: 1 1 auto;
+    height: auto !important;
+    min-height: 66px;
+  }
+
+  .douyin-demo .recruitment-screen .card-v2-avatar {
+    left: -2px !important;
+    width: 76% !important;
+  }
+
+  .douyin-demo .recruitment-screen .card-v2-price {
+    top: 4px !important;
+    right: 6px !important;
+    font-size: 12px !important;
+  }
+
+  .douyin-demo .recruitment-screen .card-v2-price .coin-icon {
+    width: 12px;
+    height: 12px;
+  }
+
+  .douyin-demo .recruitment-screen .card-v2-rating {
+    top: 24px !important;
+    right: 6px !important;
+    font-size: 15px !important;
+  }
+
+  .douyin-demo .recruitment-screen .card-v2-name-row {
+    padding: 2px 5px;
+  }
+
+  .douyin-demo .recruitment-screen .card-v2-name {
+    font-size: 10px !important;
+  }
+
+  .douyin-demo .recruitment-screen .card-v2-number {
+    padding: 1px 3px;
+    font-size: 8px;
+  }
+
+  .douyin-demo .recruitment-screen .card-v2-divider {
+    margin: 2px 5px;
+  }
+
+  .douyin-demo .recruitment-screen .card-v2-stats {
+    margin: 0 5px;
+    padding: 2px;
+  }
+
+  .douyin-demo .recruitment-screen .card-v2-stat .stat-label {
+    font-size: 6px;
+  }
+
+  .douyin-demo .recruitment-screen .card-v2-stat .stat-value {
+    font-size: 9px;
+  }
+
+  .douyin-demo .recruitment-screen .card-v2-action {
+    padding: 3px 5px;
+  }
+
+  .douyin-demo .recruitment-screen .btn-v2-buy,
+  .douyin-demo .recruitment-screen .btn-v2-sell {
+    height: 23px;
+    min-height: 23px !important;
+    font-size: 9px;
+  }
+
+  .douyin-demo .recruitment-screen .recruitment-footer {
+    position: static !important;
+    display: flex !important;
+    height: 52px !important;
+    padding: 2px 12px 0 !important;
+    border-top-width: 3px;
+    gap: 8px;
+  }
+
+  .douyin-demo .recruitment-screen .recruitment-footer .PixelButton {
+    width: min(260px, 36vw) !important;
+    max-width: none !important;
+    min-height: 48px !important;
+    height: 48px !important;
+    font-size: 14px;
+  }
+
+  .douyin-demo .recruitment-screen .recruitment-footer .PixelButton .button-label {
+    z-index: 2;
+    color: var(--pixel-main);
+  }
+
+  /* Tournament */
+  .douyin-demo .tournament-screen {
+    display: block;
+    height: 100dvh;
+    min-height: 0;
+    max-height: none;
+    padding: 6px 12px 8px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: none;
+  }
+
+  .douyin-demo .tournament-screen::-webkit-scrollbar {
+    display: none;
+  }
+
+  .douyin-demo .tournament-team-info {
+    min-height: 38px;
+    margin: 5px 0;
+    padding: 4px 8px;
+  }
+
+  .douyin-demo .tournament-screen > div[style*="padding"] {
+    padding: 2px 8px !important;
+  }
+
+  .douyin-demo .group-stage,
+  .douyin-demo .knockout-stage {
+    margin-bottom: 8px;
+  }
+
+  .douyin-demo .group-stage h3,
+  .douyin-demo .knockout-stage h3 {
+    margin-bottom: 5px;
+    padding-bottom: 4px;
+    font-size: 14px;
+  }
+
+  .douyin-demo .match-list,
+  .douyin-demo .knockout-bracket {
+    gap: 5px;
+  }
+
+  .douyin-demo .match-item,
+  .douyin-demo .knockout-round {
+    min-height: 42px;
+    gap: 6px;
+    padding: 5px 8px;
+  }
+
+  .douyin-demo .match-date,
+  .douyin-demo .match-opponent,
+  .douyin-demo .round-name,
+  .douyin-demo .round-opponent {
+    font-size: clamp(10px, 2.45vh, 13px);
+  }
+
+  .douyin-demo .tournament-action-button {
+    flex-basis: 72px;
+    width: 72px;
+    min-width: 72px;
+    height: 30px;
+    font-size: 10px;
+  }
+
+  .douyin-demo .group-standings {
+    margin-top: 6px;
+    padding: 5px;
+    font-size: 11px;
+  }
+
+  /* Lineup */
+  .douyin-demo .lineup-screen {
+    display: grid !important;
+    grid-template-rows: 28px 36px minmax(0, 1fr) 42px !important;
+    gap: 4px !important;
+    height: 100dvh;
+    padding: 4px 8px !important;
+    overflow: hidden !important;
+  }
+
+  .douyin-demo .lineup-screen .screen-header {
+    grid-row: 1;
+  }
+
+  .douyin-demo .lineup-screen .match-preview {
+    grid-row: 2;
+    min-height: 36px;
+    padding: 3px 8px;
+  }
+
+  .douyin-demo .lineup-workspace {
+    grid-row: 3;
+    display: grid !important;
+    grid-template-columns: minmax(380px, 58fr) minmax(280px, 42fr) !important;
+    grid-template-rows: minmax(0, 1fr) !important;
+    gap: 8px !important;
+    min-height: 0;
+    overflow: hidden !important;
+  }
+
+  .douyin-demo .lineup-pitch-pane {
+    grid-template-rows: 22px minmax(0, 1fr);
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .douyin-demo .demo-lineup-left {
+    display: grid;
+    grid-template-columns: minmax(168px, 34fr) minmax(220px, 66fr);
+    gap: 6px;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .douyin-demo .demo-bench-dock {
+    display: grid;
+    grid-template-rows: 24px minmax(0, 1fr);
+    min-width: 0;
+    min-height: 0;
+    padding: 4px;
+    border: 3px solid var(--pixel-main);
+    background: var(--pixel-shadow);
+    overflow: hidden;
+  }
+
+  .douyin-demo .demo-bench-title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    color: var(--pixel-bg);
+    font-family: "Zpix", "Microsoft YaHei", sans-serif;
+    font-size: 9px;
+  }
+
+  .douyin-demo .demo-bench-title strong {
+    color: var(--pixel-gold);
+  }
+
+  .douyin-demo .demo-bench-list {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-content: start;
+    gap: 3px;
+    min-height: 0;
+    padding-right: 2px;
+    overflow-x: hidden;
+    overflow-y: auto;
+    scrollbar-width: none;
+    touch-action: pan-y;
+  }
+
+  .douyin-demo .demo-bench-list::-webkit-scrollbar {
+    display: none;
+  }
+
+  .douyin-demo .demo-bench-row {
+    display: grid;
+    grid-template-columns: 26px minmax(0, 1fr) 38px;
+    align-items: center;
+    gap: 3px;
+    width: 100%;
+    min-width: 0;
+    min-height: 27px;
+    margin: 0;
+    padding: 3px 5px;
+    border: 2px solid var(--pixel-main);
+    border-radius: 0;
+    background: var(--pixel-bg);
+    box-shadow: none;
+    color: var(--pixel-main);
+    font-family: "Zpix", "Microsoft YaHei", sans-serif;
+    font-size: 8px;
+    line-height: 1;
+    text-align: left;
+    cursor: grab;
+    touch-action: manipulation;
+  }
+
+  .douyin-demo .demo-bench-row.is-selected {
+    background: var(--pixel-gold);
+    box-shadow: inset 0 0 0 2px var(--pixel-bg);
+  }
+
+  .douyin-demo .demo-bench-position {
+    color: var(--pixel-shadow);
+    white-space: nowrap;
+  }
+
+  .douyin-demo .demo-bench-name {
+    display: block;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .douyin-demo .demo-bench-meta {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 2px;
+    min-width: 0;
+    font-size: 8px;
+    white-space: nowrap;
+  }
+
+  .douyin-demo .demo-bench-meta strong {
+    color: var(--pixel-main);
+  }
+
+  .douyin-demo .pitch-view-title {
+    width: min(100%, 360px);
+    font-size: 10px;
+  }
+
+  .douyin-demo .lineup-screen .pitch-container {
+    width: auto !important;
+    height: 100% !important;
+    max-width: 100% !important;
+    max-height: 100% !important;
+    aspect-ratio: 2 / 3 !important;
+  }
+
+  .douyin-demo .lineup-screen .pitch-slot {
+    width: clamp(24px, 6vh, 34px);
+    height: clamp(24px, 6vh, 34px);
+  }
+
+  .douyin-demo .lineup-screen .slot-number {
+    font-size: 11px;
+  }
+
+  .douyin-demo .lineup-control-pane {
+    display: grid !important;
+    grid-template-rows: 30px auto minmax(0, 1fr) !important;
+    gap: 4px;
+    min-height: 0;
+    overflow: hidden !important;
+  }
+
+  .douyin-demo .lineup-view-toggle {
+    height: 30px;
+    border-width: 3px;
+    box-shadow: 3px 3px 0 var(--pixel-shadow);
+    font-size: 11px;
+  }
+
+  .douyin-demo .lineup-control-section {
+    padding: 5px;
+    border-width: 3px;
+    box-shadow: 3px 3px 0 var(--pixel-shadow);
+  }
+
+  .douyin-demo .formation-control-section {
+    display: block !important;
+    padding: 5px;
+  }
+
+  .douyin-demo .formation-control-section .lineup-section-title {
+    display: flex;
+  }
+
+  .douyin-demo .formation-control-section .formation-description {
+    display: none;
+  }
+
+  .douyin-demo .lineup-section-title {
+    margin-bottom: 4px;
+    font-size: 10px;
+  }
+
+  .douyin-demo .formation-control-section .formation-selector {
+    gap: 2px;
+  }
+
+  .douyin-demo .formation-control-section .formation-btn {
+    min-height: 22px;
+    font-size: 8px;
+  }
+
+  .douyin-demo .formation-description {
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 2px 6px;
+    margin-top: 4px;
+    padding: 4px;
+    font-size: 9px;
+    line-height: 1.25;
+  }
+
+  .douyin-demo .formation-description small {
+    grid-column: 1 / -1;
+    font-size: 8px;
+  }
+
+  .douyin-demo .lineup-section-actions > span {
+    display: none;
+  }
+
+  .douyin-demo .auto-lineup-btn {
+    padding: 2px 6px;
+    font-size: 8px;
+  }
+
+  .douyin-demo .player-control-section {
+    display: grid !important;
+    grid-template-rows: auto !important;
+    align-content: start;
+    padding: 10px;
+  }
+
+  .douyin-demo .player-control-section::before {
+    content: "阵容评分";
+    display: block;
+    margin-bottom: 8px;
+    color: var(--pixel-main);
+    font-family: "Zpix", "Microsoft YaHei", sans-serif;
+    font-size: 12px;
+  }
+
+  .douyin-demo .player-control-section > .bench-section {
+    display: none !important;
+  }
+
+  .douyin-demo .player-control-section .lineup-rating {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+    padding: 0;
+    font-size: 11px;
+  }
+
+  .douyin-demo .player-control-section .lineup-rating span {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 38px;
+    padding: 6px 8px;
+    font-family: "Zpix", "Microsoft YaHei", sans-serif;
+  }
+
+  .douyin-demo .player-control-section .bench-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 3px;
+    height: 100%;
+    max-height: none !important;
+    padding-right: 2px;
+    overflow-y: auto !important;
+    touch-action: pan-y;
+  }
+
+  .douyin-demo .player-control-section .bench-player {
+    grid-template-columns: 22px minmax(0, 1fr) auto;
+    min-height: 32px;
+    padding: 3px;
+    font-size: 8px;
+  }
+
+  .douyin-demo .bench-status-title {
+    display: none;
+  }
+
+  .douyin-demo .lineup-footer {
+    position: static !important;
+    grid-row: 4;
+    height: 42px !important;
+    padding: 2px 12px 0 !important;
+    border-top-width: 3px;
+  }
+
+  .douyin-demo .lineup-confirm-button {
+    width: min(620px, 82vw) !important;
+    height: 36px !important;
+    font-size: 12px;
+  }
+
+  /* Match: always retain pitch-left / information-right in landscape. */
+  .douyin-demo .match-screen {
+    height: 100dvh !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+  }
+
+  .douyin-demo .match-screen > button:first-child {
+    left: clamp(76px, 12vw, 112px) !important;
+    top: 4px !important;
+  }
+
+  .douyin-demo .match-play-area {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) clamp(280px, 32vw, 360px) !important;
+    grid-template-rows: minmax(0, 1fr) !important;
+    width: 100%;
+    height: 100dvh !important;
+    margin-top: 0 !important;
+    gap: 6px !important;
+    padding: 4px 6px !important;
+    overflow: hidden !important;
+  }
+
+  .douyin-demo .match-canvas-wrap {
+    width: 100%;
+    height: 100%;
+    min-width: 0;
+    min-height: 0 !important;
+    overflow: hidden !important;
+  }
+
+  .douyin-demo .match-canvas-wrap canvas,
+  .douyin-demo .phaser-match-engine,
+  .douyin-demo .phaser-match-engine canvas {
+    width: 100% !important;
+    height: 100% !important;
+    max-width: 100% !important;
+    max-height: 100% !important;
+    transform: none !important;
+  }
+
+  .douyin-demo .match-info-panel {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    grid-template-rows: 40px 26px minmax(96px, 1fr) 30px 88px !important;
+    width: 100% !important;
+    height: 100% !important;
+    max-height: none !important;
+    min-width: 0;
+    min-height: 0;
+    gap: 4px !important;
+    overflow: hidden !important;
+  }
+
+  .douyin-demo .match-info-panel > * {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    overflow: hidden;
+    box-sizing: border-box;
+  }
+
+  .douyin-demo .match-score-panel {
+    display: grid !important;
+    grid-column: 1 !important;
+    grid-row: 1 !important;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) !important;
+    align-items: center;
+    gap: 4px;
+    padding: 5px;
+    border-width: 2px;
+  }
+
+  .douyin-demo .score-team {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    width: 100%;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .douyin-demo .score-team:first-child {
+    justify-content: flex-end;
+  }
+
+  .douyin-demo .score-team:last-child {
+    justify-content: flex-start;
+  }
+
+  .douyin-demo .score-team .team-name {
+    display: block;
+    max-width: none;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 8px;
+  }
+
+  .douyin-demo .score-team .inline-flag,
+  .douyin-demo .score-team img {
+    flex: 0 0 14px;
+    width: 14px !important;
+    height: 10px !important;
+    object-fit: cover;
+  }
+
+  .douyin-demo .score-display {
+    flex: none;
+    min-width: 54px;
+    gap: 4px;
+    padding: 3px 7px;
+    white-space: nowrap;
+  }
+
+  .douyin-demo .score-number {
+    font-size: 14px;
+  }
+
+  .douyin-demo .match-time-bar {
+    grid-column: 1 !important;
+    grid-row: 2 !important;
+    padding: 4px 6px;
+  }
+
+  .douyin-demo .match-time {
+    font-size: 10px;
+  }
+
+  .douyin-demo .match-commentary-panel {
+    grid-column: 1 !important;
+    grid-row: 3 !important;
+    width: 100% !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    padding: 7px;
+    overflow-y: auto !important;
+    font-size: clamp(10px, 2.45vh, 12px) !important;
+    line-height: 1.4 !important;
+    touch-action: pan-y;
+  }
+
+  .douyin-demo .match-controls {
+    position: static !important;
+    display: flex !important;
+    grid-column: 1 !important;
+    grid-row: 4 !important;
+    height: 30px !important;
+    min-height: 30px !important;
+    padding: 0 !important;
+    gap: 4px !important;
+  }
+
+  .douyin-demo .match-controls button {
+    min-height: 30px !important;
+    height: 30px;
+    padding: 2px 5px !important;
+    font-size: 9px !important;
+  }
+
+  .douyin-demo .match-controls .speed-btn {
+    flex-basis: 42px;
+  }
+
+  .douyin-demo .sub-panel {
+    display: block !important;
+    grid-column: 1 !important;
+    grid-row: 5 !important;
+    height: 100% !important;
+    min-height: 0;
+    max-height: none !important;
+    height: 88px !important;
+    padding: 4px;
+    overflow-y: auto !important;
+    touch-action: pan-y;
+  }
+
+  .douyin-demo .sub-panel-title {
+    margin-bottom: 2px;
+    font-size: 8px;
+  }
+
+  .douyin-demo .sub-section-label {
+    display: none;
+  }
+
+  .douyin-demo .sub-lineup-grid,
+  .douyin-demo .sub-bench-grid {
+    display: grid !important;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    gap: 2px !important;
+  }
+
+  .douyin-demo .sub-player-card,
+  .douyin-demo .sub-bench-card {
+    min-width: 0;
+    min-height: 18px !important;
+    padding: 1px 2px !important;
+    gap: 1px;
+    font-size: 7px !important;
+  }
+
+  .douyin-demo .sub-player-name,
+  .douyin-demo .sub-bench-name {
+    min-width: 0;
+    overflow: hidden;
+    font-size: 6px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .douyin-demo .field-decision-message {
+    bottom: 8px;
+    width: 82%;
+    padding: 6px 8px;
+    font-size: 10px;
+  }
+
+  .douyin-demo .field-decision-icon {
+    width: 34px;
+    height: 34px;
+  }
+}
+
+@media (orientation: landscape) and (max-height: 600px) and (max-width: 1000px) {
+  .douyin-demo .match-play-area {
+    grid-template-columns: minmax(0, 1fr) minmax(292px, 36vw) !important;
+  }
+
+  .douyin-demo .match-info-panel {
+    grid-template-rows: 38px 24px minmax(104px, 1fr) 28px 76px !important;
+  }
+
+  .douyin-demo .match-score-panel {
+    padding: 3px 5px;
+  }
+
+  .douyin-demo .score-display {
+    min-width: 50px;
+    padding: 2px 5px;
+  }
+
+  .douyin-demo .match-commentary-panel {
+    padding: 5px;
+    font-size: 10px !important;
+    line-height: 1.3 !important;
+  }
+
+  .douyin-demo .match-controls,
+  .douyin-demo .match-controls button {
+    min-height: 28px !important;
+    height: 28px !important;
+  }
+
+  .douyin-demo .sub-panel {
+    height: 76px !important;
+  }
+}

@@ -10,12 +10,14 @@ import MatchScreen from './components/MatchScreen'
 import PostMatchScreen from './components/PostMatchScreen'
 import EndingScreen from './components/EndingScreen'
 import SettingsScreen from './components/SettingsScreen'
+import { IS_DOUYIN_DEMO } from './config/runtime'
 
 /**
  * 剑指美加墨 — 主应用组件
  * 管理游戏页面路由和全局状态
  */
 export default function App() {
+  const useDouyinLayout = IS_DOUYIN_DEMO || import.meta.env.DEV
   const [saveData, setSaveData] = useState(null)
   const [currentScreen, setCurrentScreen] = useState('home')
   const [toast, setToast] = useState(null)
@@ -114,7 +116,7 @@ export default function App() {
   }
 
   return (
-    <div className="app">
+    <div className={`app${useDouyinLayout ? ' douyin-demo' : ''}`}>
       {renderScreen()}
       {toast && <div className="toast">{toast}</div>}
     </div>
