@@ -55,12 +55,12 @@ function calcSuccessProb(
   }
   const normalizedAttr = totalWeight > 0 ? weightedSum / totalWeight : 70;
 
-  // 对手质量修正：温和版
+  // 对手质量修正：实力差对决策结果的影响要可见
   const attrDiff = normalizedAttr - opponentAvgDef;
-  const opponentMult = Math.min(1.12, Math.max(0.85, 1.0 + attrDiff * 0.003));
+  const opponentMult = Math.min(1.18, Math.max(0.78, 1.0 + attrDiff * 0.005));
 
   // 基础成功率
-  const baseProb = 0.25 + (normalizedAttr / 99) * 0.55;
+  const baseProb = 0.22 + (normalizedAttr / 99) * 0.52;
 
   // 最终概率
   const goldenMult = keyPlayer.isGolden ? 1.08 : 1.0;
@@ -71,7 +71,7 @@ function calcSuccessProb(
     4: -0.08,
     5: -0.22,
   }[teamDifficulty] ?? 0;
-  return Math.min(0.90, Math.max(0.10, baseProb * formMult * clutchMult * goldenMult * opponentMult + teamDepthBonus + difficultyModifier));
+  return Math.min(0.86, Math.max(0.08, baseProb * formMult * clutchMult * goldenMult * opponentMult + teamDepthBonus + difficultyModifier));
 }
 
 /**
@@ -411,6 +411,11 @@ export function executeDecision(scenario, lineup, gameState, options = {}) {
 /**
  * 解析玩家选择的结果
  */
+// 默认进球转化率：成功池里的 goal 结果不必然转化为进球，
+// 让决策进球占全场进球的比例落在 25-35% 的真实区间。
+// 选项可用 goal_conversion / conversion_miss_outcome 单独覆盖。
+const DEFAULT_GOAL_CONVERSION = 0.62
+
 export function resolveChoiceResult(choice, keyPlayer, gameState) {
   const isKnockout = gameState.isKnockout || false;
   const isExtraTime = gameState.minute > 90;
@@ -426,16 +431,8 @@ export function resolveChoiceResult(choice, keyPlayer, gameState) {
     opponentAvgDef,
     teamDepthBonus,
     gameState.teamDifficulty || 3,
-  );
+  ) + Number(gameState.moraleBonus || 0);
   let outcome = resolveOutcome(choice, successProb);
-  if (
-    typeof choice.goal_conversion === 'number'
-    && outcome.startsWith('goal')
-    && Math.random() > choice.goal_conversion
-  ) {
-    outcome = choice.conversion_miss_outcome || 'saved';
-  }
-  const isSuccess = choice.possible_outcomes.indexOf(outcome) < getSuccessOutcomeCount(choice.possible_outcomes);
 
   // 计算比分变化
   let homeScoreChange = 0;
@@ -457,6 +454,26 @@ export function resolveChoiceResult(choice, keyPlayer, gameState) {
     'goal_tight_angle',
     'goal_zone_gap',
   ];
+
+  // 进球转化率与选择质量挂钩：高质量选择执行更到位，
+  // 最优与最差选择的决策进球差距应显著（用户主导比赛走向）。
+  // 只作用于本方进攻进球，不影响防守场景的失球判定。
+  // 球队档位同时影响转化：弱队即使决策正确，执行成色也低于强队。
+  // 未转化时必须落到该选项合法结果池内的未进分支，
+  // 否则导演会因为结果分支不存在而冻结比赛。
+  const baseConversion = typeof choice.goal_conversion === 'number'
+    ? choice.goal_conversion
+    : DEFAULT_GOAL_CONVERSION;
+  const teamTierFactor = Math.min(1.25, Math.max(0.5, (teamAvgRating - 72) / 12));
+  const goalConversion = Math.min(0.92, baseConversion * (successProb * 2.0 - 0.5) * teamTierFactor);
+  if (goalOutcomes.includes(outcome) && Math.random() > goalConversion) {
+    const missOutcome = choice.conversion_miss_outcome
+      || choice.possible_outcomes.find((candidate) => (
+        /saved|miss|blocked|post|wide|over|cleared|claim|punch|hit_wall|deflected/.test(candidate)
+      ));
+    if (missOutcome) outcome = missOutcome;
+  }
+  const isSuccess = choice.possible_outcomes.indexOf(outcome) < getSuccessOutcomeCount(choice.possible_outcomes);
 
   if (goalOutcomes.includes(outcome)) homeScoreChange = 1;
   if (goalAgainstOutcomes.includes(outcome) || outcome?.startsWith('opponent_goal')) awayScoreChange = 1;

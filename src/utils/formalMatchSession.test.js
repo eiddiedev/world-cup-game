@@ -130,7 +130,7 @@ describe('FormalMatchSession 正式比赛权威链', () => {
       'long_shot_opportunity',
     ]
 
-    const eventTypes = ['foul', 'corner', 'possession-change', 'tackle-contact', 'touch']
+    const eventTypes = ['foul', 'corner', 'possession-change', 'touch', 'touch']
     const eventSides = ['blue', 'red', 'blue', 'blue', 'red']
 
     FORMAL_MATCH_DECISION_TARGET_MINUTES.forEach((minute, index) => {

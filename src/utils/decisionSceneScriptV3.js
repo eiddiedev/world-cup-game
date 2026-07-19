@@ -18,6 +18,39 @@ const TACKLE_DUEL_INTENTS = new Set([
   'tactical-contact',
   'touchline-slide',
 ])
+// 空中传球意图：这类传球的攻门收尾是争顶（跳起），不是脚踢
+const AERIAL_PASS_INTENTS = new Set([
+  'cross-high',
+  'corner-near',
+  'corner-far',
+  'dink-far-post',
+  'throw-long',
+  'free-kick-cross',
+  'keeper-long',
+  'switch-wide',
+])
+// spine 动画表没有 pass，所有踢摆类出球统一用 shoot；
+// 界外球用原生 throw；不存在的动画会被播放层静默跳过，必须只用表内动画
+const SPINE_SAFE_ACTIONS = new Set([
+  'shoot', 'slide', 'dribble', 'sprint', 'idle', 'waving',
+  'jump', 'hands_in_front', 'throw', 'run', 'fall_forward',
+])
+const WON_DUEL_TERMINALS = new Set(['blocker', 'opponent-transition'])
+// 吊射类意图的出球仰角（弧度），其余按低平球处理
+const LIVE_SHOT_ELEVATION_BY_INTENT = Object.freeze({
+  'chip-goalkeeper': 0.55,
+  'penalty-panenka': 0.55,
+  'free-kick-near': 0.32,
+  'opponent-free-kick': 0.3,
+})
+const LIVE_SHOT_TERMINALS = new Set([
+  'goal-for', 'goal-against', 'away-goalkeeper', 'home-goalkeeper', 'out',
+])
+
+function ballActionAnimation(affordance) {
+  if (affordance?.intent === 'throw-long') return 'throw'
+  return 'shoot'
+}
 
 function clamp(value, min = 0, max = 1) {
   return Math.min(max, Math.max(min, Number(value) || 0))
@@ -76,29 +109,79 @@ function curve(origin, target, height = 0.28, bend = 0) {
   ]
 }
 
+// 球速按飞行距离推算：射门约 0.24 归一化/秒（≈25m/s），传球约 0.15（≈16m/s），
+// 贝塞尔路径近似取直线 1.1 倍，避免远射和短传一个速度
+function flightDurationMs(from, to, kind) {
+  const length = Math.hypot(to[0] - from[0], to[1] - from[1]) * 1.1
+  const speed = kind === 'shot' ? 0.24 : 0.15
+  return clamp(
+    Math.round((length / speed) * 1000 / 40) * 40,
+    kind === 'shot' ? 640 : 760,
+    kind === 'shot' ? 1500 : 2400,
+  )
+}
+
+// 原生踢球计划：把剧本瞄点换算成引擎物理单位（场地 35×22.667，质量 1，滚动摩擦 5，重力 9.81）。
+// 低平球用摩擦公式反推出球力量（到达门线仍保留目标速度）；
+// 吊射用抛体公式（与引擎 Lob 状态同源）：power = sqrt(dist * g / sin(2θ))。
+const PITCH_WORLD_WIDTH = 35
+const PITCH_WORLD_HEIGHT = 22.6667
+const BALL_GROUND_FRICTION = 5
+const BALL_GRAVITY = 9.81
+
+function buildLiveShotPlan({ path, terminal, intent, shooterRuntimeActorId, keeperRuntimeActorId, origin }) {
+  const aim = point3(path.at(-1))
+  const dx = (aim[0] - origin[0]) * PITCH_WORLD_WIDTH
+  const dy = (aim[1] - origin[1]) * PITCH_WORLD_HEIGHT
+  const dist = Math.max(0.5, Math.hypot(dx, dy))
+  const elevate = LIVE_SHOT_ELEVATION_BY_INTENT[intent]
+    ?? (aim[2] >= 0.5 ? 0.35 : 0.07)
+  const arrivalSpeed = ['goal-for', 'goal-against'].includes(terminal)
+    ? 7.5
+    : ['home-goalkeeper', 'away-goalkeeper'].includes(terminal) ? 3.2 : 7
+  const power = elevate >= 0.2
+    ? Math.sqrt(dist * BALL_GRAVITY / Math.sin(2 * elevate))
+    : Math.sqrt(arrivalSpeed * arrivalSpeed + 2 * BALL_GROUND_FRICTION * dist)
+  return {
+    shooterRuntimeActorId,
+    keeperRuntimeActorId,
+    terminal,
+    aim,
+    elevate,
+    power: Number(power.toFixed(2)),
+    maxFlightMs: clamp(Math.round(dist / 4 * 1000) + 1200, 1800, 3200),
+  }
+}
+
 function buildRoles(decision, actorSource, runtimeMoment) {
   const red = activeActors(actorSource, 'red')
   const blue = activeActors(actorSource, 'blue')
   const all = [...red, ...blue]
   const positions = actorPositionMap(runtimeMoment)
   const origin = runtimeMoment.ball.normalized
+  const attackDirection = Number(runtimeMoment.attackDirection)
+    || (runtimeMoment.attackingSide === 'blue' ? -1 : 1)
+  const homeAttackDirection = runtimeMoment.attackingSide === 'blue'
+    ? -attackDirection
+    : attackDirection
   const owner = all.find((actor) => actor.runtimeActorId === runtimeMoment.ownerRuntimeActorId)
   const requested = red.find((actor) => (
     actor.playerId === decision?.coachDecisionEvent?.keyPlayers?.primary?.id
   ))
   const primary = requested || nearestActor(red.filter((actor) => !actor.isGoalkeeper), positions, origin) || red[0]
-  const support = nearestActor(red.filter((actor) => !actor.isGoalkeeper), positions, positions.get(primary.runtimeActorId) || origin, new Set([primary.runtimeActorId])) || red[1]
+  // 接应者必须是真正站在接应区域（持球人斜后方、靠近弧顶一侧）的球员，
+  // 而不是紧挨持球人的队友，否则"回传弧顶"会把球交给并不在弧顶的人
+  const supportZone = [
+    clamp(origin[0] - homeAttackDirection * 0.09),
+    clamp(0.5 + (origin[1] - 0.5) * 0.5),
+  ]
+  const support = nearestActor(red.filter((actor) => !actor.isGoalkeeper), positions, supportZone, new Set([primary.runtimeActorId])) || red[1]
   const opponent = owner?.side === 'blue'
     ? owner
     : nearestActor(blue.filter((actor) => !actor.isGoalkeeper), positions, origin) || blue[1]
   const blocker = nearestActor(blue.filter((actor) => !actor.isGoalkeeper), positions, origin) || opponent
   const homeGoalkeeper = red.find((actor) => actor.isGoalkeeper) || red[0]
   const awayGoalkeeper = blue.find((actor) => actor.isGoalkeeper) || blue[0]
-  const attackDirection = Number(runtimeMoment.attackDirection)
-    || (runtimeMoment.attackingSide === 'blue' ? -1 : 1)
-  const homeAttackDirection = runtimeMoment.attackingSide === 'blue'
-    ? -attackDirection
-    : attackDirection
   const homeAttackGoal = homeAttackDirection < 0 ? [0.008, 0.5] : [0.992, 0.5]
   const awayAttackGoal = homeAttackDirection < 0 ? [0.992, 0.5] : [0.008, 0.5]
   const aerialTarget = nearestActor(
@@ -107,10 +190,14 @@ function buildRoles(decision, actorSource, runtimeMoment) {
     homeAttackGoal,
     new Set([primary.runtimeActorId]),
   ) || support
+  const awaySupportZone = [
+    clamp(origin[0] + homeAttackDirection * 0.09),
+    clamp(0.5 + (origin[1] - 0.5) * 0.5),
+  ]
   const awaySupport = nearestActor(
     blue.filter((actor) => !actor.isGoalkeeper),
     positions,
-    positions.get(opponent.runtimeActorId) || origin,
+    awaySupportZone,
     new Set([opponent.runtimeActorId]),
   ) || blue.find((actor) => !actor.isGoalkeeper && actor !== opponent) || opponent
   const awayAerialTarget = nearestActor(
@@ -166,19 +253,24 @@ function geometryContext(runtimeMoment, roles) {
     || (runtimeMoment.attackingSide === 'blue' ? -1 : 1)
   const homeDirection = runtimeMoment.attackingSide === 'blue' ? -attackDirection : attackDirection
   const awayDirection = -homeDirection
-  const homeAttackGoalX = homeDirection > 0 ? 0.992 : 0.008
-  const homeDefendGoalX = homeDirection > 0 ? 0.008 : 0.992
-  const goalX = runtimeMoment.attackingSide === 'blue' ? homeDefendGoalX : homeAttackGoalX
-  const ownGoalX = runtimeMoment.attackingSide === 'blue' ? homeAttackGoalX : homeDefendGoalX
-  const nearY = origin[1] < 0.5 ? 0.43 : 0.57
-  const farY = origin[1] < 0.5 ? 0.57 : 0.43
+  const homeAttackGoalX = homeDirection > 0 ? 1 : 0
+  const homeDefendGoalX = homeDirection > 0 ? 0 : 1
+  const homeAttackGoalLineX = homeDirection > 0 ? 0.995 : 0.005
+  const homeDefendGoalLineX = homeDirection > 0 ? 0.005 : 0.995
+  const goalX = runtimeMoment.attackingSide === 'blue' ? homeDefendGoalLineX : homeAttackGoalLineX
+  const ownGoalX = runtimeMoment.attackingSide === 'blue' ? homeAttackGoalLineX : homeDefendGoalLineX
+  // 真实门柱归一化区间为 [0.4353, 0.5647]（GOAL_WIDTH 2.9333 / PITCH_HEIGHT 22.667），
+  // 瞄点必须收在柱内，否则球会打在门柱外或门框外。
+  const nearY = origin[1] < 0.5 ? 0.455 : 0.545
+  const farY = origin[1] < 0.5 ? 0.545 : 0.455
   const actorPoint = (role, fallback) => point3(
     roles.positions.get(roles.actors[role]?.runtimeActorId) || fallback,
   )
-  const homeSupport = actorPoint('support', [clamp(origin[0] - homeDirection * 0.09), clamp(origin[1] + 0.12)])
-  const awaySupport = actorPoint('awaySupport', [clamp(origin[0] - awayDirection * 0.09), clamp(origin[1] - 0.12)])
+  const homeSupport = actorPoint('support', [clamp(origin[0] - homeDirection * 0.09), clamp(0.5 + (origin[1] - 0.5) * 0.5)])
+  const awaySupport = actorPoint('awaySupport', [clamp(origin[0] - awayDirection * 0.09), clamp(0.5 + (origin[1] - 0.5) * 0.5)])
   const homeAerial = actorPoint('aerialTarget', [clamp(homeAttackGoalX - homeDirection * 0.07), farY])
   const awayAerial = actorPoint('awayAerialTarget', [clamp(homeDefendGoalX - awayDirection * 0.07), farY])
+  const goalTargetX = runtimeMoment.attackingSide === 'blue' ? homeDefendGoalX : homeAttackGoalX
   const context = {
     origin,
     attackingSide: runtimeMoment.attackingSide,
@@ -189,8 +281,8 @@ function geometryContext(runtimeMoment, roles) {
     awayDirection,
     homeAttackGoal: [homeAttackGoalX, 0.5, 0.16],
     homeDefendGoal: [homeDefendGoalX, 0.5, 0.16],
-    nearPost: [goalX, nearY, 0.16],
-    farPost: [goalX, farY, 0.16],
+    nearPost: [goalTargetX, nearY, 0.16],
+    farPost: [goalTargetX, farY, 0.16],
     support: runtimeMoment.attackingSide === 'blue' ? awaySupport : homeSupport,
     homeSupport,
     awaySupport,
@@ -199,8 +291,8 @@ function geometryContext(runtimeMoment, roles) {
     aerial: runtimeMoment.attackingSide === 'blue' ? awayAerial : homeAerial,
     homeAerial,
     awayAerial,
-    homeGoalkeeper: actorPoint('homeGoalkeeper', [homeDefendGoalX, 0.5]),
-    awayGoalkeeper: actorPoint('awayGoalkeeper', [homeAttackGoalX, 0.5]),
+    homeGoalkeeper: actorPoint('homeGoalkeeper', [homeDefendGoalLineX, 0.5]),
+    awayGoalkeeper: actorPoint('awayGoalkeeper', [homeAttackGoalLineX, 0.5]),
     primary: actorPoint('primary', origin),
     setPieceTaker: actorPoint('setPieceTaker', origin),
     setPieceTarget: actorPoint('setPieceTarget', runtimeMoment.attackingSide === 'blue' ? awayAerial : homeAerial),
@@ -219,8 +311,8 @@ function contextForBallSide(context, side) {
   const ownGoal = side === 'home' ? context.homeDefendGoal : context.homeAttackGoal
   const support = side === 'home' ? context.homeSupport : context.awaySupport
   const aerial = side === 'home' ? context.homeAerial : context.awayAerial
-  const nearY = context.origin[1] < 0.5 ? 0.43 : 0.57
-  const farY = context.origin[1] < 0.5 ? 0.57 : 0.43
+  const nearY = context.origin[1] < 0.5 ? 0.455 : 0.545
+  const farY = context.origin[1] < 0.5 ? 0.545 : 0.455
   return {
     ...context,
     direction,
@@ -310,8 +402,8 @@ const BALL_RUNTIME_EVENT_TYPES = Object.freeze({
 })
 
 function ballTarget(key, context) {
-  if (key === 'leftGoal') return [context.goal[0], 0.43, 0.16]
-  if (key === 'rightGoal') return [context.goal[0], 0.57, 0.16]
+  if (key === 'leftGoal') return [context.goal[0], 0.455, 0.16]
+  if (key === 'rightGoal') return [context.goal[0], 0.545, 0.16]
   if (key === 'aerialLead') return [
     clamp(context.aerial[0] + context.direction * 0.045),
     context.aerial[1],
@@ -556,8 +648,21 @@ function outcomeTarget(terminal, context, ballSide, affordances) {
   const coordinatedClaim = affordances.find((affordance) => (
     affordance.role === 'homeGoalkeeper' && Array.isArray(affordance.claimPoint)
   ))?.claimPoint
-  if (terminal === 'goal-for') return context.homeAttackGoal
-  if (terminal === 'goal-against') return context.homeDefendGoal
+  if (terminal === 'goal-for' || terminal === 'goal-against') {
+    const goal = terminal === 'goal-for' ? context.homeAttackGoal : context.homeDefendGoal
+    const finalBallAction = affordances.filter((affordance) => affordance.kind === 'ball-path').at(-1)
+    // 直接射门分支沿用该选择自己的瞄点（近/远角、左右侧），不再统一收敛到正中心
+    if (finalBallAction?.runtimeEventType === 'shot') {
+      return point3(finalBallAction.points.at(-1))
+    }
+    // 传球收尾攻门：空中球找远离接应者的远门柱，地面球打近门柱
+    const receiverY = Number(finalBallAction?.points?.at(-1)?.[1] ?? context.origin[1])
+    const aerial = AERIAL_PASS_INTENTS.has(finalBallAction?.intent)
+    const aimY = aerial
+      ? (receiverY < 0.5 ? 0.545 : 0.455)
+      : (receiverY < 0.5 ? 0.455 : 0.545)
+    return [goal[0], aimY, aerial ? 0.3 : 0.12]
+  }
   if (terminal === 'away-goalkeeper') return context.awayGoalkeeper
   if (terminal === 'home-goalkeeper') return coordinatedClaim || context.homeGoalkeeper
   if (terminal === 'blocker') return ballSide === 'away' ? context.primary : context.blocker
@@ -642,7 +747,7 @@ function outcomeActions(affordances, terminal, durationMs, executesBallPath = tr
   affordances.forEach((affordance) => {
     if (affordance.kind === 'ball-path') {
       if (!executesBallPath) return
-      add(0, affordance.role || 'primary', affordance.runtimeEventType === 'shot' ? 'shoot' : 'pass')
+      add(0, affordance.role || 'primary', ballActionAnimation(affordance))
     } else if (affordance.kind === 'duel-vector') {
       add(0, affordance.role || 'primary', 'slide')
     } else if (affordance.kind === 'run-lane') {
@@ -674,7 +779,7 @@ function outcomeActions(affordances, terminal, durationMs, executesBallPath = tr
   }
   if (['goal-for', 'goal-against'].includes(terminal) && ballAction?.runtimeEventType === 'pass') {
     const receiverRole = receiverRoleForBallAction(ballAction)
-    add(Math.round(durationMs * 0.58), receiverRole, 'shoot')
+    add(Math.round(durationMs * 0.58), receiverRole, AERIAL_PASS_INTENTS.has(ballAction.intent) ? 'jump' : 'shoot')
   }
   return actions.sort((left, right) => left.atMs - right.atMs)
 }
@@ -877,12 +982,6 @@ export function buildFormalDecisionSceneScriptV3(decision, actorSource, runtimeM
       const receiverPoint = receivingShooterRole
         ? point3(finalPassAffordance.points.at(-1))
         : null
-      const durationMs = carryThenShot || passThenShot
-        ? passThenShot ? 1100 + sequenceBallAffordances.length * 760 : 2180
-        : terminal === 'hold' ? 1050 : terminal.includes('goal') ? 1580 : 1320
-      const shotAtMs = carryThenShot
-        ? 1080
-        : passThenShot ? sequenceBallAffordances.length * 760 : null
       const suppressUnrealizedShot = terminal === 'hold'
         && executionBallAffordance?.runtimeEventType === 'shot'
       const passPath = passThenShot
@@ -893,21 +992,78 @@ export function buildFormalDecisionSceneScriptV3(decision, actorSource, runtimeM
         : movesBall && !suppressUnrealizedShot
           ? outcomePath(selectedPath, target, terminal, context, outcomeBallSide)
           : null
-      const pathSegments = passThenShot
+      const tackleAffordance = affordances.find((affordance) => (
+        affordance.kind === 'duel-vector' && TACKLE_DUEL_INTENTS.has(affordance.intent)
+      ))
+      const ownerRole = Object.keys(roles.actors).find((role) => (
+        roles.actors[role].runtimeActorId === runtimeMoment.ownerRuntimeActorId
+      )) || 'opponent'
+      const duelWon = Boolean(tackleAffordance && WON_DUEL_TERMINALS.has(terminal) && !carryAffordance)
+      const duelRunDistance = tackleAffordance
+        ? Math.hypot(
+          tackleAffordance.points[1][0] - tackleAffordance.points[0][0],
+          tackleAffordance.points[1][1] - tackleAffordance.points[0][1],
+        )
+        : 0
+      // 对抗时长按铲球者跑动距离推算（冲刺约 0.09 归一化/秒，55% 时发生接触）
+      const duelDurationMs = tackleAffordance
+        ? clamp(Math.round(duelRunDistance / 0.09 / 0.55) * 50, 900, 2200)
+        : null
+      const contactMs = tackleAffordance ? Math.round((duelDurationMs || 1200) * 0.55) : null
+      // 球速按飞行距离推算：射门约 0.24 归一化/秒，传球约 0.15
+      const ballFlightDurationMs = path && executionBallAffordance
+        ? flightDurationMs(path[0], path.at(-1), executionBallAffordance.runtimeEventType)
+        : null
+      // 传球/带球后的收尾射门段同样按距离推算，近距离抢点不再慢速平移
+      const passFinishDurationMs = passThenShot
+        ? flightDurationMs(receiverPoint, target, 'shot')
+        : null
+      const carryFinishDurationMs = carryThenShot
+        ? flightDurationMs(carryEnd, target, 'shot')
+        : null
+      const durationMs = carryThenShot || passThenShot
+        ? passThenShot
+          ? sequenceBallAffordances.length * 760 + passFinishDurationMs
+          : 1080 + carryFinishDurationMs
+        : duelDurationMs
+          || ballFlightDurationMs
+          || (terminal === 'hold' ? 1050 : 1320)
+      const shotAtMs = carryThenShot
+        ? 1080
+        : passThenShot ? sequenceBallAffordances.length * 760 : null
+      let pathSegments = passThenShot
         ? [...sequenceBallAffordances.map((affordance) => affordance.points), path]
         : null
-      const segmentEndTimes = pathSegments
+      let segmentEndTimes = pathSegments
         ? pathSegments.map((_, index) => (
           index < pathSegments.length - 1
             ? (index + 1) * 760
             : durationMs
         ))
         : null
+      let duelReleaseBallAtMs = null
+      if (duelWon && !path) {
+        // 赢下的对抗：球在接触瞬间从持球人脚下被铲走，停在铲球点前方
+        const carrierPoint = point3(
+          roles.positions.get(roles.actors[ownerRole]?.runtimeActorId) || context.origin,
+        )
+        const lungeX = tackleAffordance.points[1][0] - tackleAffordance.points[0][0]
+        const lungeY = tackleAffordance.points[1][1] - tackleAffordance.points[0][1]
+        const loosePoint = [
+          clamp(tackleAffordance.points[1][0] + lungeX * 0.18),
+          clamp(tackleAffordance.points[1][1] + lungeY * 0.18),
+          0,
+        ]
+        pathSegments = [curve(context.origin, carrierPoint, 0.02), curve(carrierPoint, loosePoint, 0.04)]
+        segmentEndTimes = [contactMs, durationMs]
+        duelReleaseBallAtMs = contactMs
+      }
+      const outcomePathFinal = passThenShot ? path : pathSegments ? pathSegments.at(-1) : path
       const actions = outcomeActions(
         executionAffordances,
         terminal,
         durationMs,
-        Boolean(path) || !executionBallAffordance,
+        Boolean(outcomePathFinal) || !executionBallAffordance,
       )
       if (carryThenShot) {
         actions.push({ atMs: shotAtMs, role: runAffordance.role || 'primary', animation: 'shoot' })
@@ -917,17 +1073,32 @@ export function buildFormalDecisionSceneScriptV3(decision, actorSource, runtimeM
         for (let index = 1; index < sequenceBallAffordances.length; index += 1) {
           const affordance = sequenceBallAffordances[index]
           const action = actions.find((candidate) => (
-            candidate.role === affordance.role && candidate.animation === 'pass'
+            candidate.role === affordance.role
+            && candidate.atMs === 0
+            && candidate.animation === ballActionAnimation(affordance)
           ))
           if (action) action.atMs = index * 760
         }
-        const withoutReceiverShot = actions.filter((action) => action.animation !== 'shoot')
-        withoutReceiverShot.push({
+        const finishAnimation = AERIAL_PASS_INTENTS.has(finalPassAffordance?.intent) ? 'jump' : 'shoot'
+        const genericFinishAt = Math.round(durationMs * 0.58)
+        const retained = actions.filter((action) => !(
+          action.role === receivingShooterRole
+          && action.atMs === genericFinishAt
+          && (action.animation === 'shoot' || action.animation === 'jump')
+        ))
+        retained.push({
           atMs: shotAtMs,
           role: receivingShooterRole,
-          animation: 'shoot',
+          animation: finishAnimation,
         })
-        actions.splice(0, actions.length, ...withoutReceiverShot.sort((left, right) => left.atMs - right.atMs))
+        actions.splice(0, actions.length, ...retained.sort((left, right) => left.atMs - right.atMs))
+      }
+      if (tackleAffordance && (
+        WON_DUEL_TERMINALS.has(terminal) || /foul|penalty/.test(outcomeId)
+      )) {
+        // 被铲/被侵犯的持球人在接触瞬间倒地
+        actions.push({ atMs: contactMs, role: ownerRole, animation: 'fall_forward' })
+        actions.sort((left, right) => left.atMs - right.atMs)
       }
       const actorMotions = runAffordances.filter((affordance) => (
         (!isShotChoice || affordance.role !== ballAffordance?.role)
@@ -939,11 +1110,53 @@ export function buildFormalDecisionSceneScriptV3(decision, actorSource, runtimeM
         points: affordance.points,
         carriesBall: Boolean(affordance.carriesBall),
       }))
+      if (tackleAffordance) {
+        // 铲球者真实冲向持球人，而不是在原地播铲球动画
+        const tacklerRole = tackleAffordance.role || 'primary'
+        const tacklerId = roles.actors[tacklerRole].runtimeActorId
+        if (!actorMotions.some((motion) => motion.runtimeActorId === tacklerId)) {
+          actorMotions.push({
+            role: tacklerRole,
+            runtimeActorId: tacklerId,
+            points: curve(tackleAffordance.points[0], tackleAffordance.points[1], 0.03, 0),
+            carriesBall: false,
+          })
+        }
+      }
+      const keeperOutcomeRole = ['home-goalkeeper', 'away-goalkeeper'].includes(terminal)
+        ? (terminal === 'home-goalkeeper' ? 'homeGoalkeeper' : 'awayGoalkeeper')
+        : ['goal-for', 'goal-against'].includes(terminal) && path
+          ? (terminal === 'goal-for' ? 'awayGoalkeeper' : 'homeGoalkeeper')
+          : null
+      if (keeperOutcomeRole && path) {
+        // 门将真实移动：扑救奔向球路一侧；被进的球则扑向相反一侧（被晃过）
+        const keeperActor = roles.actors[keeperOutcomeRole]
+        const keeperId = keeperActor.runtimeActorId
+        if (!actorMotions.some((motion) => motion.runtimeActorId === keeperId)) {
+          const keeperPos = roles.positions.get(keeperId) || context[keeperOutcomeRole]
+          const keeperGoalLineX = keeperOutcomeRole === 'homeGoalkeeper'
+            ? context.homeDefendGoal[0]
+            : context.homeAttackGoal[0]
+          const stepOut = keeperGoalLineX > 0.5 ? -0.014 : 0.014
+          const aimY = path.at(-1)[1]
+          const diveY = ['home-goalkeeper', 'away-goalkeeper'].includes(terminal)
+            ? aimY
+            : clamp(0.5 + (0.5 - aimY) * 0.7, 0.34, 0.66)
+          actorMotions.push({
+            role: keeperOutcomeRole,
+            runtimeActorId: keeperId,
+            points: curve(
+              [keeperPos[0], keeperPos[1], 0],
+              [clamp(keeperPos[0] + stepOut, 0.01, 0.99), clamp(diveY, 0.34, 0.66), 0],
+              0.02,
+              0,
+            ),
+            carriesBall: false,
+          })
+        }
+      }
       const legacyActorMotion = actorMotions.find((motion) => motion.carriesBall)
         || actorMotions[0]
-      const tackleAffordance = affordances.find((affordance) => (
-        affordance.kind === 'duel-vector' && TACKLE_DUEL_INTENTS.has(affordance.intent)
-      ))
       const secondaryRuntimeEvents = [
         ...(receivingShooterRole ? [{
           atMs: Math.round(durationMs * 0.58),
@@ -952,7 +1165,7 @@ export function buildFormalDecisionSceneScriptV3(decision, actorSource, runtimeM
           runtimeActorId: roles.actors[receivingShooterRole].runtimeActorId,
         }] : []),
         ...(tackleAffordance ? [{
-          atMs: 180,
+          atMs: contactMs,
           type: 'tackle-contact',
           role: tackleAffordance.role || 'primary',
           runtimeActorId: roles.actors[tackleAffordance.role || 'primary'].runtimeActorId,
@@ -963,15 +1176,36 @@ export function buildFormalDecisionSceneScriptV3(decision, actorSource, runtimeM
           },
         }] : []),
       ].sort((left, right) => left.atMs - right.atMs)
+      const executionMode = multiPassThenShot
+        ? 'pass-sequence-then-shot'
+        : passThenShot ? 'pass-then-shot'
+        : carryThenShot
+        ? 'carry-then-shot'
+        : ballOnlyOutcome ? 'ball-only-shot' : carryAffordance ? 'ball-carry' : 'semantic-action'
+      const liveShotsDisabled = typeof window !== 'undefined'
+        && new URLSearchParams(window.location.search).get('liveShots') === '0'
+      // 直接射门（含点球/直接任意球/远射）走引擎原生踢球物理；
+      // 传球链、带球和对抗仍由剧本驱动，可用 ?liveShots=0 回退
+      const liveShot = executionMode === 'ball-only-shot'
+        && executionBallAffordance?.runtimeEventType === 'shot'
+        && LIVE_SHOT_TERMINALS.has(terminal)
+        && outcomePathFinal
+        && !liveShotsDisabled
+        ? buildLiveShotPlan({
+          path: outcomePathFinal,
+          terminal,
+          intent: executionBallAffordance.intent,
+          shooterRuntimeActorId: outcomeSourceRuntimeActorId,
+          keeperRuntimeActorId: (outcomeBallSide === 'away'
+            ? roles.actors.homeGoalkeeper
+            : roles.actors.awayGoalkeeper).runtimeActorId,
+          origin: context.origin,
+        })
+        : null
       return [outcomeId, {
         terminal,
         durationMs,
-        executionMode: multiPassThenShot
-          ? 'pass-sequence-then-shot'
-          : passThenShot ? 'pass-then-shot'
-          : carryThenShot
-          ? 'carry-then-shot'
-          : ballOnlyOutcome ? 'ball-only-shot' : carryAffordance ? 'ball-carry' : 'semantic-action',
+        executionMode,
         sourceRole: finalOutcomeSourceRole,
         sourceRuntimeActorId: outcomeSourceRuntimeActorId,
         initialSourceRole: choiceSourceRole,
@@ -983,12 +1217,12 @@ export function buildFormalDecisionSceneScriptV3(decision, actorSource, runtimeM
           : executionBallAffordance?.runtimeEventType || null,
         secondaryRuntimeEvents: [
           ...secondaryRuntimeEvents.filter((event) => event.type !== 'shot'),
-          ...sequenceBallAffordances.slice(1).map((affordance, index) => ({
+          ...(passThenShot ? sequenceBallAffordances.slice(1).map((affordance, index) => ({
             atMs: (index + 1) * 760,
             type: 'pass',
             role: affordance.role,
             runtimeActorId: roles.actors[affordance.role].runtimeActorId,
-          })),
+          })) : []),
           ...(receivingShooterRole ? [{
             atMs: shotAtMs,
             type: 'shot',
@@ -996,8 +1230,10 @@ export function buildFormalDecisionSceneScriptV3(decision, actorSource, runtimeM
             runtimeActorId: roles.actors[receivingShooterRole].runtimeActorId,
           }] : []),
         ].sort((left, right) => left.atMs - right.atMs),
-        releaseBallAtMs: carryThenShot ? shotAtMs : path && !carryAffordance ? 0 : null,
-        path,
+        releaseBallAtMs: duelReleaseBallAtMs ?? (
+          carryThenShot ? shotAtMs : outcomePathFinal && !carryAffordance ? 0 : null
+        ),
+        path: outcomePathFinal,
         passPath,
         pathSegments,
         segmentEndTimes,
@@ -1033,6 +1269,7 @@ export function buildFormalDecisionSceneScriptV3(decision, actorSource, runtimeM
         scoringSide: path && terminal === 'goal-for'
           ? 'red'
           : path && terminal === 'goal-against' ? 'blue' : null,
+        liveShot,
       }]
     }))
     return {
@@ -1242,6 +1479,9 @@ export function validateDecisionSceneScriptV3(script, decision = null) {
       }
       const cueTimes = (outcome.actions || []).map((action) => action.atMs)
       if (cueTimes.some((time, index) => index > 0 && time < cueTimes[index - 1])) errors.push(`${choice.id}.actions.order`)
+      for (const action of outcome.actions || []) {
+        if (!SPINE_SAFE_ACTIONS.has(action.animation)) errors.push(`${choice.id}.outcome.actionAnimation`)
+      }
       for (const runtimeEvent of outcome.secondaryRuntimeEvents || []) {
         if (!['pass', 'shot', 'tackle-contact'].includes(runtimeEvent.type)
           || !script.actors?.[runtimeEvent.role]
@@ -1296,15 +1536,15 @@ const TRIGGER_PREDICATES = Object.freeze({
   'counter-overload': (m, e) => m.attackingSide === 'red' && attackProgress(m) >= 0.35 && attackProgress(m) <= 0.72 && eventIs(e, ['possession-change', 'pass', 'touch']),
   'long-shot-window': (m, e) => m.attackingSide === 'red' && attackProgress(m) >= 0.52 && attackProgress(m) <= 0.78 && eventIs(e, ['touch', 'pass']),
   'through-run-window': (m, e) => m.attackingSide === 'red' && attackProgress(m) >= 0.48 && attackProgress(m) <= 0.78 && eventIs(e, ['pass', 'touch']),
-  'box-tackle-window': (m, e) => m.attackingSide === 'blue' && attackProgress(m) >= 0.74 && eventIs(e, ['touch', 'tackle-contact', 'possession-change']),
-  'goalkeeper-one-on-one': (m, e) => m.attackingSide === 'blue' && attackProgress(m) >= 0.77 && m.ball.normalized[1] >= 0.24 && m.ball.normalized[1] <= 0.76 && eventIs(e, ['touch', 'pass', 'shot']),
+  'box-tackle-window': (m, e) => m.attackingSide === 'blue' && attackProgress(m) >= 0.74 && eventIs(e, ['touch', 'possession-change']),
+  'goalkeeper-one-on-one': (m, e) => m.attackingSide === 'blue' && attackProgress(m) >= 0.77 && m.ball.normalized[1] >= 0.24 && m.ball.normalized[1] <= 0.76 && eventIs(e, ['touch', 'pass']),
   'last-defender-duel': (m, e) => m.attackingSide === 'blue' && attackProgress(m) >= 0.64 && eventIs(e, ['touch', 'pass', 'possession-change']),
   'midfield-press-window': (m, e) => m.attackingSide === 'blue' && attackProgress(m) >= 0.3 && attackProgress(m) <= 0.72 && eventIs(e, ['touch', 'pass', 'possession-change']),
   'counter-contact-window': (m, e) => m.attackingSide === 'blue' && attackProgress(m) >= 0.3 && attackProgress(m) <= 0.7 && eventIs(e, ['possession-change', 'touch', 'pass']),
   'offside-line-window': (m, e) => m.attackingSide === 'blue' && attackProgress(m) >= 0.48 && eventIs(e, ['pass', 'touch']),
-  'last-ditch-shot': (m, e) => m.attackingSide === 'blue' && attackProgress(m) >= 0.76 && eventIs(e, ['shot', 'touch']),
+  'last-ditch-shot': (m, e) => m.attackingSide === 'blue' && attackProgress(m) >= 0.76 && eventIs(e, ['touch']),
   'keeper-in-hands': (m, e) => Boolean(m.ownerIsGoalkeeper && m.ballInHands && m.attackingSide === 'red' && eventIs(e, ['touch', 'save'])),
-  'midfield-loose-ball': (m, e) => attackProgress(m) >= 0.32 && attackProgress(m) <= 0.68 && eventIs(e, ['touch', 'possession-change', 'tackle-contact']),
+  'midfield-loose-ball': (m, e) => attackProgress(m) >= 0.32 && attackProgress(m) <= 0.68 && eventIs(e, ['touch', 'possession-change']),
   'box-scramble': (m, e) => m.attackingSide === 'blue' && attackProgress(m) >= 0.77 && eventIs(e, ['shot', 'touch', 'possession-change']),
   'box-contact-attack': (m, e) => m.attackingSide === 'red' && attackProgress(m) >= 0.76 && e?.type === 'tackle-contact',
   'box-second-ball': (m, e) => m.attackingSide === 'blue' && attackProgress(m) >= 0.72 && eventIs(e, ['touch', 'possession-change']),
@@ -1319,8 +1559,13 @@ const TRIGGER_PREDICATES = Object.freeze({
   'corner-second-ball': (m, e) => m.attackingSide === 'red' && attackProgress(m) >= 0.72 && eventIs(e, ['touch', 'possession-change', 'shot']),
   'set-piece-rebound': (m, e) => m.attackingSide === 'red' && attackProgress(m) >= 0.72 && eventIs(e, ['post-hit', 'crossbar-hit', 'save', 'touch']),
   'penalty-rebound': (m, e) => m.attackingSide === 'red' && attackProgress(m) >= 0.82 && e?.type === 'save',
-  'booked-defender-duel': (m, e) => m.attackingSide === 'blue' && attackProgress(m) >= 0.55 && eventIs(e, ['touch', 'tackle-contact']),
-  'wet-pitch-tackle': (m, e) => Boolean(m.weather === 'rain' && e?.type === 'tackle-contact'),
+  'booked-defender-duel': (m, e) => m.attackingSide === 'blue' && attackProgress(m) >= 0.55 && eventIs(e, ['touch']),
+  'wet-pitch-tackle': (m, e) => Boolean(
+    m.weather === 'rain'
+    && m.attackingSide === 'blue'
+    && attackProgress(m) >= 0.5
+    && eventIs(e, ['touch', 'pass', 'possession-change'])
+  ),
 })
 
 export function isFormalDecisionMomentEligibleV3(scenarioId, runtimeMoment, sourceEvent = null, session = null) {

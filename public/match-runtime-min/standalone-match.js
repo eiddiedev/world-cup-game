@@ -195,7 +195,7 @@
           cameraTarget: { x: pitch.center.x, y: pitch.center.y },
           draggable: !0,
           crowdMotion: !0,
-          baseRefreshesRemaining: 12,
+          baseRefreshesRemaining: 6,
           lastBaseRefreshAt: 0,
           lastManualCameraAt: 0,
           manualReturnDelayMs: 2600,
@@ -278,11 +278,19 @@
         baseComposition.addChild(pitchMask));
       function renderBase() {
         try {
+          if (
+            !environmentTexture.baseTexture
+            || !environmentTexture.baseTexture.hasLoaded
+            || !pitchTexture.baseTexture
+            || !pitchTexture.baseTexture.hasLoaded
+          ) return !1;
           (stadium.baseTexture.clear && stadium.baseTexture.clear(),
             stadium.baseTexture.render(baseComposition, null, !0),
             stadium.disableOverlay && stadium.disableOverlay());
+          return !0;
         } catch (baseError) {
           console.error("[stadium-slice] 像素球场基底渲染失败", baseError);
+          return !1;
         }
       }
       environmentTexture.baseTexture && environmentTexture.baseTexture.hasLoaded &&
@@ -799,6 +807,16 @@
           var state = entry.actor.state;
           patch.stamina != null &&
             (state.stamina = Math.max(0, Math.min(100, Number(patch.stamina) || 0)));
+          patch.staminaDelta != null &&
+            (state.stamina = Math.max(0, Math.min(100, (Number(state.stamina) || 0) + Number(patch.staminaDelta))));
+          patch.morale != null &&
+            (state.morale = Math.max(0, Math.min(99, Number(patch.morale) || 0)));
+          patch.moraleDelta != null &&
+            (state.morale = Math.max(0, Math.min(99, (Number(state.morale) || 70) + Number(patch.moraleDelta))));
+          patch.form != null &&
+            (state.form = Math.max(0, Math.min(99, Number(patch.form) || 0)));
+          patch.formDelta != null &&
+            (state.form = Math.max(0, Math.min(99, (Number(state.form) || 70) + Number(patch.formDelta))));
           patch.yellowCards != null &&
             (state.yellowCards = Math.max(0, Math.min(2, Number(patch.yellowCards) || 0)));
           if (patch.injured != null) {
@@ -1983,7 +2001,8 @@
                 : null,
             freezeSimulationForDirector = directorSnapshot &&
               directorSnapshot.phase !== "idle" &&
-              !directorSnapshot.continuationReady;
+              !directorSnapshot.continuationReady &&
+              !directorSnapshot.livePhysics;
           pitch.setFrame(frame);
           if (!freezeSimulationForDirector) {
             enforceGoalkeeperControlledBallSafety(mode.game);
@@ -3161,6 +3180,59 @@
       return !0;
     }
     return !1;
+  };
+  // 战术调整：通过平移全队 home 锚点实现压上/回收，team.ai 控制前插积极度。
+  // 锚点始终以初始阵型为基准，反复切换不累积偏移。
+  window.__happySeedSetTacticalStance = function (side, stance) {
+    var game = window.__matchGame,
+      pitch = game && game.pitch,
+      playerStates = runtime("players/states");
+    if (!pitch || !playerStates) return !1;
+    var team = side === "blue" ? pitch.blueTeam : pitch.redTeam;
+    if (!team || !team.players) return !1;
+    var presets = {
+      'all-out-attack': { shift: 0.15, ai: 3 },
+      attack: { shift: 0.07, ai: 2 },
+      balanced: { shift: 0, ai: 2 },
+      defend: { shift: -0.07, ai: 1 },
+      'park-bus': { shift: -0.14, ai: 1 },
+    },
+      preset = presets[stance];
+    if (!preset) return !1;
+    var attackDir = team.goal && team.opponents && team.opponents.goal
+      ? (team.opponents.goal.center.x >= team.goal.center.x ? 1 : -1)
+      : (side === "blue" ? -1 : 1);
+    if (!team._happySeedBaseHomes) {
+      team._happySeedBaseHomes = team.players.map(function (player) {
+        return player && player.home
+          ? { player: player, x: player.home.x, y: player.home.y }
+          : null;
+      });
+    }
+    team._happySeedBaseHomes.forEach(function (record) {
+      if (!record || !record.player || !record.player.home) return;
+      record.player.home.x = record.x + attackDir * preset.shift * pitch.width;
+      record.player.home.y = record.y;
+    });
+    try { team.ai = preset.ai; } catch {}
+    var ballOwner = pitch.ball && pitch.ball.owner;
+    team.players.forEach(function (player) {
+      if (!player || !player.home || !player.position || player.isGoalkeeper) return;
+      if (player === ballOwner || player.hasBall) return;
+      var dx = player.position.x - player.home.x,
+        dy = player.position.y - player.home.y;
+      if (Math.sqrt(dx * dx + dy * dy) > 3) {
+        try { player.states.change(playerStates.ReturnHome); } catch {}
+      }
+    });
+    team._happySeedStance = stance;
+    return !0;
+  };
+  window.__happySeedGetTacticalStance = function (side) {
+    var game = window.__matchGame,
+      pitch = game && game.pitch,
+      team = pitch && (side === "blue" ? pitch.blueTeam : pitch.redTeam);
+    return (team && team._happySeedStance) || "balanced";
   };
   function createStandaloneMatchState(options) {
     var states = runtime("core/states"),

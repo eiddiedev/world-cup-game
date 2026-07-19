@@ -18,6 +18,8 @@ import {
   setRuntimeGoalPresentationHold,
   setSpeed,
   setRuntimeStoppageMinutes,
+  setTeamTacticalStance,
+  getTeamTacticalStance,
   setFormalCoachDecisionChoiceHover,
   setRuntimeActorState,
   subscribeToMatchEvents,
@@ -47,6 +49,11 @@ import { decisionReadingSeconds } from '../utils/matchRuntimeEvent.js'
 import { createMatchSfxBus } from '../utils/matchSfxBus.js'
 import { audioManager } from '../utils/audioManager.js'
 import { getMatchEventArtwork } from '../utils/matchEventArtwork.js'
+import LockerRoomDecision from './LockerRoomDecision.jsx'
+import {
+  resolveLockerRoomChoice,
+  selectLockerRoomScenario,
+} from '../utils/lockerRoomDecisions.js'
 import {
   calculateStoppageMinutes,
   formatMatchClock,
@@ -56,6 +63,13 @@ import {
 const SPEEDS = [1, 2, 3]
 const MAX_SUBSTITUTION_WINDOWS = 3
 const MAX_SUBSTITUTION_PLAYERS = 5
+const TACTICAL_STANCES = Object.freeze([
+  { id: 'all-out-attack', label: '全员压上', desc: '防线压至中圈，全员前插全力抢攻', recommend: '大比分落后时推荐' },
+  { id: 'attack', label: '进攻主导', desc: '阵型整体前移，加强前插与压迫', recommend: '落后时推荐' },
+  { id: 'balanced', label: '攻守平衡', desc: '恢复默认阵型站位', recommend: '僵持时适用' },
+  { id: 'defend', label: '稳守反击', desc: '阵型回收站稳，伺机快速反击', recommend: '领先时推荐' },
+  { id: 'park-bus', label: '全员防守', desc: '全线退守禁区前沿，保住胜果', recommend: '大比分领先时推荐' },
+])
 const VAR_REVIEW_DISPLAY_MS = 2800
 const VAR_RESULT_DISPLAY_MS = 3000
 const DIRECT_GOAL_DISPLAY_MS = 3200
@@ -143,6 +157,13 @@ export function HappySeedMatchBroadcast({ saveData = null, onMatchComplete = nul
   const [speed, setSelectedSpeed] = useState(1)
   const [showStats, setShowStats] = useState(false)
   const [showSubstitutions, setShowSubstitutions] = useState(false)
+  const [showTactics, setShowTactics] = useState(false)
+  const [tacticalStance, setTacticalStance] = useState('balanced')
+  const [lockerRoom, setLockerRoom] = useState(null)
+  const lockerRoomUsedIdsRef = useRef(new Set())
+  const lockerRoomHandledRef = useRef(new Set())
+  const lockerRoomPausedRef = useRef(false)
+  const prematchChoicesRef = useRef([])
   const [selectedOutId, setSelectedOutId] = useState(null)
   const [selectedInId, setSelectedInId] = useState(null)
   const [draggingInId, setDraggingInId] = useState(null)
@@ -166,6 +187,9 @@ export function HappySeedMatchBroadcast({ saveData = null, onMatchComplete = nul
   const [decisionTimedOut, setDecisionTimedOut] = useState(false)
   const [eventArtwork, setEventArtwork] = useState(null)
   const [audioStarted, setAudioStarted] = useState(() => audioManager.userUnlocked)
+  const [prematchPlanned, setPrematchPlanned] = useState(() => (
+    import.meta.env.MODE !== 'test' && !audioManager.userUnlocked
+  ))
   const bootedRef = useRef(false)
   const decisionChoiceLockedRef = useRef(false)
   const decisionRunIdRef = useRef(0)
@@ -218,6 +242,23 @@ export function HappySeedMatchBroadcast({ saveData = null, onMatchComplete = nul
       ai: params.has('ai') ? Number(params.get('ai')) : 2,
       time: params.has('time') ? Number(params.get('time')) : FORMAL_MATCH_REALTIME_MINUTES,
     }).then(() => {
+      // 赛前更衣室的选择在比赛未启动时无法落人，开赛后统一补打
+      if (prematchChoicesRef.current.length) {
+        const readyActors = (getRuntimeActorSnapshot()?.actors || []).filter((actor) => (
+          actor.side === 'red' && actor.state?.onPitch
+        ))
+        prematchChoicesRef.current.forEach(({ scenario, choiceId }) => {
+          const pendingReport = resolveLockerRoomChoice(scenario, choiceId, { actors: readyActors })
+          pendingReport.affected.forEach((entry) => {
+            setRuntimeActorState(entry.runtimeActorId, {
+              moraleDelta: entry.deltas.morale,
+              formDelta: entry.deltas.form,
+              staminaDelta: entry.deltas.stamina,
+            })
+          })
+        })
+        prematchChoicesRef.current = []
+      }
       setStatus('比赛进行中 · 正式 MatchSession 已接管时间、比分与播报')
       setSnapshot(getSnapshot())
       setVisualEvents(getMatchVisualEventSnapshot())
@@ -410,6 +451,124 @@ export function HappySeedMatchBroadcast({ saveData = null, onMatchComplete = nul
     0,
     MAX_SUBSTITUTION_PLAYERS - substitutionBoard.substitutionsMade,
   )
+  const recommendedTacticalStance = (() => {
+    const diff = matchSession.score.red - matchSession.score.blue
+    if (diff <= -2) return 'all-out-attack'
+    if (diff === -1) return 'attack'
+    if (diff === 1) return 'defend'
+    if (diff >= 2) return 'park-bus'
+    return 'balanced'
+  })()
+  const applyTacticalStance = (stanceId) => {
+    const stance = TACTICAL_STANCES.find((item) => item.id === stanceId)
+    if (!stance) return
+    if (!setTeamTacticalStance('red', stanceId)) {
+      setError('战术调整未能进入 Runtime')
+      return
+    }
+    setTacticalStance(stanceId)
+    setShowTactics(false)
+    setError('')
+    setStatus(`战术调整：${stance.label}——${stance.desc}`)
+    audioManager.playSound('substitution')
+  }
+
+  // —— 更衣室决策：赛前 / 中场 / 加时中场 / 点球大战前 ——
+  const LOCKER_ROOM_SCENARIO_COUNT = { prematch: 2, halftime: 2, extratime: 1, shootout: 1 }
+  const openLockerRoom = (phase, { pause = false } = {}) => {
+    if (lockerRoomHandledRef.current.has(phase) || lockerRoom) return false
+    const scenarioCount = LOCKER_ROOM_SCENARIO_COUNT[phase] || 1
+    const scenarios = []
+    for (let index = 0; index < scenarioCount; index += 1) {
+      const scenario = selectLockerRoomScenario({
+        phase,
+        scoreDiff: matchSession.score.red - matchSession.score.blue,
+        usedIds: [...lockerRoomUsedIdsRef.current, ...scenarios.map((item) => item.id)],
+      })
+      if (scenario) scenarios.push(scenario)
+    }
+    if (!scenarios.length) return false
+    lockerRoomHandledRef.current.add(phase)
+    if (pause) {
+      lockerRoomPausedRef.current = true
+      pauseMatch()
+      setPaused(true)
+    }
+    setLockerRoom({ phase, scenarios, index: 0, report: null })
+    return true
+  }
+  const handleLockerRoomChoose = (choiceId) => {
+    if (!lockerRoom?.scenarios?.length || lockerRoom.report) return
+    const scenario = lockerRoom.scenarios[lockerRoom.index]
+    const actors = (runtimeActors.actors || []).filter((actor) => (
+      actor.side === 'red' && actor.state?.onPitch
+    ))
+    const report = resolveLockerRoomChoice(scenario, choiceId, { actors })
+    report.affected.forEach((entry) => {
+      setRuntimeActorState(entry.runtimeActorId, {
+        moraleDelta: entry.deltas.morale,
+        formDelta: entry.deltas.form,
+        staminaDelta: entry.deltas.stamina,
+      })
+    })
+    lockerRoomUsedIdsRef.current.add(scenario.id)
+    // 赛前且球员未就绪：记账，开赛后补打
+    if (lockerRoom.phase === 'prematch' && !report.affected.length) {
+      prematchChoicesRef.current.push({ scenario, choiceId })
+    }
+    setRuntimeActors(getRuntimeActorSnapshot())
+    setLockerRoom({ ...lockerRoom, report })
+    setError('')
+    setStatus(report.resultText)
+    audioManager.playSound('substitution')
+  }
+  const handleLockerRoomNext = () => {
+    if (lockerRoom && lockerRoom.index + 1 < lockerRoom.scenarios.length) {
+      setLockerRoom({ ...lockerRoom, index: lockerRoom.index + 1, report: null })
+      return
+    }
+    handleLockerRoomContinue()
+  }
+  const handleLockerRoomContinue = () => {
+    const wasPrematch = lockerRoom?.phase === 'prematch'
+    setLockerRoom(null)
+    if (lockerRoomPausedRef.current) {
+      lockerRoomPausedRef.current = false
+      resumeMatch()
+      setPaused(false)
+    }
+    // 赛前更衣室的选择就是开赛手势：选完直接开赛，不再需要第二次点击
+    if (wasPrematch) {
+      setPrematchPlanned(false)
+      if (!audioStarted) {
+        audioManager.unlock()
+        setAudioStarted(true)
+      }
+    }
+  }
+
+  // 赛前：开球前出现一次（测试环境跳过，避免遮挡其它交互测试）。
+  // 此时比赛尚未启动，选择的效果先记入 prematchChoicesRef，开赛后补打到真实球员。
+  useEffect(() => {
+    if (import.meta.env.MODE === 'test') return undefined
+    const timer = window.setTimeout(() => {
+      if (!openLockerRoom('prematch')) setPrematchPlanned(false)
+    }, 600)
+    return () => window.clearTimeout(timer)
+  }, [])
+
+  // 中场休息 / 加时中场 / 点球大战前：按比赛阶段触发
+  useEffect(() => {
+    const halfTimeSeen = matchSession.commentary.some((line) => (
+      line.type === 'period-change' && line.text.startsWith('上半场结束')
+    ))
+    if (halfTimeSeen) openLockerRoom('halftime', { pause: true })
+    else if (matchSession.phase === 'extra-time' && matchSession.minute >= 105) {
+      openLockerRoom('shootout', { pause: true })
+    } else if (matchSession.phase === 'extra-time' && matchSession.minute >= 90) {
+      openLockerRoom('extratime', { pause: true })
+    }
+  }, [matchSession])
   const pendingOutgoingIds = new Set(pendingSubstitutions.map((swap) => swap.outgoing.playerId))
   const pendingIncomingIds = new Set(pendingSubstitutions.map((swap) => swap.incoming.playerId))
   const pendingSwapByOutgoingId = new Map(pendingSubstitutions.map((swap) => [
@@ -608,6 +767,12 @@ export function HappySeedMatchBroadcast({ saveData = null, onMatchComplete = nul
       )
       const { resolution } = await execution.settled
       if (decisionRunIdRef.current !== runId) return
+      if (
+        resolution.runtimeEffect?.type === 'substitution'
+        && resolution.runtimeEffect.applied
+      ) {
+        setSubstitutionWindowsUsed((current) => current + 1)
+      }
       const settledSession = commitSession((current) => (
         settleFormalDecisionInSession(current, coachDecision, resolution)
       ))
@@ -758,7 +923,7 @@ export function HappySeedMatchBroadcast({ saveData = null, onMatchComplete = nul
 
       <div className="broadcast-vignette" aria-hidden="true" />
 
-      {!audioStarted && (
+      {!audioStarted && !prematchPlanned && (
         <div className="broadcast-audio-start" role="dialog" aria-label="开始比赛并开启声音">
           <button
             type="button"
@@ -891,6 +1056,29 @@ export function HappySeedMatchBroadcast({ saveData = null, onMatchComplete = nul
 
       <button
         type="button"
+        className="broadcast-substitution-trigger broadcast-tactics-trigger"
+        disabled={decisionInteractionLocked}
+        aria-expanded={showTactics}
+        aria-controls="broadcast-tactics-drawer"
+        onClick={() => {
+          if (showTactics) setShowTactics(false)
+          else {
+            setTacticalStance(getTeamTacticalStance('red'))
+            setShowTactics(true)
+          }
+          setShowSubstitutions(false)
+          setShowStats(false)
+        }}
+      >
+        <span className="broadcast-substitution-icon broadcast-tactics-icon" aria-hidden="true"><i>♟</i></span>
+        <span className="broadcast-substitution-copy">
+          <strong>战术</strong>
+          <small>{TACTICAL_STANCES.find((item) => item.id === tacticalStance)?.label || '攻守平衡'}</small>
+        </span>
+      </button>
+
+      <button
+        type="button"
         className="broadcast-substitution-trigger"
         disabled={decisionInteractionLocked || substitutionWindowsLeft <= 0 || substitutionPlayersLeft <= 0}
         aria-expanded={showSubstitutions}
@@ -910,6 +1098,56 @@ export function HappySeedMatchBroadcast({ saveData = null, onMatchComplete = nul
           <small>{substitutionWindowsLeft} 次 · {substitutionPlayersLeft} 人</small>
         </span>
       </button>
+
+      {showTactics && (
+        <div className="broadcast-substitution-backdrop" onPointerDown={() => setShowTactics(false)}>
+          <aside
+            id="broadcast-tactics-drawer"
+            className="broadcast-substitutions broadcast-tactics"
+            aria-label="战术调整"
+            onPointerDown={(event) => event.stopPropagation()}
+          >
+            <header>
+              <div>
+                <small>{broadcast.teams.red.name} · 当前 {TACTICAL_STANCES.find((item) => item.id === tacticalStance)?.label || '攻守平衡'}</small>
+                <strong>战术调整</strong>
+              </div>
+              <span>比分 {matchSession.score.red}:{matchSession.score.blue}</span>
+              <button type="button" aria-label="关闭战术调整" onClick={() => setShowTactics(false)}>×</button>
+            </header>
+            <section className="broadcast-tactics-options">
+              {TACTICAL_STANCES.map((stance) => (
+                <button
+                  key={stance.id}
+                  type="button"
+                  className={`broadcast-tactics-option${tacticalStance === stance.id ? ' is-active' : ''}`}
+                  onClick={() => applyTacticalStance(stance.id)}
+                >
+                  <strong>
+                    {stance.label}
+                    {stance.id === recommendedTacticalStance && <em>推荐</em>}
+                  </strong>
+                  <span>{stance.desc}</span>
+                  <small>{stance.recommend}</small>
+                </button>
+              ))}
+            </section>
+            <footer>调整全队阵型锚点与前插积极度，即刻生效</footer>
+          </aside>
+        </div>
+      )}
+
+      {lockerRoom && (
+        <LockerRoomDecision
+          scenario={lockerRoom.scenarios[lockerRoom.index]}
+          report={lockerRoom.report}
+          onChoose={handleLockerRoomChoose}
+          onContinue={handleLockerRoomNext}
+          queueIndex={lockerRoom.index}
+          queueTotal={lockerRoom.scenarios.length}
+          phase={lockerRoom.phase}
+        />
+      )}
 
       {coachDecision && ['staging', 'choosing', 'executing', 'settled'].includes(decisionPhase) && (
         <aside

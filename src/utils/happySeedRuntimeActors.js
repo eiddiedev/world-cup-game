@@ -81,6 +81,8 @@ function buildBusinessBinding(team, player, assignedPosition, kitVariant, status
       status,
       onPitch: status === 'active',
       stamina: clamp(player.stamina ?? player.sta ?? 80, 0, 100),
+      morale: clamp(player.morale ?? 70, 0, 99),
+      form: clamp(player.form ?? 70, 0, 99),
       yellowCards: 0,
       redCard: false,
       injured: false,
@@ -307,6 +309,14 @@ export function patchHappySeedRuntimeActor(config, runtimeActorId, patch = {}) {
   if (patch.stamina != null) actor.state.stamina = clamp(patch.stamina, 0, 100)
   if (patch.staminaDelta != null) {
     actor.state.stamina = clamp(actor.state.stamina + Number(patch.staminaDelta), 0, 100)
+  }
+  if (patch.morale != null) actor.state.morale = clamp(patch.morale, 0, 99)
+  if (patch.moraleDelta != null) {
+    actor.state.morale = clamp((actor.state.morale ?? 70) + Number(patch.moraleDelta), 0, 99)
+  }
+  if (patch.form != null) actor.state.form = clamp(patch.form, 0, 99)
+  if (patch.formDelta != null) {
+    actor.state.form = clamp((actor.state.form ?? 70) + Number(patch.formDelta), 0, 99)
   }
   if (patch.yellowCards != null) actor.state.yellowCards = clamp(patch.yellowCards, 0, 2)
   if (patch.yellowCard === true) {

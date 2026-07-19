@@ -7,10 +7,11 @@ import {
 import {
   bootHappySeedMatch,
   cancelFormalCoachDecision,
-  captureFormalMatchRuntimeMoment,
   createFormalCoachDecision,
   executeFormalCoachDecisionChoice,
   getDecisionDirectorSnapshot,
+  getGame,
+  getPitch,
   getSnapshot,
   prepareFormalCoachDecision,
   resetZoom,
@@ -19,6 +20,11 @@ import {
 } from '../services/happySeedMatchRuntime.js'
 import { getMatchEventArtwork } from '../utils/matchEventArtwork.js'
 import { resolveFormalCoachDecisionRule } from '../utils/formalCoachDecision.js'
+import { buildHappySeedRuntimeActorConfig } from '../utils/happySeedRuntimeActors.js'
+import {
+  buildDecisionSceneTestMoment,
+  decisionSceneTestWeather,
+} from '../utils/decisionSceneTestMoments.js'
 
 const MODE_META = {
   [DECISION_PRESENTATION_MODES.LIVE]: ['实时机会', '原地冻结，不搬动球员或足球'],
@@ -114,6 +120,53 @@ export default function HappySeedDecisionReview() {
     .replaceAll('{player}', primaryName)
     .replaceAll('{opponent}', matchSnapshot.blue?.name || '对方球员')
 
+  const actorSource = useMemo(() => buildHappySeedRuntimeActorConfig({
+    red: params.get('red') || 'france',
+    blue: params.get('blue') || 'brazil',
+  }), [params])
+
+  // 把 22 名球员和足球真实传送到标准摆位，执行时不再从错误的现场位置起跳
+  const teleportRuntimeToMoment = (moment) => {
+    const pitch = getPitch()
+    const game = getGame()
+    if (!pitch || !game) return
+    const entries = game.stadium?._happySeedActorEntries || []
+    moment.actorPositions.forEach((position) => {
+      const entry = entries.find((candidate) => (
+        candidate.actor?.runtimeActorId === position.runtimeActorId
+      ))
+      if (!entry?.entity?.position) return
+      entry.entity.position.x = pitch.width * position.normalized[0]
+      entry.entity.position.y = pitch.height * position.normalized[1]
+      entry.entity.position.z = 0
+      if (entry.entity.velocity) {
+        entry.entity.velocity.x = 0
+        entry.entity.velocity.y = 0
+        entry.entity.velocity.z = 0
+      }
+      if (entry.entity.heading && position.facing) {
+        entry.entity.heading.x = position.facing === 'left' ? -1 : 1
+        entry.entity.heading.y = 0
+      }
+    })
+    const ballSpot = moment.ball.normalized
+    try {
+      pitch.ball.placeAtPosition?.(
+        pitch.width * ballSpot[0],
+        pitch.height * ballSpot[1],
+        Math.max(pitch.ball.radius || 0.12, ballSpot[2] || 0.12),
+      )
+      if (moment.ballInHands) {
+        const keeperEntry = entries.find((candidate) => (
+          candidate.actor?.runtimeActorId === moment.ownerRuntimeActorId
+        ))
+        keeperEntry?.entity?.forceTrap?.(pitch.ball)
+      }
+    } catch {
+      // 传送失败不阻塞场景准备：脚本仍按标准瞬间生成
+    }
+  }
+
   useEffect(() => {
     if (bootedRef.current) return undefined
     bootedRef.current = true
@@ -189,18 +242,15 @@ export default function HappySeedDecisionReview() {
     try {
       setError('')
       cancelFormalCoachDecision()
-      setStatus('等待连续比赛进入可采样状态…')
-      let captured = captureFormalMatchRuntimeMoment()
-      for (let attempt = 0; !captured && attempt < 80; attempt += 1) {
-        await new Promise((resolve) => window.setTimeout(resolve, 100))
-        captured = captureFormalMatchRuntimeMoment()
-      }
-      if (!captured) throw new Error('22 人和足球还没有进入可采样状态')
+      setStatus('正在按场景合同摆放 22 人与足球…')
       const nextDecision = createFormalCoachDecision(selectedIndex, {
         technicalCatalog: true,
         scenarioId: scenario.id,
         minute: matchSnapshot.minute || 45,
       })
+      const captured = buildDecisionSceneTestMoment(scenario.id, actorSource)
+      window.__happySeedWeather = decisionSceneTestWeather(scenario.id)
+      teleportRuntimeToMoment(captured)
       setPhase('staging')
       const prepared = await prepareFormalCoachDecision(
         nextDecision,
@@ -261,6 +311,16 @@ export default function HappySeedDecisionReview() {
     .filter((event) => (
       event.scenarioId === scenario.id && event.choiceId === selectedChoice.id
     ))
+  const [catalogOpen, setCatalogOpen] = useState(true)
+  const phaseLabel = {
+    idle: '待摆入',
+    staging: '准备',
+    choosing: '选择',
+    executing: '执行',
+    settled: '完成',
+    completed: '完成',
+    cancelled: '已取消',
+  }[phase] || phase
 
   return (
     <main className="decision-review">
@@ -280,75 +340,76 @@ export default function HappySeedDecisionReview() {
         </aside>
       )}
 
-      <header className="decision-review-header">
-        <div>
-          <span className="decision-review-kicker">MATCH RUNTIME · PRODUCT ACCEPTANCE</span>
-          <h1>53 项决策逐项验收</h1>
-        </div>
-        <div className="decision-review-score" aria-label="当前比赛比分">
-          <span>{matchSnapshot.red?.name || '法国'}</span>
-          <strong>{matchSnapshot.red?.score || 0} : {matchSnapshot.blue?.score || 0}</strong>
-          <span>{matchSnapshot.blue?.name || '巴西'} · {matchSnapshot.minute || 0}&apos;</span>
-        </div>
+      <div className="decision-review-topbar">
+        <span className="decision-review-score" aria-label="当前比赛比分">
+          {matchSnapshot.red?.name || '法国'} <b>{matchSnapshot.red?.score || 0} : {matchSnapshot.blue?.score || 0}</b> {matchSnapshot.blue?.name || '巴西'} · {matchSnapshot.minute || 0}&apos;
+        </span>
         <a href="/happyseed-runtime.html" className="decision-review-exit">返回正式比赛</a>
-      </header>
+      </div>
 
-      <aside className="decision-review-catalog" aria-label="53 项决策目录">
-        <div className="decision-review-catalog-head">
-          <strong>场景目录</strong>
-          <span>{String(selectedIndex + 1).padStart(2, '0')} / 53</span>
+      <button
+        type="button"
+        className={`decision-review-catalog-toggle${catalogOpen ? ' is-open' : ''}`}
+        onClick={() => setCatalogOpen((open) => !open)}
+        aria-expanded={catalogOpen}
+      >
+        场景目录 · {String(selectedIndex + 1).padStart(2, '0')}/53
+      </button>
+      {catalogOpen && (
+        <aside className="decision-review-catalog" aria-label="53 项决策目录">
+          <div className="decision-review-list">
+            {DECISION_LIBRARY.map((item, index) => {
+              const itemContract = getFormalDecisionSceneContractV3(item.id)
+              const itemMode = MODE_META[itemContract.mode]?.[0] || '待校准'
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  className={item.id === scenario.id ? 'is-active' : ''}
+                  onClick={() => selectScenario(item.id)}
+                >
+                  <b>{String(index + 1).padStart(2, '0')}</b>
+                  <span><strong>{item.trigger}</strong><small>{itemMode}</small></span>
+                </button>
+              )
+            })}
+          </div>
+        </aside>
+      )}
+
+      <aside className="decision-review-heading broadcast-decision-v3 is-right" aria-label="当前场景">
+        <div className="broadcast-decision-heading">
+          <span>{modeMeta[0]} · {String(selectedIndex + 1).padStart(2, '0')}/53</span>
+          <strong>{scenario.trigger}</strong>
         </div>
-        <div className="decision-review-list">
-          {DECISION_LIBRARY.map((item, index) => {
-            const itemContract = getFormalDecisionSceneContractV3(item.id)
-            const itemMode = MODE_META[itemContract.mode]?.[0] || '待校准'
-            return (
-              <button
-                key={item.id}
-                type="button"
-                className={item.id === scenario.id ? 'is-active' : ''}
-                onClick={() => selectScenario(item.id)}
-              >
-                <b>{String(index + 1).padStart(2, '0')}</b>
-                <span><strong>{item.trigger}</strong><small>{itemMode}</small></span>
-              </button>
-            )
-          })}
+        <div className={`broadcast-stopwatch${['choosing', 'executing'].includes(phase) ? ' is-running' : ''}`}>
+          <span className="broadcast-stopwatch-crown" aria-hidden="true" />
+          <span className="broadcast-stopwatch-face" aria-hidden="true"><i key={phase} /></span>
+          <time aria-label={`当前阶段 ${phaseLabel}`}>{phaseLabel}</time>
         </div>
       </aside>
 
-      <section className="decision-review-inspector" aria-live="polite">
-        <div className="decision-review-scene-title">
-          <span>{modeMeta[0]}</span>
-          <h2>{scenario.trigger}</h2>
-          <p>{modeMeta[1]}</p>
-        </div>
+      <div className="decision-review-rail runtime-world-choices is-right">
+        {scenario.choices.map((choice) => (
+          <button
+            key={choice.id}
+            type="button"
+            className={`runtime-world-choice${selectedChoice.id === choice.id ? ' is-selected' : ''}`}
+            onClick={() => {
+              setChoiceId(choice.id)
+              setOutcomeId(choice.possible_outcomes[0])
+            }}
+          >
+            <strong>{choice.label}</strong>
+            <span>{interpolateReviewCopy(choice.desc)}</span>
+            <small><b>风险</b>{interpolateReviewCopy(choice.risk)}</small>
+            <small className="is-reward"><b>收益</b>{interpolateReviewCopy(choice.reward)}</small>
+            {choice.successHint && <em>{interpolateReviewCopy(choice.successHint)}</em>}
+          </button>
+        ))}
 
-        <div className="decision-review-choice-tabs">
-          {scenario.choices.map((choice) => (
-            <button
-              key={choice.id}
-              type="button"
-              className={selectedChoice.id === choice.id ? 'is-active' : ''}
-              onClick={() => {
-                setChoiceId(choice.id)
-                setOutcomeId(choice.possible_outcomes[0])
-              }}
-            >
-              {choice.label}
-            </button>
-          ))}
-        </div>
-
-        <article className="decision-review-choice-detail">
-          <p>{interpolateReviewCopy(selectedChoice.desc)}</p>
+        <article className="decision-review-lab-card">
           <dl>
-            <div><dt>风险</dt><dd>{interpolateReviewCopy(selectedChoice.risk)}</dd></div>
-            <div><dt>收益</dt><dd>{interpolateReviewCopy(selectedChoice.reward)}</dd></div>
-            <div>
-              <dt>场内表达</dt>
-              <dd>{contract.choices[selectedChoice.id].map((item) => AFFORDANCE_LABELS[item.kind]).join(' + ')}</dd>
-            </div>
             <div>
               <dt>执行顺序</dt>
               <dd>{executionSummary(contract, selectedChoice.id)}</dd>
@@ -358,6 +419,14 @@ export default function HappySeedDecisionReview() {
                 <dt>运行方式</dt>
                 <dd>{preparedScript.choices.find((item) => item.id === selectedChoice.id)
                   ?.outcomes?.[selectedOutcome]?.executionMode || 'semantic-action'}</dd>
+              </div>
+            )}
+            {preparedOutcomeScript?.liveShot && (
+              <div>
+                <dt>原生踢球</dt>
+                <dd>
+                  {`力量 ${preparedOutcomeScript.liveShot.power} · 仰角 ${preparedOutcomeScript.liveShot.elevate}rad · 瞄点 [${preparedOutcomeScript.liveShot.aim.map((v) => Number(v).toFixed(2)).join(', ')}]`}
+                </dd>
               </div>
             )}
             {preparedOutcomeScript && (
@@ -414,22 +483,21 @@ export default function HappySeedDecisionReview() {
               )}
             </div>
           )}
+          <div className="decision-review-actions">
+            <button type="button" className="is-secondary" onClick={() => setZoom(0.82)}>全场</button>
+            <button type="button" className="is-secondary" onClick={resetZoom}>复位</button>
+            <button type="button" onClick={prepare} disabled={!['idle', 'completed', 'cancelled'].includes(phase)}>
+              摆入场景
+            </button>
+            <button type="button" className="is-primary" onClick={execute} disabled={!decision || phase !== 'choosing'}>
+              执行所选结果
+            </button>
+          </div>
+          <div className={`decision-review-status ${error ? 'is-error' : ''}`}>
+            {error || `${status} · 导演状态 ${phase}`}
+          </div>
         </article>
-
-        <div className="decision-review-actions">
-          <button type="button" className="is-secondary" onClick={() => setZoom(0.82)}>全场镜头</button>
-          <button type="button" className="is-secondary" onClick={resetZoom}>复位镜头</button>
-          <button type="button" onClick={prepare} disabled={!['idle', 'completed', 'cancelled'].includes(phase)}>
-            摆入场景
-          </button>
-          <button type="button" onClick={execute} disabled={!decision || phase !== 'choosing'}>
-            执行所选结果
-          </button>
-        </div>
-        <div className={`decision-review-status ${error ? 'is-error' : ''}`}>
-          {error || `${status} · 导演状态 ${phase}`}
-        </div>
-      </section>
+      </div>
     </main>
   )
 }

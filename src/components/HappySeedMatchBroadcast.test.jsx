@@ -36,6 +36,8 @@ const serviceMocks = vi.hoisted(() => ({
   setSpeed: vi.fn(),
   setFormalCoachDecisionChoiceHover: vi.fn(),
   setRuntimeStoppageMinutes: vi.fn(() => true),
+  setTeamTacticalStance: vi.fn(() => true),
+  getTeamTacticalStance: vi.fn(() => 'balanced'),
   setRuntimeActorState: vi.fn(() => true),
   setRuntimeGoalPresentationHold: vi.fn(() => true),
   setStadiumCrowdMotion: vi.fn(),
@@ -366,6 +368,24 @@ describe('HappySeed formal match broadcast', () => {
     expect(screen.queryByRole('navigation', { name: '自由镜头控制' })).not.toBeInTheDocument()
   })
 
+  it('adjusts tactical stance with a score-based recommendation', async () => {
+    render(<HappySeedMatchBroadcast />)
+
+    fireEvent.click(screen.getByRole('button', { name: /战术.*攻守平衡/ }))
+    const drawer = screen.getByLabelText('战术调整')
+    expect(drawer).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /^攻守平衡/ })).toHaveTextContent('推荐')
+    expect(screen.getByRole('button', { name: /稳守反击/ })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /全员防守/ })).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: /进攻主导/ }))
+    expect(serviceMocks.setTeamTacticalStance).toHaveBeenCalledWith('red', 'attack')
+    expect(screen.queryByLabelText('战术调整')).not.toBeInTheDocument()
+    await waitFor(() => expect(
+      screen.getByRole('button', { name: /战术.*进攻主导/ }),
+    ).toBeInTheDocument())
+  })
+
   it('supports the mobile two-step substitution flow with exact business IDs', () => {
     render(<HappySeedMatchBroadcast />)
     fireEvent.click(screen.getByRole('button', { name: /换人.*3 次.*5 人/ }))
@@ -484,6 +504,89 @@ describe('HappySeed formal match broadcast', () => {
       .toHaveBeenCalledWith(formalDecision, 'direct_freekick'))
     expect(screen.queryByLabelText('限时教练决策')).not.toBeInTheDocument()
     expect(screen.getAllByText(/任意球绕过人墙直挂死角/).length).toBeGreaterThan(0)
+  })
+
+  it('consumes one substitution window when a decision completes a real substitution', async () => {
+    window.history.replaceState({}, '', '/happyseed-runtime.html?scenario=freekick_dangerous')
+    serviceMocks.getMatchVisualEventSnapshot.mockReturnValue({
+      ...visualSnapshot,
+      status: 'ready',
+      choiceHitZones: decisionHitZones,
+      completedEventIds: [],
+      completedCount: 0,
+      authority: createMatchVisualAuthorityState(),
+    })
+    serviceMocks.captureFormalMatchRuntimeMoment.mockReturnValue(runtimeMoment)
+    serviceMocks.executeFormalCoachDecisionChoice.mockReturnValue({
+      settled: Promise.resolve({
+        resolution: {
+          choice: formalDecision.choices[0],
+          result: {
+            outcome: 'sub_refresh',
+            isSuccess: true,
+            homeScoreChange: 0,
+            awayScoreChange: 0,
+          },
+          resultText: '换人完成：5号边路悍将替下2号钢铁后卫，新上场球员体能充沛。',
+          authorityDeltas: { statsDelta: {}, opponentStatsDelta: {} },
+          runtimeEffect: {
+            type: 'substitution',
+            applied: true,
+            outgoing: { playerId: 'france-df-2', name: '钢铁后卫', number: 2 },
+            incoming: { playerId: 'france-mf-5', name: '边路悍将', number: 5 },
+          },
+        },
+      }),
+      completed: Promise.resolve({ completed: true }),
+    })
+    render(<HappySeedMatchBroadcast />)
+
+    await screen.findByLabelText('限时教练决策')
+    fireEvent.click(screen.getByRole('button', { name: /直接射门.*风险：可能撞墙或打高/ }))
+    await waitFor(() => expect(
+      screen.getByRole('button', { name: /换人.*2 次.*5 人/ }),
+    ).toBeInTheDocument())
+  })
+
+  it('keeps substitution windows when a decision substitution has no eligible bench', async () => {
+    window.history.replaceState({}, '', '/happyseed-runtime.html?scenario=freekick_dangerous')
+    serviceMocks.getMatchVisualEventSnapshot.mockReturnValue({
+      ...visualSnapshot,
+      status: 'ready',
+      choiceHitZones: decisionHitZones,
+      completedEventIds: [],
+      completedCount: 0,
+      authority: createMatchVisualAuthorityState(),
+    })
+    serviceMocks.captureFormalMatchRuntimeMoment.mockReturnValue(runtimeMoment)
+    serviceMocks.executeFormalCoachDecisionChoice.mockReturnValue({
+      settled: Promise.resolve({
+        resolution: {
+          choice: formalDecision.choices[0],
+          result: {
+            outcome: 'sub_refresh',
+            isSuccess: true,
+            homeScoreChange: 0,
+            awayScoreChange: 0,
+          },
+          resultText: '换人指令未能执行：当前替补席没有符合位置资格的球员。',
+          authorityDeltas: { statsDelta: {}, opponentStatsDelta: {} },
+          runtimeEffect: {
+            type: 'substitution',
+            applied: false,
+            reason: 'no-eligible-player',
+          },
+        },
+      }),
+      completed: Promise.resolve({ completed: true }),
+    })
+    render(<HappySeedMatchBroadcast />)
+
+    await screen.findByLabelText('限时教练决策')
+    fireEvent.click(screen.getByRole('button', { name: /直接射门.*风险：可能撞墙或打高/ }))
+    await waitFor(() => expect(serviceMocks.executeFormalCoachDecisionChoice)
+      .toHaveBeenCalledWith(formalDecision, 'direct_freekick'))
+    expect(screen.getByRole('button', { name: /换人.*3 次.*5 人/ })).toBeInTheDocument()
   })
 
   it('places the decision rail opposite a right-side field event', async () => {

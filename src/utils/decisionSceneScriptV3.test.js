@@ -342,7 +342,7 @@ describe('DecisionSceneScriptV3', () => {
     expect(pass.outcomes.goal_assist.continuation.type).toBe('loose-ball')
   })
 
-  it('hands a clean no-path tackle to the tackler instead of stalling the director', () => {
+  it('wins a clean tackle through real contact: run-in, fall and a loose ball', () => {
     const opponent = actorSource.actors.find((actor) => actor.side === 'blue' && !actor.isGoalkeeper)
     const decision = buildFormalCoachDecision({ actorSource, scenarioId: 'penalty_area_foul_risk' })
     const script = buildFormalDecisionSceneScriptV3(decision, actorSource, {
@@ -355,7 +355,21 @@ describe('DecisionSceneScriptV3', () => {
     const outcome = script.choices.find((choice) => choice.id === 'slide_tackle')
       .outcomes.tackle_success
 
-    expect(outcome.path).toBeNull()
+    // 铲球者真实冲向持球人，接触瞬间对方倒地、球被铲松，随后球权交给铲球者
+    expect(outcome.actorMotions).toEqual(expect.arrayContaining([
+      expect.objectContaining({ role: 'primary', carriesBall: false }),
+    ]))
+    expect(outcome.pathSegments).toHaveLength(2)
+    expect(outcome.segmentEndTimes[0]).toBeLessThan(outcome.segmentEndTimes[1])
+    expect(outcome.releaseBallAtMs).toBe(outcome.segmentEndTimes[0])
+    expect(outcome.path).toEqual(outcome.pathSegments.at(-1))
+    expect(outcome.actions).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        atMs: outcome.segmentEndTimes[0],
+        role: 'opponent',
+        animation: 'fall_forward',
+      }),
+    ]))
     expect(outcome.continuation).toMatchObject({
       type: 'actor-possession',
       role: 'primary',
@@ -460,7 +474,10 @@ describe('DecisionSceneScriptV3', () => {
     expect(goalOutcome.pathSegments[0][0]).toEqual(script.ball.normalized)
     expect(goalOutcome.pathSegments[0].at(-1)).toEqual(goalOutcome.pathSegments[1][0])
     expect(goalOutcome.pathSegments[1].at(-1)).toEqual(goalOutcome.pathSegments[2][0])
-    expect(goalOutcome.pathSegments[2].at(-1)).toEqual(script.fieldAnchors.homeAttackGoal)
+    const finishEnd = goalOutcome.pathSegments[2].at(-1)
+    expect(finishEnd[0]).toBe(script.fieldAnchors.homeAttackGoal[0])
+    expect(finishEnd[1]).toBeGreaterThanOrEqual(0.4353)
+    expect(finishEnd[1]).toBeLessThanOrEqual(0.5647)
   })
 
   it('forces the opponent toward the corner with two actor motions and a real blue corner restart', () => {
@@ -510,11 +527,15 @@ describe('DecisionSceneScriptV3', () => {
         for (const outcome of Object.values(choice.outcomes)) {
           const end = outcome.path?.at(-1)
           if (outcome.terminal === 'goal-for' && end) {
-            expect(end, `${scenario.id}/${choice.id}/goal-for`).toEqual(script.fieldAnchors.homeAttackGoal)
+            expect(end[0], `${scenario.id}/${choice.id}/goal-for`).toBe(script.fieldAnchors.homeAttackGoal[0])
+            expect(end[1], `${scenario.id}/${choice.id}/goal-for`).toBeGreaterThanOrEqual(0.4353)
+            expect(end[1], `${scenario.id}/${choice.id}/goal-for`).toBeLessThanOrEqual(0.5647)
             expect(outcome.scoringSide, `${scenario.id}/${choice.id}/goal-for-side`).toBe('red')
           }
           if (outcome.terminal === 'goal-against' && end) {
-            expect(end, `${scenario.id}/${choice.id}/goal-against`).toEqual(script.fieldAnchors.homeDefendGoal)
+            expect(end[0], `${scenario.id}/${choice.id}/goal-against`).toBe(script.fieldAnchors.homeDefendGoal[0])
+            expect(end[1], `${scenario.id}/${choice.id}/goal-against`).toBeGreaterThanOrEqual(0.4353)
+            expect(end[1], `${scenario.id}/${choice.id}/goal-against`).toBeLessThanOrEqual(0.5647)
             expect(outcome.scoringSide, `${scenario.id}/${choice.id}/goal-against-side`).toBe('blue')
           }
           if (outcome.terminal === 'home-goalkeeper') {
@@ -526,6 +547,38 @@ describe('DecisionSceneScriptV3', () => {
           if (outcome.terminal === 'hold' && choice.runtimeBallEventType === 'shot') {
             expect(outcome.path, `${scenario.id}/${choice.id}/unrealized-shot`).toBeNull()
             expect(outcome.actions.some((action) => action.animation === 'shoot')).toBe(false)
+          }
+          // 语义检测：动作名必须在 spine 动画表内（pass 不存在会导致出球者全程无动作）
+          for (const action of outcome.actions || []) {
+            expect(action.animation, `${scenario.id}/${choice.id}/${action.animation}`)
+              .toMatch(/^(shoot|slide|dribble|sprint|idle|waving|jump|hands_in_front|throw|run|fall_forward)$/)
+          }
+          // 语义检测：有对抗接触事件的结局，铲球者必须有冲向持球人的跑动
+          for (const runtimeEvent of outcome.secondaryRuntimeEvents || []) {
+            if (runtimeEvent.type !== 'tackle-contact') continue
+            expect(
+              outcome.actorMotions.some((motion) => motion.role === runtimeEvent.role),
+              `${scenario.id}/${choice.id}/${outcome.terminal}/tackle-motion`,
+            ).toBe(true)
+          }
+          // 语义检测：球速合理（射门 ≥0.10 归一化/秒，传球 ≥0.06），不允许远射慢速平移
+          if (end && outcome.runtimeBallEventType && outcome.durationMs) {
+            const finalSegment = outcome.pathSegments?.length
+              ? outcome.pathSegments.at(-1)
+              : outcome.path
+            const flightMs = outcome.shotAtMs
+              ? outcome.durationMs - outcome.shotAtMs
+              : outcome.durationMs
+            const flight = Math.hypot(
+              finalSegment.at(-1)[0] - finalSegment[0][0],
+              finalSegment.at(-1)[1] - finalSegment[0][1],
+            )
+            if (flight > 0.04 && flightMs > 0) {
+              const speed = flight / (flightMs / 1000)
+              const floor = outcome.runtimeBallEventType === 'shot'
+                || ['goal-for', 'goal-against'].includes(outcome.terminal) ? 0.1 : 0.06
+              expect(speed, `${scenario.id}/${choice.id}/${outcome.terminal}/ball-speed`).toBeGreaterThanOrEqual(floor)
+            }
           }
         }
       }

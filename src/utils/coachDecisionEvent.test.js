@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import { COACH_DECISION_EVENT_DEFINITIONS } from '../data/coachDecisionEvents.js'
-import { getScenarioById } from '../data/decisionLibrary.js'
+import { DECISION_LIBRARY, getScenarioById } from '../data/decisionLibrary.js'
 import {
   executeDecision,
   resolveChoiceResult,
@@ -105,11 +105,27 @@ describe('CoachDecisionEvent phase one', () => {
       .toBe(strongDecision.choices[0].successProb)
   })
 
+  it('keeps every resolved outcome inside the choice possible_outcomes across the whole library', () => {
+    const player = strongLineup[0]
+    const iterations = 40
+    for (const scenario of DECISION_LIBRARY) {
+      for (const choice of scenario.choices) {
+        for (let index = 0; index < iterations; index += 1) {
+          const result = resolveChoiceResult(choice, player, gameState)
+          expect(
+            choice.possible_outcomes,
+            `${scenario.id}/${choice.id} -> ${result.outcome}`,
+          ).toContain(result.outcome)
+        }
+      }
+    }
+  })
+
   it('can resolve the same solo-shot choice to success or failure', () => {
     const choice = getScenarioById('solo_run_penalty').choices.find(item => item.id === 'chip_shot')
     const player = strongLineup[0]
 
-    vi.spyOn(Math, 'random').mockReturnValueOnce(0).mockReturnValueOnce(0)
+    vi.spyOn(Math, 'random').mockReturnValueOnce(0).mockReturnValueOnce(0).mockReturnValueOnce(0)
     const scored = resolveChoiceResult(choice, player, gameState)
     vi.restoreAllMocks()
 

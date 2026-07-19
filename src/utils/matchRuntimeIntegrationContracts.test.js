@@ -72,6 +72,14 @@ describe('Match Runtime integration contracts', () => {
     )
   })
 
+  it('exposes a native tactical stance hook that shifts formation anchors', () => {
+    expect(standaloneRuntime).toContain('window.__happySeedSetTacticalStance')
+    expect(standaloneRuntime).toContain('window.__happySeedGetTacticalStance')
+    expect(standaloneRuntime).toContain('team._happySeedBaseHomes')
+    expect(standaloneRuntime).toMatch(/team\.ai = preset\.ai/)
+    expect(standaloneRuntime).toMatch(/playerStates\.ReturnHome/)
+  })
+
   it('returns temporary manual camera movement to continuous ball follow', () => {
     expect(runtimeStadium).toContain('manualReturnDelayMs: 2600')
     expect(runtimeStadium).toMatch(

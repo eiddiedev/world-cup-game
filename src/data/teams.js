@@ -132,6 +132,9 @@ const allTeams = [
     name: '德国',
     nameEn: 'Germany',
     difficulty: 3,
+    // 纸面实力强但战术安排糟糕：上限高、下限低，战术效率 0.85。
+    // 玩家执教德国修战术可解锁上限（后续战术板玩法空间）。
+    tacticalEfficiency: 0.85,
     budget: 1950,
     skill: '日耳曼机器',
     flag: '/assets/国旗/德国.png',

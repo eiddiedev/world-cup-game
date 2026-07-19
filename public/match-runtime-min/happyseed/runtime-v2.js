@@ -52,7 +52,7 @@
           pixelDynamicNetTriangleCount: 0,
           pixelDynamicNetStrandCount: 0,
           pixelDynamicNetDepthMode: "aggregate-front-edge",
-          baseRefreshesRemaining: 12,
+          baseRefreshesRemaining: 6,
           lastBaseRefreshAt: 0,
         },
         pixelNetDepthUpdaters = [];
@@ -247,18 +247,20 @@
             selectedColumns.push(column);
           if (selectedColumns[selectedColumns.length - 1] !== columns - 1)
             selectedColumns.push(columns - 1);
-          selectedRows.forEach(function (rowIndex) {
+          selectedRows.forEach(function (rowIndex, rowOrdinal) {
             for (column = 1; column < columns; column += 1)
               segments.push({
                 from: points[rowIndex * columns + column - 1].position,
                 to: points[rowIndex * columns + column].position,
+                strandIndex: rowOrdinal,
               });
           });
-          selectedColumns.forEach(function (columnIndex) {
+          selectedColumns.forEach(function (columnIndex, columnOrdinal) {
             for (row = 1; row < rows; row += 1)
               segments.push({
                 from: points[(row - 1) * columns + columnIndex].position,
                 to: points[row * columns + columnIndex].position,
+                strandIndex: columnOrdinal,
               });
           });
           return selectedRows.length + selectedColumns.length;
@@ -314,13 +316,13 @@
             refreshAggregateNetDepth();
             graphics.clear();
             segments.forEach(function (segment) {
+              if (segment.strandIndex % 2 === 1) return;
               Generic.worldToScreen(segment.from, screenFrom);
               Generic.worldToScreen(segment.to, screenTo);
               screenFrom.x = (screenFrom.x + stadiumOffsetX) * stadiumScaleX;
               screenFrom.y = (screenFrom.y + stadiumOffsetY) * stadiumScaleY;
               screenTo.x = (screenTo.x + stadiumOffsetX) * stadiumScaleX;
               screenTo.y = (screenTo.y + stadiumOffsetY) * stadiumScaleY;
-              drawPixelSegment(graphics, screenFrom, screenTo, 0x26382f, .12, 4);
               drawPixelSegment(graphics, screenFrom, screenTo, 0xf4f2dd, .94, 0);
             });
             renderer.currentRenderer && renderer.currentRenderer.flush &&
@@ -382,13 +384,19 @@
 
       function renderBase() {
         try {
+          if (
+            !masterTexture.baseTexture
+            || !masterTexture.baseTexture.hasLoaded
+          ) return !1;
           stadium.baseTexture.clear && stadium.baseTexture.clear();
           stadium.baseTexture.render(baseComposition, null, !0);
           stadium.disableOverlay && stadium.disableOverlay();
           preserveOriginalGoalsOnly();
           hideLegacyAnimalCrowd();
+          return !0;
         } catch (error) {
           console.error("[stadium-v2] 统一背景烘焙失败", error);
+          return !1;
         }
       }
 

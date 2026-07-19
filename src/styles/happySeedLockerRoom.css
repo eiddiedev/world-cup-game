@@ -1,0 +1,172 @@
+@font-face {
+  font-family: "Zpix";
+  src: url("/assets/fonts/zpix.ttf") format("truetype");
+  font-display: swap;
+}
+
+.locker-room {
+  position: fixed;
+  z-index: 80;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: #f6f2dd;
+  font-family: "Zpix", "PingFang SC", "Microsoft YaHei", sans-serif;
+}
+.locker-room-backdrop {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgba(3, 10, 9, .3) 0%, rgba(3, 10, 9, .55) 55%, rgba(3, 10, 9, .82) 100%),
+    url('/assets/hud/locker-room.jpg') center / cover no-repeat;
+  image-rendering: pixelated;
+}
+
+.locker-room-stage {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  justify-items: center;
+  gap: 16px;
+  width: min(980px, calc(100vw - 32px));
+  max-height: 94vh;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+.locker-room-masthead { display: grid; justify-items: center; gap: 6px; text-align: center; }
+.locker-room-masthead h1 {
+  display: flex;
+  gap: .28em;
+  margin: 0;
+  color: var(--hud-gold, #ffd344);
+  font-size: clamp(38px, 6vw, 64px);
+  font-weight: 900;
+  text-shadow: 4px 4px 0 rgba(0, 0, 0, .65);
+}
+.locker-room-masthead small {
+  padding: 3px 12px;
+  color: #102019;
+  background: var(--hud-gold, #ffd344);
+  border: 2px solid #071312;
+  box-shadow: 3px 3px 0 rgba(0, 0, 0, .45);
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: .3em;
+  text-indent: .3em;
+}
+
+.locker-room-panel {
+  display: grid;
+  justify-items: center;
+  gap: 16px;
+  width: 100%;
+  padding: 18px 20px 20px;
+  text-align: center;
+  background: rgba(4, 20, 17, .9);
+  border: 3px solid #071312;
+  border-top: 5px solid var(--hud-gold, #ffd344);
+  box-shadow: 8px 8px 0 rgba(0, 0, 0, .45);
+}
+.locker-room-panel h2 { margin: 0; font-size: clamp(19px, 2.6vw, 26px); letter-spacing: .06em; }
+.locker-room-situation {
+  margin: 0;
+  max-width: 46em;
+  color: #cfd9d2;
+  font-size: clamp(13px, 1.7vw, 16px);
+  line-height: 1.7;
+}
+
+.locker-room-choices {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px;
+  width: 100%;
+}
+.locker-room-choice {
+  position: relative;
+  display: grid;
+  gap: 8px;
+  align-content: center;
+  min-height: 128px;
+  padding: 16px 18px 16px 24px;
+  color: #f7f3db;
+  background: rgba(5, 27, 27, .96);
+  border: 3px solid rgba(223, 231, 224, .82);
+  box-shadow: 5px 5px 0 rgba(2, 12, 13, .72);
+  text-align: center;
+  transition: transform 90ms steps(2, end), background 90ms linear, opacity 160ms linear;
+}
+.locker-room-choice::before { content: ""; position: absolute; top: -3px; bottom: -3px; left: -3px; width: 7px; background: #8d9691; }
+.locker-room-choice:not(:disabled):hover,
+.locker-room-choice:not(:disabled):focus-visible { color: #061514; background: var(--hud-gold, #ffd344); border-color: #fff2aa; transform: translateY(-4px); }
+.locker-room-choice:not(:disabled):hover::before,
+.locker-room-choice:not(:disabled):focus-visible::before { background: var(--hud-cyan, #59d8c9); }
+.locker-room-choice:not(:disabled):hover span,
+.locker-room-choice:not(:disabled):focus-visible span { color: #243c33; }
+.locker-room-choice strong { font-size: clamp(16px, 2vw, 19px); letter-spacing: .04em; }
+.locker-room-choice span { color: #dce4dc; font-size: clamp(11px, 1.4vw, 13px); line-height: 1.5; }
+.locker-room-choice:disabled { cursor: default; }
+.locker-room-choice.is-dimmed { opacity: .35; filter: saturate(.4); }
+.locker-room-choice.is-positive { color: #062015; background: #67d98f; border-color: #b6f4cd; }
+.locker-room-choice.is-positive::before { background: #2c8f52; }
+.locker-room-choice.is-negative { color: #2b0d08; background: #ef7a63; border-color: #ffc0b2; }
+.locker-room-choice.is-negative::before { background: #b03a28; }
+.locker-room-choice.is-positive span,
+.locker-room-choice.is-negative span { color: inherit; opacity: .82; }
+.locker-room-verdict {
+  justify-self: center;
+  margin-top: 2px;
+  padding: 3px 12px;
+  color: #f8f7e8;
+  background: rgba(0, 0, 0, .5);
+  border: 2px solid rgba(255, 255, 255, .55);
+  font-size: 13px;
+  font-style: normal;
+  font-weight: 900;
+}
+
+.locker-room-report {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 16px 18px;
+  border: 3px solid #071312;
+  box-shadow: 5px 5px 0 rgba(2, 12, 13, .72);
+  background: rgba(5, 24, 23, .96);
+  animation: locker-room-report-in 220ms steps(4, end) both;
+}
+.locker-room-report.is-positive { border-top: 5px solid #67d98f; }
+.locker-room-report.is-negative { border-top: 5px solid #ef7a63; }
+@keyframes locker-room-report-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+.locker-room-verdict-tag { font-size: 15px; letter-spacing: .1em; }
+.locker-room-report.is-positive .locker-room-verdict-tag { color: #7de8a4; }
+.locker-room-report.is-negative .locker-room-verdict-tag { color: #ff9d8a; }
+.locker-room-result { margin: 0; max-width: 42em; font-size: clamp(14px, 1.8vw, 16px); line-height: 1.7; }
+.locker-room-deltas { display: flex; flex-wrap: wrap; justify-content: center; gap: 14px; margin: 0; padding: 0; list-style: none; font-size: 15px; font-weight: 900; }
+.locker-room-deltas small { color: #8ea098; font-size: 10px; font-weight: 400; }
+.is-up { color: #9fe6b5; }
+.is-down { color: #ff9d8a; }
+.is-flat { color: #8ea098; }
+.locker-room-affected { display: grid; gap: 3px; margin: 0; padding: 0; list-style: none; color: #cfd9d2; font-size: 12px; }
+.locker-room-affected em { font-style: normal; font-weight: 800; margin-left: 8px; }
+.locker-room-continue {
+  margin-top: 4px;
+  padding: 12px 34px;
+  color: #102019;
+  background: var(--hud-gold, #ffd344);
+  border: 3px solid #fff2aa;
+  box-shadow: 4px 4px 0 rgba(0, 0, 0, .4);
+  font-size: 16px;
+  font-weight: 900;
+  letter-spacing: .1em;
+}
+.locker-room-continue:hover { transform: translateY(2px); box-shadow: 2px 2px 0 rgba(0, 0, 0, .4); }
+
+.locker-room-auto-hint { justify-self: center; color: #8ea098; font-size: 11px; letter-spacing: .12em; animation: locker-room-hint-blink 1s steps(2, end) infinite; }
+@keyframes locker-room-hint-blink { 50% { opacity: .45; } }
+
+@media (max-width: 700px) {
+  .locker-room-panel { padding: 12px; }
+  .locker-room-choice { min-height: 96px; }
+}

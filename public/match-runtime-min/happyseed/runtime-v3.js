@@ -21,6 +21,7 @@
     stadium._decisionDirectorV3Init = !0;
     try {
       var Pixi = runtime("pixi"),
+        playerGlobals = runtime("players/global"),
         overlay = new Pixi.Container(),
         affordanceLayer = new Pixi.Container(),
         active = null,
@@ -90,6 +91,7 @@
             z: state.ballPosition.z,
           },
           continuationReady: state.continuationReady,
+          livePhysics: Boolean(active && active.livePhysics),
           visibleChoiceIds: active ? active.script.choices.map(function (choice) { return choice.id; }) : [],
           choiceKinds: active ? Object.fromEntries(active.script.choices.map(function (choice) {
             return [choice.id, choice.affordances.map(function (affordance) { return affordance.kind; })];
@@ -642,16 +644,19 @@
         if (!continuation || continuation.type !== "actor-possession") return !1;
         var entry = entryFor(continuation.runtimeActorId);
         if (!entry || !entry.entity || !entry.entity.position) return !1;
-        pitch.ball.placeAtPosition(
-          entry.entity.position.x,
-          entry.entity.position.y,
-          Math.max(pitch.ball.radius || .12, .12),
-        );
-        try {
-          if (typeof entry.entity.forceTrap === "function") entry.entity.forceTrap(pitch.ball);
-          else if (typeof entry.entity.trap === "function") entry.entity.trap(pitch.ball, !0);
-        } catch {}
-        if (!pitch.ball.owner && !entry.entity.hasBall) {
+        // 原生扑救模式：门将已经把球抱在怀里（inHands），不再重放 trap
+        if (pitch.ball.inHands !== entry.entity) {
+          pitch.ball.placeAtPosition(
+            entry.entity.position.x,
+            entry.entity.position.y,
+            Math.max(pitch.ball.radius || .12, .12),
+          );
+          try {
+            if (typeof entry.entity.forceTrap === "function") entry.entity.forceTrap(pitch.ball);
+            else if (typeof entry.entity.trap === "function") entry.entity.trap(pitch.ball, !0);
+          } catch {}
+        }
+        if (!pitch.ball.owner && !entry.entity.hasBall && pitch.ball.inHands !== entry.entity) {
           try { pitch.ball.owner = entry.entity; } catch {}
           try { entry.entity.hasBall = !0; } catch {}
         }
@@ -659,7 +664,9 @@
           && window.__happySeedEnforceGoalkeeperSafety)
           window.__happySeedEnforceGoalkeeperSafety();
         var possessionConfirmed = Boolean(
-          pitch.ball.owner === entry.entity || entry.entity.hasBall,
+          pitch.ball.owner === entry.entity
+          || entry.entity.hasBall
+          || pitch.ball.inHands === entry.entity,
         );
         if (
           possessionConfirmed &&
@@ -734,6 +741,9 @@
       function finish(cancelled) {
         var finished = active;
         if (!finished) return;
+        (finished.liveFrozen || []).forEach(function (player) {
+          try { playerGlobals.forceAI(player, null); } catch {}
+        });
         setBlackout(!1);
         affordanceLayer.removeChildren();
         if (cancelled) restoreCancelledSnapshot(finished);
@@ -779,8 +789,88 @@
         }
       }
 
-      function settle(now) {
+      // —— 原生踢球（live physics）：直接射门用引擎真实弹道，门将由原生 AI 反应 ——
+      function setupLiveShot(shot) {
+        var participants = {};
+        participants[shot.shooterRuntimeActorId] = !0;
+        participants[shot.keeperRuntimeActorId] = !0;
+        active.liveFrozen = [];
+        actorEntries.forEach(function (entry) {
+          if (!entry || !entry.entity || participants[entry.actor.runtimeActorId]) return;
+          try {
+            playerGlobals.forceIdle(entry.entity);
+            active.liveFrozen.push(entry.entity);
+          } catch {}
+        });
+        playEntryAnimation(entryFor(shot.shooterRuntimeActorId), "shoot", 1000, "liveshot:windup");
+        try {
+          if (active.timeScaleToken != null) {
+            pitch.timeScale.reset(active.timeScaleToken);
+            active.timeScaleToken = null;
+          }
+        } catch {}
+        active.livePhysics = !0;
+        active.liveKicked = !1;
+        active.liveKickAt = active.executionStartedAt + 220;
+      }
+
+      function doLiveKick() {
+        var shot = active.execution.liveShot,
+          shooterEntry = entryFor(shot.shooterRuntimeActorId),
+          ball = pitch.ball,
+          from = ball.position,
+          dx = pitch.width * shot.aim[0] - from.x,
+          dy = pitch.height * shot.aim[1] - from.y,
+          dist = Math.hypot(dx, dy) || 1,
+          cos = Math.cos(shot.elevate),
+          sin = Math.sin(shot.elevate);
+        releaseBall();
+        try { ball.lastTouch = (shooterEntry && shooterEntry.entity) || ball.lastTouch; } catch {}
+        try {
+          ball.kick({ x: dx / dist * cos, y: dy / dist * cos, z: sin }, shot.power);
+        } catch (kickError) {
+          console.error("[decision-director-v3] 原生踢球失败", kickError);
+        }
+        state.ballPosition = {
+          x: ball.position.x,
+          y: ball.position.y,
+          z: ball.position.z,
+        };
+        if (window.__happySeedEmitRuntimeEvent) {
+          active.runtimeBallEventId = window.__happySeedEmitRuntimeEvent("shot", shot.shooterRuntimeActorId, {
+            detail: {
+              decision: !0,
+              scenarioId: active.script.scenarioId,
+              choiceId: active.choice.id,
+              outcome: active.outcome,
+              live: !0,
+            },
+          });
+        }
+      }
+
+      function watchLiveTerminal(now) {
         if (!active || active.settled) return;
+        var stateName = pitch.states.current && pitch.states.current.name,
+          ball = pitch.ball;
+        if (stateName === "Goal" || stateName === "GoalCelebration") {
+          active.liveResult = "goal";
+          settle(now);
+          return;
+        }
+        if (ball.inHands || (ball.owner && ball.owner.isGoalkeeper)) {
+          active.liveResult = "saved";
+          settle(now);
+          return;
+        }
+        if (pitch.ballOutOfPlay
+          && ["BallOutOfPlay", "Corner", "GoalKick", "ThrowIn"].indexOf(stateName) >= 0) {
+          active.liveResult = "out";
+          settle(now);
+        }
+      }
+
+      function settle(now) {        if (!active || active.settled) return;
         if (active.execution.continuation
           && active.execution.continuation.type === "actor-possession"
           && !state.continuationReady) {
@@ -805,6 +895,8 @@
         if (!active || !active.settled || !active.execution
           || !active.execution.requiresRuntimeGoal || active.goalCommitted)
           return !1;
+        // 原生踢球模式下进球已由引擎 Goal 状态计分并进入原生开球链，无需手工提交
+        if (active.livePhysics) return !0;
         var path = active.execution.path || [],
           terminalPoint = path[path.length - 1],
           committed = Boolean(window.__happySeedCommitDecisionGoal
@@ -842,6 +934,18 @@
             active.prepareResolve(snapshot());
           }
         } else if (state.phase === "executing") {
+          if (active.livePhysics) {
+            if (!active.liveKicked && now >= active.liveKickAt) {
+              active.liveKicked = !0;
+              doLiveKick();
+            }
+            if (active.liveKicked) watchLiveTerminal(now);
+            if (!active.settled && active.liveKicked
+              && now - active.liveKickAt >= active.execution.liveShot.maxFlightMs) {
+              console.warn("[decision-director-v3] 原生踢球超时未达终结，按当前物理状态结算", active.script.scenarioId, active.outcome);
+              settle(now);
+            }
+          } else {
           if (!active.ballReleased
             && active.execution.releaseBallAtMs != null
             && now >= active.executionStartedAt + active.execution.releaseBallAtMs
@@ -864,6 +968,7 @@
           applyActorMotion(now);
           runCues(now);
           if (now - active.executionStartedAt >= active.execution.durationMs) settle(now);
+          }
         } else if (state.phase === "settled" && now >= active.restoreAt) {
           setPhase("restoring");
           active.finishAt = now + 180;
@@ -878,6 +983,39 @@
 
       function ensureTick() {
         if (frameHandle == null) frameHandle = window.requestAnimationFrame(tick);
+      }
+
+      // 决策冻结瞬间，原生 AI 可能正让球员铲球、倒地或射门；
+      // 选择阶段必须把这类一次性动作重置为站姿，否则玩家是在事后做决定
+      var ACTION_POSE_PREFIXES = [
+        "slide", "fall", "shoot", "jump", "hands_in_front",
+        "throw", "volley", "laying", "on_knees", "sitting", "stand_up",
+      ];
+      function neutralizeActionPoses() {
+        actorEntries.forEach(function (entry) {
+          var spine = entry && entry.renderer && entry.renderer.spine;
+          if (!spine || !spine.state || !spine.state.tracks) return;
+          var back = spine.facingCamera === !1,
+            idleName = back && spine.animationExists("idle_back") ? "idle_back" : "idle";
+          if (!spine.animationExists(idleName)) return;
+          for (var trackIndex = 0; trackIndex < spine.state.tracks.length; trackIndex += 1) {
+            var track = spine.state.tracks[trackIndex],
+              animName = track && track.animation && track.animation.name;
+            if (!animName) continue;
+            for (var prefixIndex = 0; prefixIndex < ACTION_POSE_PREFIXES.length; prefixIndex += 1) {
+              var prefix = ACTION_POSE_PREFIXES[prefixIndex];
+              if (animName === prefix || animName.indexOf(prefix + "_") === 0) {
+                spine.state.setAnimationByName(trackIndex, idleName, !0);
+                break;
+              }
+            }
+          }
+        });
+        try {
+          if (window.__matchGame && window.__matchGame._celebrations) {
+            window.__matchGame._celebrations.length = 0;
+          }
+        } catch {}
       }
 
       window.__happySeedDecisionDirectorV3 = {
@@ -938,6 +1076,7 @@
           state.continuationReady = !1;
           state.ballPosition = worldPoint(script.ball.normalized);
           try { active.timeScaleToken = pitch.timeScale.change(0); } catch {}
+          neutralizeActionPoses();
           showChoices(script);
           if (staged) setBlackout(!0);
           setPhase("staging");
@@ -950,7 +1089,11 @@
             throw new Error("DecisionDirectorV3 选择已锁定或场景未就绪");
           var choice = active.script.choices.find(function (candidate) { return candidate.id === payload.choiceId; }),
             execution = choice && choice.outcomes[payload.outcome];
-          if (!choice || !execution) throw new Error("DecisionDirectorV3 缺少显式 choice/outcome 分支");
+          if (!choice || !execution) {
+            // 结果分支不存在时绝不能冻结比赛：先恢复原状再抛出
+            finish(!0);
+            throw new Error("DecisionDirectorV3 缺少显式 choice/outcome 分支");
+          }
           state.choiceLocked = !0;
           state.selectedChoiceId = choice.id;
           state.outcome = payload.outcome;
@@ -960,6 +1103,8 @@
           captureBallOnlyShotLocks();
           captureAmbientMotions();
           active.executionStartedAt = performance.now() + active.script.timeline.selectionFeedbackMs;
+          if (execution.liveShot) setupLiveShot(execution.liveShot);
+          else captureAmbientMotions();
           confirmChoice(choice.id);
           setPhase("executing");
           var settled = new Promise(function (resolve) { active.settledResolve = resolve; }),
@@ -981,7 +1126,7 @@
 
       var previousFrame = stadium.frame.bind(stadium);
       stadium.frame = function (frame) {
-        if (active) {
+        if (active && !active.livePhysics) {
           try {
             if (state.phase === "staging" || state.phase === "choosing" || state.phase === "executing")
               active.script.stagedActorPositions.forEach(function (position) {

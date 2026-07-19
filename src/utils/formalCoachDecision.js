@@ -7,6 +7,7 @@ import {
 } from './decisionSystem.js'
 import { renderCoachDecisionCommentary } from './coachDecisionEvent.js'
 import { createMatchVisualEventFromCoachDecision } from './matchVisualEvent.js'
+import { lockerRoomMoraleBonus } from './lockerRoomDecisions.js'
 
 export const FORMAL_COACH_DECISION_SEQUENCE = Object.freeze([
   Object.freeze({ scenarioId: 'solo_run_penalty', minute: 18, label: '单刀' }),
@@ -77,6 +78,9 @@ function decisionGameState({ actorSource, side, teamId, opponentTeamId, minute, 
       scoreDiff: Number(authorityState?.score?.red || 0) - Number(authorityState?.score?.blue || 0),
       myAttack: Math.round(mean(lineup.map((player) => player.tec))),
       myDefense: Math.round(mean(lineup.map((player) => player.def))),
+      moraleBonus: lockerRoomMoraleBonus(
+        (actorSource?.actors || []).filter((actor) => actor.side === side && actor.state?.onPitch),
+      ),
       isKnockout: false,
       isExtraTime: false,
     },

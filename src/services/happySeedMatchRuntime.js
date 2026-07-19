@@ -49,9 +49,9 @@ const SCRIPT_PATHS = [
   'vendor/swig.min.js',
   'shim.js',
   'scripts/match.rebuilt.js',
-  'happyseed/runtime-v2.js?v=9',
-  'happyseed/runtime-v3.js',
-  'standalone-match.js?v=9',
+  'happyseed/runtime-v2.js?v=11',
+  'happyseed/runtime-v3.js?v=4',
+  'standalone-match.js?v=10',
 ]
 
 const MATCH_EVENTS = [
@@ -563,6 +563,14 @@ export function getSnapshot() {
 
 export function setRuntimeStoppageMinutes(half, minutes) {
   return Boolean(window.__happySeedSetStoppageMinutes?.({ half, minutes }))
+}
+
+export function setTeamTacticalStance(side, stance) {
+  return Boolean(window.__happySeedSetTacticalStance?.(side, stance))
+}
+
+export function getTeamTacticalStance(side) {
+  return window.__happySeedGetTacticalStance?.(side) || 'balanced'
 }
 
 export function subscribeToMatchEvents(listener) {
