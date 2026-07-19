@@ -1,5 +1,7 @@
 import { getTeamDefaultFormation } from '../data/teamFormations.js'
 import { getPlayableTeamIds, getStorageKey } from '../config/runtime.js'
+import { createInitialAiEnhancementState } from '../data/aiEnhancement.js'
+import { createInitialCommercializationState } from '../data/commercialization.js'
 
 const STORAGE_KEY = getStorageKey()
 
@@ -11,6 +13,8 @@ export function createInitialSaveData() {
     unlockTeams: getPlayableTeamIds(),
     championshipHistory: [],
     currentRun: null,
+    aiEnhancement: createInitialAiEnhancementState(),
+    commercialization: createInitialCommercializationState(),
     settings: {
       sound: true,
       music: true,
@@ -30,10 +34,47 @@ export function loadSaveData() {
   try {
     const initial = createInitialSaveData()
     const saved = JSON.parse(raw)
+    const savedCommercialization = saved.commercialization || {}
     saved.unlockTeams = getPlayableTeamIds()
     return {
       ...initial,
       ...saved,
+      aiEnhancement: {
+        ...initial.aiEnhancement,
+        ...(saved.aiEnhancement || {}),
+        cachedResponses: {
+          ...initial.aiEnhancement.cachedResponses,
+          ...(saved.aiEnhancement?.cachedResponses || {}),
+        },
+      },
+      commercialization: {
+        ...initial.commercialization,
+        ...savedCommercialization,
+        wallet: {
+          ...initial.commercialization.wallet,
+          ...(savedCommercialization.wallet || {}),
+        },
+        inventory: {
+          ...initial.commercialization.inventory,
+          ...(savedCommercialization.inventory || {}),
+        },
+        equipment: {
+          ...initial.commercialization.equipment,
+          ...(savedCommercialization.equipment || {}),
+          playerBoots: {
+            ...initial.commercialization.equipment.playerBoots,
+            ...(savedCommercialization.equipment?.playerBoots || {}),
+          },
+          goalkeeperGloves: {
+            ...initial.commercialization.equipment.goalkeeperGloves,
+            ...(savedCommercialization.equipment?.goalkeeperGloves || {}),
+          },
+        },
+        sponsor: {
+          ...initial.commercialization.sponsor,
+          ...(savedCommercialization.sponsor || {}),
+        },
+      },
       settings: {
         ...initial.settings,
         ...(saved.settings || {}),
@@ -54,9 +95,10 @@ export function persistSaveData(saveData) {
 /**
  * 创建新的征程
  */
-export function createNewRun(teamId) {
+export function createNewRun(teamId, gameMode = 'coach') {
   return {
     teamId,
+    gameMode,
     formation: getTeamDefaultFormation(teamId),
     stage: 'recruitment',
     startedAt: new Date().toISOString(),

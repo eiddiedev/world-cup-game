@@ -10,6 +10,20 @@ import LineupScreen from './components/LineupScreen.jsx'
 import SettingsScreen from './components/SettingsScreen.jsx'
 import { DECISION_LIBRARY } from './data/decisionLibrary.js'
 import { getPlayerMarketScore } from './data/playerBalance.js'
+import {
+  DATA_RUNTIME_CONSTRAINTS,
+  buildTeamAiContext,
+} from './data/teamDataContracts.js'
+import {
+  ROSTER_POOL_RULES,
+  SAMPLE_TEAM_IDS,
+  TEAM_DATA_SCHEMA_VERSION,
+  VISUAL_RECIPE_RULE,
+  WORLD_CUP_TEAM_CAPACITY,
+  buildVisualRecipeId,
+  validateTeamCatalog,
+  validateTeamRecord,
+} from './data/teamDataSchema.js'
 import { teams } from './data/teams.js'
 import { FORMATION_TACTICS } from './data/formationTactics.js'
 import { ANIMATION_TEMPLATES } from './utils/animationTemplates.js'
@@ -18,6 +32,7 @@ import { AudioManager, audioManager } from './utils/audioManager.js'
 import { generateCommentaryEvent, generateRandomMatchEvent } from './utils/commentaryEngine.js'
 import {
   outcomeConcedesPenalty,
+  executeDecision,
   resolveChoiceResult,
   resolveDiveChoice,
   resolveMatchPenaltyChoice,
@@ -41,8 +56,13 @@ import {
 import { createInitialSaveData, createNewRun, loadSaveData } from './utils/saveManager.js'
 import { buildPostMatchInsights } from './utils/postMatchInsights.js'
 import { getNextRunAfterMatch } from './utils/tournamentProgress.js'
-import { adaptLineupToFormation } from './utils/lineupFormation.js'
+import { adaptLineupToFormation, autoSelectLineupForFormation } from './utils/lineupFormation.js'
 import { getTeamDefaultFormation } from './data/teamFormations.js'
+import {
+  NATIONAL_SQUAD_SIZE,
+  buildRecommendedNationalSquad,
+  validateNationalSquad,
+} from './data/rosterRules.js'
 import {
   getFittedLandscapePitchSize,
   mapPitchPointToLandscape,
@@ -57,6 +77,11 @@ import {
   openChainedDecision,
 } from './utils/commentaryTimeline.js'
 import { getMatchKits, getTeamKit } from './data/teamKits.js'
+import {
+  PIXEL_PLAYER_ACTIONS,
+  buildPixelPlayerModel,
+  getPixelPlayerProductionRules,
+} from './utils/pixelPlayerRecipe.js'
 import { createPitchBounds, tacticalToPhaserPoint } from './utils/phaserPitch.js'
 import {
   getBallAttachmentPoint,
@@ -77,7 +102,7 @@ afterEach(() => {
 })
 
 describe('home screen', () => {
-  it('routes from the app home screen into team selection', async () => {
+  it('opens the coach save dialog and routes a new save into team selection', async () => {
     const clickSpy = vi.spyOn(audioManager, 'playClick').mockImplementation(() => true)
     const store = new Map()
     const localStorageMock = {
@@ -89,9 +114,12 @@ describe('home screen', () => {
     Object.defineProperty(window, 'localStorage', { value: localStorageMock, configurable: true })
     render(<App />)
 
-    const startButton = await screen.findByRole('button', { name: '开始征程' })
-    fireEvent.pointerDown(startButton)
-    fireEvent.click(startButton)
+    const coachButton = await screen.findByRole('button', { name: '教练模式' })
+    fireEvent.pointerDown(coachButton)
+    fireEvent.click(coachButton)
+
+    const newSaveButton = await screen.findByRole('button', { name: '新开存档' })
+    fireEvent.click(newSaveButton)
 
     expect(clickSpy).toHaveBeenCalled()
     await waitFor(() => {
@@ -120,7 +148,7 @@ describe('home screen', () => {
     })
   })
 
-  it('starts a new run from the visible pixel button', () => {
+  it('shows only the four player-facing menu entries', () => {
     const navigateTo = vi.fn()
     render(
       <HomeScreen
@@ -130,13 +158,32 @@ describe('home screen', () => {
       />,
     )
 
-    const startButton = screen.getByRole('button', { name: '开始征程' })
-    expect(startButton.className).toContain('PixelButton')
-    expect(startButton).not.toHaveAttribute('style')
+    expect(screen.getByRole('button', { name: '教练模式' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '球员模式' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '点球大战' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '设置' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: '小人样板' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'AI与赞助' })).not.toBeInTheDocument()
+    expect(screen.getByRole('complementary', { name: '通关进度' })).toBeInTheDocument()
+    expect(screen.getAllByRole('listitem')).toHaveLength(10)
+  })
 
-    fireEvent.click(startButton)
+  it('stores the selected mode when starting a player-mode save', () => {
+    const navigateTo = vi.fn()
+    render(
+      <HomeScreen
+        saveData={createInitialSaveData()}
+        navigateTo={navigateTo}
+        showToast={vi.fn()}
+      />,
+    )
 
-    expect(navigateTo).toHaveBeenCalledWith('team-select')
+    fireEvent.click(screen.getByRole('button', { name: '球员模式' }))
+    expect(screen.getByRole('dialog', { name: '球员模式' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '继续游戏' })).toBeDisabled()
+
+    fireEvent.click(screen.getByRole('button', { name: '新开存档' }))
+    expect(navigateTo).toHaveBeenCalledWith('team-select', { gameMode: 'player' })
   })
 })
 
@@ -303,7 +350,7 @@ describe('team and player data', () => {
     expect(getStorageKey(true)).toBe('targeting-2026-douyin-demo-save')
   })
 
-  it('keeps every selectable team at a 24-player roster with one named golden star', () => {
+  it('keeps every selectable team at a 35-40 player pool with one named golden star', () => {
     const goldenNames = [
       '法国超跑',
       '桑巴舞者',
@@ -318,32 +365,89 @@ describe('team and player data', () => {
     ]
 
     for (const team of teams) {
-      expect(team.players, team.name).toHaveLength(24)
-      expect(team.players.filter((player) => player.position === 'GK'), team.name).toHaveLength(2)
+      expect(team.players.length, team.name).toBeGreaterThanOrEqual(35)
+      expect(team.players.length, team.name).toBeLessThanOrEqual(40)
+      expect(team.players.filter((player) => player.position === 'GK').length, team.name).toBeGreaterThanOrEqual(3)
       const goldenPlayers = team.players.filter((player) => player.isGolden)
       expect(goldenPlayers, team.name).toHaveLength(1)
       expect(goldenNames).toContain(goldenPlayers[0].name)
       expect(goldenPlayers[0].hiddenSkill, team.name).toBeTruthy()
+      expect(team.defaultFormation, team.name).toBe(getTeamDefaultFormation(team.id))
+      expect(team.styleTags.length, team.name).toBeGreaterThanOrEqual(2)
+      expect(team.players.every(player => player.spriteRecipe && player.portraitRecipe), team.name).toBe(true)
     }
   })
 
-  it('calibrates budget pressure around 13 strongest and 18 cheapest players', () => {
+  it('publishes a 48-team-ready schema with France and Curacao as complete samples', () => {
+    expect(TEAM_DATA_SCHEMA_VERSION).toBe('team-roster-v2')
+    expect(WORLD_CUP_TEAM_CAPACITY).toBe(48)
+    expect(ROSTER_POOL_RULES).toMatchObject({
+      minimum: 35,
+      target: 38,
+      maximum: 40,
+      nationalSquadSize: 23,
+      nationalSquadMinimums: { GK: 2, DF: 6, MF: 6, FW: 3 },
+      positionTargets: { GK: 4, DF: 12, MF: 12, FW: 10 },
+    })
+    expect(VISUAL_RECIPE_RULE.idPattern).toBe('pixel/recipes/{teamId}/{playerId}.json')
+
+    const catalogValidation = validateTeamCatalog(teams)
+    expect(catalogValidation.valid).toBe(true)
+    expect(catalogValidation.teamCount).toBe(10)
+    expect(catalogValidation.remainingCapacity).toBe(38)
+
+    for (const teamId of SAMPLE_TEAM_IDS) {
+      const team = teams.find(candidate => candidate.id === teamId)
+      const validation = validateTeamRecord(team)
+
+      expect(team.dataStage).toBe('sample-complete')
+      expect(team.schemaVersion).toBe(TEAM_DATA_SCHEMA_VERSION)
+      expect(team.rosterSummary).toMatchObject({
+        poolSize: 38,
+        sourcePlayers: 23,
+        placeholderPlayers: 15,
+      })
+      expect(validation.valid, `${team.name}: ${validation.errors.join(', ')}`).toBe(true)
+    }
+  })
+
+  it('binds every normalized player to one deterministic visual recipe id', () => {
+    for (const team of teams) {
+      for (const player of team.players) {
+        expect(player.teamId).toBe(team.id)
+        expect(player.visualRecipeId).toBe(buildVisualRecipeId(team.id, player.id))
+        expect(player.spriteRecipe.visualRecipeId).toBe(player.visualRecipeId)
+      }
+    }
+  })
+
+  it('calibrates budget pressure around strongest and cheapest 23-player squads', () => {
     for (const team of teams) {
       const byPriceDesc = [...team.players].sort((a, b) => b.price - a.price)
       const byPriceAsc = [...team.players].sort((a, b) => a.price - b.price)
       const top13 = byPriceDesc.slice(0, 13).reduce((sum, player) => sum + player.price, 0)
-      const low18 = byPriceAsc.slice(0, 18).reduce((sum, player) => sum + player.price, 0)
-      const low19 = byPriceAsc.slice(0, 19).reduce((sum, player) => sum + player.price, 0)
+      const top23 = byPriceDesc.slice(0, NATIONAL_SQUAD_SIZE).reduce((sum, player) => sum + player.price, 0)
+      const low23 = byPriceAsc.slice(0, NATIONAL_SQUAD_SIZE).reduce((sum, player) => sum + player.price, 0)
 
       expect(top13, `${team.name} top13`).toBeLessThanOrEqual(Math.round(team.budget * 1.05))
-      expect(low18, `${team.name} low18`).toBeLessThanOrEqual(team.budget)
-      expect(low19, `${team.name} low19`).toBeGreaterThan(team.budget)
+      expect(top23, `${team.name} top23`).toBeGreaterThan(team.budget)
+      expect(low23, `${team.name} low23`).toBeLessThanOrEqual(team.budget)
     }
   })
 
-  it('prices all 240 players in the same order as their market value score', () => {
+  it('builds valid recommended 23-player national squads', () => {
+    for (const team of teams) {
+      const squad = buildRecommendedNationalSquad(team.players, team.budget, team.defaultFormation)
+      const validation = validateNationalSquad(squad, team.budget)
+
+      expect(squad, team.name).toHaveLength(NATIONAL_SQUAD_SIZE)
+      expect(validation.valid, team.name).toBe(true)
+    }
+  })
+
+  it('prices all player pools in the same order as their market value score', () => {
     const allPreparedPlayers = teams.flatMap(team => team.players)
-    expect(allPreparedPlayers).toHaveLength(240)
+    expect(allPreparedPlayers).toHaveLength(380)
 
     for (const team of teams) {
       const ranked = [...team.players].sort((a, b) => getPlayerMarketScore(b) - getPlayerMarketScore(a))
@@ -360,6 +464,67 @@ describe('team and player data', () => {
     const secondKeeper = france.players.find(player => player.name === '青春之盾')
     expect(getPlayerMarketScore(firstKeeper)).toBeGreaterThan(getPlayerMarketScore(secondKeeper))
     expect(firstKeeper.price).toBeGreaterThan(secondKeeper.price)
+  })
+
+  it('exposes shared team data contracts for local simulation and Volcengine AI analysis', () => {
+    expect(DATA_RUNTIME_CONSTRAINTS.packageBudgetMb).toMatchObject({
+      targetMin: 80,
+      targetMax: 120,
+      hardMax: 150,
+      platformLimit: 200,
+    })
+    expect(DATA_RUNTIME_CONSTRAINTS.networking).toMatchObject({
+      realtimePvp: false,
+      websocket: false,
+      onlinePvp: false,
+      aiProvider: 'volcengine',
+    })
+    expect(DATA_RUNTIME_CONSTRAINTS.runtimeModes).toEqual(['coach', 'player', 'penalty', 'aiSimulation'])
+
+    for (const team of teams) {
+      expect(team.dataConsumers, team.name).toEqual(expect.arrayContaining([
+        'local-match-engine',
+        'volcengine-ai-analysis',
+        'coach-mode',
+        'player-mode',
+        'penalty-mode',
+        'ai-simulation',
+      ]))
+      expect(team.styleTags, team.name).toEqual(expect.arrayContaining([expect.stringMatching(/速度冲击|传控|定位球|防守反击/)]))
+
+      const aiContext = buildTeamAiContext(team)
+      expect(aiContext.schemaVersion).toBe(TEAM_DATA_SCHEMA_VERSION)
+      expect(aiContext.team.styleTags, team.name).toEqual(team.styleTags)
+      expect(aiContext.players, team.name).toHaveLength(team.players.length)
+      expect(aiContext.players[0].visualRecipeId).toBe(team.players[0].visualRecipeId)
+      expect(aiContext.players[0].operationAttributes).toEqual(expect.objectContaining({
+        ballControl: expect.any(Number),
+        turning: expect.any(Number),
+        sprint: expect.any(Number),
+        passing: expect.any(Number),
+        shooting: expect.any(Number),
+        tackling: expect.any(Number),
+      }))
+      expect(() => JSON.stringify(aiContext)).not.toThrow()
+    }
+  })
+
+  it('normalizes player-mode operation attributes for every playable-team player', () => {
+    const operationKeys = ['ballControl', 'turning', 'sprint', 'passing', 'shooting', 'tackling']
+
+    for (const player of teams.flatMap(team => team.players)) {
+      for (const key of operationKeys) {
+        expect(Number.isFinite(player.operationAttributes?.[key]), `${player.name}:${key}`).toBe(true)
+        expect(player.operationAttributes[key], `${player.name}:${key}`).toBeGreaterThanOrEqual(0)
+        expect(player.operationAttributes[key], `${player.name}:${key}`).toBeLessThanOrEqual(99)
+      }
+      expect(player.control).toBe(player.operationAttributes.ballControl)
+      expect(player.turning).toBe(player.operationAttributes.turning)
+      expect(player.sprint).toBe(player.operationAttributes.sprint)
+      expect(player.pass).toBe(player.operationAttributes.passing)
+      expect(player.shoot).toBe(player.operationAttributes.shooting)
+      expect(player.tackle).toBe(player.operationAttributes.tackling)
+    }
   })
 })
 
@@ -388,19 +553,61 @@ describe('match systems', () => {
 
     const adapted = adaptLineupToFormation(lineup, players, '4-4-2')
 
-    expect(adapted).toHaveLength(10)
+    expect(adapted).toHaveLength(11)
+    expect(adapted.find(slot => slot.position === 'GK')?.playerId).toBe('gk')
     expect(adapted.filter(slot => slot.position === 'DF').map(slot => slot.playerId)).toEqual([
       'df-0',
       'df-1',
       'df-2',
       'df-3',
     ])
-    expect(adapted.filter(slot => slot.position === 'MF')).toHaveLength(3)
+    expect(adapted.filter(slot => slot.position === 'MF')).toHaveLength(4)
     expect(adapted.filter(slot => slot.position === 'FW').map(slot => slot.playerId)).toEqual([
       'fw-0',
       'fw-1',
     ])
-    expect(adapted.some(slot => slot.playerId === 'fw-2')).toBe(false)
+    expect(adapted.find(slot => slot.playerId === 'fw-2')?.position).toBe('MF')
+  })
+
+  it('keeps the goalkeeper and drops the lowest-fit defender during formation adaptation', () => {
+    const players = [
+      { id: 'gk-current', position: 'GK', rating: 72, goalkeeper: 74 },
+      { id: 'gk-bench', position: 'GK', rating: 98, goalkeeper: 98 },
+      ...[92, 88, 84, 79, 68].map((defense, index) => ({
+        id: `df-${index}`,
+        position: 'DF',
+        rating: defense,
+        def: defense,
+        phy: 80,
+        sta: 80,
+      })),
+      ...[90, 86, 82].map((rating, index) => ({ id: `mf-${index}`, position: 'MF', rating })),
+      ...[91, 87, 83].map((rating, index) => ({ id: `fw-${index}`, position: 'FW', rating })),
+    ]
+    const currentIds = ['gk-current', 'df-0', 'df-1', 'df-2', 'df-3', 'df-4', 'mf-0', 'mf-1', 'mf-2', 'fw-0', 'fw-1']
+    const lineup = currentIds.map(playerId => {
+      const player = players.find(candidate => candidate.id === playerId)
+      return { playerId, position: player.position, slotId: `${player.position}-${playerId}` }
+    })
+
+    const adapted = adaptLineupToFormation(lineup, players, '4-3-3')
+
+    expect(adapted).toHaveLength(11)
+    expect(adapted.find(slot => slot.position === 'GK')?.playerId).toBe('gk-current')
+    expect(adapted.filter(slot => slot.position === 'DF').map(slot => slot.playerId)).not.toContain('df-4')
+    expect(adapted.filter(slot => slot.position === 'FW').map(slot => slot.playerId)).toContain('fw-2')
+  })
+
+  it('builds a complete position-correct eleven with the shared one-click rule', () => {
+    const france = teams.find(team => team.id === 'france')
+    const lineup = autoSelectLineupForFormation(france.players, france.defaultFormation)
+
+    expect(lineup).toHaveLength(11)
+    expect(lineup.filter(slot => slot.position === 'GK')).toHaveLength(1)
+    expect(lineup.filter(slot => slot.position === 'DF')).toHaveLength(4)
+    expect(lineup.filter(slot => slot.position === 'MF')).toHaveLength(3)
+    expect(lineup.filter(slot => slot.position === 'FW')).toHaveLength(3)
+    expect(new Set(lineup.map(slot => slot.playerId)).size).toBe(11)
   })
 
   it('uses researched default formations for all ten playable teams', () => {
@@ -411,9 +618,9 @@ describe('match systems', () => {
     expect(getTeamDefaultFormation('germany')).toBe('4-2-3-1')
     expect(getTeamDefaultFormation('japan')).toBe('3-4-2-1')
     expect(getTeamDefaultFormation('norway')).toBe('4-3-3')
-    expect(getTeamDefaultFormation('morocco')).toBe('4-3-3')
-    expect(getTeamDefaultFormation('newzealand')).toBe('4-3-3')
-    expect(getTeamDefaultFormation('curacao')).toBe('4-3-3')
+    expect(getTeamDefaultFormation('morocco')).toBe('5-3-2')
+    expect(getTeamDefaultFormation('newzealand')).toBe('5-3-2')
+    expect(getTeamDefaultFormation('curacao')).toBe('4-4-1-1')
     teams.forEach(team => {
       expect(createNewRun(team.id).formation).toBe(getTeamDefaultFormation(team.id))
     })
@@ -445,14 +652,69 @@ describe('match systems', () => {
     expect(setup.lineup.every(player => player.assignedPosition)).toBe(true)
   })
 
-  it('keeps the designed 32 key decision scenarios available', () => {
-    expect(DECISION_LIBRARY).toHaveLength(32)
+  it('keeps 50+ key decision scenarios with replay and runtime mapping metadata', () => {
+    expect(DECISION_LIBRARY.length).toBeGreaterThanOrEqual(50)
     expect(DECISION_LIBRARY.map(scenario => scenario.id)).toEqual(expect.arrayContaining([
       'penalty_area_dive',
       'var_penalty_review',
       'defend_dangerous_freekick',
       'box_second_ball_chaos',
+      'defensive_line_handball_var',
+      'second_ball_corner_attack',
+      'opponent_dangerous_freekick_wall',
     ]))
+
+    for (const scenario of DECISION_LIBRARY) {
+      expect(scenario.countdownSeconds, scenario.id).toBeGreaterThanOrEqual(3)
+      expect(scenario.countdownSeconds, scenario.id).toBeLessThanOrEqual(6)
+      expect(scenario.riskLevel, scenario.id).toMatch(/low|medium|high|critical/)
+      expect(scenario.rewardLevel, scenario.id).toMatch(/low|medium|high|critical/)
+      expect(scenario.abilityImpact, scenario.id).toEqual(expect.any(String))
+      expect(scenario.animationTag, scenario.id).toBe(scenario.animation_type)
+      expect(scenario.replayTags?.length, scenario.id).toBeGreaterThan(0)
+      expect(scenario.modeScope, scenario.id).toBe('coach')
+      expect(scenario.runtimeContract, scenario.id).toMatchObject({
+        sharedRuntime: '2.5d-match-runtime',
+        localCore: true,
+        network: 'none',
+        aiDependency: 'optional-volcano-ai',
+      })
+      for (const choice of scenario.choices) {
+        expect(choice.risk, `${scenario.id}:${choice.id}`).toEqual(expect.any(String))
+        expect(choice.reward, `${scenario.id}:${choice.id}`).toEqual(expect.any(String))
+        expect(choice.abilityImpact, `${scenario.id}:${choice.id}`).toEqual(expect.any(String))
+        expect(choice.animationTag, `${scenario.id}:${choice.id}`).toBe(scenario.animation_type)
+        expect(choice.replayTags?.length, `${scenario.id}:${choice.id}`).toBeGreaterThan(0)
+      }
+    }
+  })
+
+  it('exposes dynamic success rates from player ability and opponent quality', () => {
+    const scenario = DECISION_LIBRARY.find(decision => decision.id === 'freekick_dangerous')
+    const weakLineup = [
+      { id: 'weak-mf', name: '普通主罚手', position: 'MF', tec: 58, spd: 58, phy: 58, def: 58, sta: 62, rating: 59, star: 2 },
+    ]
+    const eliteLineup = [
+      { id: 'elite-mf', name: '顶级主罚手', position: 'MF', tec: 94, spd: 86, phy: 82, def: 70, sta: 90, rating: 92, star: 5, isGolden: true },
+    ]
+
+    const weakDecision = executeDecision(scenario, weakLineup, {
+      minute: 62,
+      oppDefense: 86,
+      teamAvgRating: 59,
+      teamDifficulty: 5,
+      isKnockout: true,
+    })
+    const eliteDecision = executeDecision(scenario, eliteLineup, {
+      minute: 62,
+      oppDefense: 62,
+      teamAvgRating: 90,
+      teamDifficulty: 1,
+      isKnockout: true,
+    })
+
+    expect(eliteDecision.choices[0].successProb).toBeGreaterThan(weakDecision.choices[0].successProb + 0.18)
+    expect(weakDecision.choices[0].successProb).toBeLessThan(0.55)
   })
 
   it('selects key players using the canonical position field', () => {
@@ -736,6 +998,37 @@ describe('match systems', () => {
     expect(tacticalFoul.choices.find(choice => choice.id === 'tactical_foul_commit').possible_outcomes.at(-1)).toBe('red_card_second_yellow')
   })
 
+  it('keeps red cards as rare tail outcomes within failed high-risk choices', () => {
+    const scenario = DECISION_LIBRARY.find(decision => decision.id === 'penalty_area_foul_risk')
+    const choice = scenario.choices.find(item => item.id === 'slide_tackle')
+    const player = { def: 45, phy: 45, sta: 45, star: 1, rating: 45 }
+    const gameState = { minute: 64, oppDefense: 88, teamAvgRating: 50, teamDifficulty: 5 }
+
+    const random = vi.spyOn(Math, 'random')
+      .mockReturnValueOnce(0.99)
+      .mockReturnValueOnce(0.01)
+
+    expect(resolveChoiceResult(choice, player, gameState).outcome).not.toBe('red_card_penalty')
+    random.mockRestore()
+  })
+
+  it('treats three-outcome high-risk failures as failure states before the red-card tail', () => {
+    const scenario = DECISION_LIBRARY.find(decision => decision.id === 'weather_slippery_tackle')
+    const choice = scenario.choices.find(item => item.id === 'slide_in_rain')
+    const player = { def: 45, phy: 45, sta: 45, star: 1, rating: 45 }
+    const gameState = { minute: 64, oppDefense: 88, teamAvgRating: 50, teamDifficulty: 5 }
+
+    const random = vi.spyOn(Math, 'random')
+      .mockReturnValueOnce(0.99)
+      .mockReturnValueOnce(0.60)
+
+    expect(resolveChoiceResult(choice, player, gameState)).toMatchObject({
+      outcome: 'yellow_card_penalty',
+      isSuccess: false,
+    })
+    random.mockRestore()
+  })
+
   it('does not make the near-post one-on-one choice a guaranteed goal', () => {
     const scenario = DECISION_LIBRARY.find(decision => decision.id === 'solo_run_penalty')
     const choice = scenario.choices.find(item => item.id === 'shoot_near_post')
@@ -874,14 +1167,15 @@ describe('landscape match presentation', () => {
     expect(getShootoutWinner([...shots, { team: 'away', scored: false }])).toBe('home')
   })
 
-  it('moves the outgoing player to the live bench and rejects duplicate substitutions', () => {
+  it('keeps substituted players out of the eligible bench and rejects duplicate substitutions', () => {
     const starter = { id: 'starter', name: '首发', pos: 'MF' }
     const bench = { id: 'bench', name: '替补', position: 'FW' }
     const roster = [starter, bench]
     const swapped = swapMatchPlayer([starter], bench, starter)
 
     expect(swapped).toEqual([{ ...bench, pos: 'MF', position: 'MF' }])
-    expect(getMatchBench(roster, swapped)).toEqual([starter])
+    expect(getMatchBench(roster, swapped, [], [starter.id])).toEqual([])
+    expect(swapMatchPlayer(swapped, starter, swapped[0], [starter.id])).toBeNull()
     expect(swapMatchPlayer(swapped, bench, swapped[0])).toBeNull()
   })
 
@@ -916,6 +1210,45 @@ describe('landscape match presentation', () => {
 
     expect(home.shirt).not.toBe(away.shirt)
     expect(away).toMatchObject(getTeamKit('japan').away)
+  })
+
+  it('builds modular pixel players from one reusable paper-doll part set', () => {
+    const france = buildPixelPlayerModel({ teamId: 'france', number: 10, role: 'outfield', action: 'dribble' })
+    const brazil = buildPixelPlayerModel({ teamId: 'brazil', number: 9, role: 'outfield', action: 'shoot' })
+    const keeper = buildPixelPlayerModel({ teamId: 'france', number: 1, role: 'goalkeeper', action: 'idle' })
+
+    expect(france.partSetId).toBe(brazil.partSetId)
+    expect(france.kit.shirt).not.toBe(brazil.kit.shirt)
+    expect(france.layers.map(layer => layer.id)).toEqual(expect.arrayContaining([
+      'head',
+      'body',
+      'leftArm',
+      'rightArm',
+      'leftLeg',
+      'rightLeg',
+      'shirt',
+      'boots',
+      'number',
+    ]))
+    expect(france.numberLayer.text).toBe('10')
+    expect(keeper.layers.some(layer => layer.id === 'gloves')).toBe(true)
+    expect(keeper.kit.shirt).toBe(getTeamKit('france').goalkeeper)
+    expect(PIXEL_PLAYER_ACTIONS).toEqual(expect.arrayContaining(['idle', 'run', 'dribble', 'pass', 'shoot', 'tackle', 'save']))
+  })
+
+  it('documents pixel player asset naming, package budgets, and shared-runtime rules', () => {
+    const rules = getPixelPlayerProductionRules()
+
+    expect(rules.baseFrame).toMatchObject({ width: 32, height: 40, scale: 4 })
+    expect(rules.packageBudgetMb).toMatchObject({ targetMin: 80, targetMax: 120, hardMax: 150 })
+    expect(rules.estimatedSavings.currentWholePlayerPngMb).toBeGreaterThan(10)
+    expect(rules.estimatedSavings.projectedModularPlayerMb).toBeLessThan(4)
+    expect(rules.runtimeReuse.modes).toEqual(['coach', 'player', 'penalty'])
+    expect(rules.runtimeReuse.sharedAssets).toEqual(expect.arrayContaining(['pitch', 'paperDollPlayer', 'ball', 'animationTimelines', 'teamKits']))
+    expect(rules.networkingBoundary).toContain('AI')
+    expect(rules.naming.playerPart).toContain('{part}')
+    expect(rules.naming.teamKit).toContain('{teamId}')
+    expect(rules.batchSteps.join(' ')).toContain('spriteRecipe')
   })
 
   it('maps tactical progress from left goal to right goal on a native landscape pitch', () => {

@@ -3,7 +3,7 @@
  * 所有决策数据本地化，不依赖AI
  */
 
-export const DECISION_LIBRARY = [
+const BASE_DECISION_LIBRARY = [
 
   // ════════════════════════════════════════════
   // 进攻类（12个）
@@ -1586,6 +1586,764 @@ export const DECISION_LIBRARY = [
     ],
   },
 ];
+
+const EXTRA_DECISION_SCENARIOS = [
+  {
+    id: 'wing_overlap_cross',
+    trigger: '边后卫套上传中',
+    minute_range: [8, 82],
+    animation_type: 'attack_cross',
+    situation_variants: [
+      '{player}带球吸引包夹，边后卫已经高速套上，传还是自己继续突？',
+      '右路出现双人配合窗口，{player}面前只剩一名回防球员。',
+    ],
+    choices: [
+      {
+        id: 'release_overlap',
+        label: '分给套上边卫',
+        desc: '把球交给外线队友，利用速度传中。',
+        risk: '传球慢半拍会被边线夹击',
+        reward: '形成无人盯防的传中脚法',
+        weight_formula: [{ attr: 'tec', weight: 0.5 }, { attr: 'spd', weight: 0.3 }, { attr: 'sta', weight: 0.2 }],
+        outcome_deltas: { goal: 0.14, goal_against: 0.02, win_delta: 0.06 },
+        possible_outcomes: ['goal_cross', 'goal_tap_in', 'cleared_header', 'possession_lost'],
+      },
+      {
+        id: 'cut_inside_wing',
+        label: '内切射门',
+        desc: '趁防线被套上传中牵制，自己内切起脚。',
+        risk: '角度变小，容易被封堵',
+        reward: '突然射门能打门将反应差',
+        weight_formula: [{ attr: 'tec', weight: 0.55 }, { attr: 'spd', weight: 0.25 }, { attr: 'sta', weight: 0.2 }],
+        outcome_deltas: { goal: 0.13, goal_against: 0.01, win_delta: 0.05 },
+        possible_outcomes: ['goal', 'saved_near', 'shot_blocked', 'miss_wide'],
+      },
+    ],
+  },
+  {
+    id: 'central_cutback_press',
+    trigger: '中路倒三角机会',
+    minute_range: [12, 88],
+    animation_type: 'attack_cross',
+    situation_variants: [
+      '{player}杀到底线，对方门将和中卫都压向近门柱，弧顶出现倒三角空位。',
+      '禁区里人群挤向小禁区，{player2}在点球点附近举手要球。',
+    ],
+    choices: [
+      {
+        id: 'cutback_penalty_spot',
+        label: '倒三角点球点',
+        desc: '回传点球点，让插上的队友迎球推射。',
+        risk: '回传线路被断会马上被反击',
+        reward: '近距离低干扰射门',
+        weight_formula: [{ attr: 'tec', weight: 0.65 }, { attr: 'sta', weight: 0.2 }, { attr: 'spd', weight: 0.15 }],
+        outcome_deltas: { goal: 0.22, goal_against: 0.03, win_delta: 0.1 },
+        possible_outcomes: ['goal_tap_in', 'goal_volley', 'shot_blocked', 'pass_intercepted'],
+      },
+      {
+        id: 'near_post_smash',
+        label: '小角度爆射',
+        desc: '不传球，直接打门将近角。',
+        risk: '角度小，射门质量波动大',
+        reward: '门将重心未稳时能突然破门',
+        weight_formula: [{ attr: 'tec', weight: 0.55 }, { attr: 'phy', weight: 0.25 }, { attr: 'sta', weight: 0.2 }],
+        outcome_deltas: { goal: 0.12, goal_against: 0.0, win_delta: 0.05 },
+        possible_outcomes: ['goal', 'saved_near', 'miss_near'],
+      },
+    ],
+  },
+  {
+    id: 'half_space_through_run',
+    trigger: '肋部前插直塞',
+    minute_range: [10, 84],
+    animation_type: 'attack_through_ball',
+    situation_variants: [
+      '{player}在肋部拿球，{player2}从中卫和边卫之间突然启动。',
+      '对手防线横移慢了半拍，肋部直塞窗口只剩一瞬间。',
+    ],
+    choices: [
+      {
+        id: 'thread_half_space',
+        label: '肋部直塞',
+        desc: '把球送到防线身后，让前锋斜插单刀。',
+        risk: '越位和力量过大都会浪费机会',
+        reward: '直接获得高质量射门',
+        weight_formula: [{ attr: 'tec', weight: 0.65 }, { attr: 'spd', weight: 0.2 }, { attr: 'sta', weight: 0.15 }],
+        outcome_deltas: { goal: 0.2, goal_against: 0.02, win_delta: 0.09 },
+        possible_outcomes: ['goal_through', 'chance_created', 'offside', 'gk_claim'],
+      },
+      {
+        id: 'recycle_midfield',
+        label: '回传再组织',
+        desc: '不冒险直塞，交给中场重新转移。',
+        risk: '错过最佳前插时机',
+        reward: '保留控球并消耗对手体能',
+        weight_formula: [{ attr: 'tec', weight: 0.55 }, { attr: 'sta', weight: 0.45 }],
+        outcome_deltas: { goal: 0.05, goal_against: 0.0, win_delta: 0.02 },
+        possible_outcomes: ['possession_kept', 'shot_created', 'no_change'],
+      },
+    ],
+  },
+  {
+    id: 'low_block_counter_launch',
+    trigger: '低位防守后反击启动',
+    minute_range: [1, 90],
+    animation_type: 'attack_counter',
+    situation_variants: [
+      '本方低位断球，{player}面前是一大片空地，对手后卫还没转身。',
+      '对手压得太靠上，{player}抢下球后立刻抬头找前锋。',
+    ],
+    choices: [
+      {
+        id: 'direct_counter_ball',
+        label: '直接长传身后',
+        desc: '第一时间打到前锋身前，让速度解决问题。',
+        risk: '长传不准会把球权还给对方',
+        reward: '形成最快的反击单刀',
+        weight_formula: [{ attr: 'tec', weight: 0.5 }, { attr: 'spd', weight: 0.25 }, { attr: 'sta', weight: 0.25 }],
+        outcome_deltas: { goal: 0.18, goal_against: 0.03, win_delta: 0.08 },
+        possible_outcomes: ['goal', 'counter_chance', 'pass_wrong', 'gk_claim'],
+      },
+      {
+        id: 'carry_counter_ball',
+        label: '持球推进',
+        desc: '带球推进等待队友跟上，降低传球失误。',
+        risk: '反击速度慢下来',
+        reward: '多人参与，后续选择更多',
+        weight_formula: [{ attr: 'spd', weight: 0.45 }, { attr: 'tec', weight: 0.35 }, { attr: 'sta', weight: 0.2 }],
+        outcome_deltas: { goal: 0.12, goal_against: 0.01, win_delta: 0.05 },
+        possible_outcomes: ['chance_created', 'corner_won', 'tackled'],
+      },
+    ],
+  },
+  {
+    id: 'high_press_trap',
+    trigger: '前场高压逼抢陷阱',
+    minute_range: [5, 70],
+    animation_type: 'midfield_press',
+    situation_variants: [
+      '对方中卫接球背身，{player}发现可以把他逼向边线。',
+      '前场压迫机会出现，{player}和队友准备同时关门。',
+    ],
+    choices: [
+      {
+        id: 'press_trap_sideline',
+        label: '边线包夹',
+        desc: '两人同时压上，把持球人逼向边线。',
+        risk: '一旦被转移，中场会露出空当',
+        reward: '前场断球立刻形成射门',
+        weight_formula: [{ attr: 'spd', weight: 0.35 }, { attr: 'def', weight: 0.35 }, { attr: 'sta', weight: 0.3 }],
+        outcome_deltas: { goal: 0.1, goal_against: 0.04, win_delta: 0.05 },
+        possible_outcomes: ['press_success_counter', 'intercept', 'press_failed_space'],
+      },
+      {
+        id: 'shadow_press',
+        label: '影子压迫',
+        desc: '不直接扑抢，只切断回传线路。',
+        risk: '无法马上抢回球权',
+        reward: '保持阵型，迫使对方低质量长传',
+        weight_formula: [{ attr: 'def', weight: 0.55 }, { attr: 'sta', weight: 0.45 }],
+        outcome_deltas: { goal: 0.03, goal_against: -0.03, win_delta: 0.03 },
+        possible_outcomes: ['ball_cleared', 'shape_held', 'opponent_builds_up'],
+      },
+    ],
+  },
+  {
+    id: 'midfield_switch_play',
+    trigger: '中场大范围转移',
+    minute_range: [1, 90],
+    animation_type: 'midfield_press',
+    situation_variants: [
+      '对手重兵堵住左路，{player}看到右路边锋完全空了。',
+      '{player}在中圈拿球，对方防线横向移动很慢。',
+    ],
+    choices: [
+      {
+        id: 'switch_far_side',
+        label: '大范围转移',
+        desc: '用长传把球打到弱侧边路。',
+        risk: '球速慢会被边卫提前拦截',
+        reward: '弱侧一对一甚至二打一',
+        weight_formula: [{ attr: 'tec', weight: 0.7 }, { attr: 'sta', weight: 0.2 }, { attr: 'phy', weight: 0.1 }],
+        outcome_deltas: { goal: 0.09, goal_against: 0.01, win_delta: 0.04 },
+        possible_outcomes: ['chance_created', 'possession_kept', 'intercept'],
+      },
+      {
+        id: 'keep_short_triangle',
+        label: '短传三角',
+        desc: '继续短传吸引防守，稳住中场控制。',
+        risk: '推进速度偏慢',
+        reward: '减少失误并消耗对方体能',
+        weight_formula: [{ attr: 'tec', weight: 0.6 }, { attr: 'sta', weight: 0.4 }],
+        outcome_deltas: { goal: 0.04, goal_against: -0.01, win_delta: 0.03 },
+        possible_outcomes: ['possession_kept', 'safe', 'no_change'],
+      },
+    ],
+  },
+  {
+    id: 'fullback_recovery_run',
+    trigger: '边后卫被打身后',
+    minute_range: [1, 90],
+    animation_type: 'defend_last_man',
+    situation_variants: [
+      '对方边锋从身后冲出，{player}必须决定回追路线。',
+      '边路被打穿，{player}离对手还有两步，禁区即将失守。',
+    ],
+    choices: [
+      {
+        id: 'sprint_inside_lane',
+        label: '内线回追',
+        desc: '优先封住对手内切路线，把他赶向边线。',
+        risk: '边路传中会放出来',
+        reward: '避免对手直接进入禁区射门',
+        weight_formula: [{ attr: 'spd', weight: 0.5 }, { attr: 'def', weight: 0.35 }, { attr: 'sta', weight: 0.15 }],
+        outcome_deltas: { goal: 0.0, goal_against: 0.03, win_delta: 0.02 },
+        possible_outcomes: ['delay_success', 'forced_corner', 'goal_cross'],
+      },
+      {
+        id: 'slide_touchline',
+        label: '边线放铲',
+        desc: '靠近边线时放铲，争取把球铲出界。',
+        risk: '铲晚了会送危险任意球或黄牌',
+        reward: '成功则直接终结边路突破',
+        weight_formula: [{ attr: 'def', weight: 0.45 }, { attr: 'spd', weight: 0.3 }, { attr: 'phy', weight: 0.25 }],
+        outcome_deltas: { goal: 0.0, goal_against: 0.02, win_delta: 0.03 },
+        possible_outcomes: ['tackle_success', 'ball_out', 'yellow_card', 'freekick_against'],
+      },
+    ],
+  },
+  {
+    id: 'keeper_sweeper_claim',
+    trigger: '门将出击清道夫',
+    minute_range: [1, 90],
+    animation_type: 'defend_gk_rush',
+    situation_variants: [
+      '对手直塞球滚向禁区外，{player}判断是否冲出禁区处理。',
+      '后卫转身慢了，{player}必须决定留在门线还是主动出击。',
+    ],
+    choices: [
+      {
+        id: 'sweeper_claim',
+        label: '冲出解围',
+        desc: '门将离开禁区主动解围，提前破坏单刀。',
+        risk: '判断慢了会被过掉打空门',
+        reward: '一次出击直接解除危机',
+        weight_formula: [{ attr: 'spd', weight: 0.4 }, { attr: 'def', weight: 0.4 }, { attr: 'sta', weight: 0.2 }],
+        outcome_deltas: { goal: 0.0, goal_against: 0.05, win_delta: 0.03 },
+        possible_outcomes: ['gk_claim_ball', 'headed_clear', 'goal_against'],
+      },
+      {
+        id: 'hold_keeper_line',
+        label: '留守门线',
+        desc: '相信后卫回追，自己保持扑救位置。',
+        risk: '对手可能从容形成单刀',
+        reward: '不会被吊射空门',
+        weight_formula: [{ attr: 'def', weight: 0.6 }, { attr: 'sta', weight: 0.4 }],
+        outcome_deltas: { goal: 0.0, goal_against: 0.06, win_delta: -0.01 },
+        possible_outcomes: ['gk_reaction_save', 'solo_against_gk', 'goal_against'],
+      },
+    ],
+  },
+  {
+    id: 'var_offside_goal',
+    trigger: '疑似越位进球 VAR',
+    minute_range: [15, 90],
+    animation_type: 'var_penalty',
+    situation_variants: [
+      '{player}破门后边裁举旗，VAR 正在画线确认前插时机。',
+      '进球后的庆祝被打断，裁判按住耳机等待越位回放。',
+    ],
+    choices: [
+      {
+        id: 'hold_celebration',
+        label: '控制庆祝',
+        desc: '提醒队友不要过度庆祝，等待确认。',
+        risk: '气势被打断',
+        reward: '判罚不利时能迅速回防',
+        weight_formula: [{ attr: 'sta', weight: 0.55 }, { attr: 'tec', weight: 0.45 }],
+        outcome_deltas: { goal: 0.1, goal_against: 0.0, win_delta: 0.04 },
+        possible_outcomes: ['goal', 'no_change', 'shape_held'],
+      },
+      {
+        id: 'argue_offside_line',
+        label: '抗议画线',
+        desc: '队长上前强调防守球员拖在最后。',
+        risk: '抗议过度可能吃黄牌',
+        reward: '争取保住进球',
+        weight_formula: [{ attr: 'sta', weight: 0.5 }, { attr: 'tec', weight: 0.5 }],
+        outcome_deltas: { goal: 0.12, goal_against: 0.0, win_delta: 0.05 },
+        possible_outcomes: ['goal', 'yellow_card_dissent', 'no_change'],
+      },
+    ],
+  },
+  {
+    id: 'defensive_line_handball_var',
+    trigger: '门线手球 VAR',
+    minute_range: [1, 90],
+    animation_type: 'var_penalty',
+    situation_variants: [
+      '对方射门打在{player}手臂附近，VAR 正在检查是否门线手球。',
+      '禁区内封堵后对手疯狂投诉手球，主裁暂停比赛等待 VAR。',
+    ],
+    choices: [
+      {
+        id: 'hands_behind_back',
+        label: '主动解释动作',
+        desc: '向裁判展示手臂收在身后，避免被认定扩大防守面积。',
+        risk: '慢镜头仍可能不利',
+        reward: '降低点球和红牌风险',
+        weight_formula: [{ attr: 'def', weight: 0.5 }, { attr: 'sta', weight: 0.5 }],
+        outcome_deltas: { goal: 0.0, goal_against: 0.0, win_delta: 0.03 },
+        possible_outcomes: ['play_continues', 'shape_held', 'yellow_card_penalty'],
+      },
+      {
+        id: 'block_line_anyway',
+        label: '死守门线',
+        desc: '不管争议，继续组织门线防守等待判罚。',
+        risk: '若判手球可能红牌加点球',
+        reward: 'VAR无事时能保持防线集中',
+        weight_formula: [{ attr: 'def', weight: 0.6 }, { attr: 'phy', weight: 0.25 }, { attr: 'sta', weight: 0.15 }],
+        outcome_deltas: { goal: 0.0, goal_against: 0.01, win_delta: 0.02 },
+        possible_outcomes: ['play_continues', 'red_card_penalty', 'yellow_card_penalty'],
+      },
+    ],
+  },
+  {
+    id: 'handball_penalty_claim',
+    trigger: '进攻方申诉禁区手球',
+    minute_range: [1, 90],
+    animation_type: 'var_penalty',
+    situation_variants: [
+      '{player}的传中打到对方手臂，全队看向裁判，VAR 可能介入。',
+      '禁区里疑似手球！{player2}第一时间举手示意。',
+    ],
+    choices: [
+      {
+        id: 'calm_handball_claim',
+        label: '冷静申诉手球',
+        desc: '队长向裁判指出手臂位置，不围堵。',
+        risk: '施压力度有限',
+        reward: '增加点球概率且不吃牌',
+        weight_formula: [{ attr: 'sta', weight: 0.55 }, { attr: 'tec', weight: 0.45 }],
+        outcome_deltas: { goal: 0.0, goal_against: 0.0, win_delta: 0.06 },
+        possible_outcomes: ['penalty_awarded', 'play_continues', 'possession_maintained'],
+      },
+      {
+        id: 'crowd_ref_handball',
+        label: '集体施压',
+        desc: '多人围住裁判要求看 VAR。',
+        risk: '抗议过度吃黄牌',
+        reward: '提高改判点球概率',
+        weight_formula: [{ attr: 'sta', weight: 0.45 }, { attr: 'phy', weight: 0.25 }, { attr: 'tec', weight: 0.3 }],
+        outcome_deltas: { goal: 0.0, goal_against: 0.01, win_delta: 0.07 },
+        possible_outcomes: ['penalty_awarded', 'yellow_card_dissent', 'play_continues'],
+      },
+    ],
+  },
+  {
+    id: 'second_ball_corner_attack',
+    trigger: '角球二点进攻',
+    minute_range: [1, 90],
+    animation_type: 'attack_corner',
+    situation_variants: [
+      '角球第一点被顶出，球落到{player}脚下，禁区外二点球机会来了。',
+      '门将击出角球不远，{player2}把对手挡住，{player}准备处理二点。',
+    ],
+    choices: [
+      {
+        id: 'volley_second_ball',
+        label: '凌空抽射',
+        desc: '不等球落地，直接凌空射向人群后的球门。',
+        risk: '射门难度大，容易打飞',
+        reward: '混乱中门将视线被挡',
+        weight_formula: [{ attr: 'tec', weight: 0.6 }, { attr: 'phy', weight: 0.25 }, { attr: 'sta', weight: 0.15 }],
+        outcome_deltas: { goal: 0.15, goal_against: 0.03, win_delta: 0.07 },
+        possible_outcomes: ['goal_volley', 'saved_long', 'miss_over', 'counter_fast'],
+      },
+      {
+        id: 'chip_back_post',
+        label: '吊回后点',
+        desc: '把二点球再吊进后点，利用对手阵型混乱。',
+        risk: '门将可能出击摘下',
+        reward: '后点头球质量更高',
+        weight_formula: [{ attr: 'tec', weight: 0.55 }, { attr: 'phy', weight: 0.25 }, { attr: 'height', weight: 0.2 }],
+        outcome_deltas: { goal: 0.17, goal_against: 0.02, win_delta: 0.08 },
+        possible_outcomes: ['goal_header', 'saved_header', 'cleared_header'],
+      },
+    ],
+  },
+  {
+    id: 'opponent_dangerous_freekick_wall',
+    trigger: '对方危险任意球人墙调整',
+    minute_range: [1, 90],
+    animation_type: 'defend_freekick',
+    situation_variants: [
+      '对方获得禁区前沿任意球，{player}正在指挥人墙位置。',
+      '对手主罚手站在球前，门将{player}必须决定人墙和站位。',
+    ],
+    choices: [
+      {
+        id: 'jump_wall_timing',
+        label: '人墙起跳',
+        desc: '安排人墙统一起跳封上角。',
+        risk: '低平球可能从脚下穿过',
+        reward: '封住最危险的弧线球',
+        weight_formula: [{ attr: 'def', weight: 0.45 }, { attr: 'phy', weight: 0.35 }, { attr: 'sta', weight: 0.2 }],
+        outcome_deltas: { goal: 0.0, goal_against: 0.04, win_delta: 0.02 },
+        possible_outcomes: ['wall_block', 'saved_freekick_against', 'opponent_goal_freekick'],
+      },
+      {
+        id: 'keeper_cheat_far',
+        label: '门将赌远角',
+        desc: '门将提前半步站远角，赌对手追求死角。',
+        risk: '被打近角会很被动',
+        reward: '猜中能直接扑出世界波',
+        weight_formula: [{ attr: 'def', weight: 0.55 }, { attr: 'spd', weight: 0.25 }, { attr: 'sta', weight: 0.2 }],
+        outcome_deltas: { goal: 0.0, goal_against: 0.06, win_delta: 0.02 },
+        possible_outcomes: ['keeper_save_freekick', 'miss_over_against', 'opponent_goal_freekick'],
+      },
+    ],
+  },
+  {
+    id: 'opponent_short_corner_defense',
+    trigger: '防守对方短角球',
+    minute_range: [1, 90],
+    animation_type: 'defend_corner',
+    situation_variants: [
+      '对方没有直接开角球，而是短传给接应球员，{player}要不要扑出去？',
+      '短角球配合开始，对手试图把本方防线拉出禁区。',
+    ],
+    choices: [
+      {
+        id: 'rush_short_corner',
+        label: '立刻扑出去',
+        desc: '派一人冲向角旗区，破坏短角球节奏。',
+        risk: '禁区内少一个防守点',
+        reward: '阻止对方调整传中角度',
+        weight_formula: [{ attr: 'spd', weight: 0.4 }, { attr: 'def', weight: 0.4 }, { attr: 'sta', weight: 0.2 }],
+        outcome_deltas: { goal: 0.0, goal_against: 0.03, win_delta: 0.03 },
+        possible_outcomes: ['intercept', 'cleared_header', 'goal_short_corner'],
+      },
+      {
+        id: 'hold_box_shape',
+        label: '禁区内站稳',
+        desc: '不被短角球牵走，维持禁区盯人。',
+        risk: '对手可以轻松起脚传中',
+        reward: '防住门前最高威胁',
+        weight_formula: [{ attr: 'def', weight: 0.6 }, { attr: 'phy', weight: 0.25 }, { attr: 'sta', weight: 0.15 }],
+        outcome_deltas: { goal: 0.0, goal_against: 0.04, win_delta: 0.02 },
+        possible_outcomes: ['zone_cleared', 'gk_punches', 'goal_zone_gap'],
+      },
+    ],
+  },
+  {
+    id: 'set_piece_rebound_shot',
+    trigger: '定位球反弹球射门',
+    minute_range: [1, 90],
+    animation_type: 'attack_freekick',
+    situation_variants: [
+      '任意球被人墙挡出，球正好弹到{player}面前。',
+      '定位球二次落点出现，{player2}挡住防守球员，{player}有起脚空间。',
+    ],
+    choices: [
+      {
+        id: 'rebound_first_time',
+        label: '迎球补射',
+        desc: '第一时间补射，利用防线还没反应。',
+        risk: '球速和弹跳不稳定',
+        reward: '门将视线被遮挡',
+        weight_formula: [{ attr: 'tec', weight: 0.6 }, { attr: 'phy', weight: 0.25 }, { attr: 'sta', weight: 0.15 }],
+        outcome_deltas: { goal: 0.16, goal_against: 0.02, win_delta: 0.07 },
+        possible_outcomes: ['goal_long', 'saved_long', 'shot_blocked', 'miss_over'],
+      },
+      {
+        id: 'rebound_fake_pass',
+        label: '假射再分边',
+        desc: '假装补射吸引封堵，再分给边路重新传中。',
+        risk: '多处理一步可能被抢',
+        reward: '制造第二波更清晰机会',
+        weight_formula: [{ attr: 'tec', weight: 0.65 }, { attr: 'sta', weight: 0.35 }],
+        outcome_deltas: { goal: 0.09, goal_against: 0.01, win_delta: 0.04 },
+        possible_outcomes: ['chance_created', 'possession_kept', 'tackled'],
+      },
+    ],
+  },
+  {
+    id: 'penalty_rebound_followup',
+    trigger: '点球扑出后的补射',
+    minute_range: [1, 90],
+    animation_type: 'penalty_shootout',
+    situation_variants: [
+      '点球被门将扑出但没有抱住，{player}第一个冲向反弹球。',
+      '十二码射门被挡，球弹回禁区，{player2}和后卫同时启动。',
+    ],
+    choices: [
+      {
+        id: 'follow_rebound',
+        label: '冲抢补射',
+        desc: '射手和队友第一时间冲向反弹球。',
+        risk: '起步慢就会被解围',
+        reward: '补射距离极近',
+        weight_formula: [{ attr: 'spd', weight: 0.45 }, { attr: 'tec', weight: 0.35 }, { attr: 'sta', weight: 0.2 }],
+        outcome_deltas: { goal: 0.2, goal_against: 0.02, win_delta: 0.08 },
+        possible_outcomes: ['goal_tap_in', 'saved_close', 'cleared_header'],
+      },
+      {
+        id: 'hold_for_rebound_cutback',
+        label: '等二点回做',
+        desc: '不盲目冲撞门将，等待队友回做二点。',
+        risk: '补射窗口可能消失',
+        reward: '避免犯规并保持二次进攻',
+        weight_formula: [{ attr: 'tec', weight: 0.55 }, { attr: 'sta', weight: 0.45 }],
+        outcome_deltas: { goal: 0.08, goal_against: 0.0, win_delta: 0.03 },
+        possible_outcomes: ['shot_created', 'possession_kept', 'no_change'],
+      },
+    ],
+  },
+  {
+    id: 'injury_play_on',
+    trigger: '轻伤球员是否坚持',
+    minute_range: [35, 90],
+    animation_type: 'substitution',
+    situation_variants: [
+      '{player}刚才被撞了一下，跑动明显不顺，但他示意还能坚持。',
+      '队医在场边观察，{player}的状态正在下降，要不要马上调整？',
+    ],
+    choices: [
+      {
+        id: 'sub_injured_player',
+        label: '马上换下',
+        desc: '避免二次受伤，用替补保持强度。',
+        risk: '换人名额提前消耗',
+        reward: '保护主力并稳定后续比赛',
+        weight_formula: [{ attr: 'sta', weight: 0.45 }, { attr: 'def', weight: 0.3 }, { attr: 'tec', weight: 0.25 }],
+        outcome_deltas: { goal: 0.03, goal_against: -0.04, win_delta: 0.04 },
+        possible_outcomes: ['sub_positive_impact', 'sub_neutral', 'sub_disrupts_flow'],
+      },
+      {
+        id: 'play_through_knock',
+        label: '带伤坚持',
+        desc: '相信球员意志，继续踢到下一个窗口。',
+        risk: '二次受伤或关键动作变形',
+        reward: '保留换人名额和战术结构',
+        weight_formula: [{ attr: 'sta', weight: 0.6 }, { attr: 'tec', weight: 0.25 }, { attr: 'phy', weight: 0.15 }],
+        outcome_deltas: { goal: 0.04, goal_against: 0.05, win_delta: -0.01 },
+        possible_outcomes: ['clutch_moment_saves', 'maintains_level', 'complete_drop_off'],
+      },
+    ],
+  },
+  {
+    id: 'yellow_card_dissent_control',
+    trigger: '黄牌后控制抗议',
+    minute_range: [1, 90],
+    animation_type: 'tactical_foul',
+    situation_variants: [
+      '{player}刚吃到黄牌，队友围住裁判，情绪有点失控。',
+      '争议判罚后本方球员还在抱怨，主裁手已经摸向口袋。',
+    ],
+    choices: [
+      {
+        id: 'captain_calm_team',
+        label: '队长拉开队友',
+        desc: '立刻把抗议球员拉走，避免连锁吃牌。',
+        risk: '放弃继续施压',
+        reward: '稳定纪律并让比赛继续',
+        weight_formula: [{ attr: 'sta', weight: 0.6 }, { attr: 'def', weight: 0.2 }, { attr: 'tec', weight: 0.2 }],
+        outcome_deltas: { goal: 0.0, goal_against: -0.02, win_delta: 0.03 },
+        possible_outcomes: ['safe', 'shape_held', 'no_change'],
+      },
+      {
+        id: 'keep_arguing_call',
+        label: '继续施压',
+        desc: '认为判罚太离谱，继续向裁判表达不满。',
+        risk: '追加黄牌甚至二黄变红',
+        reward: '可能影响后续尺度',
+        weight_formula: [{ attr: 'sta', weight: 0.45 }, { attr: 'phy', weight: 0.25 }, { attr: 'tec', weight: 0.3 }],
+        outcome_deltas: { goal: 0.0, goal_against: 0.03, win_delta: -0.02 },
+        possible_outcomes: ['yellow_card_dissent', 'red_card_second_yellow', 'no_change'],
+      },
+    ],
+  },
+  {
+    id: 'second_yellow_warning',
+    trigger: '已有黄牌球员面临防守选择',
+    minute_range: [25, 90],
+    animation_type: 'defend_last_man',
+    situation_variants: [
+      '{player}身背黄牌，对手正从他身边加速突破。',
+      '已有黄牌的{player}被迫一对一防守，再犯规就是离场。',
+    ],
+    choices: [
+      {
+        id: 'stand_off_marking',
+        label: '保持距离',
+        desc: '不伸脚，靠站位拖延队友回防。',
+        risk: '给对手起脚空间',
+        reward: '避免二黄离场',
+        weight_formula: [{ attr: 'def', weight: 0.55 }, { attr: 'spd', weight: 0.25 }, { attr: 'sta', weight: 0.2 }],
+        outcome_deltas: { goal: 0.0, goal_against: 0.05, win_delta: 0.0 },
+        possible_outcomes: ['delay_success', 'shot_blocked_body', 'goal_against'],
+      },
+      {
+        id: 'risk_second_tackle',
+        label: '冒险上抢',
+        desc: '相信自己能干净断球，直接出脚。',
+        risk: '失误就是第二张黄牌',
+        reward: '成功可立刻发动反击',
+        weight_formula: [{ attr: 'def', weight: 0.55 }, { attr: 'phy', weight: 0.25 }, { attr: 'sta', weight: 0.2 }],
+        outcome_deltas: { goal: 0.02, goal_against: 0.04, win_delta: 0.01 },
+        possible_outcomes: ['tackle_success', 'counter_chance', 'red_card_second_yellow'],
+      },
+    ],
+  },
+  {
+    id: 'late_keeper_up_corner',
+    trigger: '补时门将上抢角球',
+    minute_range: [88, 90],
+    animation_type: 'attack_corner',
+    situation_variants: [
+      '补时阶段还落后一球，获得角球，门将是否也冲进对方禁区？',
+      '最后一次角球，全队都看向场边指令：门将要不要上去？',
+    ],
+    choices: [
+      {
+        id: 'send_keeper_up',
+        label: '门将也上',
+        desc: '让门将进入禁区争顶，孤注一掷。',
+        risk: '被解围后空门被反击',
+        reward: '禁区多一个高点，绝平概率提升',
+        weight_formula: [{ attr: 'phy', weight: 0.4 }, { attr: 'height', weight: 0.3 }, { attr: 'sta', weight: 0.3 }],
+        outcome_deltas: { goal: 0.16, goal_against: 0.16, win_delta: 0.03 },
+        possible_outcomes: ['late_equalizer', 'goal_header', 'counter_sealed', 'cleared_header'],
+      },
+      {
+        id: 'normal_corner_late',
+        label: '常规角球',
+        desc: '门将留在后场，避免被空门锁定。',
+        risk: '禁区人数少，绝平机会下降',
+        reward: '即使失败也不再扩大比分',
+        weight_formula: [{ attr: 'tec', weight: 0.55 }, { attr: 'phy', weight: 0.25 }, { attr: 'sta', weight: 0.2 }],
+        outcome_deltas: { goal: 0.08, goal_against: 0.03, win_delta: 0.02 },
+        possible_outcomes: ['goal_header', 'cleared_header', 'no_change'],
+      },
+    ],
+  },
+  {
+    id: 'weather_slippery_tackle',
+    trigger: '湿滑草皮下的铲球风险',
+    minute_range: [1, 90],
+    animation_type: 'defend_penalty_risk',
+    situation_variants: [
+      '草皮很滑，{player}追上对手但出脚风险比平时更高。',
+      '雨后球场让球速变快，{player}必须决定是否倒地铲球。',
+    ],
+    choices: [
+      {
+        id: 'stay_feet_slippery',
+        label: '不倒地防守',
+        desc: '保持重心，优先封线路。',
+        risk: '可能让对手完成射门',
+        reward: '避免滑铲犯规和点球',
+        weight_formula: [{ attr: 'def', weight: 0.55 }, { attr: 'spd', weight: 0.25 }, { attr: 'sta', weight: 0.2 }],
+        outcome_deltas: { goal: 0.0, goal_against: 0.05, win_delta: 0.0 },
+        possible_outcomes: ['delay_success', 'shot_blocked_body', 'goal_against'],
+      },
+      {
+        id: 'slide_in_rain',
+        label: '雨中放铲',
+        desc: '利用湿滑草皮扩大铲球覆盖面积。',
+        risk: '很容易铲到人送点',
+        reward: '铲中球就是精彩解围',
+        weight_formula: [{ attr: 'def', weight: 0.5 }, { attr: 'phy', weight: 0.3 }, { attr: 'sta', weight: 0.2 }],
+        outcome_deltas: { goal: 0.0, goal_against: 0.05, win_delta: 0.01 },
+        possible_outcomes: ['tackle_success', 'yellow_card_penalty', 'red_card_penalty'],
+      },
+    ],
+  },
+]
+
+const HIGH_PRESSURE_IDS = new Set([
+  'match_penalty',
+  'penalty_kick',
+  'penalty_shootout_round',
+  'extra_time_penalty_shootout_prep',
+  'late_keeper_up_corner',
+])
+
+const RISK_WORDS = {
+  critical: /红牌|点球|二黄|空门|离场|送点|最坏|孤注一掷/,
+  high: /高|极|冒险|反击|吃牌|犯规|失误|受伤|打飞|赌/,
+  low: /保留|避免|稳定|稳健|保持|不冒险/,
+}
+
+function classifyTextLevel(text, fallback = 'medium') {
+  if (RISK_WORDS.critical.test(text)) return 'critical'
+  if (RISK_WORDS.high.test(text)) return 'high'
+  if (RISK_WORDS.low.test(text)) return 'low'
+  return fallback
+}
+
+function summarizeAbilityImpact(choice) {
+  const formula = choice.weight_formula || []
+  if (!formula.length) return '综合能力影响成功率'
+  return formula
+    .map(({ attr, weight }) => `${attr}+${Math.round(weight * 100)}%`)
+    .join(' / ')
+}
+
+function deriveReplayTags(scenario, choice = null) {
+  const text = `${scenario.id} ${scenario.trigger} ${choice?.label || ''} ${choice?.risk || ''} ${choice?.reward || ''}`
+  const tags = []
+  if (/点球|penalty/.test(text)) tags.push('penalty')
+  if (/VAR|var/.test(text)) tags.push('var')
+  if (/假摔|dive/.test(text)) tags.push('dive')
+  if (/角球|corner|二点/.test(text)) tags.push('set-piece')
+  if (/任意球|freekick/.test(text)) tags.push('free-kick')
+  if (/红牌|黄牌|card|犯规|foul|二黄/.test(text)) tags.push('discipline')
+  if (/反击|counter/.test(text)) tags.push('transition')
+  if (/换人|体能|伤|substitution|injury/.test(text)) tags.push('fitness')
+  if (!tags.length) tags.push('tactical')
+  return Array.from(new Set(tags))
+}
+
+function enrichDecision(scenario) {
+  const allChoiceText = scenario.choices.map(choice => `${choice.risk} ${choice.reward}`).join(' ')
+  const countdownSeconds = scenario.countdownSeconds
+    || (scenario.minute_range?.[0] >= 115 ? 3 : HIGH_PRESSURE_IDS.has(scenario.id) ? 5 : classifyTextLevel(allChoiceText) === 'critical' ? 4 : 6)
+  const riskLevel = scenario.riskLevel || classifyTextLevel(allChoiceText)
+  const rewardLevel = scenario.rewardLevel || classifyTextLevel(
+    scenario.choices.map(choice => choice.reward).join(' '),
+    riskLevel === 'critical' ? 'high' : 'medium',
+  )
+
+  return {
+    ...scenario,
+    countdownSeconds,
+    riskLevel,
+    rewardLevel,
+    abilityImpact: scenario.abilityImpact || scenario.choices.map(summarizeAbilityImpact).join(' | '),
+    animationTag: scenario.animationTag || scenario.animation_type,
+    replayTags: scenario.replayTags || deriveReplayTags(scenario),
+    modeScope: scenario.modeScope || 'coach',
+    runtimeContract: scenario.runtimeContract || {
+      sharedRuntime: '2.5d-match-runtime',
+      localCore: true,
+      network: 'none',
+      aiDependency: 'optional-volcano-ai',
+    },
+    choices: scenario.choices.map(choice => ({
+      ...choice,
+      abilityImpact: choice.abilityImpact || summarizeAbilityImpact(choice),
+      animationTag: choice.animationTag || scenario.animation_type,
+      replayTags: choice.replayTags || deriveReplayTags(scenario, choice),
+    })),
+  }
+}
+
+export const DECISION_LIBRARY = [
+  ...BASE_DECISION_LIBRARY,
+  ...EXTRA_DECISION_SCENARIOS,
+].map(enrichDecision)
 
 /**
  * 根据ID获取决策场景

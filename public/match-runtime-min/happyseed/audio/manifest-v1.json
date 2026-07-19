@@ -1,0 +1,29 @@
+{
+  "schemaVersion": "match-sfx-assets-v1",
+  "budgetBytes": 409600,
+  "fileCount": 2,
+  "totalBytes": 43152,
+  "offlineFallback": "WebAudio transient synthesis",
+  "assets": [
+    {
+      "id": "soccer-kick-cc0",
+      "path": "soccer-kick-cc0.mp3",
+      "bytes": 7200,
+      "sha256": "438dfc4f6853771233e84bf336bad71fb10621b251cfd26574a9a0b322a15764",
+      "source": "https://freesound.org/people/musita182/sounds/261267/",
+      "author": "musita182",
+      "license": "CC0 1.0",
+      "roles": ["touch", "pass", "shot"]
+    },
+    {
+      "id": "crowd-cheer-cc0",
+      "path": "crowd-cheer-cc0.mp3",
+      "bytes": 35952,
+      "sha256": "ef8eaa092d5d8e68184f283fd5e37686d81912dab78846604d1b5fa84a58a42c",
+      "source": "https://freesound.org/people/Krizin/sounds/651643/",
+      "author": "Krizin",
+      "license": "CC0 1.0",
+      "roles": ["goal-cheer"]
+    }
+  ]
+}

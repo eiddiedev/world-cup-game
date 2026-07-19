@@ -31,7 +31,10 @@ export function buildPostMatchInsights(result, teamName) {
 
   const decisionItems = decisions.slice(-6).map(decision => {
     const situation = decision.situation?.replace(/\{[^}]+\}/g, '').slice(0, 28) || '关键回合'
-    return `${decision.minute ?? 0}′ ${situation}｜选择“${decision.choiceLabel}”：${decision.resultText}`
+    const tags = decision.replayTags?.length ? `｜${decision.replayTags.join('/')}` : ''
+    const risk = decision.riskLevel ? `｜风险:${decision.riskLevel}` : ''
+    const reviewTag = decision.postMatchReviewTag ? `｜复盘:${decision.postMatchReviewTag}` : ''
+    return `${decision.minute ?? 0}′ ${situation}｜选择“${decision.choiceLabel}”：${decision.resultText}${risk}${tags}${reviewTag}`
   })
 
   const advice = []

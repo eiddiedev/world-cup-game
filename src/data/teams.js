@@ -1,6 +1,32 @@
 import { allPlayers } from './players/index.js'
 import { prepareTeamPlayers } from './playerBalance.js'
+import {
+  DATA_RUNTIME_CONSTRAINTS,
+  TEAM_DATA_CONSUMERS,
+} from './teamDataContracts.js'
+import { buildTeamSchemaMetadata } from './teamDataSchema.js'
+import { getTeamTacticalProfile } from './teamFormations.js'
 import { selectPlayableTeams } from '../config/runtime.js'
+
+function withTacticalProfile(team) {
+  const tacticalProfile = getTeamTacticalProfile(team.id)
+  const profiledTeam = {
+    ...team,
+    defaultFormation: tacticalProfile.formation,
+    styleTags: tacticalProfile.styleTags,
+    gameModel: tacticalProfile.gameModel,
+    tacticalProfile,
+    dataConsumers: TEAM_DATA_CONSUMERS,
+    runtimeModes: DATA_RUNTIME_CONSTRAINTS.runtimeModes,
+    networking: DATA_RUNTIME_CONSTRAINTS.networking,
+    packageBudgetMb: DATA_RUNTIME_CONSTRAINTS.packageBudgetMb,
+  }
+
+  return {
+    ...profiledTeam,
+    ...buildTeamSchemaMetadata(profiledTeam),
+  }
+}
 
 /**
  * 球队配置数据
@@ -240,9 +266,15 @@ const allTeams = [
     goldenStarPosition: 'FW',
     players: prepareTeamPlayers(allPlayers.curacao || [], 'curacao', 1170)
   },
-]
+].map(withTacticalProfile)
 
-export const teams = selectPlayableTeams(allTeams)
+export const teams = selectPlayableTeams(allTeams).map(team => ({
+  ...team,
+  dataConsumers: team.dataConsumers || TEAM_DATA_CONSUMERS,
+  runtimeModes: team.runtimeModes || DATA_RUNTIME_CONSTRAINTS.runtimeModes,
+  networking: team.networking || DATA_RUNTIME_CONSTRAINTS.networking,
+  packageBudgetMb: team.packageBudgetMb || DATA_RUNTIME_CONSTRAINTS.packageBudgetMb,
+}))
 
 /**
  * 48支世界杯球队国旗映射（中文名 → 图片路径）

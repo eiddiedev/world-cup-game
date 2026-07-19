@@ -4,18 +4,40 @@ const DEFAULT_AUDIO_SETTINGS = {
   vibration: true,
 }
 
+const MATCH_SAMPLE_ASSETS = Object.freeze({
+  ballTouch: '/match-runtime-min/happyseed/audio/soccer-kick-cc0.mp3',
+  ballShot: '/match-runtime-min/happyseed/audio/soccer-kick-cc0.mp3',
+  goalCheer: '/match-runtime-min/happyseed/audio/crowd-cheer-cc0.mp3',
+})
+
 const SOUND_PATTERNS = {
+  ballTouch: [
+    { f: 92, d: 0.045, v: 0.42, type: 'sine' },
+    { f: 54, d: 0.07, v: 0.30, delay: 0.012, type: 'triangle' },
+  ],
+  ballShot: [
+    { f: 78, d: 0.055, v: 0.52, type: 'sine' },
+    { f: 42, d: 0.10, v: 0.34, delay: 0.015, type: 'triangle' },
+  ],
+  postHit: [
+    { f: 1280, d: 0.055, v: 0.30, type: 'sine' },
+    { f: 860, d: 0.12, v: 0.22, delay: 0.035, type: 'sine' },
+  ],
   click: [
     { f: 620, d: 0.055, v: 0.32, type: 'square' },
     { f: 930, d: 0.075, v: 0.24, delay: 0.045, type: 'square' },
+  ],
+  decisionTick: [
+    { f: 1180, d: 0.018, v: 0.12, type: 'square' },
+    { f: 560, d: 0.026, v: 0.09, delay: 0.018, type: 'triangle' },
   ],
   confirm: [{ f: 520, d: 0.08, v: 0.30 }, { f: 780, d: 0.10, v: 0.28, delay: 0.07 }],
   back: [{ f: 520, d: 0.06, v: 0.24, type: 'triangle' }, { f: 330, d: 0.09, v: 0.22, delay: 0.055, type: 'triangle' }],
   goalNet: [{ f: 110, d: 0.16, v: 0.34, type: 'sawtooth' }, { f: 70, d: 0.18, v: 0.28, delay: 0.08 }],
   save: [
-    { f: 180, d: 0.06, v: 0.30, type: 'triangle' },
-    { f: 95, d: 0.10, v: 0.34, delay: 0.04, type: 'sawtooth' },
-    { f: 520, d: 0.08, v: 0.20, delay: 0.11, type: 'square' },
+    { f: 155, d: 0.08, v: 0.40, type: 'triangle' },
+    { f: 82, d: 0.14, v: 0.38, delay: 0.035, type: 'sawtooth' },
+    { f: 610, d: 0.10, v: 0.25, delay: 0.105, type: 'square' },
   ],
   goalCheer: [
     { f: 523, d: 0.14, v: 0.24, delay: 0.02 },
@@ -36,7 +58,18 @@ const SOUND_PATTERNS = {
   ],
   card: [{ f: 900, d: 0.08, v: 0.28, type: 'square' }, { f: 900, d: 0.08, v: 0.28, delay: 0.12, type: 'square' }],
   substitution: [{ f: 440, d: 0.08, v: 0.24 }, { f: 660, d: 0.09, v: 0.26, delay: 0.09 }],
-  whistle: [{ f: 1200, d: 0.22, v: 0.24, type: 'square' }],
+  whistle: [
+    { f: 2150, d: 0.18, v: 0.34, type: 'sine' },
+    { f: 2460, d: 0.15, v: 0.22, delay: 0.025, type: 'sine' },
+    { f: 1980, d: 0.16, v: 0.31, delay: 0.225, type: 'sine' },
+    { f: 2330, d: 0.13, v: 0.20, delay: 0.245, type: 'sine' },
+  ],
+  periodWhistle: [
+    { f: 2180, d: 0.56, v: 0.34, type: 'sine' },
+    { f: 2520, d: 0.52, v: 0.18, delay: 0.018, type: 'sine' },
+    { f: 2050, d: 0.18, v: 0.34, delay: 0.70, type: 'sine' },
+    { f: 2380, d: 0.15, v: 0.19, delay: 0.72, type: 'sine' },
+  ],
 }
 
 const MUSIC_NOTES = [262, 330, 392, 330, 294, 370, 440, 370, 330, 392, 494, 392, 349, 440, 523, 440]
@@ -53,11 +86,13 @@ export class AudioManager {
     this.musicEnabled = true
     this.vibrationEnabled = true
     this.soundVolume = 0.95
-    this.musicVolume = 0.035
+    this.musicVolume = 0.018
     this.musicTimer = null
     this.musicPlaying = false
     this.musicStep = 0
     this.userUnlocked = false
+    this.matchSamples = {}
+    this.buildSoundPlayers()
   }
 
   init(settings = DEFAULT_AUDIO_SETTINGS) {
@@ -96,6 +131,7 @@ export class AudioManager {
 
   unlock() {
     this.userUnlocked = true
+    this.preloadMatchSamples()
     const sfxCtx = this.ensureSfxContext()
     if (sfxCtx?.state === 'suspended') sfxCtx.resume().catch(() => {})
     const musicCtx = this.musicEnabled ? this.ensureMusicContext() : null
@@ -116,6 +152,31 @@ export class AudioManager {
     Object.keys(SOUND_PATTERNS).forEach((name) => {
       this.sounds[name] = () => this.playPattern(SOUND_PATTERNS[name])
     })
+  }
+
+  preloadMatchSamples() {
+    if (typeof window === 'undefined' || typeof window.Audio !== 'function') return
+    Object.entries(MATCH_SAMPLE_ASSETS).forEach(([name, url]) => {
+      if (this.matchSamples[name]) return
+      const sample = new window.Audio(url)
+      sample.preload = 'auto'
+      this.matchSamples[name] = sample
+    })
+  }
+
+  prepareMatchAudio() {
+    this.preloadMatchSamples()
+    return Object.keys(this.matchSamples).length > 0
+  }
+
+  playMatchSample(name) {
+    const template = this.matchSamples[name]
+    if (!template || !this.userUnlocked) return false
+    const sample = template.cloneNode(true)
+    sample.volume = Math.max(0, Math.min(1, this.soundVolume * (name === 'goalCheer' ? 0.78 : 0.92)))
+    const playback = sample.play()
+    if (playback?.catch) playback.catch(() => this.playPattern(SOUND_PATTERNS[name]))
+    return true
   }
 
   playPattern(pattern) {
@@ -172,6 +233,7 @@ export class AudioManager {
     if (ctx?.state === 'suspended') ctx.resume().catch(() => {})
     const sound = this.sounds[name]
     if (!sound) return false
+    if (MATCH_SAMPLE_ASSETS[name] && this.playMatchSample(name)) return true
     sound()
     return true
   }

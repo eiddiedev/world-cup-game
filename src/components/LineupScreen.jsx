@@ -7,6 +7,10 @@ import {
   getEffectiveRating as calculateEffectiveRating,
 } from '../utils/lineupBalance.js'
 import {
+  adaptLineupToFormation,
+  autoSelectLineupForFormation,
+} from '../utils/lineupFormation.js'
+import {
   getOpponentMatchSetup,
   resolveOpponentStrength,
 } from '../utils/opponentTactics.js'
@@ -396,44 +400,18 @@ export default function LineupScreen({ saveData, updateSaveData, navigateTo, sho
 
   // 一键布阵 - 按能力值自动选择最佳阵容
   const handleAutoLineup = () => {
-    const formationCounts = FORMATION_TACTICS[selectedFormation]?.counts
-    if (!formationCounts) return
-
     const availablePlayers = allPlayers.filter(p => isPlayerAvailable(p.id))
-
-    // 按位置分组
-    const playersByPosition = {
-      GK: availablePlayers.filter(p => p.position === 'GK').sort((a, b) => b.rating - a.rating),
-      DF: availablePlayers.filter(p => p.position === 'DF').sort((a, b) => b.rating - a.rating),
-      MF: availablePlayers.filter(p => p.position === 'MF').sort((a, b) => b.rating - a.rating),
-      FW: availablePlayers.filter(p => p.position === 'FW').sort((a, b) => b.rating - a.rating),
-    }
-
-    const newLineup = []
-    const usedPlayerIds = new Set()
-
-    // 按位置分配球员（只选本位置球员，不够就留空）
-    for (const [position, count] of Object.entries(formationCounts)) {
-      const candidates = playersByPosition[position] || []
-      let assigned = 0
-
-      // 只选本位置球员
-      for (const player of candidates) {
-        if (assigned >= count) break
-        if (!usedPlayerIds.has(player.id)) {
-          newLineup.push({
-            slotId: `${position}-${assigned}`,
-            playerId: player.id,
-            position,
-          })
-          usedPlayerIds.add(player.id)
-          assigned++
-        }
-      }
-    }
+    const newLineup = autoSelectLineupForFormation(availablePlayers, selectedFormation)
 
     setStartingLineup(newLineup)
     showToast('已自动布阵！')
+  }
+
+  const handleFormationChange = (formation) => {
+    setSelectedFormation(formation)
+    const availablePlayers = allPlayers.filter(p => isPlayerAvailable(p.id))
+    setStartingLineup(current => adaptLineupToFormation(current, availablePlayers, formation))
+    showToast(`已切换为 ${formation}，保留当前首发并自动补位`)
   }
 
   const getOverallRating = () => {
@@ -649,35 +627,7 @@ export default function LineupScreen({ saveData, updateSaveData, navigateTo, sho
                   <button
                     key={f}
                     className={`formation-btn ${selectedFormation === f ? 'active' : ''}`}
-                    onClick={() => {
-                      setSelectedFormation(f)
-                      // 使用一键布阵逻辑
-                      const formationCounts = FORMATION_TACTICS[f]?.counts
-                      if (!formationCounts) return
-                      const availablePlayers = allPlayers.filter(p => isPlayerAvailable(p.id))
-                      const playersByPosition = {
-                        GK: availablePlayers.filter(p => p.position === 'GK').sort((a, b) => b.rating - a.rating),
-                        DF: availablePlayers.filter(p => p.position === 'DF').sort((a, b) => b.rating - a.rating),
-                        MF: availablePlayers.filter(p => p.position === 'MF').sort((a, b) => b.rating - a.rating),
-                        FW: availablePlayers.filter(p => p.position === 'FW').sort((a, b) => b.rating - a.rating),
-                      }
-                      const newLineup = []
-                      const usedPlayerIds = new Set()
-                      for (const [position, count] of Object.entries(formationCounts)) {
-                        const candidates = playersByPosition[position] || []
-                        let assigned = 0
-                        // 只选本位置球员，不够就留空
-                        for (const player of candidates) {
-                          if (assigned >= count) break
-                          if (!usedPlayerIds.has(player.id)) {
-                            newLineup.push({ slotId: `${position}-${assigned}`, playerId: player.id, position })
-                            usedPlayerIds.add(player.id)
-                            assigned++
-                          }
-                        }
-                      }
-                      setStartingLineup(newLineup)
-                    }}
+                    onClick={() => handleFormationChange(f)}
                     aria-label={`${f} ${FORMATION_TACTICS[f].style}`}
                   >
                     {f}

@@ -1,0 +1,52 @@
+{
+  "schemaVersion": "happyseed-human-runtime-recipe-v1",
+  "partSetId": "happyseed-human-v4",
+  "id": "france-goalkeeper",
+  "label": "法国门将 · 1",
+  "shortLabel": "FRA GK 1",
+  "teamId": "france",
+  "role": "goalkeeper",
+  "number": 1,
+  "kitType": "goalkeeper",
+  "appearance": {
+    "skin": "#D79962",
+    "skinHighlight": "#F0B982",
+    "skinShadow": "#925735",
+    "hair": "#17130F",
+    "hairHighlight": "#40352A",
+    "beard": true
+  },
+  "previewOffset": {
+    "x": 0,
+    "y": 1.3
+  },
+  "palette": {
+    "shirt": "#D6A51F",
+    "accent": "#202A34",
+    "shorts": "#D6A51F",
+    "socks": "#D6A51F",
+    "boots": "#161412",
+    "number": "#17212B",
+    "numberStroke": "#F8F2E2",
+    "gloves": "#F8F2E2"
+  },
+  "assets": {
+    "playerRoot": "/pixel/player/happyseed-human-v4/france-goalkeeper",
+    "kitRoot": "/pixel/kits/france/goalkeeper/happyseed-human-v4",
+    "number": "/pixel/numbers/happyseed-human-v4/1.png",
+    "headFront": "/pixel/player/happyseed-human-v4/france-goalkeeper/head_front.png",
+    "headBack": "/pixel/player/happyseed-human-v4/france-goalkeeper/head_back.png"
+  },
+  "compatibility": {
+    "sourceSkeleton": "/match-runtime-min/data/player.json",
+    "anchor": "root-footline",
+    "frontFacingValue": 1,
+    "backFacingValue": -1,
+    "horizontalFlip": "spine-scale-x",
+    "modeScope": [
+      "coach",
+      "player",
+      "penalty"
+    ]
+  }
+}

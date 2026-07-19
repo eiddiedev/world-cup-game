@@ -1,0 +1,45 @@
+{
+  "schemaVersion": "happyseed-runtime-equipment-assets-v2",
+  "generatedBy": "scripts/generate_pixel_match_equipment.py",
+  "integration": {
+    "ballGeometry": "original-runtime-sphere",
+    "goalPlacement": "stadium.json",
+    "goalCollision": "original-runtime",
+    "dynamicNet": "original-runtime",
+    "filtering": "nearest",
+    "pixelGrid": {
+      "ball": [
+        64,
+        32
+      ],
+      "goalBlock": 4
+    }
+  },
+  "fileCount": 2,
+  "totalBytes": 5483,
+  "totalKiB": 5.35,
+  "files": [
+    {
+      "role": "football-sphere-uv",
+      "path": "/pixel/runtime-equipment/happyseed-equipment-v2/football-pixel-v2.png",
+      "source": "/match-runtime-min/data/balls/classic_1/texture.png",
+      "dimensions": [
+        512,
+        256
+      ],
+      "bytes": 1451,
+      "sha256": "801bdc1aea3b06096e3b4376b52838dc6459f7771f0d41aef0afd469469a81f4"
+    },
+    {
+      "role": "goal-and-dynamic-net-atlas",
+      "path": "/pixel/runtime-equipment/happyseed-equipment-v2/goal-net-pixel-v2.png",
+      "source": "/match-runtime-min/data/stadiums/common/goal.png",
+      "dimensions": [
+        512,
+        512
+      ],
+      "bytes": 4032,
+      "sha256": "bc313b02bb2ce0f65ca8aaebcf9adecada63c80b4c5189ab095559b6767b5275"
+    }
+  ]
+}

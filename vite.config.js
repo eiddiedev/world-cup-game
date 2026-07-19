@@ -27,6 +27,16 @@ export default defineConfig(({ mode }) => {
     build: {
       outDir: isDouyinDemo ? 'dist-douyin' : 'dist',
       emptyOutDir: true,
+      ...(!isDouyinDemo ? {
+        rollupOptions: {
+          input: {
+            main: fileURLToPath(new URL('./index.html', import.meta.url)),
+            happySeedRuntime: fileURLToPath(new URL('./happyseed-runtime.html', import.meta.url)),
+            happySeedRuntimeLab: fileURLToPath(new URL('./happyseed-runtime-lab.html', import.meta.url)),
+            happySeedDecisionReview: fileURLToPath(new URL('./happyseed-decision-review.html', import.meta.url)),
+          },
+        },
+      } : {}),
       ...(isDouyinDemo ? {
         lib: {
           entry: fileURLToPath(new URL('./src/main.jsx', import.meta.url)),

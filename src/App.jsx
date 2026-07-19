@@ -10,6 +10,9 @@ import MatchScreen from './components/MatchScreen'
 import PostMatchScreen from './components/PostMatchScreen'
 import EndingScreen from './components/EndingScreen'
 import SettingsScreen from './components/SettingsScreen'
+import PixelPlayerLab from './components/PixelPlayerLab'
+import EnhancementHubScreen from './components/EnhancementHubScreen'
+import PenaltyModeScreen from './components/PenaltyModeScreen'
 import { IS_DOUYIN_DEMO } from './config/runtime'
 
 /**
@@ -20,11 +23,13 @@ export default function App() {
   const useDouyinLayout = IS_DOUYIN_DEMO || import.meta.env.DEV
   const [saveData, setSaveData] = useState(null)
   const [currentScreen, setCurrentScreen] = useState('home')
+  const [activeGameMode, setActiveGameMode] = useState('coach')
   const [toast, setToast] = useState(null)
 
   useEffect(() => {
     const data = loadSaveData()
     setSaveData(data)
+    setActiveGameMode(data.currentRun?.gameMode || 'coach')
 
     // 初始化音效系统
     try {
@@ -65,7 +70,10 @@ export default function App() {
     setTimeout(() => setToast(null), 2200)
   }
 
-  const navigateTo = (screen, { skipRecruitmentGuard = false } = {}) => {
+  const navigateTo = (screen, { skipRecruitmentGuard = false, gameMode } = {}) => {
+    if (gameMode === 'coach' || gameMode === 'player') {
+      setActiveGameMode(gameMode)
+    }
     // 防止在比赛进行中返回招募页面（但允许返回首页）
     if (screen === 'recruitment' && !skipRecruitmentGuard) {
       // Use latest save data to check stage (avoids stale closure issue)
@@ -88,6 +96,7 @@ export default function App() {
     updateSaveData,
     navigateTo,
     showToast,
+    gameMode: activeGameMode,
   }
 
   const renderScreen = () => {
@@ -110,6 +119,12 @@ export default function App() {
         return <EndingScreen {...screenProps} />
       case 'settings':
         return <SettingsScreen {...screenProps} />
+      case 'penalty-mode':
+        return <PenaltyModeScreen {...screenProps} />
+      case 'enhancement-hub':
+        return <EnhancementHubScreen {...screenProps} />
+      case 'pixel-player-lab':
+        return <PixelPlayerLab {...screenProps} />
       default:
         return <HomeScreen {...screenProps} />
     }

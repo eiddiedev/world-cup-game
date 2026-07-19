@@ -33,6 +33,7 @@ export default function PenaltyShootout({
   homeFormation = '4-3-3',
   awayFormation = '4-3-3',
   onComplete,
+  onExit,
 }) {
   const animationRef = useRef(null)
   const completeTimerRef = useRef(null)
@@ -116,6 +117,11 @@ export default function PenaltyShootout({
 
   return (
     <div className="penalty-screen" role="dialog" aria-label="点球大战">
+      {onExit && (
+        <button type="button" className="penalty-exit-button" onClick={onExit} aria-label="返回主页">
+          ←
+        </button>
+      )}
       <div className="penalty-stage">
         <div className="penalty-pitch">
           <AnimationEngine

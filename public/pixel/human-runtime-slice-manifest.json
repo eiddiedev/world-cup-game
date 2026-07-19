@@ -1,0 +1,237 @@
+{
+  "schemaVersion": "happyseed-human-runtime-assets-v1",
+  "generatedBy": "scripts/generate-human-runtime-slice.mjs",
+  "partSetId": "happyseed-human-v4",
+  "profileCount": 3,
+  "fileCount": 56,
+  "totalBytes": 17118,
+  "totalKiB": 16.72,
+  "files": [
+    {
+      "path": "/pixel/player/happyseed-human-v4/france-outfield/head_front.png",
+      "bytes": 779
+    },
+    {
+      "path": "/pixel/player/happyseed-human-v4/france-outfield/head_back.png",
+      "bytes": 415
+    },
+    {
+      "path": "/pixel/player/happyseed-human-v4/france-outfield/arm_left.png",
+      "bytes": 116
+    },
+    {
+      "path": "/pixel/player/happyseed-human-v4/france-outfield/arm_right.png",
+      "bytes": 169
+    },
+    {
+      "path": "/pixel/player/happyseed-human-v4/france-outfield/hand_left.png",
+      "bytes": 230
+    },
+    {
+      "path": "/pixel/player/happyseed-human-v4/france-outfield/hand_right.png",
+      "bytes": 215
+    },
+    {
+      "path": "/pixel/player/happyseed-human-v4/france-outfield/knee.png",
+      "bytes": 108
+    },
+    {
+      "path": "/pixel/player/happyseed-human-v4/france-outfield/neck.png",
+      "bytes": 105
+    },
+    {
+      "path": "/pixel/kits/france/home/happyseed-human-v4/shirt_front.png",
+      "bytes": 568
+    },
+    {
+      "path": "/pixel/kits/france/home/happyseed-human-v4/shirt_back.png",
+      "bytes": 380
+    },
+    {
+      "path": "/pixel/kits/france/home/happyseed-human-v4/sleeve_left.png",
+      "bytes": 180
+    },
+    {
+      "path": "/pixel/kits/france/home/happyseed-human-v4/sleeve_right.png",
+      "bytes": 176
+    },
+    {
+      "path": "/pixel/kits/france/home/happyseed-human-v4/shorts.png",
+      "bytes": 188
+    },
+    {
+      "path": "/pixel/kits/france/home/happyseed-human-v4/shorts_leg.png",
+      "bytes": 123
+    },
+    {
+      "path": "/pixel/kits/france/home/happyseed-human-v4/socks.png",
+      "bytes": 143
+    },
+    {
+      "path": "/pixel/kits/france/home/happyseed-human-v4/shoes.png",
+      "bytes": 153
+    },
+    {
+      "path": "/pixel/numbers/happyseed-human-v4/10.png",
+      "bytes": 147
+    },
+    {
+      "path": "/pixel/recipes/france/france-outfield.json",
+      "bytes": 1383
+    },
+    {
+      "path": "/pixel/player/happyseed-human-v4/brazil-outfield/head_front.png",
+      "bytes": 771
+    },
+    {
+      "path": "/pixel/player/happyseed-human-v4/brazil-outfield/head_back.png",
+      "bytes": 413
+    },
+    {
+      "path": "/pixel/player/happyseed-human-v4/brazil-outfield/arm_left.png",
+      "bytes": 116
+    },
+    {
+      "path": "/pixel/player/happyseed-human-v4/brazil-outfield/arm_right.png",
+      "bytes": 170
+    },
+    {
+      "path": "/pixel/player/happyseed-human-v4/brazil-outfield/hand_left.png",
+      "bytes": 226
+    },
+    {
+      "path": "/pixel/player/happyseed-human-v4/brazil-outfield/hand_right.png",
+      "bytes": 211
+    },
+    {
+      "path": "/pixel/player/happyseed-human-v4/brazil-outfield/knee.png",
+      "bytes": 109
+    },
+    {
+      "path": "/pixel/player/happyseed-human-v4/brazil-outfield/neck.png",
+      "bytes": 105
+    },
+    {
+      "path": "/pixel/kits/brazil/home/happyseed-human-v4/shirt_front.png",
+      "bytes": 553
+    },
+    {
+      "path": "/pixel/kits/brazil/home/happyseed-human-v4/shirt_back.png",
+      "bytes": 407
+    },
+    {
+      "path": "/pixel/kits/brazil/home/happyseed-human-v4/sleeve_left.png",
+      "bytes": 183
+    },
+    {
+      "path": "/pixel/kits/brazil/home/happyseed-human-v4/sleeve_right.png",
+      "bytes": 184
+    },
+    {
+      "path": "/pixel/kits/brazil/home/happyseed-human-v4/shorts.png",
+      "bytes": 202
+    },
+    {
+      "path": "/pixel/kits/brazil/home/happyseed-human-v4/shorts_leg.png",
+      "bytes": 125
+    },
+    {
+      "path": "/pixel/kits/brazil/home/happyseed-human-v4/socks.png",
+      "bytes": 142
+    },
+    {
+      "path": "/pixel/kits/brazil/home/happyseed-human-v4/shoes.png",
+      "bytes": 153
+    },
+    {
+      "path": "/pixel/numbers/happyseed-human-v4/9.png",
+      "bytes": 135
+    },
+    {
+      "path": "/pixel/recipes/brazil/brazil-outfield.json",
+      "bytes": 1377
+    },
+    {
+      "path": "/pixel/player/happyseed-human-v4/france-goalkeeper/head_front.png",
+      "bytes": 788
+    },
+    {
+      "path": "/pixel/player/happyseed-human-v4/france-goalkeeper/head_back.png",
+      "bytes": 417
+    },
+    {
+      "path": "/pixel/player/happyseed-human-v4/france-goalkeeper/arm_left.png",
+      "bytes": 116
+    },
+    {
+      "path": "/pixel/player/happyseed-human-v4/france-goalkeeper/arm_right.png",
+      "bytes": 169
+    },
+    {
+      "path": "/pixel/player/happyseed-human-v4/france-goalkeeper/hand_left.png",
+      "bytes": 228
+    },
+    {
+      "path": "/pixel/player/happyseed-human-v4/france-goalkeeper/hand_right.png",
+      "bytes": 215
+    },
+    {
+      "path": "/pixel/player/happyseed-human-v4/france-goalkeeper/knee.png",
+      "bytes": 108
+    },
+    {
+      "path": "/pixel/player/happyseed-human-v4/france-goalkeeper/neck.png",
+      "bytes": 105
+    },
+    {
+      "path": "/pixel/kits/france/goalkeeper/happyseed-human-v4/shirt_front.png",
+      "bytes": 558
+    },
+    {
+      "path": "/pixel/kits/france/goalkeeper/happyseed-human-v4/shirt_back.png",
+      "bytes": 408
+    },
+    {
+      "path": "/pixel/kits/france/goalkeeper/happyseed-human-v4/sleeve_left.png",
+      "bytes": 179
+    },
+    {
+      "path": "/pixel/kits/france/goalkeeper/happyseed-human-v4/sleeve_right.png",
+      "bytes": 180
+    },
+    {
+      "path": "/pixel/kits/france/goalkeeper/happyseed-human-v4/shorts.png",
+      "bytes": 193
+    },
+    {
+      "path": "/pixel/kits/france/goalkeeper/happyseed-human-v4/shorts_leg.png",
+      "bytes": 123
+    },
+    {
+      "path": "/pixel/kits/france/goalkeeper/happyseed-human-v4/socks.png",
+      "bytes": 146
+    },
+    {
+      "path": "/pixel/kits/france/goalkeeper/happyseed-human-v4/shoes.png",
+      "bytes": 153
+    },
+    {
+      "path": "/pixel/kits/france/goalkeeper/happyseed-human-v4/hand_left.png",
+      "bytes": 179
+    },
+    {
+      "path": "/pixel/kits/france/goalkeeper/happyseed-human-v4/hand_right.png",
+      "bytes": 169
+    },
+    {
+      "path": "/pixel/numbers/happyseed-human-v4/1.png",
+      "bytes": 131
+    },
+    {
+      "path": "/pixel/recipes/france/france-goalkeeper.json",
+      "bytes": 1393
+    }
+  ],
+  "artSource": "/docs/art-reference/happyseed-human-v3-production-paper-doll-master.png",
+  "silhouette": "imagegen-master-direct-slice"
+}

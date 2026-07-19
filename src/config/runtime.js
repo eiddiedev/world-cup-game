@@ -1,4 +1,4 @@
-export const IS_DOUYIN_DEMO = import.meta.env.MODE === 'douyin'
+export const IS_DOUYIN_DEMO = import.meta.env?.MODE === 'douyin'
 
 export const DOUYIN_DEMO_TEAM_IDS = ['france', 'curacao']
 

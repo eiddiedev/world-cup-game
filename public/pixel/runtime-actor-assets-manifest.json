@@ -1,0 +1,1851 @@
+{
+  "schemaVersion": "happyseed-runtime-actor-assets-v1",
+  "generatedBy": "scripts/generate-runtime-actor-assets.mjs",
+  "partSetId": "happyseed-human-v4",
+  "teamCount": 10,
+  "kitVariantCount": 4,
+  "numberCount": 99,
+  "fileCount": 459,
+  "totalBytes": 97719,
+  "totalKiB": 95.43,
+  "files": [
+    {
+      "path": "/pixel/kits/france/home/happyseed-human-v4/shirt_front.png",
+      "bytes": 568
+    },
+    {
+      "path": "/pixel/kits/france/home/happyseed-human-v4/shirt_back.png",
+      "bytes": 380
+    },
+    {
+      "path": "/pixel/kits/france/home/happyseed-human-v4/sleeve_left.png",
+      "bytes": 180
+    },
+    {
+      "path": "/pixel/kits/france/home/happyseed-human-v4/sleeve_right.png",
+      "bytes": 176
+    },
+    {
+      "path": "/pixel/kits/france/home/happyseed-human-v4/shorts.png",
+      "bytes": 188
+    },
+    {
+      "path": "/pixel/kits/france/home/happyseed-human-v4/shorts_leg.png",
+      "bytes": 123
+    },
+    {
+      "path": "/pixel/kits/france/home/happyseed-human-v4/socks.png",
+      "bytes": 143
+    },
+    {
+      "path": "/pixel/kits/france/home/happyseed-human-v4/shoes.png",
+      "bytes": 153
+    },
+    {
+      "path": "/pixel/kits/france/away/happyseed-human-v4/shirt_front.png",
+      "bytes": 570
+    },
+    {
+      "path": "/pixel/kits/france/away/happyseed-human-v4/shirt_back.png",
+      "bytes": 381
+    },
+    {
+      "path": "/pixel/kits/france/away/happyseed-human-v4/sleeve_left.png",
+      "bytes": 180
+    },
+    {
+      "path": "/pixel/kits/france/away/happyseed-human-v4/sleeve_right.png",
+      "bytes": 176
+    },
+    {
+      "path": "/pixel/kits/france/away/happyseed-human-v4/shorts.png",
+      "bytes": 202
+    },
+    {
+      "path": "/pixel/kits/france/away/happyseed-human-v4/shorts_leg.png",
+      "bytes": 123
+    },
+    {
+      "path": "/pixel/kits/france/away/happyseed-human-v4/socks.png",
+      "bytes": 142
+    },
+    {
+      "path": "/pixel/kits/france/away/happyseed-human-v4/shoes.png",
+      "bytes": 153
+    },
+    {
+      "path": "/pixel/kits/france/goalkeeper/happyseed-human-v4/shirt_front.png",
+      "bytes": 558
+    },
+    {
+      "path": "/pixel/kits/france/goalkeeper/happyseed-human-v4/shirt_back.png",
+      "bytes": 408
+    },
+    {
+      "path": "/pixel/kits/france/goalkeeper/happyseed-human-v4/sleeve_left.png",
+      "bytes": 179
+    },
+    {
+      "path": "/pixel/kits/france/goalkeeper/happyseed-human-v4/sleeve_right.png",
+      "bytes": 180
+    },
+    {
+      "path": "/pixel/kits/france/goalkeeper/happyseed-human-v4/shorts.png",
+      "bytes": 193
+    },
+    {
+      "path": "/pixel/kits/france/goalkeeper/happyseed-human-v4/shorts_leg.png",
+      "bytes": 123
+    },
+    {
+      "path": "/pixel/kits/france/goalkeeper/happyseed-human-v4/socks.png",
+      "bytes": 146
+    },
+    {
+      "path": "/pixel/kits/france/goalkeeper/happyseed-human-v4/shoes.png",
+      "bytes": 153
+    },
+    {
+      "path": "/pixel/kits/france/goalkeeper/happyseed-human-v4/hand_left.png",
+      "bytes": 179
+    },
+    {
+      "path": "/pixel/kits/france/goalkeeper/happyseed-human-v4/hand_right.png",
+      "bytes": 169
+    },
+    {
+      "path": "/pixel/kits/france/away-goalkeeper/happyseed-human-v4/shirt_front.png",
+      "bytes": 566
+    },
+    {
+      "path": "/pixel/kits/france/away-goalkeeper/happyseed-human-v4/shirt_back.png",
+      "bytes": 383
+    },
+    {
+      "path": "/pixel/kits/france/away-goalkeeper/happyseed-human-v4/sleeve_left.png",
+      "bytes": 179
+    },
+    {
+      "path": "/pixel/kits/france/away-goalkeeper/happyseed-human-v4/sleeve_right.png",
+      "bytes": 176
+    },
+    {
+      "path": "/pixel/kits/france/away-goalkeeper/happyseed-human-v4/shorts.png",
+      "bytes": 199
+    },
+    {
+      "path": "/pixel/kits/france/away-goalkeeper/happyseed-human-v4/shorts_leg.png",
+      "bytes": 123
+    },
+    {
+      "path": "/pixel/kits/france/away-goalkeeper/happyseed-human-v4/socks.png",
+      "bytes": 146
+    },
+    {
+      "path": "/pixel/kits/france/away-goalkeeper/happyseed-human-v4/shoes.png",
+      "bytes": 153
+    },
+    {
+      "path": "/pixel/kits/france/away-goalkeeper/happyseed-human-v4/hand_left.png",
+      "bytes": 177
+    },
+    {
+      "path": "/pixel/kits/france/away-goalkeeper/happyseed-human-v4/hand_right.png",
+      "bytes": 168
+    },
+    {
+      "path": "/pixel/kits/brazil/home/happyseed-human-v4/shirt_front.png",
+      "bytes": 553
+    },
+    {
+      "path": "/pixel/kits/brazil/home/happyseed-human-v4/shirt_back.png",
+      "bytes": 407
+    },
+    {
+      "path": "/pixel/kits/brazil/home/happyseed-human-v4/sleeve_left.png",
+      "bytes": 183
+    },
+    {
+      "path": "/pixel/kits/brazil/home/happyseed-human-v4/sleeve_right.png",
+      "bytes": 184
+    },
+    {
+      "path": "/pixel/kits/brazil/home/happyseed-human-v4/shorts.png",
+      "bytes": 202
+    },
+    {
+      "path": "/pixel/kits/brazil/home/happyseed-human-v4/shorts_leg.png",
+      "bytes": 125
+    },
+    {
+      "path": "/pixel/kits/brazil/home/happyseed-human-v4/socks.png",
+      "bytes": 142
+    },
+    {
+      "path": "/pixel/kits/brazil/home/happyseed-human-v4/shoes.png",
+      "bytes": 153
+    },
+    {
+      "path": "/pixel/kits/brazil/away/happyseed-human-v4/shirt_front.png",
+      "bytes": 566
+    },
+    {
+      "path": "/pixel/kits/brazil/away/happyseed-human-v4/shirt_back.png",
+      "bytes": 380
+    },
+    {
+      "path": "/pixel/kits/brazil/away/happyseed-human-v4/sleeve_left.png",
+      "bytes": 179
+    },
+    {
+      "path": "/pixel/kits/brazil/away/happyseed-human-v4/sleeve_right.png",
+      "bytes": 176
+    },
+    {
+      "path": "/pixel/kits/brazil/away/happyseed-human-v4/shorts.png",
+      "bytes": 200
+    },
+    {
+      "path": "/pixel/kits/brazil/away/happyseed-human-v4/shorts_leg.png",
+      "bytes": 123
+    },
+    {
+      "path": "/pixel/kits/brazil/away/happyseed-human-v4/socks.png",
+      "bytes": 144
+    },
+    {
+      "path": "/pixel/kits/brazil/away/happyseed-human-v4/shoes.png",
+      "bytes": 153
+    },
+    {
+      "path": "/pixel/kits/brazil/goalkeeper/happyseed-human-v4/shirt_front.png",
+      "bytes": 566
+    },
+    {
+      "path": "/pixel/kits/brazil/goalkeeper/happyseed-human-v4/shirt_back.png",
+      "bytes": 381
+    },
+    {
+      "path": "/pixel/kits/brazil/goalkeeper/happyseed-human-v4/sleeve_left.png",
+      "bytes": 179
+    },
+    {
+      "path": "/pixel/kits/brazil/goalkeeper/happyseed-human-v4/sleeve_right.png",
+      "bytes": 176
+    },
+    {
+      "path": "/pixel/kits/brazil/goalkeeper/happyseed-human-v4/shorts.png",
+      "bytes": 200
+    },
+    {
+      "path": "/pixel/kits/brazil/goalkeeper/happyseed-human-v4/shorts_leg.png",
+      "bytes": 123
+    },
+    {
+      "path": "/pixel/kits/brazil/goalkeeper/happyseed-human-v4/socks.png",
+      "bytes": 144
+    },
+    {
+      "path": "/pixel/kits/brazil/goalkeeper/happyseed-human-v4/shoes.png",
+      "bytes": 153
+    },
+    {
+      "path": "/pixel/kits/brazil/goalkeeper/happyseed-human-v4/hand_left.png",
+      "bytes": 177
+    },
+    {
+      "path": "/pixel/kits/brazil/goalkeeper/happyseed-human-v4/hand_right.png",
+      "bytes": 168
+    },
+    {
+      "path": "/pixel/kits/brazil/away-goalkeeper/happyseed-human-v4/shirt_front.png",
+      "bytes": 566
+    },
+    {
+      "path": "/pixel/kits/brazil/away-goalkeeper/happyseed-human-v4/shirt_back.png",
+      "bytes": 383
+    },
+    {
+      "path": "/pixel/kits/brazil/away-goalkeeper/happyseed-human-v4/sleeve_left.png",
+      "bytes": 179
+    },
+    {
+      "path": "/pixel/kits/brazil/away-goalkeeper/happyseed-human-v4/sleeve_right.png",
+      "bytes": 176
+    },
+    {
+      "path": "/pixel/kits/brazil/away-goalkeeper/happyseed-human-v4/shorts.png",
+      "bytes": 199
+    },
+    {
+      "path": "/pixel/kits/brazil/away-goalkeeper/happyseed-human-v4/shorts_leg.png",
+      "bytes": 123
+    },
+    {
+      "path": "/pixel/kits/brazil/away-goalkeeper/happyseed-human-v4/socks.png",
+      "bytes": 146
+    },
+    {
+      "path": "/pixel/kits/brazil/away-goalkeeper/happyseed-human-v4/shoes.png",
+      "bytes": 153
+    },
+    {
+      "path": "/pixel/kits/brazil/away-goalkeeper/happyseed-human-v4/hand_left.png",
+      "bytes": 177
+    },
+    {
+      "path": "/pixel/kits/brazil/away-goalkeeper/happyseed-human-v4/hand_right.png",
+      "bytes": 168
+    },
+    {
+      "path": "/pixel/kits/argentina/home/happyseed-human-v4/shirt_front.png",
+      "bytes": 558
+    },
+    {
+      "path": "/pixel/kits/argentina/home/happyseed-human-v4/shirt_back.png",
+      "bytes": 391
+    },
+    {
+      "path": "/pixel/kits/argentina/home/happyseed-human-v4/sleeve_left.png",
+      "bytes": 180
+    },
+    {
+      "path": "/pixel/kits/argentina/home/happyseed-human-v4/sleeve_right.png",
+      "bytes": 180
+    },
+    {
+      "path": "/pixel/kits/argentina/home/happyseed-human-v4/shorts.png",
+      "bytes": 200
+    },
+    {
+      "path": "/pixel/kits/argentina/home/happyseed-human-v4/shorts_leg.png",
+      "bytes": 123
+    },
+    {
+      "path": "/pixel/kits/argentina/home/happyseed-human-v4/socks.png",
+      "bytes": 145
+    },
+    {
+      "path": "/pixel/kits/argentina/home/happyseed-human-v4/shoes.png",
+      "bytes": 153
+    },
+    {
+      "path": "/pixel/kits/argentina/away/happyseed-human-v4/shirt_front.png",
+      "bytes": 562
+    },
+    {
+      "path": "/pixel/kits/argentina/away/happyseed-human-v4/shirt_back.png",
+      "bytes": 382
+    },
+    {
+      "path": "/pixel/kits/argentina/away/happyseed-human-v4/sleeve_left.png",
+      "bytes": 180
+    },
+    {
+      "path": "/pixel/kits/argentina/away/happyseed-human-v4/sleeve_right.png",
+      "bytes": 175
+    },
+    {
+      "path": "/pixel/kits/argentina/away/happyseed-human-v4/shorts.png",
+      "bytes": 201
+    },
+    {
+      "path": "/pixel/kits/argentina/away/happyseed-human-v4/shorts_leg.png",
+      "bytes": 125
+    },
+    {
+      "path": "/pixel/kits/argentina/away/happyseed-human-v4/socks.png",
+      "bytes": 149
+    },
+    {
+      "path": "/pixel/kits/argentina/away/happyseed-human-v4/shoes.png",
+      "bytes": 153
+    },
+    {
+      "path": "/pixel/kits/argentina/goalkeeper/happyseed-human-v4/shirt_front.png",
+      "bytes": 566
+    },
+    {
+      "path": "/pixel/kits/argentina/goalkeeper/happyseed-human-v4/shirt_back.png",
+      "bytes": 383
+    },
+    {
+      "path": "/pixel/kits/argentina/goalkeeper/happyseed-human-v4/sleeve_left.png",
+      "bytes": 179
+    },
+    {
+      "path": "/pixel/kits/argentina/goalkeeper/happyseed-human-v4/sleeve_right.png",
+      "bytes": 176
+    },
+    {
+      "path": "/pixel/kits/argentina/goalkeeper/happyseed-human-v4/shorts.png",
+      "bytes": 199
+    },
+    {
+      "path": "/pixel/kits/argentina/goalkeeper/happyseed-human-v4/shorts_leg.png",
+      "bytes": 123
+    },
+    {
+      "path": "/pixel/kits/argentina/goalkeeper/happyseed-human-v4/socks.png",
+      "bytes": 146
+    },
+    {
+      "path": "/pixel/kits/argentina/goalkeeper/happyseed-human-v4/shoes.png",
+      "bytes": 153
+    },
+    {
+      "path": "/pixel/kits/argentina/goalkeeper/happyseed-human-v4/hand_left.png",
+      "bytes": 177
+    },
+    {
+      "path": "/pixel/kits/argentina/goalkeeper/happyseed-human-v4/hand_right.png",
+      "bytes": 168
+    },
+    {
+      "path": "/pixel/kits/argentina/away-goalkeeper/happyseed-human-v4/shirt_front.png",
+      "bytes": 558
+    },
+    {
+      "path": "/pixel/kits/argentina/away-goalkeeper/happyseed-human-v4/shirt_back.png",
+      "bytes": 408
+    },
+    {
+      "path": "/pixel/kits/argentina/away-goalkeeper/happyseed-human-v4/sleeve_left.png",
+      "bytes": 179
+    },
+    {
+      "path": "/pixel/kits/argentina/away-goalkeeper/happyseed-human-v4/sleeve_right.png",
+      "bytes": 180
+    },
+    {
+      "path": "/pixel/kits/argentina/away-goalkeeper/happyseed-human-v4/shorts.png",
+      "bytes": 193
+    },
+    {
+      "path": "/pixel/kits/argentina/away-goalkeeper/happyseed-human-v4/shorts_leg.png",
+      "bytes": 123
+    },
+    {
+      "path": "/pixel/kits/argentina/away-goalkeeper/happyseed-human-v4/socks.png",
+      "bytes": 146
+    },
+    {
+      "path": "/pixel/kits/argentina/away-goalkeeper/happyseed-human-v4/shoes.png",
+      "bytes": 153
+    },
+    {
+      "path": "/pixel/kits/argentina/away-goalkeeper/happyseed-human-v4/hand_left.png",
+      "bytes": 179
+    },
+    {
+      "path": "/pixel/kits/argentina/away-goalkeeper/happyseed-human-v4/hand_right.png",
+      "bytes": 169
+    },
+    {
+      "path": "/pixel/kits/portugal/home/happyseed-human-v4/shirt_front.png",
+      "bytes": 563
+    },
+    {
+      "path": "/pixel/kits/portugal/home/happyseed-human-v4/shirt_back.png",
+      "bytes": 394
+    },
+    {
+      "path": "/pixel/kits/portugal/home/happyseed-human-v4/sleeve_left.png",
+      "bytes": 179
+    },
+    {
+      "path": "/pixel/kits/portugal/home/happyseed-human-v4/sleeve_right.png",
+      "bytes": 179
+    },
+    {
+      "path": "/pixel/kits/portugal/home/happyseed-human-v4/shorts.png",
+      "bytes": 208
+    },
+    {
+      "path": "/pixel/kits/portugal/home/happyseed-human-v4/shorts_leg.png",
+      "bytes": 125
+    },
+    {
+      "path": "/pixel/kits/portugal/home/happyseed-human-v4/socks.png",
+      "bytes": 143
+    },
+    {
+      "path": "/pixel/kits/portugal/home/happyseed-human-v4/shoes.png",
+      "bytes": 153
+    },
+    {
+      "path": "/pixel/kits/portugal/away/happyseed-human-v4/shirt_front.png",
+      "bytes": 558
+    },
+    {
+      "path": "/pixel/kits/portugal/away/happyseed-human-v4/shirt_back.png",
+      "bytes": 385
+    },
+    {
+      "path": "/pixel/kits/portugal/away/happyseed-human-v4/sleeve_left.png",
+      "bytes": 179
+    },
+    {
+      "path": "/pixel/kits/portugal/away/happyseed-human-v4/sleeve_right.png",
+      "bytes": 179
+    },
+    {
+      "path": "/pixel/kits/portugal/away/happyseed-human-v4/shorts.png",
+      "bytes": 197
+    },
+    {
+      "path": "/pixel/kits/portugal/away/happyseed-human-v4/shorts_leg.png",
+      "bytes": 123
+    },
+    {
+      "path": "/pixel/kits/portugal/away/happyseed-human-v4/socks.png",
+      "bytes": 145
+    },
+    {
+      "path": "/pixel/kits/portugal/away/happyseed-human-v4/shoes.png",
+      "bytes": 153
+    },
+    {
+      "path": "/pixel/kits/portugal/goalkeeper/happyseed-human-v4/shirt_front.png",
+      "bytes": 558
+    },
+    {
+      "path": "/pixel/kits/portugal/goalkeeper/happyseed-human-v4/shirt_back.png",
+      "bytes": 408
+    },
+    {
+      "path": "/pixel/kits/portugal/goalkeeper/happyseed-human-v4/sleeve_left.png",
+      "bytes": 179
+    },
+    {
+      "path": "/pixel/kits/portugal/goalkeeper/happyseed-human-v4/sleeve_right.png",
+      "bytes": 180
+    },
+    {
+      "path": "/pixel/kits/portugal/goalkeeper/happyseed-human-v4/shorts.png",
+      "bytes": 193
+    },
+    {
+      "path": "/pixel/kits/portugal/goalkeeper/happyseed-human-v4/shorts_leg.png",
+      "bytes": 123
+    },
+    {
+      "path": "/pixel/kits/portugal/goalkeeper/happyseed-human-v4/socks.png",
+      "bytes": 146
+    },
+    {
+      "path": "/pixel/kits/portugal/goalkeeper/happyseed-human-v4/shoes.png",
+      "bytes": 153
+    },
+    {
+      "path": "/pixel/kits/portugal/goalkeeper/happyseed-human-v4/hand_left.png",
+      "bytes": 179
+    },
+    {
+      "path": "/pixel/kits/portugal/goalkeeper/happyseed-human-v4/hand_right.png",
+      "bytes": 169
+    },
+    {
+      "path": "/pixel/kits/portugal/away-goalkeeper/happyseed-human-v4/shirt_front.png",
+      "bytes": 566
+    },
+    {
+      "path": "/pixel/kits/portugal/away-goalkeeper/happyseed-human-v4/shirt_back.png",
+      "bytes": 383
+    },
+    {
+      "path": "/pixel/kits/portugal/away-goalkeeper/happyseed-human-v4/sleeve_left.png",
+      "bytes": 179
+    },
+    {
+      "path": "/pixel/kits/portugal/away-goalkeeper/happyseed-human-v4/sleeve_right.png",
+      "bytes": 176
+    },
+    {
+      "path": "/pixel/kits/portugal/away-goalkeeper/happyseed-human-v4/shorts.png",
+      "bytes": 199
+    },
+    {
+      "path": "/pixel/kits/portugal/away-goalkeeper/happyseed-human-v4/shorts_leg.png",
+      "bytes": 123
+    },
+    {
+      "path": "/pixel/kits/portugal/away-goalkeeper/happyseed-human-v4/socks.png",
+      "bytes": 146
+    },
+    {
+      "path": "/pixel/kits/portugal/away-goalkeeper/happyseed-human-v4/shoes.png",
+      "bytes": 153
+    },
+    {
+      "path": "/pixel/kits/portugal/away-goalkeeper/happyseed-human-v4/hand_left.png",
+      "bytes": 177
+    },
+    {
+      "path": "/pixel/kits/portugal/away-goalkeeper/happyseed-human-v4/hand_right.png",
+      "bytes": 168
+    },
+    {
+      "path": "/pixel/kits/germany/home/happyseed-human-v4/shirt_front.png",
+      "bytes": 566
+    },
+    {
+      "path": "/pixel/kits/germany/home/happyseed-human-v4/shirt_back.png",
+      "bytes": 381
+    },
+    {
+      "path": "/pixel/kits/germany/home/happyseed-human-v4/sleeve_left.png",
+      "bytes": 179
+    },
+    {
+      "path": "/pixel/kits/germany/home/happyseed-human-v4/sleeve_right.png",
+      "bytes": 176
+    },
+    {
+      "path": "/pixel/kits/germany/home/happyseed-human-v4/shorts.png",
+      "bytes": 200
+    },
+    {
+      "path": "/pixel/kits/germany/home/happyseed-human-v4/shorts_leg.png",
+      "bytes": 123
+    },
+    {
+      "path": "/pixel/kits/germany/home/happyseed-human-v4/socks.png",
+      "bytes": 144
+    },
+    {
+      "path": "/pixel/kits/germany/home/happyseed-human-v4/shoes.png",
+      "bytes": 153
+    },
+    {
+      "path": "/pixel/kits/germany/away/happyseed-human-v4/shirt_front.png",
+      "bytes": 560
+    },
+    {
+      "path": "/pixel/kits/germany/away/happyseed-human-v4/shirt_back.png",
+      "bytes": 385
+    },
+    {
+      "path": "/pixel/kits/germany/away/happyseed-human-v4/sleeve_left.png",
+      "bytes": 179
+    },
+    {
+      "path": "/pixel/kits/germany/away/happyseed-human-v4/sleeve_right.png",
+      "bytes": 180
+    },
+    {
+      "path": "/pixel/kits/germany/away/happyseed-human-v4/shorts.png",
+      "bytes": 197
+    },
+    {
+      "path": "/pixel/kits/germany/away/happyseed-human-v4/shorts_leg.png",
+      "bytes": 123
+    },
+    {
+      "path": "/pixel/kits/germany/away/happyseed-human-v4/socks.png",
+      "bytes": 146
+    },
+    {
+      "path": "/pixel/kits/germany/away/happyseed-human-v4/shoes.png",
+      "bytes": 153
+    },
+    {
+      "path": "/pixel/kits/germany/goalkeeper/happyseed-human-v4/shirt_front.png",
+      "bytes": 566
+    },
+    {
+      "path": "/pixel/kits/germany/goalkeeper/happyseed-human-v4/shirt_back.png",
+      "bytes": 383
+    },
+    {
+      "path": "/pixel/kits/germany/goalkeeper/happyseed-human-v4/sleeve_left.png",
+      "bytes": 179
+    },
+    {
+      "path": "/pixel/kits/germany/goalkeeper/happyseed-human-v4/sleeve_right.png",
+      "bytes": 176
+    },
+    {
+      "path": "/pixel/kits/germany/goalkeeper/happyseed-human-v4/shorts.png",
+      "bytes": 199
+    },
+    {
+      "path": "/pixel/kits/germany/goalkeeper/happyseed-human-v4/shorts_leg.png",
+      "bytes": 123
+    },
+    {
+      "path": "/pixel/kits/germany/goalkeeper/happyseed-human-v4/socks.png",
+      "bytes": 146
+    },
+    {
+      "path": "/pixel/kits/germany/goalkeeper/happyseed-human-v4/shoes.png",
+      "bytes": 153
+    },
+    {
+      "path": "/pixel/kits/germany/goalkeeper/happyseed-human-v4/hand_left.png",
+      "bytes": 177
+    },
+    {
+      "path": "/pixel/kits/germany/goalkeeper/happyseed-human-v4/hand_right.png",
+      "bytes": 168
+    },
+    {
+      "path": "/pixel/kits/germany/away-goalkeeper/happyseed-human-v4/shirt_front.png",
+      "bytes": 558
+    },
+    {
+      "path": "/pixel/kits/germany/away-goalkeeper/happyseed-human-v4/shirt_back.png",
+      "bytes": 408
+    },
+    {
+      "path": "/pixel/kits/germany/away-goalkeeper/happyseed-human-v4/sleeve_left.png",
+      "bytes": 179
+    },
+    {
+      "path": "/pixel/kits/germany/away-goalkeeper/happyseed-human-v4/sleeve_right.png",
+      "bytes": 180
+    },
+    {
+      "path": "/pixel/kits/germany/away-goalkeeper/happyseed-human-v4/shorts.png",
+      "bytes": 193
+    },
+    {
+      "path": "/pixel/kits/germany/away-goalkeeper/happyseed-human-v4/shorts_leg.png",
+      "bytes": 123
+    },
+    {
+      "path": "/pixel/kits/germany/away-goalkeeper/happyseed-human-v4/socks.png",
+      "bytes": 146
+    },
+    {
+      "path": "/pixel/kits/germany/away-goalkeeper/happyseed-human-v4/shoes.png",
+      "bytes": 153
+    },
+    {
+      "path": "/pixel/kits/germany/away-goalkeeper/happyseed-human-v4/hand_left.png",
+      "bytes": 179
+    },
+    {
+      "path": "/pixel/kits/germany/away-goalkeeper/happyseed-human-v4/hand_right.png",
+      "bytes": 169
+    },
+    {
+      "path": "/pixel/kits/japan/home/happyseed-human-v4/shirt_front.png",
+      "bytes": 566
+    },
+    {
+      "path": "/pixel/kits/japan/home/happyseed-human-v4/shirt_back.png",
+      "bytes": 380
+    },
+    {
+      "path": "/pixel/kits/japan/home/happyseed-human-v4/sleeve_left.png",
+      "bytes": 179
+    },
+    {
+      "path": "/pixel/kits/japan/home/happyseed-human-v4/sleeve_right.png",
+      "bytes": 176
+    },
+    {
+      "path": "/pixel/kits/japan/home/happyseed-human-v4/shorts.png",
+      "bytes": 209
+    },
+    {
+      "path": "/pixel/kits/japan/home/happyseed-human-v4/shorts_leg.png",
+      "bytes": 123
+    },
+    {
+      "path": "/pixel/kits/japan/home/happyseed-human-v4/socks.png",
+      "bytes": 144
+    },
+    {
+      "path": "/pixel/kits/japan/home/happyseed-human-v4/shoes.png",
+      "bytes": 153
+    },
+    {
+      "path": "/pixel/kits/japan/away/happyseed-human-v4/shirt_front.png",
+      "bytes": 566
+    },
+    {
+      "path": "/pixel/kits/japan/away/happyseed-human-v4/shirt_back.png",
+      "bytes": 380
+    },
+    {
+      "path": "/pixel/kits/japan/away/happyseed-human-v4/sleeve_left.png",
+      "bytes": 179
+    },
+    {
+      "path": "/pixel/kits/japan/away/happyseed-human-v4/sleeve_right.png",
+      "bytes": 176
+    },
+    {
+      "path": "/pixel/kits/japan/away/happyseed-human-v4/shorts.png",
+      "bytes": 209
+    },
+    {
+      "path": "/pixel/kits/japan/away/happyseed-human-v4/shorts_leg.png",
+      "bytes": 123
+    },
+    {
+      "path": "/pixel/kits/japan/away/happyseed-human-v4/socks.png",
+      "bytes": 144
+    },
+    {
+      "path": "/pixel/kits/japan/away/happyseed-human-v4/shoes.png",
+      "bytes": 153
+    },
+    {
+      "path": "/pixel/kits/japan/goalkeeper/happyseed-human-v4/shirt_front.png",
+      "bytes": 558
+    },
+    {
+      "path": "/pixel/kits/japan/goalkeeper/happyseed-human-v4/shirt_back.png",
+      "bytes": 408
+    },
+    {
+      "path": "/pixel/kits/japan/goalkeeper/happyseed-human-v4/sleeve_left.png",
+      "bytes": 179
+    },
+    {
+      "path": "/pixel/kits/japan/goalkeeper/happyseed-human-v4/sleeve_right.png",
+      "bytes": 180
+    },
+    {
+      "path": "/pixel/kits/japan/goalkeeper/happyseed-human-v4/shorts.png",
+      "bytes": 193
+    },
+    {
+      "path": "/pixel/kits/japan/goalkeeper/happyseed-human-v4/shorts_leg.png",
+      "bytes": 123
+    },
+    {
+      "path": "/pixel/kits/japan/goalkeeper/happyseed-human-v4/socks.png",
+      "bytes": 146
+    },
+    {
+      "path": "/pixel/kits/japan/goalkeeper/happyseed-human-v4/shoes.png",
+      "bytes": 153
+    },
+    {
+      "path": "/pixel/kits/japan/goalkeeper/happyseed-human-v4/hand_left.png",
+      "bytes": 179
+    },
+    {
+      "path": "/pixel/kits/japan/goalkeeper/happyseed-human-v4/hand_right.png",
+      "bytes": 169
+    },
+    {
+      "path": "/pixel/kits/japan/away-goalkeeper/happyseed-human-v4/shirt_front.png",
+      "bytes": 566
+    },
+    {
+      "path": "/pixel/kits/japan/away-goalkeeper/happyseed-human-v4/shirt_back.png",
+      "bytes": 383
+    },
+    {
+      "path": "/pixel/kits/japan/away-goalkeeper/happyseed-human-v4/sleeve_left.png",
+      "bytes": 179
+    },
+    {
+      "path": "/pixel/kits/japan/away-goalkeeper/happyseed-human-v4/sleeve_right.png",
+      "bytes": 176
+    },
+    {
+      "path": "/pixel/kits/japan/away-goalkeeper/happyseed-human-v4/shorts.png",
+      "bytes": 199
+    },
+    {
+      "path": "/pixel/kits/japan/away-goalkeeper/happyseed-human-v4/shorts_leg.png",
+      "bytes": 123
+    },
+    {
+      "path": "/pixel/kits/japan/away-goalkeeper/happyseed-human-v4/socks.png",
+      "bytes": 146
+    },
+    {
+      "path": "/pixel/kits/japan/away-goalkeeper/happyseed-human-v4/shoes.png",
+      "bytes": 153
+    },
+    {
+      "path": "/pixel/kits/japan/away-goalkeeper/happyseed-human-v4/hand_left.png",
+      "bytes": 177
+    },
+    {
+      "path": "/pixel/kits/japan/away-goalkeeper/happyseed-human-v4/hand_right.png",
+      "bytes": 168
+    },
+    {
+      "path": "/pixel/kits/norway/home/happyseed-human-v4/shirt_front.png",
+      "bytes": 563
+    },
+    {
+      "path": "/pixel/kits/norway/home/happyseed-human-v4/shirt_back.png",
+      "bytes": 385
+    },
+    {
+      "path": "/pixel/kits/norway/home/happyseed-human-v4/sleeve_left.png",
+      "bytes": 179
+    },
+    {
+      "path": "/pixel/kits/norway/home/happyseed-human-v4/sleeve_right.png",
+      "bytes": 180
+    },
+    {
+      "path": "/pixel/kits/norway/home/happyseed-human-v4/shorts.png",
+      "bytes": 201
+    },
+    {
+      "path": "/pixel/kits/norway/home/happyseed-human-v4/shorts_leg.png",
+      "bytes": 123
+    },
+    {
+      "path": "/pixel/kits/norway/home/happyseed-human-v4/socks.png",
+      "bytes": 146
+    },
+    {
+      "path": "/pixel/kits/norway/home/happyseed-human-v4/shoes.png",
+      "bytes": 153
+    },
+    {
+      "path": "/pixel/kits/norway/away/happyseed-human-v4/shirt_front.png",
+      "bytes": 563
+    },
+    {
+      "path": "/pixel/kits/norway/away/happyseed-human-v4/shirt_back.png",
+      "bytes": 385
+    },
+    {
+      "path": "/pixel/kits/norway/away/happyseed-human-v4/sleeve_left.png",
+      "bytes": 179
+    },
+    {
+      "path": "/pixel/kits/norway/away/happyseed-human-v4/sleeve_right.png",
+      "bytes": 180
+    },
+    {
+      "path": "/pixel/kits/norway/away/happyseed-human-v4/shorts.png",
+      "bytes": 204
+    },
+    {
+      "path": "/pixel/kits/norway/away/happyseed-human-v4/shorts_leg.png",
+      "bytes": 123
+    },
+    {
+      "path": "/pixel/kits/norway/away/happyseed-human-v4/socks.png",
+      "bytes": 146
+    },
+    {
+      "path": "/pixel/kits/norway/away/happyseed-human-v4/shoes.png",
+      "bytes": 153
+    },
+    {
+      "path": "/pixel/kits/norway/goalkeeper/happyseed-human-v4/shirt_front.png",
+      "bytes": 566
+    },
+    {
+      "path": "/pixel/kits/norway/goalkeeper/happyseed-human-v4/shirt_back.png",
+      "bytes": 383
+    },
+    {
+      "path": "/pixel/kits/norway/goalkeeper/happyseed-human-v4/sleeve_left.png",
+      "bytes": 179
+    },
+    {
+      "path": "/pixel/kits/norway/goalkeeper/happyseed-human-v4/sleeve_right.png",
+      "bytes": 176
+    },
+    {
+      "path": "/pixel/kits/norway/goalkeeper/happyseed-human-v4/shorts.png",
+      "bytes": 199
+    },
+    {
+      "path": "/pixel/kits/norway/goalkeeper/happyseed-human-v4/shorts_leg.png",
+      "bytes": 123
+    },
+    {
+      "path": "/pixel/kits/norway/goalkeeper/happyseed-human-v4/socks.png",
+      "bytes": 146
+    },
+    {
+      "path": "/pixel/kits/norway/goalkeeper/happyseed-human-v4/shoes.png",
+      "bytes": 153
+    },
+    {
+      "path": "/pixel/kits/norway/goalkeeper/happyseed-human-v4/hand_left.png",
+      "bytes": 177
+    },
+    {
+      "path": "/pixel/kits/norway/goalkeeper/happyseed-human-v4/hand_right.png",
+      "bytes": 168
+    },
+    {
+      "path": "/pixel/kits/norway/away-goalkeeper/happyseed-human-v4/shirt_front.png",
+      "bytes": 558
+    },
+    {
+      "path": "/pixel/kits/norway/away-goalkeeper/happyseed-human-v4/shirt_back.png",
+      "bytes": 408
+    },
+    {
+      "path": "/pixel/kits/norway/away-goalkeeper/happyseed-human-v4/sleeve_left.png",
+      "bytes": 179
+    },
+    {
+      "path": "/pixel/kits/norway/away-goalkeeper/happyseed-human-v4/sleeve_right.png",
+      "bytes": 180
+    },
+    {
+      "path": "/pixel/kits/norway/away-goalkeeper/happyseed-human-v4/shorts.png",
+      "bytes": 193
+    },
+    {
+      "path": "/pixel/kits/norway/away-goalkeeper/happyseed-human-v4/shorts_leg.png",
+      "bytes": 123
+    },
+    {
+      "path": "/pixel/kits/norway/away-goalkeeper/happyseed-human-v4/socks.png",
+      "bytes": 146
+    },
+    {
+      "path": "/pixel/kits/norway/away-goalkeeper/happyseed-human-v4/shoes.png",
+      "bytes": 153
+    },
+    {
+      "path": "/pixel/kits/norway/away-goalkeeper/happyseed-human-v4/hand_left.png",
+      "bytes": 179
+    },
+    {
+      "path": "/pixel/kits/norway/away-goalkeeper/happyseed-human-v4/hand_right.png",
+      "bytes": 169
+    },
+    {
+      "path": "/pixel/kits/morocco/home/happyseed-human-v4/shirt_front.png",
+      "bytes": 563
+    },
+    {
+      "path": "/pixel/kits/morocco/home/happyseed-human-v4/shirt_back.png",
+      "bytes": 386
+    },
+    {
+      "path": "/pixel/kits/morocco/home/happyseed-human-v4/sleeve_left.png",
+      "bytes": 179
+    },
+    {
+      "path": "/pixel/kits/morocco/home/happyseed-human-v4/sleeve_right.png",
+      "bytes": 180
+    },
+    {
+      "path": "/pixel/kits/morocco/home/happyseed-human-v4/shorts.png",
+      "bytes": 200
+    },
+    {
+      "path": "/pixel/kits/morocco/home/happyseed-human-v4/shorts_leg.png",
+      "bytes": 125
+    },
+    {
+      "path": "/pixel/kits/morocco/home/happyseed-human-v4/socks.png",
+      "bytes": 145
+    },
+    {
+      "path": "/pixel/kits/morocco/home/happyseed-human-v4/shoes.png",
+      "bytes": 153
+    },
+    {
+      "path": "/pixel/kits/morocco/away/happyseed-human-v4/shirt_front.png",
+      "bytes": 567
+    },
+    {
+      "path": "/pixel/kits/morocco/away/happyseed-human-v4/shirt_back.png",
+      "bytes": 381
+    },
+    {
+      "path": "/pixel/kits/morocco/away/happyseed-human-v4/sleeve_left.png",
+      "bytes": 178
+    },
+    {
+      "path": "/pixel/kits/morocco/away/happyseed-human-v4/sleeve_right.png",
+      "bytes": 174
+    },
+    {
+      "path": "/pixel/kits/morocco/away/happyseed-human-v4/shorts.png",
+      "bytes": 202
+    },
+    {
+      "path": "/pixel/kits/morocco/away/happyseed-human-v4/shorts_leg.png",
+      "bytes": 123
+    },
+    {
+      "path": "/pixel/kits/morocco/away/happyseed-human-v4/socks.png",
+      "bytes": 143
+    },
+    {
+      "path": "/pixel/kits/morocco/away/happyseed-human-v4/shoes.png",
+      "bytes": 153
+    },
+    {
+      "path": "/pixel/kits/morocco/goalkeeper/happyseed-human-v4/shirt_front.png",
+      "bytes": 558
+    },
+    {
+      "path": "/pixel/kits/morocco/goalkeeper/happyseed-human-v4/shirt_back.png",
+      "bytes": 408
+    },
+    {
+      "path": "/pixel/kits/morocco/goalkeeper/happyseed-human-v4/sleeve_left.png",
+      "bytes": 179
+    },
+    {
+      "path": "/pixel/kits/morocco/goalkeeper/happyseed-human-v4/sleeve_right.png",
+      "bytes": 180
+    },
+    {
+      "path": "/pixel/kits/morocco/goalkeeper/happyseed-human-v4/shorts.png",
+      "bytes": 193
+    },
+    {
+      "path": "/pixel/kits/morocco/goalkeeper/happyseed-human-v4/shorts_leg.png",
+      "bytes": 123
+    },
+    {
+      "path": "/pixel/kits/morocco/goalkeeper/happyseed-human-v4/socks.png",
+      "bytes": 146
+    },
+    {
+      "path": "/pixel/kits/morocco/goalkeeper/happyseed-human-v4/shoes.png",
+      "bytes": 153
+    },
+    {
+      "path": "/pixel/kits/morocco/goalkeeper/happyseed-human-v4/hand_left.png",
+      "bytes": 179
+    },
+    {
+      "path": "/pixel/kits/morocco/goalkeeper/happyseed-human-v4/hand_right.png",
+      "bytes": 169
+    },
+    {
+      "path": "/pixel/kits/morocco/away-goalkeeper/happyseed-human-v4/shirt_front.png",
+      "bytes": 566
+    },
+    {
+      "path": "/pixel/kits/morocco/away-goalkeeper/happyseed-human-v4/shirt_back.png",
+      "bytes": 383
+    },
+    {
+      "path": "/pixel/kits/morocco/away-goalkeeper/happyseed-human-v4/sleeve_left.png",
+      "bytes": 179
+    },
+    {
+      "path": "/pixel/kits/morocco/away-goalkeeper/happyseed-human-v4/sleeve_right.png",
+      "bytes": 176
+    },
+    {
+      "path": "/pixel/kits/morocco/away-goalkeeper/happyseed-human-v4/shorts.png",
+      "bytes": 199
+    },
+    {
+      "path": "/pixel/kits/morocco/away-goalkeeper/happyseed-human-v4/shorts_leg.png",
+      "bytes": 123
+    },
+    {
+      "path": "/pixel/kits/morocco/away-goalkeeper/happyseed-human-v4/socks.png",
+      "bytes": 146
+    },
+    {
+      "path": "/pixel/kits/morocco/away-goalkeeper/happyseed-human-v4/shoes.png",
+      "bytes": 153
+    },
+    {
+      "path": "/pixel/kits/morocco/away-goalkeeper/happyseed-human-v4/hand_left.png",
+      "bytes": 177
+    },
+    {
+      "path": "/pixel/kits/morocco/away-goalkeeper/happyseed-human-v4/hand_right.png",
+      "bytes": 168
+    },
+    {
+      "path": "/pixel/kits/newzealand/home/happyseed-human-v4/shirt_front.png",
+      "bytes": 566
+    },
+    {
+      "path": "/pixel/kits/newzealand/home/happyseed-human-v4/shirt_back.png",
+      "bytes": 381
+    },
+    {
+      "path": "/pixel/kits/newzealand/home/happyseed-human-v4/sleeve_left.png",
+      "bytes": 179
+    },
+    {
+      "path": "/pixel/kits/newzealand/home/happyseed-human-v4/sleeve_right.png",
+      "bytes": 176
+    },
+    {
+      "path": "/pixel/kits/newzealand/home/happyseed-human-v4/shorts.png",
+      "bytes": 200
+    },
+    {
+      "path": "/pixel/kits/newzealand/home/happyseed-human-v4/shorts_leg.png",
+      "bytes": 123
+    },
+    {
+      "path": "/pixel/kits/newzealand/home/happyseed-human-v4/socks.png",
+      "bytes": 144
+    },
+    {
+      "path": "/pixel/kits/newzealand/home/happyseed-human-v4/shoes.png",
+      "bytes": 153
+    },
+    {
+      "path": "/pixel/kits/newzealand/away/happyseed-human-v4/shirt_front.png",
+      "bytes": 566
+    },
+    {
+      "path": "/pixel/kits/newzealand/away/happyseed-human-v4/shirt_back.png",
+      "bytes": 381
+    },
+    {
+      "path": "/pixel/kits/newzealand/away/happyseed-human-v4/sleeve_left.png",
+      "bytes": 179
+    },
+    {
+      "path": "/pixel/kits/newzealand/away/happyseed-human-v4/sleeve_right.png",
+      "bytes": 176
+    },
+    {
+      "path": "/pixel/kits/newzealand/away/happyseed-human-v4/shorts.png",
+      "bytes": 200
+    },
+    {
+      "path": "/pixel/kits/newzealand/away/happyseed-human-v4/shorts_leg.png",
+      "bytes": 123
+    },
+    {
+      "path": "/pixel/kits/newzealand/away/happyseed-human-v4/socks.png",
+      "bytes": 144
+    },
+    {
+      "path": "/pixel/kits/newzealand/away/happyseed-human-v4/shoes.png",
+      "bytes": 153
+    },
+    {
+      "path": "/pixel/kits/newzealand/goalkeeper/happyseed-human-v4/shirt_front.png",
+      "bytes": 558
+    },
+    {
+      "path": "/pixel/kits/newzealand/goalkeeper/happyseed-human-v4/shirt_back.png",
+      "bytes": 408
+    },
+    {
+      "path": "/pixel/kits/newzealand/goalkeeper/happyseed-human-v4/sleeve_left.png",
+      "bytes": 179
+    },
+    {
+      "path": "/pixel/kits/newzealand/goalkeeper/happyseed-human-v4/sleeve_right.png",
+      "bytes": 180
+    },
+    {
+      "path": "/pixel/kits/newzealand/goalkeeper/happyseed-human-v4/shorts.png",
+      "bytes": 193
+    },
+    {
+      "path": "/pixel/kits/newzealand/goalkeeper/happyseed-human-v4/shorts_leg.png",
+      "bytes": 123
+    },
+    {
+      "path": "/pixel/kits/newzealand/goalkeeper/happyseed-human-v4/socks.png",
+      "bytes": 146
+    },
+    {
+      "path": "/pixel/kits/newzealand/goalkeeper/happyseed-human-v4/shoes.png",
+      "bytes": 153
+    },
+    {
+      "path": "/pixel/kits/newzealand/goalkeeper/happyseed-human-v4/hand_left.png",
+      "bytes": 179
+    },
+    {
+      "path": "/pixel/kits/newzealand/goalkeeper/happyseed-human-v4/hand_right.png",
+      "bytes": 169
+    },
+    {
+      "path": "/pixel/kits/newzealand/away-goalkeeper/happyseed-human-v4/shirt_front.png",
+      "bytes": 566
+    },
+    {
+      "path": "/pixel/kits/newzealand/away-goalkeeper/happyseed-human-v4/shirt_back.png",
+      "bytes": 383
+    },
+    {
+      "path": "/pixel/kits/newzealand/away-goalkeeper/happyseed-human-v4/sleeve_left.png",
+      "bytes": 179
+    },
+    {
+      "path": "/pixel/kits/newzealand/away-goalkeeper/happyseed-human-v4/sleeve_right.png",
+      "bytes": 176
+    },
+    {
+      "path": "/pixel/kits/newzealand/away-goalkeeper/happyseed-human-v4/shorts.png",
+      "bytes": 199
+    },
+    {
+      "path": "/pixel/kits/newzealand/away-goalkeeper/happyseed-human-v4/shorts_leg.png",
+      "bytes": 123
+    },
+    {
+      "path": "/pixel/kits/newzealand/away-goalkeeper/happyseed-human-v4/socks.png",
+      "bytes": 146
+    },
+    {
+      "path": "/pixel/kits/newzealand/away-goalkeeper/happyseed-human-v4/shoes.png",
+      "bytes": 153
+    },
+    {
+      "path": "/pixel/kits/newzealand/away-goalkeeper/happyseed-human-v4/hand_left.png",
+      "bytes": 177
+    },
+    {
+      "path": "/pixel/kits/newzealand/away-goalkeeper/happyseed-human-v4/hand_right.png",
+      "bytes": 168
+    },
+    {
+      "path": "/pixel/kits/curacao/home/happyseed-human-v4/shirt_front.png",
+      "bytes": 553
+    },
+    {
+      "path": "/pixel/kits/curacao/home/happyseed-human-v4/shirt_back.png",
+      "bytes": 386
+    },
+    {
+      "path": "/pixel/kits/curacao/home/happyseed-human-v4/sleeve_left.png",
+      "bytes": 183
+    },
+    {
+      "path": "/pixel/kits/curacao/home/happyseed-human-v4/sleeve_right.png",
+      "bytes": 183
+    },
+    {
+      "path": "/pixel/kits/curacao/home/happyseed-human-v4/shorts.png",
+      "bytes": 200
+    },
+    {
+      "path": "/pixel/kits/curacao/home/happyseed-human-v4/shorts_leg.png",
+      "bytes": 125
+    },
+    {
+      "path": "/pixel/kits/curacao/home/happyseed-human-v4/socks.png",
+      "bytes": 150
+    },
+    {
+      "path": "/pixel/kits/curacao/home/happyseed-human-v4/shoes.png",
+      "bytes": 153
+    },
+    {
+      "path": "/pixel/kits/curacao/away/happyseed-human-v4/shirt_front.png",
+      "bytes": 555
+    },
+    {
+      "path": "/pixel/kits/curacao/away/happyseed-human-v4/shirt_back.png",
+      "bytes": 392
+    },
+    {
+      "path": "/pixel/kits/curacao/away/happyseed-human-v4/sleeve_left.png",
+      "bytes": 183
+    },
+    {
+      "path": "/pixel/kits/curacao/away/happyseed-human-v4/sleeve_right.png",
+      "bytes": 184
+    },
+    {
+      "path": "/pixel/kits/curacao/away/happyseed-human-v4/shorts.png",
+      "bytes": 197
+    },
+    {
+      "path": "/pixel/kits/curacao/away/happyseed-human-v4/shorts_leg.png",
+      "bytes": 124
+    },
+    {
+      "path": "/pixel/kits/curacao/away/happyseed-human-v4/socks.png",
+      "bytes": 145
+    },
+    {
+      "path": "/pixel/kits/curacao/away/happyseed-human-v4/shoes.png",
+      "bytes": 149
+    },
+    {
+      "path": "/pixel/kits/curacao/goalkeeper/happyseed-human-v4/shirt_front.png",
+      "bytes": 558
+    },
+    {
+      "path": "/pixel/kits/curacao/goalkeeper/happyseed-human-v4/shirt_back.png",
+      "bytes": 408
+    },
+    {
+      "path": "/pixel/kits/curacao/goalkeeper/happyseed-human-v4/sleeve_left.png",
+      "bytes": 179
+    },
+    {
+      "path": "/pixel/kits/curacao/goalkeeper/happyseed-human-v4/sleeve_right.png",
+      "bytes": 180
+    },
+    {
+      "path": "/pixel/kits/curacao/goalkeeper/happyseed-human-v4/shorts.png",
+      "bytes": 193
+    },
+    {
+      "path": "/pixel/kits/curacao/goalkeeper/happyseed-human-v4/shorts_leg.png",
+      "bytes": 123
+    },
+    {
+      "path": "/pixel/kits/curacao/goalkeeper/happyseed-human-v4/socks.png",
+      "bytes": 146
+    },
+    {
+      "path": "/pixel/kits/curacao/goalkeeper/happyseed-human-v4/shoes.png",
+      "bytes": 153
+    },
+    {
+      "path": "/pixel/kits/curacao/goalkeeper/happyseed-human-v4/hand_left.png",
+      "bytes": 179
+    },
+    {
+      "path": "/pixel/kits/curacao/goalkeeper/happyseed-human-v4/hand_right.png",
+      "bytes": 169
+    },
+    {
+      "path": "/pixel/kits/curacao/away-goalkeeper/happyseed-human-v4/shirt_front.png",
+      "bytes": 566
+    },
+    {
+      "path": "/pixel/kits/curacao/away-goalkeeper/happyseed-human-v4/shirt_back.png",
+      "bytes": 383
+    },
+    {
+      "path": "/pixel/kits/curacao/away-goalkeeper/happyseed-human-v4/sleeve_left.png",
+      "bytes": 179
+    },
+    {
+      "path": "/pixel/kits/curacao/away-goalkeeper/happyseed-human-v4/sleeve_right.png",
+      "bytes": 176
+    },
+    {
+      "path": "/pixel/kits/curacao/away-goalkeeper/happyseed-human-v4/shorts.png",
+      "bytes": 199
+    },
+    {
+      "path": "/pixel/kits/curacao/away-goalkeeper/happyseed-human-v4/shorts_leg.png",
+      "bytes": 123
+    },
+    {
+      "path": "/pixel/kits/curacao/away-goalkeeper/happyseed-human-v4/socks.png",
+      "bytes": 146
+    },
+    {
+      "path": "/pixel/kits/curacao/away-goalkeeper/happyseed-human-v4/shoes.png",
+      "bytes": 153
+    },
+    {
+      "path": "/pixel/kits/curacao/away-goalkeeper/happyseed-human-v4/hand_left.png",
+      "bytes": 177
+    },
+    {
+      "path": "/pixel/kits/curacao/away-goalkeeper/happyseed-human-v4/hand_right.png",
+      "bytes": 168
+    },
+    {
+      "path": "/pixel/numbers/happyseed-human-v4/1.png",
+      "bytes": 131
+    },
+    {
+      "path": "/pixel/numbers/happyseed-human-v4/2.png",
+      "bytes": 135
+    },
+    {
+      "path": "/pixel/numbers/happyseed-human-v4/3.png",
+      "bytes": 123
+    },
+    {
+      "path": "/pixel/numbers/happyseed-human-v4/4.png",
+      "bytes": 138
+    },
+    {
+      "path": "/pixel/numbers/happyseed-human-v4/5.png",
+      "bytes": 131
+    },
+    {
+      "path": "/pixel/numbers/happyseed-human-v4/6.png",
+      "bytes": 132
+    },
+    {
+      "path": "/pixel/numbers/happyseed-human-v4/7.png",
+      "bytes": 134
+    },
+    {
+      "path": "/pixel/numbers/happyseed-human-v4/8.png",
+      "bytes": 127
+    },
+    {
+      "path": "/pixel/numbers/happyseed-human-v4/9.png",
+      "bytes": 135
+    },
+    {
+      "path": "/pixel/numbers/happyseed-human-v4/10.png",
+      "bytes": 147
+    },
+    {
+      "path": "/pixel/numbers/happyseed-human-v4/11.png",
+      "bytes": 145
+    },
+    {
+      "path": "/pixel/numbers/happyseed-human-v4/12.png",
+      "bytes": 160
+    },
+    {
+      "path": "/pixel/numbers/happyseed-human-v4/13.png",
+      "bytes": 158
+    },
+    {
+      "path": "/pixel/numbers/happyseed-human-v4/14.png",
+      "bytes": 153
+    },
+    {
+      "path": "/pixel/numbers/happyseed-human-v4/15.png",
+      "bytes": 155
+    },
+    {
+      "path": "/pixel/numbers/happyseed-human-v4/16.png",
+      "bytes": 152
+    },
+    {
+      "path": "/pixel/numbers/happyseed-human-v4/17.png",
+      "bytes": 163
+    },
+    {
+      "path": "/pixel/numbers/happyseed-human-v4/18.png",
+      "bytes": 147
+    },
+    {
+      "path": "/pixel/numbers/happyseed-human-v4/19.png",
+      "bytes": 154
+    },
+    {
+      "path": "/pixel/numbers/happyseed-human-v4/20.png",
+      "bytes": 130
+    },
+    {
+      "path": "/pixel/numbers/happyseed-human-v4/21.png",
+      "bytes": 146
+    },
+    {
+      "path": "/pixel/numbers/happyseed-human-v4/22.png",
+      "bytes": 130
+    },
+    {
+      "path": "/pixel/numbers/happyseed-human-v4/23.png",
+      "bytes": 133
+    },
+    {
+      "path": "/pixel/numbers/happyseed-human-v4/24.png",
+      "bytes": 137
+    },
+    {
+      "path": "/pixel/numbers/happyseed-human-v4/25.png",
+      "bytes": 133
+    },
+    {
+      "path": "/pixel/numbers/happyseed-human-v4/26.png",
+      "bytes": 133
+    },
+    {
+      "path": "/pixel/numbers/happyseed-human-v4/27.png",
+      "bytes": 148
+    },
+    {
+      "path": "/pixel/numbers/happyseed-human-v4/28.png",
+      "bytes": 130
+    },
+    {
+      "path": "/pixel/numbers/happyseed-human-v4/29.png",
+      "bytes": 131
+    },
+    {
+      "path": "/pixel/numbers/happyseed-human-v4/30.png",
+      "bytes": 123
+    },
+    {
+      "path": "/pixel/numbers/happyseed-human-v4/31.png",
+      "bytes": 148
+    },
+    {
+      "path": "/pixel/numbers/happyseed-human-v4/32.png",
+      "bytes": 132
+    },
+    {
+      "path": "/pixel/numbers/happyseed-human-v4/33.png",
+      "bytes": 124
+    },
+    {
+      "path": "/pixel/numbers/happyseed-human-v4/34.png",
+      "bytes": 138
+    },
+    {
+      "path": "/pixel/numbers/happyseed-human-v4/35.png",
+      "bytes": 130
+    },
+    {
+      "path": "/pixel/numbers/happyseed-human-v4/36.png",
+      "bytes": 130
+    },
+    {
+      "path": "/pixel/numbers/happyseed-human-v4/37.png",
+      "bytes": 147
+    },
+    {
+      "path": "/pixel/numbers/happyseed-human-v4/38.png",
+      "bytes": 122
+    },
+    {
+      "path": "/pixel/numbers/happyseed-human-v4/39.png",
+      "bytes": 129
+    },
+    {
+      "path": "/pixel/numbers/happyseed-human-v4/40.png",
+      "bytes": 134
+    },
+    {
+      "path": "/pixel/numbers/happyseed-human-v4/41.png",
+      "bytes": 151
+    },
+    {
+      "path": "/pixel/numbers/happyseed-human-v4/42.png",
+      "bytes": 141
+    },
+    {
+      "path": "/pixel/numbers/happyseed-human-v4/43.png",
+      "bytes": 144
+    },
+    {
+      "path": "/pixel/numbers/happyseed-human-v4/44.png",
+      "bytes": 135
+    },
+    {
+      "path": "/pixel/numbers/happyseed-human-v4/45.png",
+      "bytes": 148
+    },
+    {
+      "path": "/pixel/numbers/happyseed-human-v4/46.png",
+      "bytes": 143
+    },
+    {
+      "path": "/pixel/numbers/happyseed-human-v4/47.png",
+      "bytes": 145
+    },
+    {
+      "path": "/pixel/numbers/happyseed-human-v4/48.png",
+      "bytes": 134
+    },
+    {
+      "path": "/pixel/numbers/happyseed-human-v4/49.png",
+      "bytes": 138
+    },
+    {
+      "path": "/pixel/numbers/happyseed-human-v4/50.png",
+      "bytes": 135
+    },
+    {
+      "path": "/pixel/numbers/happyseed-human-v4/51.png",
+      "bytes": 150
+    },
+    {
+      "path": "/pixel/numbers/happyseed-human-v4/52.png",
+      "bytes": 134
+    },
+    {
+      "path": "/pixel/numbers/happyseed-human-v4/53.png",
+      "bytes": 132
+    },
+    {
+      "path": "/pixel/numbers/happyseed-human-v4/54.png",
+      "bytes": 139
+    },
+    {
+      "path": "/pixel/numbers/happyseed-human-v4/55.png",
+      "bytes": 131
+    },
+    {
+      "path": "/pixel/numbers/happyseed-human-v4/56.png",
+      "bytes": 133
+    },
+    {
+      "path": "/pixel/numbers/happyseed-human-v4/57.png",
+      "bytes": 145
+    },
+    {
+      "path": "/pixel/numbers/happyseed-human-v4/58.png",
+      "bytes": 132
+    },
+    {
+      "path": "/pixel/numbers/happyseed-human-v4/59.png",
+      "bytes": 134
+    },
+    {
+      "path": "/pixel/numbers/happyseed-human-v4/60.png",
+      "bytes": 130
+    },
+    {
+      "path": "/pixel/numbers/happyseed-human-v4/61.png",
+      "bytes": 147
+    },
+    {
+      "path": "/pixel/numbers/happyseed-human-v4/62.png",
+      "bytes": 130
+    },
+    {
+      "path": "/pixel/numbers/happyseed-human-v4/63.png",
+      "bytes": 131
+    },
+    {
+      "path": "/pixel/numbers/happyseed-human-v4/64.png",
+      "bytes": 140
+    },
+    {
+      "path": "/pixel/numbers/happyseed-human-v4/65.png",
+      "bytes": 133
+    },
+    {
+      "path": "/pixel/numbers/happyseed-human-v4/66.png",
+      "bytes": 127
+    },
+    {
+      "path": "/pixel/numbers/happyseed-human-v4/67.png",
+      "bytes": 145
+    },
+    {
+      "path": "/pixel/numbers/happyseed-human-v4/68.png",
+      "bytes": 126
+    },
+    {
+      "path": "/pixel/numbers/happyseed-human-v4/69.png",
+      "bytes": 134
+    },
+    {
+      "path": "/pixel/numbers/happyseed-human-v4/70.png",
+      "bytes": 140
+    },
+    {
+      "path": "/pixel/numbers/happyseed-human-v4/71.png",
+      "bytes": 151
+    },
+    {
+      "path": "/pixel/numbers/happyseed-human-v4/72.png",
+      "bytes": 149
+    },
+    {
+      "path": "/pixel/numbers/happyseed-human-v4/73.png",
+      "bytes": 150
+    },
+    {
+      "path": "/pixel/numbers/happyseed-human-v4/74.png",
+      "bytes": 147
+    },
+    {
+      "path": "/pixel/numbers/happyseed-human-v4/75.png",
+      "bytes": 147
+    },
+    {
+      "path": "/pixel/numbers/happyseed-human-v4/76.png",
+      "bytes": 144
+    },
+    {
+      "path": "/pixel/numbers/happyseed-human-v4/77.png",
+      "bytes": 139
+    },
+    {
+      "path": "/pixel/numbers/happyseed-human-v4/78.png",
+      "bytes": 142
+    },
+    {
+      "path": "/pixel/numbers/happyseed-human-v4/79.png",
+      "bytes": 145
+    },
+    {
+      "path": "/pixel/numbers/happyseed-human-v4/80.png",
+      "bytes": 116
+    },
+    {
+      "path": "/pixel/numbers/happyseed-human-v4/81.png",
+      "bytes": 147
+    },
+    {
+      "path": "/pixel/numbers/happyseed-human-v4/82.png",
+      "bytes": 134
+    },
+    {
+      "path": "/pixel/numbers/happyseed-human-v4/83.png",
+      "bytes": 125
+    },
+    {
+      "path": "/pixel/numbers/happyseed-human-v4/84.png",
+      "bytes": 134
+    },
+    {
+      "path": "/pixel/numbers/happyseed-human-v4/85.png",
+      "bytes": 132
+    },
+    {
+      "path": "/pixel/numbers/happyseed-human-v4/86.png",
+      "bytes": 124
+    },
+    {
+      "path": "/pixel/numbers/happyseed-human-v4/87.png",
+      "bytes": 147
+    },
+    {
+      "path": "/pixel/numbers/happyseed-human-v4/88.png",
+      "bytes": 114
+    },
+    {
+      "path": "/pixel/numbers/happyseed-human-v4/89.png",
+      "bytes": 122
+    },
+    {
+      "path": "/pixel/numbers/happyseed-human-v4/90.png",
+      "bytes": 122
+    },
+    {
+      "path": "/pixel/numbers/happyseed-human-v4/91.png",
+      "bytes": 150
+    },
+    {
+      "path": "/pixel/numbers/happyseed-human-v4/92.png",
+      "bytes": 134
+    },
+    {
+      "path": "/pixel/numbers/happyseed-human-v4/93.png",
+      "bytes": 134
+    },
+    {
+      "path": "/pixel/numbers/happyseed-human-v4/94.png",
+      "bytes": 138
+    },
+    {
+      "path": "/pixel/numbers/happyseed-human-v4/95.png",
+      "bytes": 135
+    },
+    {
+      "path": "/pixel/numbers/happyseed-human-v4/96.png",
+      "bytes": 131
+    },
+    {
+      "path": "/pixel/numbers/happyseed-human-v4/97.png",
+      "bytes": 147
+    },
+    {
+      "path": "/pixel/numbers/happyseed-human-v4/98.png",
+      "bytes": 122
+    },
+    {
+      "path": "/pixel/numbers/happyseed-human-v4/99.png",
+      "bytes": 129
+    }
+  ],
+  "artSource": "/docs/art-reference/happyseed-human-v3-production-paper-doll-master.png",
+  "silhouette": "imagegen-master-direct-slice"
+}

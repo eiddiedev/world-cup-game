@@ -4,6 +4,7 @@
  */
 
 import { DECISION_LIBRARY } from '../data/decisionLibrary.js';
+import { createCoachDecisionEvent } from './coachDecisionEvent.js';
 
 /**
  * 计算某个选项的成功概率
@@ -80,11 +81,47 @@ function resolveOutcome(choice, successProb) {
   const roll = Math.random();
   const isSuccess = roll < successProb;
   const outcomes = choice.possible_outcomes;
-  const mid = Math.ceil(outcomes.length / 2);
+  const mid = getSuccessOutcomeCount(outcomes);
   const pool = isSuccess
     ? outcomes.slice(0, mid)
     : outcomes.slice(mid);
-  return pool[Math.floor(Math.random() * pool.length)];
+  return weightedOutcome(pool);
+}
+
+function isNegativeOutcomeName(outcome) {
+  if (typeof outcome !== 'string') return false;
+  if (outcome.includes('red_card') || outcome.includes('_penalty')) return true;
+  if (outcome.startsWith('opponent_goal') || outcome.includes('goal_against')) return true;
+  if (/(miss|saved|blocked|cleared|intercepted|lost|fail|wrong|offside|tackled|foul|violation|partial)/.test(outcome)) return true;
+  if (outcome.startsWith('counter_') && outcome !== 'counter_chance') return true;
+  return false;
+}
+
+function getSuccessOutcomeCount(outcomes) {
+  const firstNegativeIndex = outcomes.findIndex(isNegativeOutcomeName);
+  if (firstNegativeIndex > 0) return firstNegativeIndex;
+  if (outcomes.length <= 3) return 1;
+  return Math.ceil(outcomes.length / 2);
+}
+
+function outcomeWeight(outcome) {
+  if (typeof outcome !== 'string') return 1;
+  if (outcome.includes('red_card')) return 0.02;
+  if (outcome.includes('yellow_card') && outcome.includes('penalty')) return 0.58;
+  if (outcome.includes('yellow_card')) return 0.72;
+  if (outcome.includes('penalty')) return 0.76;
+  return 1;
+}
+
+function weightedOutcome(pool) {
+  const weighted = pool.map(outcome => [outcome, outcomeWeight(outcome)]);
+  const total = weighted.reduce((sum, [, weight]) => sum + weight, 0);
+  let roll = Math.random() * total;
+  for (const [outcome, weight] of weighted) {
+    roll -= weight;
+    if (roll <= 0) return outcome;
+  }
+  return weighted[0]?.[0];
 }
 
 /**
@@ -126,6 +163,17 @@ export function selectScenario(minute, gameState) {
     pool.push(['midfield_second_ball', 0.04]);
     pool.push(['box_scramble_clearance', 0.03]);
     pool.push(['box_second_ball_chaos', 0.03]);
+    pool.push(['wing_overlap_cross', 0.05]);
+    pool.push(['central_cutback_press', 0.05]);
+    pool.push(['half_space_through_run', 0.05]);
+    pool.push(['low_block_counter_launch', 0.04]);
+    pool.push(['midfield_switch_play', 0.04]);
+    pool.push(['handball_penalty_claim', 0.03]);
+    pool.push(['second_ball_corner_attack', 0.04]);
+    pool.push(['set_piece_rebound_shot', 0.03]);
+    pool.push(['penalty_rebound_followup', 0.02]);
+    pool.push(['high_press_trap', 0.04]);
+    if (minute >= 82 && scoreDiff < 0) pool.push(['late_keeper_up_corner', 0.05]);
   } else {
     pool.push(['penalty_area_foul_risk', 0.18]);
     pool.push(['gk_one_on_one', 0.12]);
@@ -144,6 +192,17 @@ export function selectScenario(minute, gameState) {
     pool.push(['midfield_second_ball', 0.05]);
     pool.push(['box_scramble_clearance', 0.06]);
     pool.push(['var_goal_review', 0.02]);
+    pool.push(['fullback_recovery_run', 0.06]);
+    pool.push(['keeper_sweeper_claim', 0.05]);
+    pool.push(['var_offside_goal', 0.02]);
+    pool.push(['defensive_line_handball_var', 0.04]);
+    pool.push(['opponent_dangerous_freekick_wall', 0.06]);
+    pool.push(['opponent_short_corner_defense', 0.04]);
+    pool.push(['injury_play_on', 0.03]);
+    pool.push(['yellow_card_dissent_control', 0.03]);
+    pool.push(['second_yellow_warning', 0.04]);
+    pool.push(['weather_slippery_tackle', 0.04]);
+    pool.push(['high_press_trap', 0.03]);
   }
 
   const scenarioId = weightedRandom(pool);
@@ -216,6 +275,27 @@ export function selectKeyPlayers(scenario, lineup) {
     midfield_second_ball: { default: mfByDef, second: mfByTec },
     box_scramble_clearance: { default: dfByDef, second: gk },
     box_second_ball_chaos: { default: dfByDef, second: gk },
+    wing_overlap_cross: { default: mfByTec, second: fwByPhy },
+    central_cutback_press: { default: mfByTec, second: fwByTec },
+    half_space_through_run: { default: mfByTec, second: fwBySpd },
+    low_block_counter_launch: { default: mfByTec, second: fwBySpd },
+    high_press_trap: { default: mfByDef, second: fwBySpd },
+    midfield_switch_play: { default: mfByTec, second: fwBySpd },
+    fullback_recovery_run: { default: dfByDef, second: gk },
+    keeper_sweeper_claim: { default: gk, second: dfByDef },
+    var_offside_goal: { default: fwByTec, second: mfByTec },
+    defensive_line_handball_var: { default: dfByDef, second: gk },
+    handball_penalty_claim: { default: fwByTec, second: mfByTec },
+    second_ball_corner_attack: { default: mfByTec, second: fwByPhy },
+    opponent_dangerous_freekick_wall: { default: gk, second: dfByPhy },
+    opponent_short_corner_defense: { default: dfByDef, second: gk },
+    set_piece_rebound_shot: { default: mfByTec, second: fwByPhy },
+    penalty_rebound_followup: { default: fwBySpd, second: mfByTec },
+    injury_play_on: { default: worstForm() },
+    yellow_card_dissent_control: { default: mfByTec },
+    second_yellow_warning: { default: dfByDef },
+    late_keeper_up_corner: { default: gk, second: fwByPhy },
+    weather_slippery_tackle: { default: dfByDef },
   };
 
   return maps[scenario.id] || { default: fwByTec };
@@ -269,8 +349,14 @@ export function shouldTriggerDecision(
 /**
  * 执行完整的决策流程
  */
-export function executeDecision(scenario, lineup, gameState) {
-  const keyPlayers = selectKeyPlayers(scenario, lineup);
+export function executeDecision(scenario, lineup, gameState, options = {}) {
+  let keyPlayers = selectKeyPlayers(scenario, lineup);
+  const preferredPlayer = options.preferredPlayerId
+    ? lineup.find(player => player.id === options.preferredPlayerId)
+    : null;
+  if (preferredPlayer) {
+    keyPlayers = { ...keyPlayers, default: preferredPlayer };
+  }
   const isKnockout = gameState.isKnockout || false;
   const isExtraTime = gameState.minute > 90;
 
@@ -302,13 +388,23 @@ export function executeDecision(scenario, lineup, gameState) {
     Math.floor(Math.random() * scenario.situation_variants.length)
   ];
   const situation = fillTemplate(variant, keyPlayers, gameState);
+  const coachDecisionEvent = createCoachDecisionEvent({
+    scenario,
+    minute: gameState.minute,
+    team: gameState.team,
+    opponent: gameState.opponentName,
+    keyPlayers,
+    options: enrichedChoices,
+    situation,
+  });
 
   return {
     scenario,
-    situation,
+    situation: coachDecisionEvent?.situation || situation,
     choices: enrichedChoices,
     keyPlayers,
     animation_type: scenario.animation_type,
+    coachDecisionEvent,
   };
 }
 
@@ -339,7 +435,7 @@ export function resolveChoiceResult(choice, keyPlayer, gameState) {
   ) {
     outcome = choice.conversion_miss_outcome || 'saved';
   }
-  const isSuccess = choice.possible_outcomes.indexOf(outcome) < Math.ceil(choice.possible_outcomes.length / 2);
+  const isSuccess = choice.possible_outcomes.indexOf(outcome) < getSuccessOutcomeCount(choice.possible_outcomes);
 
   // 计算比分变化
   let homeScoreChange = 0;
@@ -351,7 +447,16 @@ export function resolveChoiceResult(choice, keyPlayer, gameState) {
     'goal_near_post', 'goal_second_ball', 'goal_far_header', 'goal_short_corner',
     'goal_through', 'goal_reorganized', 'goal_combo', 'goal_cross', 'goal_closer',
     'comeback_goal', 'late_equalizer', 'sealed_win', 'golden_goal', 'goal_placement'];
-  const goalAgainstOutcomes = ['counter_sealed', 'counter_golden_goal', 'goal_against'];
+  const goalAgainstOutcomes = [
+    'counter_sealed',
+    'counter_equalizer',
+    'counter_golden_goal',
+    'goal_against',
+    'goal_chip_over',
+    'goal_corner',
+    'goal_tight_angle',
+    'goal_zone_gap',
+  ];
 
   if (goalOutcomes.includes(outcome)) homeScoreChange = 1;
   if (goalAgainstOutcomes.includes(outcome) || outcome?.startsWith('opponent_goal')) awayScoreChange = 1;

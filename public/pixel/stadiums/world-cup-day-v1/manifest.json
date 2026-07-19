@@ -1,0 +1,40 @@
+{
+  "schemaVersion": "happyseed-pixel-stadium-assets-v3",
+  "generatedBy": "scripts/generate-pixel-stadium-slice.mjs",
+  "artPipeline": "image-generation-single-master-background",
+  "projectionLock": {
+    "reference": "animal-cup-international-runtime",
+    "sourceSize": [
+      4096,
+      2048
+    ],
+    "sourcePitchBounds": [
+      648,
+      611,
+      2800,
+      1057
+    ],
+    "tolerancePx": 2
+  },
+  "stadiumId": "world-cup-day-v1",
+  "opaqueBackgroundCount": 1,
+  "runtimePitchOverlay": false,
+  "goalPositionSource": "stadium.json",
+  "fileCount": 2,
+  "totalBytes": 4899593,
+  "totalKiB": 4784.8,
+  "files": [
+    {
+      "path": "/pixel/stadiums/world-cup-day-v1/stadium-day-master-v1.png",
+      "bytes": 4896021,
+      "width": 4096,
+      "height": 2048,
+      "role": "single-opaque-background"
+    },
+    {
+      "path": "/pixel/stadiums/world-cup-day-v1/scene.json",
+      "bytes": 3572,
+      "role": "scene-contract"
+    }
+  ]
+}

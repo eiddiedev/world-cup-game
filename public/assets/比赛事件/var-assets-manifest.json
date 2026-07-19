@@ -1,0 +1,29 @@
+{
+  "schemaVersion": "happyseed-var-event-artwork-v1",
+  "source": "user-provided Desktop artwork, 2026-07-19",
+  "processing": "copied without resampling or recompression",
+  "files": [
+    {
+      "path": "/assets/比赛事件/VAR.png",
+      "role": "review-in-progress",
+      "dimensions": [507, 376],
+      "bytes": 200365,
+      "sha256": "5e3b7035d2a4c854b9cd7bc18dca92d456816f99d710ae3bee1c672cba3610c0"
+    },
+    {
+      "path": "/assets/比赛事件/VAR-GOAL.png",
+      "role": "review-goal-confirmed",
+      "dimensions": [695, 410],
+      "bytes": 384809,
+      "sha256": "0cfc37fa7416e1684ea442b0fc5694c572a4d3ae44239db8269a54da5b0f8c35"
+    },
+    {
+      "path": "/assets/比赛事件/VAR-NO-GOAL.png",
+      "role": "review-goal-disallowed",
+      "dimensions": [485, 347],
+      "bytes": 200354,
+      "sha256": "294084173c72dcc989c2ee2d11d6da920da291858b3647d81c7211c044e9045a"
+    }
+  ],
+  "totalBytes": 785528
+}

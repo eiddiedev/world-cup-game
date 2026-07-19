@@ -1,0 +1,52 @@
+{
+  "schemaVersion": "happyseed-human-runtime-recipe-v1",
+  "partSetId": "happyseed-human-v4",
+  "id": "brazil-outfield",
+  "label": "巴西普通球员 · 9",
+  "shortLabel": "BRA 9",
+  "teamId": "brazil",
+  "role": "outfield",
+  "number": 9,
+  "kitType": "home",
+  "appearance": {
+    "skin": "#A95C31",
+    "skinHighlight": "#CE7C43",
+    "skinShadow": "#74351F",
+    "hair": "#E4C07A",
+    "hairHighlight": "#FFF0B1",
+    "beard": true
+  },
+  "previewOffset": {
+    "x": 1.4,
+    "y": -1.1
+  },
+  "palette": {
+    "shirt": "#F5D742",
+    "accent": "#2D8A4E",
+    "shorts": "#174FBC",
+    "socks": "#F4F0E8",
+    "boots": "#161412",
+    "number": "#17212B",
+    "numberStroke": "#F8F2E2",
+    "gloves": "#F8F2E2"
+  },
+  "assets": {
+    "playerRoot": "/pixel/player/happyseed-human-v4/brazil-outfield",
+    "kitRoot": "/pixel/kits/brazil/home/happyseed-human-v4",
+    "number": "/pixel/numbers/happyseed-human-v4/9.png",
+    "headFront": "/pixel/player/happyseed-human-v4/brazil-outfield/head_front.png",
+    "headBack": "/pixel/player/happyseed-human-v4/brazil-outfield/head_back.png"
+  },
+  "compatibility": {
+    "sourceSkeleton": "/match-runtime-min/data/player.json",
+    "anchor": "root-footline",
+    "frontFacingValue": 1,
+    "backFacingValue": -1,
+    "horizontalFlip": "spine-scale-x",
+    "modeScope": [
+      "coach",
+      "player",
+      "penalty"
+    ]
+  }
+}

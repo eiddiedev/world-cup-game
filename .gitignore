@@ -15,6 +15,11 @@ coverage/
 
 .docx_render_qc/
 
+# Local tool configuration and large review artifacts are not source inputs.
+.trae/
+/*.docx
+/*.mp4
+
 # Local agent notes are useful during development, but not part of the public game package.
 CLAUDE.md
 AGENT_INTRODUCTION.md

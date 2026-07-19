@@ -1,7 +1,11 @@
 import React, { useState } from 'react'
 import { getTeamById } from '../data/teams'
 import { getTeamDefaultFormation } from '../data/teamFormations'
-import { FORMATION_TACTICS } from '../data/formationTactics'
+import {
+  NATIONAL_SQUAD_SIZE,
+  buildRecommendedNationalSquad,
+  validateNationalSquad,
+} from '../data/rosterRules'
 
 /**
  * 球员招募页面
@@ -30,7 +34,8 @@ export default function RecruitmentScreen({ saveData, updateSaveData, navigateTo
 
   const availablePlayers = team.players || []
   const totalBudget = team.budget
-  const spentBudget = purchasedPlayers.reduce((sum, p) => sum + (p.price || 0), 0)
+  const squadValidation = validateNationalSquad(purchasedPlayers, totalBudget)
+  const spentBudget = squadValidation.spent
   const remainingBudget = totalBudget - spentBudget
 
   // 按位置分组
@@ -50,8 +55,8 @@ export default function RecruitmentScreen({ saveData, updateSaveData, navigateTo
   }, {})
 
   const handleBuyPlayer = (player) => {
-    if (purchasedPlayers.length >= 24) {
-      showToast('阵容已满（24人）')
+    if (purchasedPlayers.length >= NATIONAL_SQUAD_SIZE) {
+      showToast(`征召名单已满（${NATIONAL_SQUAD_SIZE}人）`)
       return
     }
     if (player.price > remainingBudget) {
@@ -59,22 +64,30 @@ export default function RecruitmentScreen({ saveData, updateSaveData, navigateTo
       return
     }
     if (purchasedPlayers.some(p => p.id === player.id)) {
-      showToast('该球员已在阵容中')
+      showToast('该球员已在征召名单中')
       return
     }
     setPurchasedPlayers([...purchasedPlayers, player])
-    showToast(`已签下 ${player.name}`)
+    showToast(`已征召 ${player.name}`)
   }
 
   const handleSellPlayer = (player) => {
     setPurchasedPlayers(purchasedPlayers.filter((p) => p.id !== player.id))
-    showToast(`已出售 ${player.name}`)
+    showToast(`已移出 ${player.name}`)
   }
 
   const handleConfirmRoster = () => {
-    const hasGoalkeeper = purchasedPlayers.some((p) => p.position === 'GK')
-    if (!hasGoalkeeper) {
-      showToast('必须至少有1名门将')
+    const validation = validateNationalSquad(purchasedPlayers, totalBudget)
+    if (validation.count !== NATIONAL_SQUAD_SIZE) {
+      showToast(`必须征召满${NATIONAL_SQUAD_SIZE}人`)
+      return
+    }
+    if (validation.missing.length > 0) {
+      showToast('位置结构不足：至少2门将、6后卫、6中场、3前锋')
+      return
+    }
+    if (validation.spent > totalBudget) {
+      showToast('征召预算超支')
       return
     }
 
@@ -91,60 +104,18 @@ export default function RecruitmentScreen({ saveData, updateSaveData, navigateTo
     navigateTo('tournament')
   }
 
-  // 一键招募：按阵型自动选购最高价球员，把预算花完
+  // 一键推荐征召：按阵型、预算和最低位置结构推荐23人
   const handleAutoRecruit = () => {
     const formation = saveData.currentRun?.formation || getTeamDefaultFormation(team.id)
-    const counts = FORMATION_TACTICS[formation]?.counts || { GK: 1, DF: 4, MF: 3, FW: 3 }
-    const budget = team.budget
-
-    // 按位置分组，按价格从高到低排序
-    const byPosition = { GK: [], DF: [], MF: [], FW: [] }
-    availablePlayers.forEach(p => {
-      if (byPosition[p.position]) byPosition[p.position].push(p)
-    })
-    Object.keys(byPosition).forEach(pos => {
-      byPosition[pos].sort((a, b) => b.price - a.price)
-    })
-
-    const selected = []
-    let remaining = budget
-
-    // 第一步：按阵型买首发（每个位置最贵的）
-    for (const [pos, count] of Object.entries(counts)) {
-      const pool = byPosition[pos] || []
-      for (let i = 0; i < count && i < pool.length; i++) {
-        if (pool[i].price <= remaining) {
-          selected.push(pool[i])
-          remaining -= pool[i].price
-        }
-      }
-    }
-
-    // 第二步：如果预算还有剩余，按优先级补人：DF > MF > FW > GK
-    const depthPriority = ['DF', 'MF', 'FW', 'GK']
-    let boughtMore = true
-    while (boughtMore && remaining > 0) {
-      boughtMore = false
-      for (const pos of depthPriority) {
-        const pool = byPosition[pos] || []
-        for (const player of pool) {
-          if (selected.some(p => p.id === player.id)) continue
-          if (player.price <= remaining && selected.length < 24) {
-            selected.push(player)
-            remaining -= player.price
-            boughtMore = true
-          }
-        }
-      }
-    }
+    const selected = buildRecommendedNationalSquad(availablePlayers, team.budget, formation)
 
     if (selected.length === 0) {
-      showToast('无法招募任何球员')
+      showToast('无法生成征召推荐')
       return
     }
 
     setPurchasedPlayers(selected)
-    showToast(`一键招募完成！签下 ${selected.length} 名球员`)
+    showToast(`一键推荐完成：征召 ${selected.length} 人`)
   }
 
   // 六维图渲染
@@ -207,12 +178,12 @@ export default function RecruitmentScreen({ saveData, updateSaveData, navigateTo
           <button className="back-button" onClick={() => navigateTo('team-select')}>
             ←
           </button>
-          <h1>球员招募 - {team.name}</h1>
+          <h1>国家队征召 - {team.name}</h1>
         </div>
 
         <div style={{ textAlign: 'center' }}>
           <p className="recruitment-hint">
-            超跑闪击，球王绝杀，金色卡面自带隐藏神技 ！但要小心预算空置与下半场的疲劳危机，是堆砌球星还是平衡深度？现在，行使你的主帅特权 ！
+            从{availablePlayers.length}人大名单中征召{NATIONAL_SQUAD_SIZE}人。默认阵型 {team.defaultFormation}，风格：{team.styleTags?.join(' / ')}。
           </p>
         </div>
 
@@ -222,8 +193,8 @@ export default function RecruitmentScreen({ saveData, updateSaveData, navigateTo
             <span className="stat-value budget">{remainingBudget}<img src="/assets/金币.png" alt="金币" className="coin-icon" /></span>
           </div>
           <div className="stat-item">
-            <span className="stat-label">已购</span>
-            <span className="stat-value">{purchasedPlayers.length}/24</span>
+            <span className="stat-label">已征召</span>
+            <span className="stat-value">{purchasedPlayers.length}/{NATIONAL_SQUAD_SIZE}</span>
           </div>
           {positionOrder.map(pos => (
             <div key={pos} className="stat-item">
@@ -310,15 +281,15 @@ export default function RecruitmentScreen({ saveData, updateSaveData, navigateTo
                       className="btn-v2-sell"
                       onClick={(e) => { e.stopPropagation(); handleSellPlayer(player); }}
                     >
-                      出售
+                      移出
                     </button>
                   ) : (
                     <button
                       className="btn-v2-buy"
                       onClick={(e) => { e.stopPropagation(); handleBuyPlayer(player); }}
-                      disabled={player.price > remainingBudget}
+                      disabled={player.price > remainingBudget || purchasedPlayers.length >= NATIONAL_SQUAD_SIZE}
                     >
-                      购买
+                      征召
                     </button>
                   )}
                 </div>
@@ -353,10 +324,10 @@ export default function RecruitmentScreen({ saveData, updateSaveData, navigateTo
                   handleBuyPlayer(selectedPlayer)
                   setSelectedPlayer(null)
                 }}
-                disabled={selectedPlayer.price > remainingBudget}
+                disabled={selectedPlayer.price > remainingBudget || purchasedPlayers.length >= NATIONAL_SQUAD_SIZE}
               >
                 <span className="button-face" aria-hidden="true"></span>
-                <span className="button-label">购买</span>
+                <span className="button-label">征召</span>
               </button>
             )}
           </div>
@@ -366,11 +337,11 @@ export default function RecruitmentScreen({ saveData, updateSaveData, navigateTo
       <div className="recruitment-footer">
         <button className="PixelButton secondary-button" onClick={handleAutoRecruit}>
           <span className="button-face" aria-hidden="true"></span>
-          <span className="button-label">一键招募</span>
+          <span className="button-label">一键推荐</span>
         </button>
         <button className="PixelButton" onClick={handleConfirmRoster}>
           <span className="button-face" aria-hidden="true"></span>
-          <span className="button-label">确认阵容</span>
+          <span className="button-label">确认征召</span>
         </button>
       </div>
     </div>

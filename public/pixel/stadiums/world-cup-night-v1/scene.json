@@ -1,0 +1,183 @@
+{
+  "schemaVersion": "happyseed-pixel-stadium-v1",
+  "id": "world-cup-night-v1",
+  "visualThesis": "ImageGen 高清人类世界杯看台包围原 Runtime 几何锁定草坪，交互球、球门与球网保持 Runtime 独立。",
+  "sourceSize": {
+    "width": 4096,
+    "height": 2048
+  },
+  "runtimeSize": {
+    "width": 5120,
+    "height": 2560
+  },
+  "runtimeScale": 1.25,
+  "pitchBounds": {
+    "x": 810,
+    "y": 764,
+    "width": 3500,
+    "height": 1321
+  },
+  "scaleReference": {
+    "humanSkeletonBounds": {
+      "width": 123.69,
+      "height": 202.3
+    },
+    "anchor": "root-footline"
+  },
+  "assets": {
+    "environment": "/pixel/stadiums/world-cup-night-v1/stadium-environment-v2.png",
+    "pitchReference": "/match-runtime-min/data/stadiums/international/stadium.jpg",
+    "goalAtlas": "/pixel/stadiums/world-cup-night-v1/goal-atlas.png",
+    "scene": "/pixel/stadiums/world-cup-night-v1/scene.json"
+  },
+  "layers": [
+    {
+      "id": "environment",
+      "label": "ImageGen 高清人类观众与看台",
+      "runtimeLayer": "base"
+    },
+    {
+      "id": "locked-pitch",
+      "label": "原 Runtime 几何锁定草坪",
+      "runtimeLayer": "base"
+    },
+    {
+      "id": "goal-back",
+      "label": "球门后框",
+      "runtimeLayer": "bottom"
+    },
+    {
+      "id": "goal-front",
+      "label": "门柱前框",
+      "runtimeLayer": "middle"
+    },
+    {
+      "id": "net",
+      "label": "动态球网",
+      "runtimeLayer": "runtime-net"
+    }
+  ],
+  "cameraPresets": [
+    {
+      "id": "normal",
+      "label": "常规",
+      "normalizedTarget": [
+        0.5,
+        0.5
+      ],
+      "zoomMultiplier": 1,
+      "followBall": true
+    },
+    {
+      "id": "goal",
+      "label": "进球",
+      "normalizedTarget": [
+        0.08,
+        0.5
+      ],
+      "zoomMultiplier": 1.24
+    },
+    {
+      "id": "corner",
+      "label": "角球",
+      "normalizedTarget": [
+        0.08,
+        0.08
+      ],
+      "zoomMultiplier": 1.2
+    },
+    {
+      "id": "goal-kick",
+      "label": "门球",
+      "normalizedTarget": [
+        0.14,
+        0.5
+      ],
+      "zoomMultiplier": 1.14
+    },
+    {
+      "id": "touchline",
+      "label": "边线球",
+      "normalizedTarget": [
+        0.5,
+        0.08
+      ],
+      "zoomMultiplier": 1.16
+    },
+    {
+      "id": "penalty",
+      "label": "点球",
+      "normalizedTarget": [
+        0.16,
+        0.5
+      ],
+      "zoomMultiplier": 1.3
+    }
+  ],
+  "composition": {
+    "artSource": {
+      "kind": "image-generation",
+      "bakedHumanCrowd": true,
+      "runtimeDecorations": false,
+      "projectionReference": "animal-cup-international-runtime",
+      "exactProjection": true,
+      "generatedLayerRole": "environment-only",
+      "pitchReferenceRole": "geometry-authority"
+    },
+    "sourcePitchBounds": {
+      "x": 648,
+      "y": 611,
+      "width": 2800,
+      "height": 1057
+    },
+    "sourcePitchMask": {
+      "x": 568,
+      "y": 531,
+      "width": 2960,
+      "height": 1217
+    },
+    "goalFrames": {
+      "bottom": [
+        [
+          73,
+          0,
+          141,
+          183
+        ],
+        [
+          216,
+          0,
+          141,
+          182
+        ]
+      ],
+      "middle": [
+        [
+          0,
+          0,
+          34,
+          285
+        ],
+        [
+          36,
+          0,
+          35,
+          284
+        ]
+      ]
+    }
+  },
+  "invariants": {
+    "preserveGoalCollision": true,
+    "preserveDynamicNet": true,
+    "preserveCamera": true,
+    "preserveDepthSort": true,
+    "hideLegacyAnimalCrowd": true,
+    "sharedModes": [
+      "coach",
+      "player",
+      "penalty"
+    ],
+    "networking": "none"
+  }
+}

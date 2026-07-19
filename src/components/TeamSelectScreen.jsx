@@ -7,14 +7,14 @@ import { IS_DOUYIN_DEMO } from '../config/runtime'
  * 国家队选择页面
  * 直接点击球队开启征程
  */
-export default function TeamSelectScreen({ saveData, updateSaveData, navigateTo, showToast }) {
+export default function TeamSelectScreen({ saveData, updateSaveData, navigateTo, showToast, gameMode = 'coach' }) {
 
   const unlockedTeams = teams.filter((t) =>
     saveData.unlockTeams.includes(t.id)
   )
 
   const handleSelectTeam = (team) => {
-    const newRun = createNewRun(team.id)
+    const newRun = createNewRun(team.id, gameMode)
     updateSaveData({
       ...saveData,
       currentRun: newRun,

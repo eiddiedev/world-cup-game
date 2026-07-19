@@ -1,12 +1,18 @@
-export function getMatchBench(fullRoster = [], currentLineup = [], unavailableIds = []) {
+export function getMatchBench(
+  fullRoster = [],
+  currentLineup = [],
+  unavailableIds = [],
+  substitutedOutIds = [],
+) {
   const onField = new Set(currentLineup.map(player => player.id))
-  const unavailable = new Set(unavailableIds)
+  const unavailable = new Set([...unavailableIds, ...substitutedOutIds])
   return fullRoster.filter(player => !onField.has(player.id) && !unavailable.has(player.id))
 }
 
-export function swapMatchPlayer(currentLineup = [], benchPlayer, outPlayer) {
+export function swapMatchPlayer(currentLineup = [], benchPlayer, outPlayer, blockedPlayerIds = []) {
   if (!benchPlayer?.id || !outPlayer?.id) return null
   if (benchPlayer.id === outPlayer.id) return null
+  if (new Set(blockedPlayerIds).has(benchPlayer.id)) return null
   if (currentLineup.some(player => player.id === benchPlayer.id)) return null
   if (!currentLineup.some(player => player.id === outPlayer.id)) return null
 
