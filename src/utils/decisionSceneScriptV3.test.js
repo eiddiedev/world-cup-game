@@ -433,6 +433,17 @@ describe('DecisionSceneScriptV3', () => {
             expect(Math.hypot(actorEnd[0] - ballEnd[0], actorEnd[1] - ballEnd[1]))
               .toBeGreaterThanOrEqual(0.04)
             expect(outcome.actions.some((action) => action.animation === 'shoot')).toBe(true)
+            // 射门段必须从带球终点发出，且射门动作落在带球者身上
+            // （回归：逼入底线曾从持球人初始位置直接射门，动作错挂防守人）
+            const carryEnd = outcome.carryPath.at(-1)
+            expect(Math.hypot(outcome.path[0][0] - carryEnd[0], outcome.path[0][1] - carryEnd[1]),
+              `${scenario.id}/${choice.id}`)
+              .toBeLessThan(1e-6)
+            const carrierRole = outcome.actorMotions.find((motion) => motion.carriesBall)?.role
+            expect(outcome.actions.some((action) => (
+              action.animation === 'shoot' && action.role === carrierRole
+            )), `${scenario.id}/${choice.id}`)
+              .toBe(true)
           } else {
             expect(outcome.passPath?.length, `${scenario.id}/${choice.id}`).toBe(4)
             expect(outcome.pathSegments?.at(-1), `${scenario.id}/${choice.id}`)

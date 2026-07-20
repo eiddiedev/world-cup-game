@@ -644,6 +644,19 @@
         if (!continuation || continuation.type !== "actor-possession") return !1;
         var entry = entryFor(continuation.runtimeActorId);
         if (!entry || !entry.entity || !entry.entity.position) return !1;
+        // 先清掉冻结瞬间残留的球权归属：老持球人仍标记 owner/inHands 时，
+        // forceTrap 一旦在引擎信号链上抛错，下面的直赋兜底会被 !owner 条件跳过，
+        // 球权永远确认不到，settle 无限重试，比赛冻结在执行阶段
+        try {
+          if (pitch.ball.inHands && pitch.ball.inHands !== entry.entity) pitch.ball.inHands = null;
+        } catch {}
+        try {
+          if (pitch.ball.owner && pitch.ball.owner !== entry.entity) {
+            try { pitch.ball.owner.release(); } catch {}
+            try { pitch.ball.owner.hasBall = !1; } catch {}
+            pitch.ball.owner = null;
+          }
+        } catch {}
         // 原生扑救模式：门将已经把球抱在怀里（inHands），不再重放 trap
         if (pitch.ball.inHands !== entry.entity) {
           pitch.ball.placeAtPosition(
@@ -874,8 +887,15 @@
         if (active.execution.continuation
           && active.execution.continuation.type === "actor-possession"
           && !state.continuationReady) {
+          if (!active.handoffStartedAt) active.handoffStartedAt = now;
           state.continuationReady = handoffContinuation();
-          if (!state.continuationReady) return;
+          if (!state.continuationReady) {
+            if (now - active.handoffStartedAt < 1500) return;
+            // 球权交接长时间无法确认（持球人状态冲突等）：绝不能冻结比赛，
+            // 按散球结算，恢复后交给原生 AI 接续
+            console.warn("[decision-director-v3] 球权交接超时，按散球结算",
+              active.script.scenarioId, active.outcome);
+          }
         }
         active.settled = !0;
         state.settleCount += 1;

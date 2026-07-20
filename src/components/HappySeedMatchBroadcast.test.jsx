@@ -44,6 +44,7 @@ const serviceMocks = vi.hoisted(() => ({
   setZoom: vi.fn(() => true),
   subscribeToMatchEvents: vi.fn(() => () => {}),
   subscribeToRuntimeDecisionChoices: vi.fn(() => () => {}),
+  withDecisionWatchdog: vi.fn((promise) => promise),
   subscribeToRuntimeMatchEvents: vi.fn((listener) => {
     listener({
       schemaVersion: 'match-runtime-event-v1',

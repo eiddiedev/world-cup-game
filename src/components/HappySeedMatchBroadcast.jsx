@@ -22,10 +22,12 @@ import {
   getTeamTacticalStance,
   setFormalCoachDecisionChoiceHover,
   setRuntimeActorState,
+  startExtraTime,
   subscribeToMatchEvents,
   subscribeToRuntimeDecisionChoices,
   subscribeToRuntimeMatchEvents,
   substituteRuntimeActor,
+  withDecisionWatchdog,
 } from '../services/happySeedMatchRuntime.js'
 import {
   buildBroadcastSubstitutionBoard,
@@ -42,6 +44,7 @@ import {
   recordFormalRuntimeGoal,
   recordFormalSubstitution,
   settleFormalDecisionInSession,
+  startFormalExtraTime,
   startFormalMatchSession,
 } from '../utils/formalMatchSession.js'
 import { getTeamById } from '../data/teams.js'
@@ -196,6 +199,7 @@ export function HappySeedMatchBroadcast({ saveData = null, onMatchComplete = nul
   const sessionRef = useRef(matchSession)
   const runtimeMomentRef = useRef(null)
   const completedReportedRef = useRef(false)
+  const extraTimeKickoffPendingRef = useRef(false)
   const runtimeEventQueueRef = useRef([])
   const runtimeIncidentTimersRef = useRef(new Set())
   const eventArtworkTimerRef = useRef(null)
@@ -232,6 +236,8 @@ export function HappySeedMatchBroadcast({ saveData = null, onMatchComplete = nul
     if (!audioStarted) return undefined
     if (bootedRef.current) return undefined
     bootedRef.current = true
+    // 每场比赛随机天气（约 1/4 雨天）：驱动湿滑草皮等天气相关决策
+    window.__happySeedWeather = Math.random() < 0.25 ? 'rain' : 'clear'
     bootHappySeedMatch({
       red: redTeamId,
       blue: blueTeamId,
@@ -272,6 +278,50 @@ export function HappySeedMatchBroadcast({ saveData = null, onMatchComplete = nul
     return undefined
   }, [audioStarted, blueTeamId, commitSession, currentRun, params, redTeamId])
 
+  // 进入加时赛：先置 extraTime 标志，加时更衣室在 effect 里打开，
+  // 引擎重开球在更衣室关闭（或无场景可开）后进行
+  const enterExtraTime = useCallback((debug = false) => {
+    const current = sessionRef.current
+    if (!current || current.extraTime || current.status !== 'running') return false
+    extraTimeKickoffPendingRef.current = true
+    commitSession((session) => startFormalExtraTime(session))
+    setStatus(debug ? '（测试）直接进入加时赛' : '90 分钟战平，进入加时赛（30 分钟）')
+    return true
+  }, [commitSession])
+
+  const finishMatch = useCallback((runtimeEventId = null, forceShootout = false) => {
+    const finished = commitSession((current) => finalizeFormalMatchSession(
+      current,
+      new Date().toISOString(),
+      runtimeEventId,
+    ))
+    setStatus(`终场 · ${finished.score.red}:${finished.score.blue} · 本场 ${finished.decisions.length} 次决策`)
+    if (onMatchComplete && !completedReportedRef.current) {
+      completedReportedRef.current = true
+      window.setTimeout(() => onMatchComplete({
+        session: finished,
+        report: buildFormalMatchSessionReport(finished),
+        actorSnapshot: getRuntimeActorSnapshot(),
+        forceShootout,
+      }), 900)
+    }
+  }, [commitSession, onMatchComplete])
+
+  // 测试快捷键：E 直接进加时，P 直接进点球大战
+  useEffect(() => {
+    const onKeyDown = (event) => {
+      if (event.repeat || event.ctrlKey || event.metaKey || event.altKey) return
+      const tag = event.target?.tagName
+      if (tag === 'INPUT' || tag === 'TEXTAREA') return
+      if (event.key === 'e' || event.key === 'E') enterExtraTime(true)
+      else if (event.key === 'p' || event.key === 'P') {
+        if (!completedReportedRef.current) finishMatch(null, true)
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [enterExtraTime, finishMatch])
+
   useEffect(() => {
     const unsubscribe = subscribeToMatchEvents((event) => {
       if (event.type === 'ab-goal') {
@@ -283,25 +333,18 @@ export function HappySeedMatchBroadcast({ saveData = null, onMatchComplete = nul
         ))
       }
       if (event.type === 'ab-match-ended') {
-        const finished = commitSession((current) => finalizeFormalMatchSession(
-          current,
-          new Date().toISOString(),
-          event.detail?.runtimeEventId || null,
-        ))
-        setStatus(`终场 · ${finished.score.red}:${finished.score.blue} · 本场 ${finished.decisions.length} 次决策`)
-        if (onMatchComplete && !completedReportedRef.current) {
-          completedReportedRef.current = true
-          window.setTimeout(() => onMatchComplete({
-            session: finished,
-            report: buildFormalMatchSessionReport(finished),
-            actorSnapshot: getRuntimeActorSnapshot(),
-          }), 900)
-        }
+        const current = sessionRef.current
+        const tied = current.score.red === current.score.blue
+        // 平局且未打过加时：进入加时赛（小组赛不设加时，平局收场）
+        const extraTimeEligible = !currentRun || currentRun.isKnockoutMatch
+        if (tied && !current.extraTime && extraTimeEligible && enterExtraTime()) return
+        // 加时后仍平局：以平局完赛，由 MatchScreen 进入点球大战
+        finishMatch(event.detail?.runtimeEventId || null, tied && current.extraTime)
       }
       if (event.type === 'ab-runtime-substitution') setStatus('换人已同步到场上')
     })
     return unsubscribe
-  }, [commitSession, onMatchComplete, showEventArtwork])
+  }, [commitSession, currentRun, enterExtraTime, finishMatch, onMatchComplete, showEventArtwork])
 
   useEffect(() => {
     const holdGoalPresentation = () => {
@@ -532,6 +575,11 @@ export function HappySeedMatchBroadcast({ saveData = null, onMatchComplete = nul
   const handleLockerRoomContinue = () => {
     const wasPrematch = lockerRoom?.phase === 'prematch'
     setLockerRoom(null)
+    // 加时更衣室关闭后，引擎重开球，比赛从 90 分钟继续
+    if (extraTimeKickoffPendingRef.current) {
+      extraTimeKickoffPendingRef.current = false
+      startExtraTime()
+    }
     if (lockerRoomPausedRef.current) {
       lockerRoomPausedRef.current = false
       resumeMatch()
@@ -557,18 +605,27 @@ export function HappySeedMatchBroadcast({ saveData = null, onMatchComplete = nul
     return () => window.clearTimeout(timer)
   }, [])
 
-  // 中场休息 / 加时中场 / 点球大战前：按比赛阶段触发
+  // 中场休息 / 加时中场 / 点球大战前：按比赛阶段触发。
+  // 常规中场的 period-change 一旦发生过 halfTimeSeen 就永真，
+  // 所以加时两个钩子必须独立判断，不能挂在 else-if 链上
   useEffect(() => {
     const halfTimeSeen = matchSession.commentary.some((line) => (
       line.type === 'period-change' && line.text.startsWith('上半场结束')
     ))
     if (halfTimeSeen) openLockerRoom('halftime', { pause: true })
-    else if (matchSession.phase === 'extra-time' && matchSession.minute >= 105) {
+    // 加时重开球以 extraTime 标志 + 待开球标记为准，不依赖分钟数
+    //（E 键可能在 90 分钟前直接进入加时）
+    if (matchSession.extraTime && extraTimeKickoffPendingRef.current && !lockerRoom) {
+      const opened = openLockerRoom('extratime', { pause: true })
+      // 加时更衣室无场景可开时，直接重开球进入加时
+      if (!opened) {
+        extraTimeKickoffPendingRef.current = false
+        startExtraTime()
+      }
+    } else if (matchSession.extraTime && matchSession.minute >= 105) {
       openLockerRoom('shootout', { pause: true })
-    } else if (matchSession.phase === 'extra-time' && matchSession.minute >= 90) {
-      openLockerRoom('extratime', { pause: true })
     }
-  }, [matchSession])
+  }, [lockerRoom, matchSession])
   const pendingOutgoingIds = new Set(pendingSubstitutions.map((swap) => swap.outgoing.playerId))
   const pendingIncomingIds = new Set(pendingSubstitutions.map((swap) => swap.incoming.playerId))
   const pendingSwapByOutgoingId = new Map(pendingSubstitutions.map((swap) => [
@@ -765,7 +822,7 @@ export function HappySeedMatchBroadcast({ saveData = null, onMatchComplete = nul
         coachDecision,
         choice.id,
       )
-      const { resolution } = await execution.settled
+      const { resolution } = await withDecisionWatchdog(execution.settled)
       if (decisionRunIdRef.current !== runId) return
       if (
         resolution.runtimeEffect?.type === 'substitution'
@@ -778,15 +835,25 @@ export function HappySeedMatchBroadcast({ saveData = null, onMatchComplete = nul
       ))
       setDecisionPhase('settled')
       setStatus(resolution.resultText)
-      await execution.completed
+      await withDecisionWatchdog(execution.completed)
       if (decisionRunIdRef.current !== runId) return
       setCoachDecision(null)
       setPendingDecisionPlan(null)
       setDecisionPhase('idle')
-      setStatus(`${resolution.resultText} · 已恢复连续比赛（${settledSession.decisions.length}/5）`)
+      setStatus(`${resolution.resultText} · 已恢复连续比赛（${settledSession.decisions.length}/${settledSession.targetDecisionCount}）`)
     } catch (decisionError) {
       if (decisionRunIdRef.current !== runId) return
       console.error(decisionError)
+      if (decisionError.recovered) {
+        // 播放超时：主动取消导演，解除比赛冻结，而不是停在错误态
+        cancelFormalCoachDecision()
+        commitSession((current) => abortFormalDecisionInSession(current))
+        setCoachDecision(null)
+        setPendingDecisionPlan(null)
+        setDecisionPhase('idle')
+        setError(decisionError.message)
+        return
+      }
       setDecisionPhase('error')
       setError(decisionError.message || '教练决策结果播放失败')
     }

@@ -17,6 +17,7 @@ import {
   resetZoom,
   setZoom,
   subscribeToRuntimeMatchEvents,
+  withDecisionWatchdog,
 } from '../services/happySeedMatchRuntime.js'
 import { getMatchEventArtwork } from '../utils/matchEventArtwork.js'
 import { resolveFormalCoachDecisionRule } from '../utils/formalCoachDecision.js'
@@ -285,14 +286,19 @@ export default function HappySeedDecisionReview() {
       const execution = executeFormalCoachDecisionChoice(decision, selectedChoice.id, {
         outcomeOverride: selectedOutcome,
       })
-      const settled = await execution.settled
+      const settled = await withDecisionWatchdog(execution.settled)
       setPhase('settled')
-      await execution.completed
+      await withDecisionWatchdog(execution.completed)
       setExecutionReport(settled.resolution)
       setDecision(null)
       setPhase('idle')
       setStatus(settled.resolution.resultText)
     } catch (executeError) {
+      if (executeError?.recovered) {
+        cancelFormalCoachDecision()
+        setDecision(null)
+        setPhase('idle')
+      }
       setError(executeError.message || '结果执行失败')
     }
   }

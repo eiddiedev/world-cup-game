@@ -934,8 +934,6 @@ export function buildFormalDecisionSceneScriptV3(decision, actorSource, runtimeM
     const ballAffordances = affordances.filter((affordance) => affordance.kind === 'ball-path')
     const ballAffordance = ballAffordances[0]
     const runAffordances = affordances.filter((affordance) => affordance.kind === 'run-lane')
-    const runAffordance = runAffordances.find((affordance) => !affordance.carriesBall)
-      || runAffordances[0]
     const isShotChoice = ballAffordance?.runtimeEventType === 'shot'
     const carryAffordance = !ballAffordance
       ? runAffordances.find((affordance) => affordance.carriesBall) || null
@@ -972,8 +970,10 @@ export function buildFormalDecisionSceneScriptV3(decision, actorSource, runtimeM
       const multiPassThenShot = Boolean(passThenShot && sequenceBallAffordances.length > 1)
       const movesBall = Boolean(executionBallAffordance) || Boolean(carryAffordance) || ballOnlyOutcome
       const carryEnd = carryAffordance?.points?.at(-1)
-      const selectedPath = executionBallAffordance?.points
-        || (carryThenShot ? curve(carryEnd, target, 0.34) : carryAffordance?.points)
+      // 带球后射门：射门段必须从带球终点发出。若直接沿用响应球路的原始点列，
+      // 球会在出球瞬间从持球人初始位置起飞（逼入底线变成原地直接射门）
+      const selectedPath = (carryThenShot ? curve(carryEnd, target, 0.34) : executionBallAffordance?.points)
+        || carryAffordance?.points
         || (ballOnlyOutcome ? curve(context.origin, target, 0.16) : null)
       const finalPassAffordance = sequenceBallAffordances.at(-1) || executionBallAffordance
       const receivingShooterRole = passThenShot ? receiverRoleForBallAction(finalPassAffordance) : null
@@ -1066,7 +1066,9 @@ export function buildFormalDecisionSceneScriptV3(decision, actorSource, runtimeM
         Boolean(outcomePathFinal) || !executionBallAffordance,
       )
       if (carryThenShot) {
-        actions.push({ atMs: shotAtMs, role: runAffordance.role || 'primary', animation: 'shoot' })
+        // 收尾射门动作必须落在带球者身上：runAffordance 优先取非带球跑位，
+        // 双跑位场景（如逼入底线）会把射门动作错挂到防守人身上
+        actions.push({ atMs: shotAtMs, role: carryAffordance.role || 'primary', animation: 'shoot' })
         actions.sort((left, right) => left.atMs - right.atMs)
       }
       if (passThenShot) {
@@ -1538,7 +1540,7 @@ const TRIGGER_PREDICATES = Object.freeze({
   'through-run-window': (m, e) => m.attackingSide === 'red' && attackProgress(m) >= 0.48 && attackProgress(m) <= 0.78 && eventIs(e, ['pass', 'touch']),
   'box-tackle-window': (m, e) => m.attackingSide === 'blue' && attackProgress(m) >= 0.74 && eventIs(e, ['touch', 'possession-change']),
   'goalkeeper-one-on-one': (m, e) => m.attackingSide === 'blue' && attackProgress(m) >= 0.77 && m.ball.normalized[1] >= 0.24 && m.ball.normalized[1] <= 0.76 && eventIs(e, ['touch', 'pass']),
-  'last-defender-duel': (m, e) => m.attackingSide === 'blue' && attackProgress(m) >= 0.64 && eventIs(e, ['touch', 'pass', 'possession-change']),
+  'last-defender-duel': (m, e) => m.attackingSide === 'blue' && attackProgress(m) >= 0.8 && eventIs(e, ['touch', 'pass', 'possession-change']),
   'midfield-press-window': (m, e) => m.attackingSide === 'blue' && attackProgress(m) >= 0.3 && attackProgress(m) <= 0.72 && eventIs(e, ['touch', 'pass', 'possession-change']),
   'counter-contact-window': (m, e) => m.attackingSide === 'blue' && attackProgress(m) >= 0.3 && attackProgress(m) <= 0.7 && eventIs(e, ['possession-change', 'touch', 'pass']),
   'offside-line-window': (m, e) => m.attackingSide === 'blue' && attackProgress(m) >= 0.48 && eventIs(e, ['pass', 'touch']),
@@ -1549,7 +1551,7 @@ const TRIGGER_PREDICATES = Object.freeze({
   'box-contact-attack': (m, e) => m.attackingSide === 'red' && attackProgress(m) >= 0.76 && e?.type === 'tackle-contact',
   'box-second-ball': (m, e) => m.attackingSide === 'blue' && attackProgress(m) >= 0.72 && eventIs(e, ['touch', 'possession-change']),
   'wing-overlap': (m, e) => m.attackingSide === 'red' && attackProgress(m) >= 0.55 && (m.ball.normalized[1] <= 0.3 || m.ball.normalized[1] >= 0.7) && eventIs(e, ['touch', 'pass']),
-  'cutback-window': (m, e) => m.attackingSide === 'red' && attackProgress(m) >= 0.82 && (m.ball.normalized[1] <= 0.34 || m.ball.normalized[1] >= 0.66) && eventIs(e, ['touch', 'pass']),
+  'cutback-window': (m, e) => m.attackingSide === 'red' && attackProgress(m) >= 0.82 && (m.ball.normalized[1] <= 0.32 || m.ball.normalized[1] >= 0.68) && eventIs(e, ['touch', 'pass']),
   'half-space-run': (m, e) => m.attackingSide === 'red' && attackProgress(m) >= 0.5 && attackProgress(m) <= 0.8 && eventIs(e, ['touch', 'pass']),
   'defensive-turnover': (m, e) => m.attackingSide === 'red' && attackProgress(m) <= 0.42 && e?.type === 'possession-change',
   'high-press-window': (m, e) => m.attackingSide === 'blue' && attackProgress(m) <= 0.45 && eventIs(e, ['touch', 'pass']),
@@ -1559,7 +1561,9 @@ const TRIGGER_PREDICATES = Object.freeze({
   'corner-second-ball': (m, e) => m.attackingSide === 'red' && attackProgress(m) >= 0.72 && eventIs(e, ['touch', 'possession-change', 'shot']),
   'set-piece-rebound': (m, e) => m.attackingSide === 'red' && attackProgress(m) >= 0.72 && eventIs(e, ['post-hit', 'crossbar-hit', 'save', 'touch']),
   'penalty-rebound': (m, e) => m.attackingSide === 'red' && attackProgress(m) >= 0.82 && e?.type === 'save',
-  'booked-defender-duel': (m, e) => m.attackingSide === 'blue' && attackProgress(m) >= 0.55 && eventIs(e, ['touch']),
+  'booked-defender-duel': (m, e, s) => m.attackingSide === 'blue' && attackProgress(m) >= 0.55 && eventIs(e, ['touch'])
+    // 语义门：本方确实已有黄牌在身才有"再吃牌就下场"的抉择
+    && (!s || Number(s.stats?.red?.yellowCards || 0) >= 1),
   'wet-pitch-tackle': (m, e) => Boolean(
     m.weather === 'rain'
     && m.attackingSide === 'blue'
@@ -1586,9 +1590,15 @@ export function isFormalDecisionMomentEligibleV3(scenarioId, runtimeMoment, sour
   if (contract.mode === 'freeze-match-state') {
     if (contract.triggerId === 'trailing-final-ten') return Number(session?.minute || 0) >= 80 && session.score.red < session.score.blue
     if (contract.triggerId === 'leading-final-ten') return Number(session?.minute || 0) >= 80 && session.score.red > session.score.blue
-    return session?.phase === 'extra-time' && session.score.red === session.score.blue
+    return Boolean(session?.extraTime) && session.score.red === session.score.blue
   }
-  if (contract.mode !== 'freeze-live') return true
+  if (contract.mode !== 'freeze-live') {
+    // 语义门：补时门将上抢只在比分落后时出现（领先/平局不会孤注一掷）
+    if (contract.triggerId === 'late-attacking-corner' && session) {
+      return Number(session.score?.red || 0) < Number(session.score?.blue || 0)
+    }
+    return true
+  }
   const predicate = TRIGGER_PREDICATES[contract.triggerId]
   if (!predicate) throw new Error(`${scenarioId} 缺少 V3 trigger predicate：${contract.triggerId}`)
   return Boolean(predicate(runtimeMoment, sourceEvent, session))

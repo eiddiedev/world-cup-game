@@ -1719,6 +1719,9 @@
       maximumAddedMinutes = 5;
     mode.game.__happySeedStoppageClock = {
       regularHalfSeconds: regularHalfSeconds,
+      // 加时赛单段 15 分钟（上下各一段，90-105 / 105-120）
+      extraHalfSeconds: regularHalfSeconds / 3,
+      extraTime: !1,
       realSecondsPerMatchMinute: realSecondsPerMatchMinute,
       maximumAddedMinutes: maximumAddedMinutes,
       estimates: { 1: 1, 2: 1 },
@@ -1758,7 +1761,10 @@
   }
 
   function stoppageHalf(game) {
-    return game && game.pitch && game.pitch.secondHalf ? 2 : 1;
+    var engine = game && game.pitch && game.pitch.secondHalf ? 2 : 1,
+      clock = game && game.__happySeedStoppageClock;
+    // 加时赛把引擎两段映射为第 3/4 段（90-105 / 105-120）
+    return clock && clock.extraTime ? engine + 2 : engine;
   }
 
   function stoppageClockSnapshot(game) {
@@ -1767,23 +1773,27 @@
     if (!pitch || !clock)
       return { minute: 0, regulationMinute: 0, addedMinute: 0, addedTotal: 0, half: 1 };
     var half = stoppageHalf(game),
-      halfOffset = half === 2 ? 45 : 0,
+      isExtra = half >= 3,
+      halfOffset = half === 2 ? 45 : half === 3 ? 90 : half === 4 ? 105 : 0,
+      halfSpan = isExtra ? 15 : 45,
+      halfSeconds = isExtra ? clock.extraHalfSeconds : clock.regularHalfSeconds,
       elapsed = Math.max(0, Number(pitch.time || 0)),
-      regularProgress = Math.min(1, elapsed / clock.regularHalfSeconds),
-      regularMinute = Math.floor(regularProgress * 45) + halfOffset,
+      regularProgress = Math.min(1, elapsed / halfSeconds),
+      regularMinute = Math.floor(regularProgress * halfSpan) + halfOffset,
       addedTotal = Math.max(1, Math.min(
         clock.maximumAddedMinutes,
         Number(clock.estimates[half] || 1),
       )),
-      addedMinute = elapsed < clock.regularHalfSeconds
+      addedMinute = elapsed < halfSeconds
         ? 0
         : Math.min(
           addedTotal,
-          Math.floor((elapsed - clock.regularHalfSeconds) / clock.realSecondsPerMatchMinute) + 1,
+          Math.floor((elapsed - halfSeconds) / clock.realSecondsPerMatchMinute) + 1,
         ),
-      regulationMinute = half === 2 ? 90 : 45;
+      regulationMinute = half === 2 ? 90 : half === 4 ? 120 : half === 3 ? 105 : 45;
     return {
       half: half,
+      extraTime: isExtra,
       minute: addedMinute > 0 ? regulationMinute + addedMinute : regularMinute,
       regulationMinute: addedMinute > 0 ? regulationMinute : regularMinute,
       addedMinute: addedMinute,
@@ -1808,6 +1818,33 @@
     return stoppageClockSnapshot(window.__matchGame);
   };
 
+  // 直接进入加时赛：引擎整场 reset 后重开球（比分在 reset 中被清零，先存后恢复）
+  window.__happySeedStartExtraTime = function () {
+    var game = window.__matchGame,
+      pitch = game && game.pitch,
+      clock = game && game.__happySeedStoppageClock;
+    if (!pitch || !clock || clock.extraTime) return !1;
+    var redScore = pitch.redTeam ? pitch.redTeam.score | 0 : 0,
+      blueScore = pitch.blueTeam ? pitch.blueTeam.score | 0 : 0;
+    clock.extraTime = !0;
+    clock.estimates[3] = 1;
+    clock.estimates[4] = 1;
+    try {
+      pitch.beginMatch(
+        clock.extraHalfSeconds
+          + clock.realSecondsPerMatchMinute * clock.maximumAddedMinutes,
+        pitch.drawAllowed,
+        2,
+      );
+      if (pitch.redTeam) pitch.redTeam.score = redScore;
+      if (pitch.blueTeam) pitch.blueTeam.score = blueScore;
+    } catch (error) {
+      console.warn("[standalone-match] extra-time start failed", error);
+      return !1;
+    }
+    return !0;
+  };
+
   function enforceStoppageClock(game) {
     var pitch = game && game.pitch,
       clock = game && game.__happySeedStoppageClock;
@@ -1821,7 +1858,7 @@
       clock.announced[half] = !0;
       emitRuntimeMatchEvent(game, "period-change", null, {
         side: null,
-        minute: half === 2 ? 90 : 45,
+        minute: half === 2 ? 90 : half === 4 ? 120 : half === 3 ? 105 : 45,
         detail: {
           period: "stoppage-time",
           half: half,
@@ -1829,8 +1866,9 @@
         },
       });
     }
-    var endAt = clock.regularHalfSeconds
-      + snapshot.addedTotal * clock.realSecondsPerMatchMinute;
+    var halfSeconds = half >= 3 ? clock.extraHalfSeconds : clock.regularHalfSeconds,
+      endAt = halfSeconds
+        + snapshot.addedTotal * clock.realSecondsPerMatchMinute;
     if (
       clock.ended[half]
       || Number(pitch.time || 0) < endAt
@@ -1838,7 +1876,7 @@
     ) return;
     clock.ended[half] = !0;
     try {
-      if (half === 1) pitch.endHalf();
+      if (half === 1 || half === 3) pitch.endHalf();
       else pitch.endMatch();
     } catch (error) {
       console.warn("[standalone-match] stoppage-time end failed", error);
@@ -3377,12 +3415,16 @@
       "signal:pitch.Pitch.states.HalfEnded.onExit": function (game) {
         var isFullTime = Boolean(game.pitch.secondHalf);
         if (isFullTime) return;
-        var halfClock = stoppageClockSnapshot(game);
+        var halfClock = stoppageClockSnapshot(game),
+          inExtraTime = Boolean(
+            game.__happySeedStoppageClock && game.__happySeedStoppageClock.extraTime,
+          );
         emitRuntimeMatchEvent(game, "period-change", null, {
           side: null,
           minute: halfClock.minute,
           detail: {
             period: "half-time",
+            extraTime: inExtraTime,
             addedMinutes: halfClock.addedTotal,
           },
         });
@@ -3398,7 +3440,9 @@
             }
           };
         showPeriodTransition(
-          "上半场结束 · 45+" + String(halfClock.addedTotal) + "′",
+          inExtraTime
+            ? "加时赛上半场结束 · 105+" + String(halfClock.addedTotal) + "′"
+            : "上半场结束 · 45+" + String(halfClock.addedTotal) + "′",
           change,
         );
       },

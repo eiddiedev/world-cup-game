@@ -70,7 +70,10 @@ export default function MatchScreen({
   }, [navigateTo, saveData, updateSaveData])
 
   const handleMatchComplete = useCallback((completion) => {
-    if (saveData.currentRun?.isKnockoutMatch && completion.report.result === 'draw') {
+    if (
+      completion.forceShootout
+      || (saveData.currentRun?.isKnockoutMatch && completion.report.result === 'draw')
+    ) {
       setPendingShootout(completion)
       return
     }

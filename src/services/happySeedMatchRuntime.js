@@ -50,8 +50,8 @@ const SCRIPT_PATHS = [
   'shim.js',
   'scripts/match.rebuilt.js',
   'happyseed/runtime-v2.js?v=11',
-  'happyseed/runtime-v3.js?v=4',
-  'standalone-match.js?v=10',
+  'happyseed/runtime-v3.js?v=5',
+  'standalone-match.js?v=11',
 ]
 
 const MATCH_EVENTS = [
@@ -563,6 +563,11 @@ export function getSnapshot() {
 
 export function setRuntimeStoppageMinutes(half, minutes) {
   return Boolean(window.__happySeedSetStoppageMinutes?.({ half, minutes }))
+}
+
+// 平局进入加时赛（90-120，两段各 15 分钟），返回是否成功启动
+export function startExtraTime() {
+  return Boolean(window.__happySeedStartExtraTime?.())
 }
 
 export function setTeamTacticalStance(side, stance) {
@@ -1159,6 +1164,24 @@ export function setFormalCoachDecisionChoiceHover(choiceId, active) {
   window.dispatchEvent(new CustomEvent('ab-decision-choice-hover', {
     detail: { choiceId, active: Boolean(active) },
   }))
+}
+
+// 决策播放看门狗：导演任何环节卡死都不能拖住整场比赛，
+// 超时后以 { recovered: true } 拒绝，调用方据此取消导演并恢复比赛
+export const DECISION_PLAYBACK_TIMEOUT_MS = 12000
+export function withDecisionWatchdog(promise) {
+  return new Promise((resolve, reject) => {
+    const timer = window.setTimeout(() => {
+      reject(Object.assign(
+        new Error('决策播放超时，已恢复原状继续比赛'),
+        { recovered: true },
+      ))
+    }, DECISION_PLAYBACK_TIMEOUT_MS)
+    promise.then(
+      (value) => { window.clearTimeout(timer); resolve(value) },
+      (error) => { window.clearTimeout(timer); reject(error) },
+    )
+  })
 }
 
 export function executeFormalCoachDecisionChoice(decision, choiceId, options = {}) {

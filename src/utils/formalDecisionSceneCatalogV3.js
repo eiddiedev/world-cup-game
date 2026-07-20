@@ -325,7 +325,8 @@ export const FORMAL_DECISION_SCENE_CATALOG_V3 = Object.freeze({
     sub_injured_player: [A('actor', 'substitution-out')],
     play_through_knock: [A('actor', 'injured-player')],
   }, {
-    sourceEventTypes: ['tackle-contact', 'injury'],
+    // 只在真实伤病事件时触发（任何对抗都触发会让"带伤坚持"每场都出现）
+    sourceEventTypes: ['injury'],
     choiceEffects: { sub_injured_player: 'auto-substitute-primary' },
   }),
   yellow_card_dissent_control: scene('freeze-incident', 'yellow-card-dissent', 'captain_calm_team', {

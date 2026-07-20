@@ -752,3 +752,199 @@ body { background: #061413 !important; }
     transition: none !important;
   }
 }
+
+/* ------------------------------------------------------------------ */
+/* Penalty shootout (swipe kick / dive, pixel canvas)                   */
+/* ------------------------------------------------------------------ */
+/* 点球大战：全屏 cover 背景 + 左右下角记分面板（实况风格） */
+
+.penalty-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  background: #061413;
+  font-family: "Zpix", monospace;
+  overflow: hidden;
+}
+
+.penalty-exit-button {
+  position: fixed;
+  z-index: 130;
+  top: 16px;
+  left: 16px;
+  width: 52px;
+  height: 44px;
+  padding: 0;
+  border: 4px solid var(--hud-gold, #ffd43f);
+  border-radius: 0;
+  background: var(--hud-paper, #f8f7e8);
+  color: var(--hud-ink, #061918);
+  box-shadow: 4px 4px 0 rgba(0, 0, 0, .5);
+  font-family: "Zpix", monospace;
+  font-size: 22px;
+  cursor: pointer;
+}
+
+.penalty-exit-button:active {
+  transform: translate(4px, 4px);
+  box-shadow: none;
+}
+
+.penalty-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  image-rendering: pixelated;
+  touch-action: none;
+  cursor: crosshair;
+}
+
+.penalty-prompt {
+  position: absolute;
+  top: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 8px 18px;
+  border: 4px solid var(--hud-gold, #ffd43f);
+  background: var(--hud-ink, #061918);
+  color: var(--hud-paper, #f8f7e8);
+  font-size: 20px;
+  white-space: nowrap;
+  box-shadow: 4px 4px 0 rgba(0, 0, 0, .5);
+  pointer-events: none;
+}
+
+.penalty-banner {
+  position: absolute;
+  top: 64%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  padding: 14px 30px;
+  border: 5px solid var(--hud-paper, #f8f7e8);
+  background: var(--hud-ink, #061918);
+  font-size: 44px;
+  line-height: 1;
+  white-space: nowrap;
+  box-shadow: 6px 6px 0 rgba(0, 0, 0, .6);
+  pointer-events: none;
+  animation: penalty-banner-pop .28s steps(3) both;
+}
+
+@keyframes penalty-banner-pop {
+  0% { transform: translate(-50%, -50%) scale(.4); }
+  70% { transform: translate(-50%, -50%) scale(1.12); }
+  100% { transform: translate(-50%, -50%) scale(1); }
+}
+
+.penalty-banner--goal { color: var(--hud-lime, #83dc0b); border-color: var(--hud-lime, #83dc0b); }
+.penalty-banner--save { color: var(--hud-cyan, #18e1d1); border-color: var(--hud-cyan, #18e1d1); }
+.penalty-banner--miss { color: var(--hud-coral, #ff5e64); border-color: var(--hud-coral, #ff5e64); }
+.penalty-banner--winner { color: var(--hud-gold, #ffd43f); border-color: var(--hud-gold, #ffd43f); font-size: 52px; }
+
+.penalty-hint {
+  position: absolute;
+  top: 70px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 34px;
+  padding: 6px 14px;
+  border: 4px solid var(--hud-purple, #6817d9);
+  background: rgba(6, 25, 24, .88);
+  box-shadow: 5px 5px 0 rgba(0, 0, 0, .55);
+  pointer-events: none;
+}
+
+.penalty-hint-text {
+  font-size: 18px;
+  color: var(--hud-paper, #f8f7e8);
+  white-space: nowrap;
+}
+
+.penalty-countdown {
+  width: 180px;
+  height: 14px;
+  border: 3px solid var(--hud-paper, #f8f7e8);
+  background: rgba(248, 247, 232, .12);
+}
+
+.penalty-countdown i {
+  display: block;
+  height: 100%;
+  width: 100%;
+  background: var(--hud-coral, #ff5e64);
+}
+
+/* 左右下角逐轮记分面板（国旗 + 圆点） */
+.penalty-corner {
+  position: absolute;
+  bottom: 18px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border: 4px solid var(--hud-paper, #f8f7e8);
+  background: rgba(6, 25, 24, .88);
+  box-shadow: 5px 5px 0 rgba(0, 0, 0, .55);
+  pointer-events: none;
+}
+
+.penalty-corner--home { left: 18px; }
+.penalty-corner--away { right: 18px; }
+
+.penalty-corner img {
+  width: 44px;
+  height: 30px;
+  object-fit: cover;
+  border: 2px solid rgba(248, 247, 232, .6);
+  image-rendering: pixelated;
+}
+
+.penalty-corner-score {
+  font-size: 26px;
+  line-height: 1;
+  color: var(--hud-gold, #ffd43f);
+}
+
+.penalty-dots {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.penalty-dot {
+  width: 20px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 3px solid rgba(248, 247, 232, .55);
+  border-radius: 0;
+  color: var(--hud-coral, #ff5e64);
+  font-size: 12px;
+  line-height: 1;
+  image-rendering: pixelated;
+}
+
+.penalty-dot.is-goal {
+  background: var(--hud-lime, #83dc0b);
+  border-color: var(--hud-lime, #83dc0b);
+}
+
+.penalty-dot.is-miss {
+  border-color: var(--hud-coral, #ff5e64);
+}
+
+@media (max-width: 720px) {
+  .penalty-banner { font-size: 30px; }
+  .penalty-banner--winner { font-size: 36px; }
+  .penalty-corner { padding: 6px 8px; gap: 8px; bottom: 10px; }
+  .penalty-corner--home { left: 10px; }
+  .penalty-corner--away { right: 10px; }
+  .penalty-corner img { width: 32px; height: 22px; }
+  .penalty-dot { width: 16px; height: 16px; border-width: 2px; font-size: 10px; }
+}

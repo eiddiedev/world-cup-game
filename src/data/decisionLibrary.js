@@ -2103,7 +2103,7 @@ const EXTRA_DECISION_SCENARIOS = [
   {
     id: 'injury_play_on',
     trigger: '轻伤球员是否坚持',
-    minute_range: [35, 90],
+    minute_range: [1, 90],
     animation_type: 'substitution',
     situation_variants: [
       '{player}刚才被撞了一下，跑动明显不顺，但他示意还能坚持。',

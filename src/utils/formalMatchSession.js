@@ -10,9 +10,32 @@ import { createDerivedMatchRuntimeEvent } from './matchRuntimeEvent.js'
 
 export const FORMAL_MATCH_SESSION_SCHEMA = 'formal-match-session-v1'
 export const FORMAL_MATCH_REALTIME_MINUTES = 3
-export const FORMAL_MATCH_TARGET_DECISIONS = 5
+export const FORMAL_MATCH_TARGET_DECISIONS = 7
 export const FORMAL_MATCH_ROUTINE_COMMENTARY_BUDGET = 5
-export const FORMAL_MATCH_DECISION_TARGET_MINUTES = Object.freeze([10, 24, 39, 54, 66])
+export const FORMAL_MATCH_DECISION_TARGET_MINUTES = Object.freeze([10, 24, 39, 54, 68, 79, 88])
+// 高价值时刻（角球/深度进攻/单刀）优先场景只按此概率抢占决策槽，
+// 其余时候交还给 53 场景大池抽取，避免每场比赛都是同几个场景
+export const FORMAL_PRIORITY_DECISION_TAKE_RATE = 0.15
+// 非点球/伤病的优先场景每场最多占用 3 个决策，其余决策槽留给大池，保证多元
+export const FORMAL_MATCH_PRIORITY_DECISION_CAP = 3
+// 拥有优先通道（角球/深度进攻/点球）的场景不再进入大池：
+// 它们只在自己的真实比赛时刻出现，大池曝光机会留给其余 37 个场景
+const PRIORITY_CHANNEL_SCENARIO_IDS = new Set([
+  'header_corner',
+  'aerial_duel_corner_defending',
+  'opponent_short_corner_defense',
+  'penalty_kick',
+  'match_penalty',
+  'penalty_area_cross',
+  'wing_overlap_cross',
+  'solo_run_penalty',
+  'through_ball_chance',
+  'central_cutback_press',
+  'penalty_area_foul_risk',
+  'gk_one_on_one',
+  'last_defender_tackle',
+  'injury_play_on',
+])
 export const FORMAL_GOAL_VAR_REVIEW_RATE = 0.28
 export const FORMAL_GOAL_VAR_DISALLOW_RATE = 0.12
 export const FORMAL_MATCH_BALANCE_TARGETS = Object.freeze({
@@ -231,6 +254,50 @@ export function deriveFormalRuntimeIncidents(sourceEvent) {
   return incidents
 }
 
+// 大池抽取的稀有度权重：稀缺时刻（VAR/手球/二黄/天气/门将出击等）一旦满足
+// 条件就该被优先选中——它们很少再有下一次机会；常规实况场景几乎每分钟都有
+// 资格，可以等。未列出的场景默认 1（多由优先通道喂流，本身曝光已足够）
+const DECISION_SCENARIO_RARITY_WEIGHTS = Object.freeze({
+  var_goal_review: 8,
+  var_offside_goal: 8,
+  var_penalty_review: 8,
+  defensive_line_handball_var: 8,
+  handball_penalty_claim: 8,
+  injury_play_on: 8,
+  penalty_rebound_followup: 20,
+  keeper_sweeper_claim: 20,
+  late_keeper_up_corner: 12,
+  keeper_distribution: 8,
+  yellow_card_dissent_control: 8,
+  second_yellow_warning: 8,
+  weather_slippery_tackle: 8,
+  penalty_area_dive: 8,
+  freekick_dangerous: 2.5,
+  defend_dangerous_freekick: 2.5,
+  opponent_dangerous_freekick_wall: 2.5,
+  indirect_freekick_box: 2.5,
+  throwin_attack: 2.5,
+  stamina_collapse_sub: 2.5,
+  second_ball_corner_attack: 2.5,
+  set_piece_rebound_shot: 2.5,
+  trailing_last_ten: 2.5,
+  leading_protect: 2.5,
+  tactical_foul_counter: 2.5,
+  offside_trap: 2.5,
+  low_block_counter_launch: 2.5,
+  high_press_trap: 2.5,
+  box_scramble_clearance: 2.5,
+  box_second_ball_chaos: 2.5,
+  defender_last_ditch: 2.5,
+  long_shot_opportunity: 2.5,
+  half_space_through_run: 2.5,
+  fullback_recovery_run: 2.5,
+  midfield_switch_play: 2.5,
+  midfield_press_trigger: 2.5,
+  midfield_second_ball: 2.5,
+  counter_attack_3v2: 2.5,
+})
+
 function selectDecisionScenario(session, runtimeMoment, sourceEvents, options = {}) {
   const forcedScenarioId = options.forcedScenarioIds?.[session.nextDecisionSlot]
   if (forcedScenarioId && FORMAL_DECISION_SCENE_CATALOG_V3[forcedScenarioId]) {
@@ -242,10 +309,12 @@ function selectDecisionScenario(session, runtimeMoment, sourceEvents, options = 
     return scenario ? { scenario, sourceEvent } : null
   }
   if (forcedScenarioId) return null
+  const minuteCap = session.extraTime ? 120 : 90
   const eligible = DECISION_LIBRARY.flatMap((scenario) => {
     if (session.usedScenarioIds.includes(scenario.id)) return []
+    if (PRIORITY_CHANNEL_SCENARIO_IDS.has(scenario.id)) return []
     const [minimum, maximum] = scenario.minute_range || [1, 90]
-    if (session.minute < minimum || session.minute > Math.min(90, maximum)) return []
+    if (session.minute < minimum || session.minute > Math.min(minuteCap, maximum)) return []
     const sourceEvent = sourceEvents.find((event) => (
       isFormalDecisionMomentEligibleV3(scenario.id, runtimeMoment, event, session)
     ))
@@ -253,21 +322,33 @@ function selectDecisionScenario(session, runtimeMoment, sourceEvents, options = 
   })
   if (!eligible.length) return null
   const random = options.random || Math.random
-  return eligible[Math.min(eligible.length - 1, Math.floor(random() * eligible.length))]
+  const weights = eligible.map((entry) => DECISION_SCENARIO_RARITY_WEIGHTS[entry.scenario.id] || 1)
+  const totalWeight = weights.reduce((sum, weight) => sum + weight, 0)
+  let roll = random() * totalWeight
+  for (let index = 0; index < eligible.length; index += 1) {
+    roll -= weights[index]
+    if (roll <= 0) return eligible[index]
+  }
+  return eligible[eligible.length - 1]
 }
 
 function findEligibleScenario(session, runtimeMoment, sourceEvent, scenarioIds, options = {}) {
+  const eligible = []
+  const minuteCap = session.extraTime ? 120 : 90
   for (const scenarioId of scenarioIds) {
     if (!options.allowRepeat && session.usedScenarioIds.includes(scenarioId)) continue
     const scenario = DECISION_LIBRARY.find((candidate) => candidate.id === scenarioId)
     if (!scenario) continue
     const [minimum, maximum] = scenario.minute_range || [1, 90]
-    if (session.minute < minimum || session.minute > Math.min(90, maximum)) continue
+    if (session.minute < minimum || session.minute > Math.min(minuteCap, maximum)) continue
     if (isFormalDecisionMomentEligibleV3(scenarioId, runtimeMoment, sourceEvent, session)) {
-      return { scenario, sourceEvent, priority: true }
+      eligible.push({ scenario, sourceEvent, priority: true })
     }
   }
-  return null
+  if (!eligible.length) return null
+  // 同组候选里随机取一个，而不是永远取列表第一个（避免啄序垄断）
+  const random = options.random || Math.random
+  return eligible[Math.min(eligible.length - 1, Math.floor(random() * eligible.length))]
 }
 
 /**
@@ -275,7 +356,7 @@ function findEligibleScenario(session, runtimeMoment, sourceEvent, scenarioIds, 
  * This keeps the decision causally attached to the field event instead of merely
  * finding any catalog entry which happens to be eligible on the same frame.
  */
-export function selectPriorityFormalDecisionScenario(session, runtimeMoment, sourceEvents) {
+export function selectPriorityFormalDecisionScenario(session, runtimeMoment, sourceEvents, options = {}) {
   for (const sourceEvent of sourceEvents) {
     if (sourceEvent.type === 'corner') {
       const selected = findEligibleScenario(
@@ -285,6 +366,7 @@ export function selectPriorityFormalDecisionScenario(session, runtimeMoment, sou
         sourceEvent.side === 'red'
           ? ['header_corner']
           : ['aerial_duel_corner_defending', 'opponent_short_corner_defense'],
+        options,
       )
       if (selected) return selected
     }
@@ -296,7 +378,18 @@ export function selectPriorityFormalDecisionScenario(session, runtimeMoment, sou
         sourceEvent.detail?.awardedSide === 'red'
           ? ['penalty_kick', 'match_penalty']
           : ['opponent_dangerous_freekick_wall'],
-        { allowRepeat: true },
+        { ...options, allowRepeat: true },
+      )
+      if (selected) return selected
+    }
+    // 真实伤病与点球同理：稀有且必须立即处理，不受采纳率与上限限制
+    if (sourceEvent.type === 'injury') {
+      const selected = findEligibleScenario(
+        session,
+        runtimeMoment,
+        sourceEvent,
+        ['injury_play_on'],
+        options,
       )
       if (selected) return selected
     }
@@ -316,8 +409,9 @@ export function selectPriorityFormalDecisionScenario(session, runtimeMoment, sou
         runtimeMoment,
         sourceEvent,
         wide
-          ? ['penalty_area_cross', 'wing_overlap_cross', 'solo_run_penalty']
-          : ['solo_run_penalty', 'through_ball_chance', 'central_cutback_press'],
+          ? ['penalty_area_cross', 'wing_overlap_cross', 'central_cutback_press', 'solo_run_penalty']
+          : ['solo_run_penalty', 'through_ball_chance'],
+        options,
       )
       if (selected) return selected
     }
@@ -327,6 +421,7 @@ export function selectPriorityFormalDecisionScenario(session, runtimeMoment, sou
         runtimeMoment,
         sourceEvent,
         ['penalty_area_foul_risk', 'gk_one_on_one', 'last_defender_tackle'],
+        options,
       )
       if (selected) return selected
     }
@@ -634,6 +729,9 @@ export function createFormalMatchSession(options = {}) {
     routineCommentaryCount: 0,
     targetDecisionCount: FORMAL_MATCH_TARGET_DECISIONS,
     nextDecisionSlot: 0,
+    priorityDecisionCount: 0,
+    extraTime: false,
+    extraTimeDecisionUsed: false,
     pendingDecisionId: null,
     pendingDecisionSourceEvent: null,
     pendingGoalDecision: null,
@@ -698,6 +796,18 @@ export function startFormalMatchSession(session) {
   return { ...session, status: 'running', phase: 'live' }
 }
 
+// 90 分钟战平进入加时赛：extraTime 标志置位，比赛继续到 120 分钟。
+// 不复用 session.phase（决策流会把 phase 改回 live，会冲掉加时状态）
+export function startFormalExtraTime(session) {
+  if (!['running', 'decision'].includes(session.status)) return session
+  if (session.extraTime) return session
+  const next = cloneSession(session)
+  next.status = 'running'
+  next.phase = 'live'
+  next.extraTime = true
+  return next
+}
+
 export function advanceFormalMatchSession(session, payload = {}) {
   if (!['running', 'decision'].includes(session.status)) {
     return { session, decisionPlan: null }
@@ -738,23 +848,64 @@ export function advanceFormalMatchSession(session, payload = {}) {
   const sourceEvents = appliedEvents.accepted
   if (!sourceEvents.length) return { session: next, decisionPlan: null }
   const targetMinute = FORMAL_MATCH_DECISION_TARGET_MINUTES[next.nextDecisionSlot]
-  const prioritySelected = payload.forcedScenarioIds?.[next.nextDecisionSlot]
+  let priorityCandidate = payload.forcedScenarioIds?.[next.nextDecisionSlot]
     ? null
-    : selectPriorityFormalDecisionScenario(next, runtimeMoment, sourceEvents)
-  // A genuine penalty cannot disappear merely because the planned five
+    : selectPriorityFormalDecisionScenario(next, runtimeMoment, sourceEvents, {
+      random: payload.random,
+    })
+  // 非点球/伤病优先决策达到每场上限后，把机会让给大池（点球与真实伤病例外：不可吞没）
+  const mandatoryPriority = ['penalty', 'injury'].includes(priorityCandidate?.sourceEvent?.type)
+  if (
+    priorityCandidate
+    && !mandatoryPriority
+    && Number(next.priorityDecisionCount || 0) >= FORMAL_MATCH_PRIORITY_DECISION_CAP
+  ) {
+    priorityCandidate = null
+  }
+  // 真正的点球/伤病不能因概率被吞掉；其余优先场景按采纳率与大池竞争，保证场景多元
+  const prioritySelected = priorityCandidate && (
+    mandatoryPriority
+    || (payload.random || Math.random)() < FORMAL_PRIORITY_DECISION_TAKE_RATE
+  )
+    ? priorityCandidate
+    : null
+  // A genuine penalty or injury cannot disappear merely because the planned
   // coaching windows have already been used. It may add one exceptional
   // staged decision; other opportunities still respect the normal budget.
-  if (targetMinute == null && prioritySelected?.sourceEvent?.type !== 'penalty') {
+  // 加时赛：115 分钟后仍平局，强制补一个"点球大战布置"决策
+  const extraTimePrepForced = Boolean(
+    next.extraTime
+    && next.minute >= 115
+    && next.score.red === next.score.blue
+    && !next.usedScenarioIds.includes('extra_time_penalty_shootout_prep')
+  )
+  const extraTimeSlotOpen = Boolean(next.extraTime && next.minute >= 112 && !next.extraTimeDecisionUsed)
+  if (
+    targetMinute == null
+    && !extraTimeSlotOpen
+    && !['penalty', 'injury'].includes(prioritySelected?.sourceEvent?.type)
+  ) {
     return { session: next, decisionPlan: null }
   }
   if (!prioritySelected && next.minute < targetMinute) {
     return { session: next, decisionPlan: null }
   }
-  const selected = prioritySelected
-    || selectDecisionScenario(next, runtimeMoment, sourceEvents, payload)
+  let selected = prioritySelected
+  if (!selected && extraTimePrepForced && sourceEvents.length) {
+    selected = findEligibleScenario(
+      next,
+      runtimeMoment,
+      sourceEvents[0],
+      ['extra_time_penalty_shootout_prep'],
+      { random: payload.random },
+    )
+  }
+  if (!selected) {
+    selected = selectDecisionScenario(next, runtimeMoment, sourceEvents, payload)
+  }
   if (!selected) return { session: next, decisionPlan: null }
   next.opportunityAttempts += 1
-  const chance = prioritySelected || payload.forcedScenarioIds?.[next.nextDecisionSlot]
+  const chance = prioritySelected || extraTimePrepForced || payload.forcedScenarioIds?.[next.nextDecisionSlot]
     ? 1
     : Math.min(1, Number(payload.naturalDecisionChance ?? (0.65 + next.opportunityAttempts * 0.18)))
   const random = payload.random || Math.random
@@ -777,6 +928,10 @@ export function advanceFormalMatchSession(session, payload = {}) {
   next.lastDecisionMinute = next.minute
   next.opportunityAttempts = 0
   next.usedScenarioIds.push(scenario.id)
+  if (extraTimeSlotOpen) next.extraTimeDecisionUsed = true
+  if (prioritySelected && !['penalty', 'injury'].includes(sourceEvent?.type)) {
+    next.priorityDecisionCount = Number(next.priorityDecisionCount || 0) + 1
+  }
 
   return {
     session: next,

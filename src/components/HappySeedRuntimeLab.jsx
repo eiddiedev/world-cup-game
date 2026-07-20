@@ -32,6 +32,7 @@ import {
   subscribeToMatchEvents,
   substituteRuntimeActor,
   updatePlayerInput,
+  withDecisionWatchdog,
 } from '../services/happySeedMatchRuntime'
 import { HAPPYSEED_HUMAN_ACTIONS } from '../utils/happySeedHumanPlayer.js'
 import { HAPPYSEED_STADIUM_CAMERA_PRESETS } from '../utils/happySeedPixelStadium.js'
@@ -339,13 +340,18 @@ export default function HappySeedRuntimeLab() {
         selectedLabChoice.id,
         { outcomeOverride: selectedLabOutcome },
       )
-      await execution.settled
+      await withDecisionWatchdog(execution.settled)
       setLabDirectorPhase('settled')
-      await execution.completed
+      await withDecisionWatchdog(execution.completed)
       setLabDecision(null)
       setLabDirectorPhase('idle')
       setStatus(`V3 outcome 已执行：${selectedLabOutcome}`)
     } catch (directorError) {
+      if (directorError?.recovered) {
+        cancelFormalCoachDecision()
+        setLabDecision(null)
+        setLabDirectorPhase('idle')
+      }
       setError(directorError.message || 'V3 outcome 执行失败')
     }
   }

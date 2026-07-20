@@ -21,9 +21,16 @@ describe('Match Runtime integration contracts', () => {
     expect(standaloneRuntime).toContain('window.__happySeedSetStoppageMinutes')
     expect(standaloneRuntime).toContain('window.__happySeedGetStoppageSnapshot')
     expect(standaloneRuntime).toContain('period: "stoppage-time"')
-    expect(standaloneRuntime).toContain('if (half === 1) pitch.endHalf()')
+    expect(standaloneRuntime).toContain('if (half === 1 || half === 3) pitch.endHalf()')
     expect(standaloneRuntime).toContain('else pitch.endMatch()')
     expect(standaloneRuntime).toContain('regularHalfSeconds + realSecondsPerMatchMinute * maximumAddedMinutes')
+  })
+  it('supports extra time as two 15-minute segments with preserved scores', () => {
+    expect(standaloneRuntime).toContain('window.__happySeedStartExtraTime')
+    expect(standaloneRuntime).toContain('extraHalfSeconds: regularHalfSeconds / 3')
+    expect(standaloneRuntime).toContain('clock.extraTime ? engine + 2 : engine')
+    expect(standaloneRuntime).toContain('pitch.redTeam.score = redScore')
+    expect(standaloneRuntime).toContain('pitch.blueTeam.score = blueScore')
   })
   it('clamps goalkeeper-controlled balls on both sides of the native physics step', () => {
     expect(standaloneRuntime).toContain('function enforceGoalkeeperControlledBallSafety(game)')

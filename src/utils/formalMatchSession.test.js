@@ -25,6 +25,7 @@ import {
   recordFormalRuntimeGoal,
   resolveFormalGoalVar,
   settleFormalDecisionInSession,
+  startFormalExtraTime,
   startFormalMatchSession,
 } from './formalMatchSession.js'
 
@@ -117,7 +118,7 @@ describe('FormalMatchSession 正式比赛权威链', () => {
     }
   })
 
-  it('opens five match-aware decisions around the authored minute windows', () => {
+  it('opens seven match-aware decisions around the authored minute windows', () => {
     let session = startFormalMatchSession(createFormalMatchSession({
       teamName: '法国',
       opponentName: '巴西',
@@ -128,10 +129,12 @@ describe('FormalMatchSession 正式比赛权威链', () => {
       'midfield_press_trigger',
       'penalty_area_foul_risk',
       'long_shot_opportunity',
+      'throwin_attack',
+      'indirect_freekick_box',
     ]
 
-    const eventTypes = ['foul', 'corner', 'possession-change', 'touch', 'touch']
-    const eventSides = ['blue', 'red', 'blue', 'blue', 'red']
+    const eventTypes = ['foul', 'corner', 'possession-change', 'touch', 'touch', 'throw-in', 'foul']
+    const eventSides = ['blue', 'red', 'blue', 'blue', 'red', 'red', 'blue']
 
     FORMAL_MATCH_DECISION_TARGET_MINUTES.forEach((minute, index) => {
       const eligibleMoment = index === 3
@@ -179,7 +182,7 @@ describe('FormalMatchSession 正式比赛权威链', () => {
       })
     })
 
-    expect(session.decisions).toHaveLength(5)
+    expect(session.decisions).toHaveLength(7)
     expect(session.commentary.at(-1)).toEqual(expect.objectContaining({
       minute: FORMAL_MATCH_DECISION_TARGET_MINUTES.at(-1),
       text: `第${FORMAL_MATCH_DECISION_TARGET_MINUTES.at(-1)}分钟决策已完成`,
@@ -191,7 +194,7 @@ describe('FormalMatchSession 正式比赛权威链', () => {
       snapshot: { minute: 4 },
       runtimeMoment: moment,
       actorSource,
-      random: () => 0.999,
+      random: () => 0,
       runtimeEvents: [runtimeEvent('corner', 4, { side: 'red' })],
     })
     expect(advanced.decisionPlan).toEqual(expect.objectContaining({
@@ -212,7 +215,7 @@ describe('FormalMatchSession 正式比赛权威链', () => {
       snapshot: { minute: 6 },
       runtimeMoment: redBoxMoment,
       actorSource,
-      random: () => 0.999,
+      random: () => 0,
       runtimeEvents: [runtimeEvent('touch', 6, { side: 'red' })],
     })
     expect(redAdvanced.decisionPlan?.scenarioId).toBe('solo_run_penalty')
@@ -228,13 +231,13 @@ describe('FormalMatchSession 正式比赛权威链', () => {
       snapshot: { minute: 6 },
       runtimeMoment: blueBoxMoment,
       actorSource,
-      random: () => 0.999,
+      random: () => 0,
       runtimeEvents: [runtimeEvent('touch', 6, { side: 'blue' })],
     })
     expect(blueAdvanced.decisionPlan?.scenarioId).toBe('penalty_area_foul_risk')
   })
 
-  it('keeps the natural decision window mean around five across 300 local matches', () => {
+  it('keeps the natural decision window mean around seven across 300 local matches', () => {
     const sourceTypes = [
       'touch', 'pass', 'shot', 'possession-change', 'tackle-contact',
       'corner', 'throw-in', 'goal-kick', 'goal', 'ball-out',
@@ -287,8 +290,8 @@ describe('FormalMatchSession 正式比赛权威链', () => {
       counts.push(session.decisions.length)
     }
     const mean = counts.reduce((total, value) => total + value, 0) / counts.length
-    expect(mean).toBeGreaterThanOrEqual(4.5)
-    expect(mean).toBeLessThanOrEqual(5)
+    expect(mean).toBeGreaterThanOrEqual(6.5)
+    expect(mean).toBeLessThanOrEqual(7.5)
   })
 
   it('uses native Runtime goals and the same minute for score and commentary', () => {
@@ -772,7 +775,7 @@ describe('FormalMatchSession 正式比赛权威链', () => {
     expect(incidents.find((event) => event.type === 'penalty')?.detail?.awardedSide).toBe('red')
   })
 
-  it('always turns a real penalty into a staged kick even after five planned decisions', () => {
+  it('always turns a real penalty into a staged kick even after the planned decision slots', () => {
     const session = {
       ...startFormalMatchSession(createFormalMatchSession({
         teamName: '法国',
@@ -795,8 +798,9 @@ describe('FormalMatchSession 正式比赛权威链', () => {
       deriveRuntimeIncidents: false,
     })
 
+    // 点球优先通道在 penalty_kick / match_penalty 两个点球场景里随机取一个
+    expect(['penalty_kick', 'match_penalty']).toContain(advanced.decisionPlan?.scenarioId)
     expect(advanced.decisionPlan).toEqual(expect.objectContaining({
-      scenarioId: 'penalty_kick',
       sourceEvent: penalty,
     }))
     expect(advanced.session.commentary.at(-1)).toEqual(expect.objectContaining({
@@ -870,5 +874,44 @@ describe('FormalMatchSession 正式比赛权威链', () => {
       minute: 94,
       type: 'full-time',
     }))
+  })
+
+  it('marks extra time with a dedicated flag instead of the shared phase field', () => {
+    const running = startFormalMatchSession(createFormalMatchSession())
+    const extra = startFormalExtraTime(running)
+    expect(extra.extraTime).toBe(true)
+    expect(extra.phase).toBe('live')
+    expect(startFormalExtraTime(extra)).toBe(extra)
+    const decided = settleFormalDecisionInSession({
+      ...extra,
+      status: 'decision',
+      pendingDecisionId: 'decision.et.demo',
+    }, {
+      coachDecisionEvent: { sourceScenarioId: 'long_shot_opportunity' },
+    }, {
+      choice: { id: 'demo', label: 'demo' },
+      result: { outcome: 'demo', isSuccess: true },
+      resultText: 'demo',
+    })
+    // 决策结算会把 phase 重置为 live，但 extraTime 标志必须保留
+    expect(decided.phase).toBe('live')
+    expect(decided.extraTime).toBe(true)
+  })
+
+  it('forces the shootout-prep decision when extra time stays level past 115', () => {
+    let session = startFormalExtraTime(startFormalMatchSession(createFormalMatchSession()))
+    session = {
+      ...session,
+      minute: 116,
+      nextDecisionSlot: FORMAL_MATCH_DECISION_TARGET_MINUTES.length,
+    }
+    const advanced = advanceFormalMatchSession(session, {
+      snapshot: { minute: 116 },
+      runtimeMoment: moment,
+      actorSource,
+      random: () => 0.5,
+      runtimeEvents: [runtimeEvent('touch', 116)],
+    })
+    expect(advanced.decisionPlan?.scenarioId).toBe('extra_time_penalty_shootout_prep')
   })
 })

@@ -32,6 +32,98 @@ export function resolveOpponentShootoutKick(keeperDirection, random = Math.rando
   }
 }
 
+/* ------------------------------------------------------------------ */
+/* 6-zone swipe shootout model                                         */
+/* Zones: 'left-top' | 'center-top' | 'right-top' |                    */
+/*        'left-bottom' | 'center-bottom' | 'right-bottom'             */
+/* ------------------------------------------------------------------ */
+
+export const PENALTY_ZONE_COLUMNS = ['left', 'center', 'right']
+export const PENALTY_ZONE_ROWS = ['top', 'bottom']
+export const PENALTY_ZONES = PENALTY_ZONE_ROWS.flatMap(row =>
+  PENALTY_ZONE_COLUMNS.map(column => `${column}-${row}`))
+
+export const AI_SHOOTER_BASE_MISS_RATE = 0.08
+
+const clamp01 = value => Math.min(1, Math.max(0, value))
+
+/**
+ * AI shooter picks a target zone. High tec leans toward corners and the
+ * top row; low tec plays it safe down the middle. Every AI kick carries
+ * a base ~8% chance of being overpowered (flies off target).
+ * Returns { zone, overpowered }.
+ */
+export function pickAiShooterZone(tec = 70, random = Math.random) {
+  const skill = clamp01((tec - 40) / 60) // 40 -> 0, 100 -> 1
+  const overpowered = random() < AI_SHOOTER_BASE_MISS_RATE + (1 - skill) * 0.06
+
+  const centerChance = 0.55 - skill * 0.4 // low tec: 55% center, high tec: 15%
+  const topChance = 0.25 + skill * 0.35 // low tec: 25% top, high tec: 60%
+
+  const columnRoll = random()
+  const column = columnRoll < centerChance
+    ? 'center'
+    : columnRoll < centerChance + (1 - centerChance) / 2
+      ? 'left'
+      : 'right'
+  const row = random() < topChance ? 'top' : 'bottom'
+
+  return { zone: `${column}-${row}`, overpowered }
+}
+
+/**
+ * AI keeper picks a zone to dive to. Mostly random; better keepers
+ * (high def) are a bit more likely to commit to a corner instead of
+ * staying in the middle. Returns a zone string.
+ */
+export function pickAiKeeperZone(def = 70, random = Math.random) {
+  const skill = clamp01((def - 40) / 60)
+  const centerChance = 0.34 - skill * 0.14 // 34% -> 20% chance to hold center
+  const columnRoll = random()
+  const column = columnRoll < centerChance
+    ? 'center'
+    : columnRoll < centerChance + (1 - centerChance) / 2
+      ? 'left'
+      : 'right'
+  const row = random() < 0.42 ? 'top' : 'bottom'
+  return `${column}-${row}`
+}
+
+/**
+ * Resolve one 6-zone shootout attempt.
+ * - overpowered: shot flies off target (missed).
+ * - keeper in the same zone: saved (very weak keepers can spill it).
+ * - otherwise: scored, unless the shot clips the post (low tec raises
+ *   the post chance).
+ * Returns { scored, saved, missed, post? }.
+ */
+export function resolveShootoutAttempt({
+  shooterZone,
+  keeperZone,
+  overpowered = false,
+  shooterTec = 70,
+  keeperDef = 70,
+  random = Math.random,
+} = {}) {
+  if (overpowered || !PENALTY_ZONES.includes(shooterZone)) {
+    return { scored: false, saved: false, missed: true }
+  }
+
+  if (keeperZone === shooterZone) {
+    const spilled = keeperDef < 55 && random() < 0.15
+    return spilled
+      ? { scored: true, saved: false, missed: false }
+      : { scored: false, saved: true, missed: false }
+  }
+
+  const postChance = Math.max(0.02, 0.1 - clamp01((shooterTec - 40) / 60) * 0.08)
+  if (random() < postChance) {
+    return { scored: false, saved: false, missed: true, post: true }
+  }
+
+  return { scored: true, saved: false, missed: false }
+}
+
 export function getShootoutWinner(shots = [], regulationRounds = 5) {
   const homeShots = shots.filter(shot => shot.team === 'home')
   const awayShots = shots.filter(shot => shot.team === 'away')
