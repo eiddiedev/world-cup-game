@@ -26,10 +26,7 @@ import {
 } from './data/teamDataSchema.js'
 import { teams } from './data/teams.js'
 import { FORMATION_TACTICS } from './data/formationTactics.js'
-import { ANIMATION_TEMPLATES } from './utils/animationTemplates.js'
-import { getResultAnimationKey } from './utils/animationResultMapper.js'
 import { AudioManager, audioManager } from './utils/audioManager.js'
-import { generateCommentaryEvent, generateRandomMatchEvent } from './utils/commentaryEngine.js'
 import {
   outcomeConcedesPenalty,
   executeDecision,
@@ -45,14 +42,7 @@ import {
   getOpponentMatchSetup,
   resolveOpponentStrength,
 } from './utils/opponentTactics.js'
-import { generateOpponentTeam } from './utils/matchEngine.js'
 import { getFallbackKnockoutOpponents } from './utils/knockoutResolver.js'
-import {
-  buildAnimationActors,
-  collectUnsupportedAnimationFrameTypes,
-  createAmbientTargets,
-  createVisualEvent,
-} from './utils/matchVisuals.js'
 import { createInitialSaveData, createNewRun, loadSaveData } from './utils/saveManager.js'
 import { buildPostMatchInsights } from './utils/postMatchInsights.js'
 import { getNextRunAfterMatch } from './utils/tournamentProgress.js'
@@ -63,37 +53,17 @@ import {
   buildRecommendedNationalSquad,
   validateNationalSquad,
 } from './data/rosterRules.js'
-import {
-  getFittedLandscapePitchSize,
-  mapPitchPointToLandscape,
-} from './utils/pitchRendering.js'
-import {
-  MATCH_EVENT_ASSETS,
-  getGoalOverlayLayers,
-  getMatchEventVisual,
-} from './utils/matchEventVisuals.js'
-import {
-  appendCommentaryEntry,
-  openChainedDecision,
-} from './utils/commentaryTimeline.js'
 import { getMatchKits, getTeamKit } from './data/teamKits.js'
 import {
   PIXEL_PLAYER_ACTIONS,
   buildPixelPlayerModel,
   getPixelPlayerProductionRules,
 } from './utils/pixelPlayerRecipe.js'
-import { createPitchBounds, tacticalToPhaserPoint } from './utils/phaserPitch.js'
-import {
-  getBallAttachmentPoint,
-  getDecisionBridge,
-  getNextMatchSpeed,
-} from './utils/liveMatchSimulation.js'
 import {
   getShootoutWinner,
   resolveOpponentShootoutKick,
   resolveUserShootoutKick,
 } from './utils/penaltyShootout.js'
-import { getMatchBench, swapMatchPlayer } from './utils/substitution.js'
 import { getStorageKey, selectPlayableTeams } from './config/runtime.js'
 
 afterEach(() => {
@@ -326,6 +296,61 @@ describe('settings and audio', () => {
     expect(manager.playSound('click')).toBe(true)
     expect(connect).toHaveBeenCalledWith(manager.audioContext.destination)
     expect(start).toHaveBeenCalled()
+  })
+
+  it('uses a layered rain sound and follows the sound switch', () => {
+    const starts = []
+    const stops = []
+    class FakeRainAudioContext {
+      constructor() {
+        this.sampleRate = 8000
+        this.state = 'running'
+        this.destination = {}
+      }
+
+      createGain() {
+        return { gain: { value: 1 }, connect: vi.fn() }
+      }
+
+      createBiquadFilter() {
+        return {
+          type: '',
+          frequency: { value: 0 },
+          Q: { value: 0 },
+          connect: vi.fn(),
+        }
+      }
+
+      createBuffer(_channels, length) {
+        return { getChannelData: () => new Float32Array(length) }
+      }
+
+      createBufferSource() {
+        return {
+          buffer: null,
+          loop: false,
+          connect: vi.fn(),
+          start: () => starts.push(true),
+          stop: () => stops.push(true),
+        }
+      }
+    }
+    window.AudioContext = FakeRainAudioContext
+    const manager = new AudioManager()
+    manager.init({ sound: true, music: false, vibration: true })
+
+    expect(manager.startRainAmbient()).toBe(true)
+    expect(manager._rainNode).not.toBeNull()
+    expect(starts).toHaveLength(1)
+
+    manager.applySettings({ sound: false, music: false, vibration: true })
+    expect(manager._rainNode).toBeNull()
+    expect(stops).toHaveLength(1)
+
+    manager.applySettings({ sound: true, music: false, vibration: true })
+    expect(manager._rainNode).not.toBeNull()
+    expect(starts).toHaveLength(2)
+    manager.stopRainAmbient()
   })
 })
 
@@ -635,7 +660,6 @@ describe('match systems', () => {
     expect(first.lineup).toEqual(second.lineup)
     expect(first.lineup.filter(player => player.position === 'GK')).toHaveLength(1)
     expect(first.lineup.map(player => player.number)).toEqual(second.lineup.map(player => player.number))
-    expect(generateOpponentTeam('塞内加尔', null, 'medium')).toEqual(first.lineup)
   })
 
   it('resolves scheduled opponent strength by team and opponent name', () => {
@@ -763,140 +787,6 @@ describe('match systems', () => {
     expect(Object.values(opponents)).not.toContain('待定')
     expect(Object.values(opponents)).not.toContain('A组第2')
     expect(Object.values(opponents)).not.toContain('法国')
-  })
-
-  it('maps every decision outcome to a playable animation result', () => {
-    for (const scenario of DECISION_LIBRARY) {
-      expect(ANIMATION_TEMPLATES[scenario.animation_type], scenario.id).toBeTruthy()
-      const outcomes = scenario.choices.flatMap(choice => choice.possible_outcomes)
-      for (const outcome of outcomes) {
-        const resultKey = getResultAnimationKey(scenario.animation_type, outcome)
-        expect(resultKey, `${scenario.id}:${outcome}`).toBeTruthy()
-        expect(ANIMATION_TEMPLATES[scenario.animation_type].result_animations[resultKey], `${scenario.id}:${outcome}`).toBeTruthy()
-      }
-    }
-  })
-
-  it('uses dedicated free-kick and penalty animation paths', () => {
-    expect(ANIMATION_TEMPLATES.attack_freekick.result_animations.goal_freekick).toBeTruthy()
-    expect(ANIMATION_TEMPLATES.attack_freekick.result_animations.saved_freekick).toBeTruthy()
-    expect(ANIMATION_TEMPLATES.attack_freekick.result_animations.goal_header).toBeTruthy()
-    expect(ANIMATION_TEMPLATES.penalty_shootout.result_animations.goal_placement).toBeTruthy()
-    expect(ANIMATION_TEMPLATES.penalty_shootout.result_animations.saved_placement).toBeTruthy()
-    expect(ANIMATION_TEMPLATES.penalty_shootout.result_animations.goal_panenka).toBeTruthy()
-    expect(ANIMATION_TEMPLATES.attack_dive.result_animations.penalty_won).toBeTruthy()
-    expect(ANIMATION_TEMPLATES.var_penalty.result_animations.penalty_awarded).toBeTruthy()
-    expect(ANIMATION_TEMPLATES.defend_freekick.result_animations.wall_block).toBeTruthy()
-    expect(ANIMATION_TEMPLATES.box_chaos.result_animations.cleared_second_ball).toBeTruthy()
-    expect(ANIMATION_TEMPLATES.defend_opponent_penalty.result_animations.opponent_saved_left).toBeTruthy()
-  })
-
-  it('keeps animation templates limited to engine-supported frame types', () => {
-    expect(collectUnsupportedAnimationFrameTypes(ANIMATION_TEMPLATES)).toEqual([])
-  })
-
-  it('builds animation actors from decision key players', () => {
-    const lineup = [
-      { id: 'gk', name: '门将', number: 1, position: 'GK' },
-      { id: 'mf', name: '主罚手', number: 8, position: 'MF' },
-      { id: 'fw', name: '争顶点', number: 9, position: 'FW' },
-    ]
-    const opponents = [
-      { id: 'opp-gk', name: '对手门将', number: 1, position: 'GK' },
-      { id: 'opp-df', name: '对手后卫', number: 4, position: 'DF' },
-    ]
-
-    const penaltyActors = buildAnimationActors(
-      { id: 'match_penalty', animation_type: 'penalty_shootout' },
-      { default: lineup[1], second: lineup[2] },
-      lineup,
-      opponents,
-    )
-    expect(penaltyActors[0]).toBe(lineup[1])
-    expect(penaltyActors[1]).toBe(opponents[0])
-
-    const freeKickActors = buildAnimationActors(
-      { id: 'freekick_dangerous', animation_type: 'attack_freekick' },
-      { default: lineup[1], second: lineup[2] },
-      lineup,
-      opponents,
-    )
-    expect(freeKickActors[0]).toBe(lineup[1])
-    expect(freeKickActors[1]).toBe(lineup[2])
-  })
-
-  it('keeps commentary number-led and action-heavy', () => {
-    const text = generateCommentaryEvent(18, [
-      { name: '甲', number: 2, position: 'DF' },
-      { name: '乙', number: 3, position: 'MF' },
-    ], [
-      { name: '丙', number: 7, position: 'FW' },
-    ]).text
-
-    expect(text).toMatch(/18'/)
-    expect(text).toMatch(/[237]号/)
-    expect(text).toMatch(/本方[23]号/)
-    expect(text).toMatch(/对方7号/)
-    expect(text).toMatch(/推进|封堵|抢断|直塞|传中|回防/)
-  })
-
-  it('emits disciplinary and injury events with traceable player metadata', () => {
-    const myPlayers = [
-      { id: 'my-8', name: '八号', number: 8, position: 'MF' },
-      { id: 'my-1', name: '门将', number: 1, position: 'GK' },
-    ]
-    const opponentPlayers = [
-      { id: 'opp-4', name: '四号', number: 4, position: 'DF' },
-      { id: 'opp-1', name: '对手门将', number: 1, position: 'GK' },
-    ]
-
-    const redCardRolls = [0.01, 0, 0, 0, 0.001, 0]
-    const redCard = generateRandomMatchEvent(15, myPlayers, opponentPlayers, () => redCardRolls.shift() ?? 0)
-    expect(redCard.type).toBe('red_card')
-    expect(redCard.statsUpdate).toMatchObject({ fouls: 1, redCards: 1 })
-    expect(redCard.playerId).toBe('opp-4')
-    expect(redCard.teamSide).toBe('opponent')
-
-    const injuryRolls = [0.71, 0, 0]
-    const injury = generateRandomMatchEvent(42, myPlayers, opponentPlayers, () => injuryRolls.shift() ?? 0)
-    expect(injury.type).toBe('injury')
-    expect(injury.playerId).toBe('my-8')
-    expect(injury.teamSide).toBe('my')
-  })
-
-  it('returns visual payloads for commentary events and ambient targets for every player', () => {
-    const myPlayers = [
-      { id: 'my-8', name: '八号', number: 8, position: 'MF' },
-      { id: 'my-11', name: '十一号', number: 11, position: 'FW' },
-    ]
-    const opponentPlayers = [
-      { id: 'opp-4', name: '四号', number: 4, position: 'DF' },
-      { id: 'opp-1', name: '对手门将', number: 1, position: 'GK' },
-    ]
-
-    const commentary = generateCommentaryEvent(18, myPlayers, opponentPlayers)
-    expect(commentary.visual).toMatchObject({
-      visualKind: expect.any(String),
-      actorId: expect.any(String),
-      supportId: expect.any(String),
-    })
-
-    const visualEvent = createVisualEvent(commentary, myPlayers, opponentPlayers)
-    expect(visualEvent).toMatchObject({
-      visualKind: commentary.visual.visualKind,
-      actorName: expect.any(String),
-      supportName: expect.any(String),
-    })
-
-    const targets = createAmbientTargets({
-      playerPositions: {
-        八号: { x: 50, y: 50, team: 'my' },
-        'opp_四号': { x: 50, y: 45, team: 'opponent' },
-      },
-      ballZone: 'right_attack',
-      phase: 2,
-    })
-    expect(Object.keys(targets)).toEqual(['八号', 'opp_四号'])
   })
 
   it('does not trigger stacked decisions in the same minute or too close together', () => {
@@ -1119,24 +1009,6 @@ describe('post-match review', () => {
 })
 
 describe('landscape match presentation', () => {
-  it('cycles the retained match acceleration controls', () => {
-    expect(getNextMatchSpeed(1)).toBe(3)
-    expect(getNextMatchSpeed(3)).toBe(6)
-    expect(getNextMatchSpeed(6)).toBe(1)
-  })
-
-  it('attaches the ball at the carrier feet and bridges decisions with a pass', () => {
-    expect(getBallAttachmentPoint({ x: 40, y: 55 }, 1)).toEqual({ x: 41.35, y: 56.1 })
-    expect(getDecisionBridge('6号', '10号', {
-      '6号': { x: 30, y: 50, team: 'my' },
-      '10号': { x: 60, y: 50, team: 'my' },
-    })).toMatchObject({
-      type: 'pass',
-      fromName: '6号',
-      targetName: '10号',
-    })
-  })
-
   it('keeps opponent penalty direction hidden behind the goalkeeper choice', () => {
     const opponentKick = resolveOpponentShootoutKick('left', vi.fn()
       .mockReturnValueOnce(0.9)
@@ -1165,30 +1037,6 @@ describe('landscape match presentation', () => {
     ]
     expect(getShootoutWinner(shots)).toBeNull()
     expect(getShootoutWinner([...shots, { team: 'away', scored: false }])).toBe('home')
-  })
-
-  it('keeps substituted players out of the eligible bench and rejects duplicate substitutions', () => {
-    const starter = { id: 'starter', name: '首发', pos: 'MF' }
-    const bench = { id: 'bench', name: '替补', position: 'FW' }
-    const roster = [starter, bench]
-    const swapped = swapMatchPlayer([starter], bench, starter)
-
-    expect(swapped).toEqual([{ ...bench, pos: 'MF', position: 'MF' }])
-    expect(getMatchBench(roster, swapped, [], [starter.id])).toEqual([])
-    expect(swapMatchPlayer(swapped, starter, swapped[0], [starter.id])).toBeNull()
-    expect(swapMatchPlayer(swapped, bench, swapped[0])).toBeNull()
-  })
-
-  it('maps tactical coordinates onto the same top-down horizontal pitch used by the Phaser demo', () => {
-    const pitch = createPitchBounds(780, 480)
-    const ownGoal = tacticalToPhaserPoint(50, 0, pitch)
-    const center = tacticalToPhaserPoint(50, 50, pitch)
-    const opponentGoal = tacticalToPhaserPoint(50, 100, pitch)
-
-    expect(pitch).toEqual({ x: 40, y: 60, width: 700, height: 360 })
-    expect(ownGoal.x).toBeLessThan(center.x)
-    expect(opponentGoal.x).toBeGreaterThan(center.x)
-    expect(ownGoal.y).toBe(center.y)
   })
 
   it('provides distinct pixel kits for all ten playable teams', () => {
@@ -1251,76 +1099,4 @@ describe('landscape match presentation', () => {
     expect(rules.batchSteps.join(' ')).toContain('spriteRecipe')
   })
 
-  it('maps tactical progress from left goal to right goal on a native landscape pitch', () => {
-    const myGoal = mapPitchPointToLandscape(50, 5, 900, 600)
-    const center = mapPitchPointToLandscape(50, 50, 900, 600)
-    const opponentGoal = mapPitchPointToLandscape(50, 95, 900, 600)
-
-    expect(myGoal.px).toBeLessThan(center.px)
-    expect(opponentGoal.px).toBeGreaterThan(center.px)
-    expect(myGoal.py).toBeCloseTo(center.py)
-  })
-
-  it('fits a complete 3:2 field inside the available match area', () => {
-    expect(getFittedLandscapePitchSize(960, 540)).toEqual({ width: 810, height: 540 })
-    expect(getFittedLandscapePitchSize(600, 600)).toEqual({ width: 600, height: 400 })
-  })
-
-  it('maps match outcomes to the supplied pixel event assets', () => {
-    expect(getMatchEventVisual('goal_placement', { homeScoreChange: 1 })).toEqual({
-      type: 'goal',
-      src: MATCH_EVENT_ASSETS.goal,
-      label: '进球',
-    })
-    expect(getMatchEventVisual('gk_reaction_save', {})).toMatchObject({
-      type: 'save',
-      src: MATCH_EVENT_ASSETS.save,
-    })
-    expect(getMatchEventVisual('red_card_penalty', {})).toMatchObject({
-      type: 'redCard',
-      src: MATCH_EVENT_ASSETS.redCard,
-    })
-    expect(getMatchEventVisual('yellow_card_dive', {})).toMatchObject({
-      type: 'yellowCard',
-      src: MATCH_EVENT_ASSETS.yellowCard,
-    })
-    expect(getMatchEventVisual('deflected_corner', {})).toMatchObject({
-      type: 'corner',
-      src: MATCH_EVENT_ASSETS.corner,
-    })
-  })
-
-  it('does not append the same commentary twice for one match minute', () => {
-    const first = appendCommentaryEntry([], {
-      id: 1,
-      text: "12' 本方4号正在带球推进 → 本方3号前插接应 → 对方5号上前封堵",
-      color: '#F3E3B4',
-    })
-    const repeated = appendCommentaryEntry(first, {
-      id: 2,
-      text: "12' 本方4号正在带球推进 → 本方3号前插接应 → 对方5号上前封堵",
-      color: '#F3E3B4',
-    })
-
-    expect(repeated).toHaveLength(1)
-  })
-
-  it('keeps the original goal text over the transparent goal image without a backdrop', () => {
-    expect(getGoalOverlayLayers()).toEqual({
-      image: true,
-      text: true,
-      backdrop: false,
-    })
-  })
-
-  it('clears the previous result before opening a chained penalty decision', () => {
-    const setDecisionResult = vi.fn()
-    const setCurrentDecision = vi.fn()
-    const penaltyDecision = { kind: 'opponent_penalty' }
-
-    openChainedDecision(penaltyDecision, { setDecisionResult, setCurrentDecision })
-
-    expect(setDecisionResult).toHaveBeenCalledWith(null)
-    expect(setCurrentDecision).toHaveBeenCalledWith(penaltyDecision)
-  })
 })

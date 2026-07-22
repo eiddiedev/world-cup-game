@@ -3,16 +3,18 @@ import React, { useEffect, useRef } from 'react'
 /**
  * 像素风雨点覆盖层。
  * 用一块低分辨率 canvas 绘制细短的白色竖向雨丝，再靠 CSS 放大并开启
- * image-rendering: pixelated，得到颗粒感十足的 8-bit 雨点，缓慢匀速降落。
+ * image-rendering: pixelated，得到颗粒感十足的 8-bit 雨点，并以清晰可见的速度降落。
  */
-export default function PixelRain({ density = 90, speed = 0.55 }) {
+export default function PixelRain({ density = 90, speed = 0.75 }) {
   const canvasRef = useRef(null)
 
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return undefined
+    // jsdom 会在调用未实现的 getContext 时向 stderr 打印整段堆栈；测试环境直接跳过动画。
+    if (typeof navigator !== 'undefined' && /jsdom/i.test(navigator.userAgent)) return undefined
     const ctx = canvas.getContext('2d')
-    // jsdom 等环境不支持 canvas 2d，此时不渲染雨点动画
+    // 其他不支持 canvas 2d 的环境同样静默降级。
     if (!ctx) return undefined
     // 中等分辨率画布：保留像素感的同时让雨丝更纤细
     const W = 384

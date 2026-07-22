@@ -27,9 +27,9 @@
   "assets": {
     "masterBackground": "/pixel/stadiums/world-cup-day-v1/stadium-day-master-v1.png",
     "scene": "/pixel/stadiums/world-cup-day-v1/scene.json",
-    "ballTexture": "/pixel/runtime-equipment/happyseed-equipment-v4/football-pixel-v4.png",
-    "goalAtlas": "/pixel/runtime-equipment/happyseed-equipment-v4/goal-net-pixel-v4.png",
-    "equipmentManifest": "/pixel/runtime-equipment/happyseed-equipment-v4/manifest.json"
+    "ballTexture": "/pixel/runtime-equipment/happyseed-equipment-v6/football-pixel-v6.png",
+    "goalAtlas": "/pixel/runtime-equipment/happyseed-equipment-v6/goal-net-pixel-v6.png",
+    "equipmentManifest": "/pixel/runtime-equipment/happyseed-equipment-v6/manifest.json"
   },
   "layers": [
     {

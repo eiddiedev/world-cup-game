@@ -92,6 +92,8 @@ export class AudioManager {
     this.musicStep = 0
     this.userUnlocked = false
     this.matchSamples = {}
+    this._rainNode = null
+    this._rainRequested = false
     this.buildSoundPlayers()
   }
 
@@ -144,6 +146,8 @@ export class AudioManager {
     this.soundEnabled = Boolean(merged.sound)
     this.musicEnabled = Boolean(merged.music)
     this.vibrationEnabled = Boolean(merged.vibration)
+    if (!this.soundEnabled && this._rainNode) this.stopRainAmbient({ preserveRequest: true })
+    else if (this.soundEnabled && this._rainRequested && !this._rainNode) this.startRainAmbient()
     if (!this.musicEnabled) this.stopMusic()
     else if (this.userUnlocked) this.startMusic()
   }
@@ -299,39 +303,76 @@ export class AudioManager {
 
   /* ---------- 雨天环境音 ---------- */
   startRainAmbient() {
+    this._rainRequested = true
     if (this._rainNode) return false
+    if (!this.soundEnabled) return false
     const ctx = this.ensureSfxContext()
     if (!ctx) return false
     if (ctx.state === 'suspended') ctx.resume().catch(() => {})
-    // 生成 3 秒棕噪声（比白噪声更柔和，类似细雨沙沙声）
-    const seconds = 3
+
+    // 以明亮的宽频雨幕为底，再混入短促水滴脉冲；避免旧棕噪声的闷、糊感。
+    const seconds = 4
     const buffer = ctx.createBuffer(1, ctx.sampleRate * seconds, ctx.sampleRate)
     const data = buffer.getChannelData(0)
-    let prev = 0
+    let smoothed = 0
     for (let i = 0; i < data.length; i += 1) {
       const white = Math.random() * 2 - 1
-      prev = (prev + 0.02 * white) / 1.02
-      data[i] = prev * 3.5
+      smoothed = smoothed * 0.58 + white * 0.42
+      data[i] = white * 0.16 + smoothed * 0.24
     }
+
+    const dropCount = seconds * 44
+    for (let drop = 0; drop < dropCount; drop += 1) {
+      const start = Math.floor(Math.random() * (data.length - 240))
+      const length = 55 + Math.floor(Math.random() * 150)
+      const strength = 0.16 + Math.random() * 0.24
+      for (let i = 0; i < length; i += 1) {
+        const envelope = Math.exp(-i / (length * 0.22))
+        const transient = (Math.random() * 2 - 1) * strength * envelope
+        data[start + i] = Math.max(-1, Math.min(1, data[start + i] + transient))
+      }
+    }
+
     const source = ctx.createBufferSource()
     source.buffer = buffer
     source.loop = true
-    // 低通滤波去掉刺耳高频，保留柔和的沙沙声
+
+    // 主雨幕保留中高频质感；并行高通层专门突出清脆雨滴。
+    const highpass = ctx.createBiquadFilter()
+    highpass.type = 'highpass'
+    highpass.frequency.value = 620
+    highpass.Q.value = 0.35
     const lowpass = ctx.createBiquadFilter()
     lowpass.type = 'lowpass'
-    lowpass.frequency.value = 3600
-    lowpass.Q.value = 0.2
-    const gain = ctx.createGain()
-    gain.gain.value = 0.03
-    source.connect(lowpass)
-    lowpass.connect(gain)
-    gain.connect(ctx.destination)
+    lowpass.frequency.value = 7600
+    lowpass.Q.value = 0.15
+    const bodyGain = ctx.createGain()
+    bodyGain.gain.value = 0.042
+
+    const sparkle = ctx.createBiquadFilter()
+    sparkle.type = 'highpass'
+    sparkle.frequency.value = 3900
+    sparkle.Q.value = 0.45
+    const sparkleGain = ctx.createGain()
+    sparkleGain.gain.value = 0.018
+
+    const outputGain = ctx.createGain()
+    outputGain.gain.value = this.soundVolume
+    source.connect(highpass)
+    highpass.connect(lowpass)
+    lowpass.connect(bodyGain)
+    bodyGain.connect(outputGain)
+    source.connect(sparkle)
+    sparkle.connect(sparkleGain)
+    sparkleGain.connect(outputGain)
+    outputGain.connect(ctx.destination)
     source.start()
-    this._rainNode = { source, gain }
+    this._rainNode = { source, outputGain }
     return true
   }
 
-  stopRainAmbient() {
+  stopRainAmbient({ preserveRequest = false } = {}) {
+    if (!preserveRequest) this._rainRequested = false
     if (!this._rainNode) return false
     try {
       this._rainNode.source.stop()
