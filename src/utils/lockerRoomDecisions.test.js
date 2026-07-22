@@ -68,6 +68,23 @@ describe('locker room decisions', () => {
     expect(halftimePool.some((id) => sharedIds.includes(id))).toBe(true)
   })
 
+  it('always includes the rain forecast in a rainy prematch locker room', () => {
+    const first = selectLockerRoomScenario({
+      phase: 'prematch',
+      weather: 'rain',
+      randomFn: () => 0.99,
+    })
+    expect(first?.id).toBe('rain_forecast')
+
+    const next = selectLockerRoomScenario({
+      phase: 'prematch',
+      weather: 'rain',
+      usedIds: ['rain_forecast'],
+      randomFn: () => 0,
+    })
+    expect(next?.id).not.toBe('rain_forecast')
+  })
+
   it('applies choice effects to actor state with clamps and an auditable report', () => {
     const actors = redOnPitch.map((actor) => ({
       ...actor,

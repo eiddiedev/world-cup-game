@@ -57,7 +57,13 @@ function conditionForScoreDiff(scoreDiff) {
   return 'draw'
 }
 
-export function selectLockerRoomScenario({ phase, scoreDiff = 0, usedIds = [], randomFn = Math.random } = {}) {
+export function selectLockerRoomScenario({
+  phase,
+  scoreDiff = 0,
+  usedIds = [],
+  weather = 'clear',
+  randomFn = Math.random,
+} = {}) {
   const condition = conditionForScoreDiff(scoreDiff)
   const eligible = LOCKER_ROOM_DECISIONS.filter((scenario) => (
     (scenario.phases || [scenario.phase]).includes(phase)
@@ -65,6 +71,10 @@ export function selectLockerRoomScenario({ phase, scoreDiff = 0, usedIds = [], r
     && !usedIds.includes(scenario.id)
   ))
   if (!eligible.length) return null
+  if (weather === 'rain') {
+    const rainScenario = eligible.find((scenario) => scenario.id === 'rain_forecast')
+    if (rainScenario) return rainScenario
+  }
   return eligible[Math.floor(randomFn() * eligible.length)]
 }
 

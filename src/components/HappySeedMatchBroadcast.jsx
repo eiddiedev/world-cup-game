@@ -200,7 +200,14 @@ export function HappySeedMatchBroadcast({ saveData = null, onMatchComplete = nul
   // 赛前更衣室完成门控：未完成前不允许开赛（避免决策过程中已开球）
   const [prematchGateClear, setPrematchGateClear] = useState(false)
   // 本场天气：雨天时在球场上空渲染像素风雨点
-  const [weather, setWeather] = useState(() => window.__happySeedWeather || 'clear')
+  const [weather, setWeather] = useState(() => {
+    const requestedWeather = params.get('weather')
+    const resolvedWeather = requestedWeather === 'rain' || requestedWeather === 'clear'
+      ? requestedWeather
+      : (window.__happySeedWeather || (Math.random() < 0.25 ? 'rain' : 'clear'))
+    window.__happySeedWeather = resolvedWeather
+    return resolvedWeather
+  })
   const bootedRef = useRef(false)
   const decisionChoiceLockedRef = useRef(false)
   const decisionRunIdRef = useRef(0)
@@ -255,7 +262,10 @@ export function HappySeedMatchBroadcast({ saveData = null, onMatchComplete = nul
     bootedRef.current = true
     // 每场比赛随机天气（约 1/4 雨天）：驱动湿滑草皮等天气相关决策
     // 若外部已预设天气（如雨天验收页），则沿用不覆盖
-    if (!window.__happySeedWeather) {
+    const requestedWeather = params.get('weather')
+    if (requestedWeather === 'rain' || requestedWeather === 'clear') {
+      window.__happySeedWeather = requestedWeather
+    } else if (!window.__happySeedWeather) {
       window.__happySeedWeather = Math.random() < 0.25 ? 'rain' : 'clear'
     }
     setWeather(window.__happySeedWeather)
@@ -579,6 +589,7 @@ export function HappySeedMatchBroadcast({ saveData = null, onMatchComplete = nul
         phase,
         scoreDiff: matchSession.score.red - matchSession.score.blue,
         usedIds: [...lockerRoomUsedIdsRef.current, ...scenarios.map((item) => item.id)],
+        weather,
       })
       if (scenario) scenarios.push(scenario)
     }
