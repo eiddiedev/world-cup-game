@@ -10,18 +10,23 @@ import { createDerivedMatchRuntimeEvent } from './matchRuntimeEvent.js'
 
 export const FORMAL_MATCH_SESSION_SCHEMA = 'formal-match-session-v1'
 export const FORMAL_MATCH_REALTIME_MINUTES = 3
-export const FORMAL_MATCH_TARGET_DECISIONS = 7
+export const FORMAL_MATCH_TARGET_DECISIONS = 10
 export const FORMAL_MATCH_ROUTINE_COMMENTARY_BUDGET = 5
-export const FORMAL_MATCH_DECISION_TARGET_MINUTES = Object.freeze([10, 24, 39, 54, 68, 79, 88])
-// 高价值时刻（角球/深度进攻/单刀）优先场景只按此概率抢占决策槽，
-// 其余时候交还给 53 场景大池抽取，避免每场比赛都是同几个场景
-export const FORMAL_PRIORITY_DECISION_TAKE_RATE = 0.15
-// 非点球/伤病的优先场景每场最多占用 3 个决策，其余决策槽留给大池，保证多元
-export const FORMAL_MATCH_PRIORITY_DECISION_CAP = 3
+export const FORMAL_MATCH_DECISION_TARGET_MINUTES = Object.freeze([8, 16, 24, 32, 41, 50, 58, 66, 74, 83])
+// 高价值时刻（角球/深度进攻/单刀）优先场景按类别概率抢占决策槽：
+// 角球决策是定位球核心玩法（场均 ~3 次）；点球决策保持稀有（场均 ~0.5 次）
+export const FORMAL_PRIORITY_DECISION_TAKE_RATE = Object.freeze({
+  corner: 0.75,
+  penalty: 0.08,
+  default: 0.10,
+})
+// 非点球/伤病的优先场景每场最多占用 5 个决策，其余决策槽留给大池，保证多元
+export const FORMAL_MATCH_PRIORITY_DECISION_CAP = 5
 // 拥有优先通道（角球/深度进攻/点球）的场景不再进入大池：
 // 它们只在自己的真实比赛时刻出现，大池曝光机会留给其余 37 个场景
 const PRIORITY_CHANNEL_SCENARIO_IDS = new Set([
   'header_corner',
+  'late_keeper_up_corner',
   'aerial_duel_corner_defending',
   'opponent_short_corner_defense',
   'penalty_kick',
@@ -254,48 +259,65 @@ export function deriveFormalRuntimeIncidents(sourceEvent) {
   return incidents
 }
 
-// 大池抽取的稀有度权重：稀缺时刻（VAR/手球/二黄/天气/门将出击等）一旦满足
-// 条件就该被优先选中——它们很少再有下一次机会；常规实况场景几乎每分钟都有
-// 资格，可以等。未列出的场景默认 1（多由优先通道喂流，本身曝光已足够）
+// 大池抽取权重：按“资格频率 × 权重 ≈ 常数”校准，让 53 个场景的场均触发期望趋于均衡。
+// 资格窗口宽（几乎随时可选）的场景用低权重，资格窗口窄（稀有时刻）的场景用高权重。
 const DECISION_SCENARIO_RARITY_WEIGHTS = Object.freeze({
-  var_goal_review: 8,
-  var_offside_goal: 8,
-  var_penalty_review: 8,
-  defensive_line_handball_var: 8,
-  handball_penalty_claim: 8,
-  injury_play_on: 8,
-  penalty_rebound_followup: 20,
-  keeper_sweeper_claim: 20,
-  late_keeper_up_corner: 12,
-  keeper_distribution: 8,
-  yellow_card_dissent_control: 8,
-  second_yellow_warning: 8,
-  weather_slippery_tackle: 8,
-  penalty_area_dive: 8,
-  freekick_dangerous: 2.5,
-  defend_dangerous_freekick: 2.5,
-  opponent_dangerous_freekick_wall: 2.5,
-  indirect_freekick_box: 2.5,
-  throwin_attack: 2.5,
-  stamina_collapse_sub: 2.5,
-  second_ball_corner_attack: 2.5,
-  set_piece_rebound_shot: 2.5,
-  trailing_last_ten: 2.5,
-  leading_protect: 2.5,
-  tactical_foul_counter: 2.5,
-  offside_trap: 2.5,
-  low_block_counter_launch: 2.5,
-  high_press_trap: 2.5,
+  // —— 稀有时刻场景：资格窗口极窄，大幅提高曝光 ——
+  extra_time_penalty_shootout_prep: 12,
+  penalty_shootout_round: 12,
+  weather_slippery_tackle: 12,
+  late_keeper_up_corner: 6,
+  keeper_sweeper_claim: 10,
+  penalty_rebound_followup: 10,
+  keeper_distribution: 10,
+  indirect_freekick_box: 5,
+  defend_dangerous_freekick: 5,
+  opponent_dangerous_freekick_wall: 5,
+  freekick_dangerous: 4,
+  var_offside_goal: 4,
+  var_goal_review: 6,
+  var_penalty_review: 4,
+  handball_penalty_claim: 4,
+  defensive_line_handball_var: 4,
+  injury_play_on: 4,
+  defender_last_ditch: 3,
+  penalty_area_dive: 3,
   box_scramble_clearance: 2.5,
-  box_second_ball_chaos: 2.5,
-  defender_last_ditch: 2.5,
-  long_shot_opportunity: 2.5,
-  half_space_through_run: 2.5,
-  fullback_recovery_run: 2.5,
-  midfield_switch_play: 2.5,
-  midfield_press_trigger: 2.5,
-  midfield_second_ball: 2.5,
-  counter_attack_3v2: 2.5,
+  second_yellow_warning: 2.5,
+  set_piece_rebound_shot: 2,
+  central_cutback_press: 2,
+  through_ball_chance: 2,
+  low_block_counter_launch: 2,
+  second_ball_corner_attack: 2,
+  trailing_last_ten: 2,
+  leading_protect: 2,
+  yellow_card_dissent_control: 2,
+  aerial_duel_corner_defending: 2,
+  opponent_short_corner_defense: 2,
+  tactical_foul_counter: 2,
+  stamina_collapse_sub: 2,
+  // —— 中频场景 ——
+  counter_attack_3v2: 1.5,
+  high_press_trap: 1.5,
+  offside_trap: 1.5,
+  midfield_switch_play: 1.5,
+  half_space_through_run: 1.5,
+  midfield_press_trigger: 1.5,
+  fullback_recovery_run: 1.5,
+  long_shot_opportunity: 1.5,
+  box_second_ball_chaos: 1.5,
+  throwin_attack: 1.5,
+  // —— 高频场景：资格窗口宽，压低权重保证多元 ——
+  match_penalty: 1,
+  penalty_kick: 1,
+  header_corner: 1,
+  penalty_area_foul_risk: 1,
+  solo_run_penalty: 1,
+  last_defender_tackle: 1,
+  gk_one_on_one: 0.6,
+  wing_overlap_cross: 0.6,
+  penalty_area_cross: 0.5,
+  midfield_second_ball: 0.3,
 })
 
 function selectDecisionScenario(session, runtimeMoment, sourceEvents, options = {}) {
@@ -364,7 +386,7 @@ export function selectPriorityFormalDecisionScenario(session, runtimeMoment, sou
         runtimeMoment,
         sourceEvent,
         sourceEvent.side === 'red'
-          ? ['header_corner']
+          ? ['late_keeper_up_corner', 'header_corner']
           : ['aerial_duel_corner_defending', 'opponent_short_corner_defense'],
         options,
       )
@@ -853,8 +875,9 @@ export function advanceFormalMatchSession(session, payload = {}) {
     : selectPriorityFormalDecisionScenario(next, runtimeMoment, sourceEvents, {
       random: payload.random,
     })
-  // 非点球/伤病优先决策达到每场上限后，把机会让给大池（点球与真实伤病例外：不可吞没）
+  // 非点球/伤病优先决策达到每场上限后，把机会让给大池（点球、真实伤病与补时门将上抢例外：不可吞没）
   const mandatoryPriority = ['penalty', 'injury'].includes(priorityCandidate?.sourceEvent?.type)
+    || priorityCandidate?.scenario?.id === 'late_keeper_up_corner'
   if (
     priorityCandidate
     && !mandatoryPriority
@@ -862,10 +885,15 @@ export function advanceFormalMatchSession(session, payload = {}) {
   ) {
     priorityCandidate = null
   }
-  // 真正的点球/伤病不能因概率被吞掉；其余优先场景按采纳率与大池竞争，保证场景多元
+  // 真正的点球/伤病不能因概率被吞掉；其余优先场景按类别采纳率与大池竞争，保证场景多元
+  const priorityTakeRate = priorityCandidate?.sourceEvent?.type === 'corner'
+    ? FORMAL_PRIORITY_DECISION_TAKE_RATE.corner
+    : priorityCandidate?.sourceEvent?.type === 'penalty'
+      ? FORMAL_PRIORITY_DECISION_TAKE_RATE.penalty
+      : FORMAL_PRIORITY_DECISION_TAKE_RATE.default
   const prioritySelected = priorityCandidate && (
     mandatoryPriority
-    || (payload.random || Math.random)() < FORMAL_PRIORITY_DECISION_TAKE_RATE
+    || (payload.random || Math.random)() < priorityTakeRate
   )
     ? priorityCandidate
     : null
@@ -884,6 +912,7 @@ export function advanceFormalMatchSession(session, payload = {}) {
     targetMinute == null
     && !extraTimeSlotOpen
     && !['penalty', 'injury'].includes(prioritySelected?.sourceEvent?.type)
+    && prioritySelected?.scenario?.id !== 'late_keeper_up_corner'
   ) {
     return { session: next, decisionPlan: null }
   }

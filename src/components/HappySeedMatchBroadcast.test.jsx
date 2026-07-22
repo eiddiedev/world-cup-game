@@ -248,12 +248,16 @@ describe('HappySeed formal match broadcast', () => {
     render(<HappySeedMatchBroadcast />)
     await act(async () => {})
 
+    // 进球播报图片延迟 1 秒出现（等球完全进网）
+    expect(document.querySelector('.broadcast-event-artwork')).toBeNull()
+    await act(async () => { vi.advanceTimersByTime(1000) })
     expect(document.querySelector('.broadcast-event-artwork'))
       .toHaveAttribute('data-event-artwork', '进球')
     expect(document.querySelector('.broadcast-event-artwork'))
       .toHaveTextContent('皮球越过门线，进球！')
     expect(serviceMocks.setRuntimeGoalPresentationHold).toHaveBeenCalledWith(true)
 
+    // 定格与进球图片同帧（t=1000）开始，持续 3200ms，到 t=4200 才释放重启
     await act(async () => { vi.advanceTimersByTime(3199) })
     expect(serviceMocks.setRuntimeGoalPresentationHold).not.toHaveBeenCalledWith(false)
     await act(async () => { vi.advanceTimersByTime(1) })
@@ -284,6 +288,9 @@ describe('HappySeed formal match broadcast', () => {
     render(<HappySeedMatchBroadcast />)
     await act(async () => {})
 
+    // VAR 检查画面延迟 1 秒出现
+    expect(document.querySelector('.broadcast-event-artwork')).toBeNull()
+    await act(async () => { vi.advanceTimersByTime(1000) })
     expect(document.querySelector('.broadcast-event-artwork'))
       .toHaveAttribute('data-event-artwork', '检查 VAR 中')
     expect(document.querySelector('.broadcast-event-artwork'))

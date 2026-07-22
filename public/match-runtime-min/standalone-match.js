@@ -3120,6 +3120,14 @@
     game.__happySeedGoalPresentationHoldToken = null;
     try { holdToken != null && pitch.timeScale.reset(holdToken); } catch {}
 
+    // 释放被延迟的 Goal→Kickoff 状态转换（球已在网窝中定格）
+    if (game.__happySeedDeferredGoalKickoff) {
+      var deferredKickoff = game.__happySeedDeferredGoalKickoff;
+      game.__happySeedDeferredGoalKickoff = null;
+      game.__happySeedDeferGoalRestart = !1;
+      try { pitch.states.change(Pitch.states.Kickoff, deferredKickoff.team); } catch {}
+    }
+
     var deferred = game.__happySeedDeferredDecisionGoalRestart;
     game.__happySeedDeferredDecisionGoalRestart = null;
     if (!deferred || !Pitch || !pitch.states) return !0;
@@ -3564,6 +3572,27 @@
         game.__happySeedAcceptedGoalScoreRed = game.pitch.redTeam.score | 0;
         game.__happySeedAcceptedGoalScoreBlue = game.pitch.blueTeam.score | 0;
         game.__happySeedPendingGoalRestartHold = !0;
+        // 拦截 Goal→Kickoff 状态转换：让球在 Goal 状态中自然滚入网窝，
+        // 等 React 层调用 setGoalPresentationHold(true) 时才定格并放行转换
+        game.__happySeedDeferGoalRestart = !0;
+        game.__happySeedDeferredGoalKickoff = null;
+        if (!game.__happySeedGoalStatePatchApplied) {
+          game.__happySeedGoalStatePatchApplied = !0;
+          var _origStatesChange = game.pitch.states.change.bind(game.pitch.states);
+          var _PitchRef = runtime("pitch").Pitch;
+          game.pitch.states.change = function (state) {
+            if (
+              game.__happySeedDeferGoalRestart
+              && state === _PitchRef.states.Kickoff
+            ) {
+              game.__happySeedDeferredGoalKickoff = {
+                team: arguments[1] || game.pitch.matchStartingTeam,
+              };
+              return;
+            }
+            return _origStatesChange.apply(null, arguments);
+          };
+        }
         try {
           var gp = game.pitch,
             gSide =

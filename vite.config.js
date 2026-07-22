@@ -34,6 +34,7 @@ export default defineConfig(({ mode }) => {
             happySeedRuntime: fileURLToPath(new URL('./happyseed-runtime.html', import.meta.url)),
             happySeedRuntimeLab: fileURLToPath(new URL('./happyseed-runtime-lab.html', import.meta.url)),
             happySeedDecisionReview: fileURLToPath(new URL('./happyseed-decision-review.html', import.meta.url)),
+            happySeedRainTest: fileURLToPath(new URL('./happyseed-rain-test.html', import.meta.url)),
           },
         },
       } : {}),

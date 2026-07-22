@@ -296,6 +296,49 @@ export class AudioManager {
     navigator.vibrate(pattern)
     return true
   }
+
+  /* ---------- 雨天环境音 ---------- */
+  startRainAmbient() {
+    if (this._rainNode) return false
+    const ctx = this.ensureSfxContext()
+    if (!ctx) return false
+    if (ctx.state === 'suspended') ctx.resume().catch(() => {})
+    // 生成 3 秒棕噪声（比白噪声更柔和，类似细雨沙沙声）
+    const seconds = 3
+    const buffer = ctx.createBuffer(1, ctx.sampleRate * seconds, ctx.sampleRate)
+    const data = buffer.getChannelData(0)
+    let prev = 0
+    for (let i = 0; i < data.length; i += 1) {
+      const white = Math.random() * 2 - 1
+      prev = (prev + 0.02 * white) / 1.02
+      data[i] = prev * 3.5
+    }
+    const source = ctx.createBufferSource()
+    source.buffer = buffer
+    source.loop = true
+    // 低通滤波去掉刺耳高频，保留柔和的沙沙声
+    const lowpass = ctx.createBiquadFilter()
+    lowpass.type = 'lowpass'
+    lowpass.frequency.value = 3600
+    lowpass.Q.value = 0.2
+    const gain = ctx.createGain()
+    gain.gain.value = 0.03
+    source.connect(lowpass)
+    lowpass.connect(gain)
+    gain.connect(ctx.destination)
+    source.start()
+    this._rainNode = { source, gain }
+    return true
+  }
+
+  stopRainAmbient() {
+    if (!this._rainNode) return false
+    try {
+      this._rainNode.source.stop()
+    } catch { /* already stopped */ }
+    this._rainNode = null
+    return true
+  }
 }
 
 export const audioManager = new AudioManager()

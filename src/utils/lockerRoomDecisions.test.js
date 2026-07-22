@@ -2,7 +2,9 @@
 import { describe, expect, it } from 'vitest'
 import { LOCKER_ROOM_DECISIONS } from '../data/lockerRoomDecisions.js'
 import {
+  getLockerRoomSituation,
   lockerRoomMoraleBonus,
+  pickLockerRoomSubstitution,
   resolveLockerRoomChoice,
   selectLockerRoomScenario,
 } from './lockerRoomDecisions.js'
@@ -114,5 +116,57 @@ describe('locker room decisions', () => {
     }))
     expect(lockerRoomMoraleBonus(down)).toBeCloseTo(-0.07, 5)
     expect(Math.abs(lockerRoomMoraleBonus(redOnPitch))).toBeLessThanOrEqual(0.07)
+  })
+
+  it('adapts situation text by phase so prematch never references in-match events', () => {
+    const penaltyWar = LOCKER_ROOM_DECISIONS.find((item) => item.id === 'penalty_war')
+    expect(getLockerRoomSituation(penaltyWar, 'halftime')).toContain('上半场')
+    expect(getLockerRoomSituation(penaltyWar, 'prematch')).not.toContain('上半场')
+    // 未提供分阶段文案的场景回退默认文案
+    const heating = LOCKER_ROOM_DECISIONS.find((item) => item.id === 'heating_failure')
+    expect(getLockerRoomSituation(heating, 'prematch')).toBe(heating.situation)
+  })
+
+  it('never shows 上半场/下半场/中场休息 wording to a prematch locker room', () => {
+    const inMatchWording = /上半场|下半场|中场休息/
+    for (const scenario of LOCKER_ROOM_DECISIONS) {
+      if (!(scenario.phases || []).includes('prematch')) continue
+      expect(getLockerRoomSituation(scenario, 'prematch'), scenario.id).not.toMatch(inMatchWording)
+    }
+  })
+
+  it('picks a position-matched substitution pair for locker room sub decisions', () => {
+    const snapshot = buildHappySeedRuntimeActorConfig()
+    const outfield = snapshot.actors.filter((actor) => (
+      actor.side === 'red' && actor.state?.onPitch && !actor.isGoalkeeper
+    ))
+    const primary = pickLockerRoomSubstitution(snapshot, 'primary')
+    expect(primary).toBeTruthy()
+    const best = [...outfield].sort((left, right) => (
+      Number(right.rating || 0) - Number(left.rating || 0)
+    ))[0]
+    expect(primary.outgoing.playerId).toBe(best.playerId)
+    expect(primary.incoming.naturalPosition).not.toBe('GK')
+
+    const lowest = pickLockerRoomSubstitution(snapshot, 'lowest-stamina')
+    expect(lowest).toBeTruthy()
+    const tired = [...outfield].sort((left, right) => (
+      Number(left.state?.stamina ?? 100) - Number(right.state?.stamina ?? 100)
+    ))[0]
+    expect(lowest.outgoing.playerId).toBe(tired.playerId)
+  })
+
+  it('marks exactly the designed locker room choices as substitution decisions', () => {
+    const substituteChoices = LOCKER_ROOM_DECISIONS.flatMap((scenario) => (
+      scenario.choices
+        .filter((choice) => choice.substitute)
+        .map((choice) => `${scenario.id}/${choice.id}:${choice.substitute}`)
+    ))
+    expect(substituteChoices.sort()).toEqual([
+      'injury_scare/sub:primary',
+      'leading_rotate/rotate:lowest-stamina',
+      'no_subs_left/use:lowest-stamina',
+      'senior_speech/rest_him:primary',
+    ])
   })
 })

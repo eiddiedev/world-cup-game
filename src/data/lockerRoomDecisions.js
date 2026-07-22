@@ -294,6 +294,7 @@ export const LOCKER_ROOM_DECISIONS = Object.freeze([
         id: 'rotate',
         label: '下半场早轮换',
         desc: '保护主力，给替补机会。',
+        substitute: 'lowest-stamina',
         effects: [{ scope: 'all', stamina: 4 }, { scope: 'random', morale: 4, form: 2 }],
         result: '主力松了口气，替补摩拳擦掌。你在名单上圈了两个名字。',
       },
@@ -381,11 +382,15 @@ export const LOCKER_ROOM_DECISIONS = Object.freeze([
     condition: 'any',
     title: '主力一瘸一拐',
     situation: '一名主力上半场被铲了一下，中场时走路一瘸一拐，但他说没事。',
+    situationByPhase: {
+      prematch: '一名主力赛前热身时扭了一下脚踝，走路一瘸一拐，但他说没事。',
+    },
     choices: [
       {
         id: 'sub',
         label: '保险起见换下',
         desc: '不想赌他的腿。',
+        substitute: 'primary',
         effects: [{ scope: 'random', morale: 3 }, { scope: 'primary', morale: -2, stamina: 3 }],
         result: '他嘴上不服，但也松了口气。替补拍着胸脯说交给他。',
       },
@@ -404,13 +409,16 @@ export const LOCKER_ROOM_DECISIONS = Object.freeze([
     condition: 'any',
     title: '裁判尺度太松',
     situation: '上半场对方多次粗野犯规，裁判只口头警告，球员们义愤填膺。',
+    situationByPhase: {
+      prematch: '赛前情报：本场主裁判执法尺度偏松，对方又素来动作粗野，球员们提前绷紧了神经。',
+    },
     choices: [
       {
         id: 'complain',
         label: '向第四官员施压',
-        desc: '中场休息时正式提出抗议。',
+        desc: '正式向裁判组提出抗议。',
         effects: [{ scope: 'all', morale: 2 }, { scope: 'random', form: -2 }],
-        result: '第四官员记下了你的话。下半场哨子也许会紧一点，也许不会。',
+        result: '第四官员记下了你的话。哨子也许会紧一点，也许不会。',
       },
       {
         id: 'focus',
@@ -450,6 +458,9 @@ export const LOCKER_ROOM_DECISIONS = Object.freeze([
     condition: 'any',
     title: '对手要变阵了',
     situation: '助教得到消息：对手中场休息准备变阵 4-2-4，全力反扑。',
+    situationByPhase: {
+      prematch: '助教得到消息：对手今天准备摆出 4-2-4 阵型，开场就全力抢攻。',
+    },
     choices: [
       {
         id: 'counter',
@@ -473,6 +484,9 @@ export const LOCKER_ROOM_DECISIONS = Object.freeze([
     condition: 'any',
     title: '球衣风波',
     situation: '装备管理员发现下半场球衣号码烫印错了一个，球员议论纷纷。',
+    situationByPhase: {
+      prematch: '装备管理员发现今天球衣号码烫印错了一个，球员议论纷纷。',
+    },
     choices: [
       {
         id: 'joke',
@@ -555,6 +569,7 @@ export const LOCKER_ROOM_DECISIONS = Object.freeze([
         id: 'rest_him',
         label: '换人保护',
         desc: '不能让他拼到受伤。',
+        substitute: 'primary',
         effects: [{ scope: 'primary', morale: -3, stamina: 3 }, { scope: 'random', morale: 3 }],
         result: '他坐在替补席裹着冰袋，眼睛没离开过球场。',
       },
@@ -578,6 +593,7 @@ export const LOCKER_ROOM_DECISIONS = Object.freeze([
         id: 'use',
         label: '现在就用完',
         desc: '先保住眼前这 30 分钟。',
+        substitute: 'lowest-stamina',
         effects: [{ scope: 'random', stamina: 5, morale: 3 }],
         result: '生力军上场，节奏立刻快了一档。之后？之后再说。',
       },
@@ -897,6 +913,9 @@ export const LOCKER_ROOM_DECISIONS = Object.freeze([
     condition: 'any',
     title: '点球纠纷',
     situation: '上半场一次明显的禁区内犯规被裁判无视，全队到现在还在议论。',
+    situationByPhase: {
+      prematch: '赛前录像分析：对手禁区内小动作极多，裁判很可能视而不见，全队提前憋着一股火。',
+    },
     choices: [
       {
         id: 'argue',

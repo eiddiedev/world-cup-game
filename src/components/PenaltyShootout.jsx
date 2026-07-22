@@ -114,6 +114,21 @@ function missTrajectory(dx, dy) {
   }
 }
 
+// 门将扑救线：从门将站位（身体中部）直指扑救区域中心，松手后才显示
+function diveTrajectory(zone) {
+  const rect = zoneRect(zone)
+  const end = { x: rect.x + rect.w / 2, y: rect.y + rect.h / 2 }
+  const start = {
+    x: KEEPER_ANCHOR.feetX,
+    y: KEEPER_ANCHOR.feetY - KEEPER_ANCHOR.height * 0.55,
+  }
+  return {
+    start,
+    ctrl: { x: (start.x + end.x) / 2, y: (start.y + end.y) / 2 },
+    end,
+  }
+}
+
 function drawTrajectory(ctx, traj, color, alpha) {
   ctx.save()
   ctx.globalAlpha = alpha
@@ -563,6 +578,10 @@ export default function PenaltyShootout({
           kick.attempt.missed ? '#ff5e64' : scene.mode === 'shoot' ? '#18e1d1' : '#ffd43f',
           0.75,
         )
+        // 门将视角：额外绘制一条扑救方向线（玩家滑动方向），门将沿此线扑救
+        if (scene.mode === 'keep') {
+          drawTrajectory(ctx, diveTrajectory(kick.keeperZone), '#18e1d1', 0.75)
+        }
       }
 
       // 双方配色：我方原色，客队换色（A_ 前缀）
@@ -634,7 +653,7 @@ export default function PenaltyShootout({
             }
           }
           const point = bezierPoint(kick.traj, t)
-          ball = { x: point.x, y: point.y, scale: 1 - 0.55 * Math.min(1, t) }
+          ball = { x: point.x, y: point.y, scale: 1 - 0.3 * Math.min(1, t) }
         }
         const ballW = 54 * ball.scale
         const ballH = (images.ball.height / images.ball.width) * ballW

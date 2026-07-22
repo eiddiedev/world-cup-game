@@ -53,7 +53,9 @@ import { createMatchSfxBus } from '../utils/matchSfxBus.js'
 import { audioManager } from '../utils/audioManager.js'
 import { getMatchEventArtwork } from '../utils/matchEventArtwork.js'
 import LockerRoomDecision from './LockerRoomDecision.jsx'
+import PixelRain from './PixelRain.jsx'
 import {
+  pickLockerRoomSubstitution,
   resolveLockerRoomChoice,
   selectLockerRoomScenario,
 } from '../utils/lockerRoomDecisions.js'
@@ -76,6 +78,8 @@ const TACTICAL_STANCES = Object.freeze([
 const VAR_REVIEW_DISPLAY_MS = 2800
 const VAR_RESULT_DISPLAY_MS = 3000
 const DIRECT_GOAL_DISPLAY_MS = 3200
+const EVENT_ARTWORK_DELAY_MS = 1000 // 进球/VAR 播报图片延迟 1 秒再出现，等球完全进网
+const POST_GOAL_SUPPRESS_MS = 6000 // 进球后 6 秒内压制同回合迟到的 save/penalty 事件
 const STAT_ROWS = [
   ['possession', '控球率', (value) => `${value}%`],
   ['shots', '射门', String],
@@ -193,6 +197,10 @@ export function HappySeedMatchBroadcast({ saveData = null, onMatchComplete = nul
   const [prematchPlanned, setPrematchPlanned] = useState(() => (
     import.meta.env.MODE !== 'test' && !audioManager.userUnlocked
   ))
+  // 赛前更衣室完成门控：未完成前不允许开赛（避免决策过程中已开球）
+  const [prematchGateClear, setPrematchGateClear] = useState(false)
+  // 本场天气：雨天时在球场上空渲染像素风雨点
+  const [weather, setWeather] = useState(() => window.__happySeedWeather || 'clear')
   const bootedRef = useRef(false)
   const decisionChoiceLockedRef = useRef(false)
   const decisionRunIdRef = useRef(0)
@@ -204,6 +212,7 @@ export function HappySeedMatchBroadcast({ saveData = null, onMatchComplete = nul
   const runtimeIncidentTimersRef = useRef(new Set())
   const eventArtworkTimerRef = useRef(null)
   const goalPresentationHeldRef = useRef(false)
+  const lastGoalAtRef = useRef(0)
   const lastDecisionTickRef = useRef(null)
   const secondHalfStoppageBaselineRef = useRef(null)
   const draggingInIdRef = useRef(null)
@@ -232,12 +241,24 @@ export function HappySeedMatchBroadcast({ saveData = null, onMatchComplete = nul
     audioManager.prepareMatchAudio()
   }, [])
 
+  // 雨天环境音：音频解锁后开始播放，组件卸载或天气变化时停止
+  useEffect(() => {
+    if (weather !== 'rain' || !audioStarted) return undefined
+    audioManager.startRainAmbient()
+    return () => audioManager.stopRainAmbient()
+  }, [weather, audioStarted])
+
   useEffect(() => {
     if (!audioStarted) return undefined
+    if (!prematchGateClear) return undefined // 等赛前决策完成才开球
     if (bootedRef.current) return undefined
     bootedRef.current = true
     // 每场比赛随机天气（约 1/4 雨天）：驱动湿滑草皮等天气相关决策
-    window.__happySeedWeather = Math.random() < 0.25 ? 'rain' : 'clear'
+    // 若外部已预设天气（如雨天验收页），则沿用不覆盖
+    if (!window.__happySeedWeather) {
+      window.__happySeedWeather = Math.random() < 0.25 ? 'rain' : 'clear'
+    }
+    setWeather(window.__happySeedWeather)
     bootHappySeedMatch({
       red: redTeamId,
       blue: blueTeamId,
@@ -276,7 +297,7 @@ export function HappySeedMatchBroadcast({ saveData = null, onMatchComplete = nul
       setError(bootError.message || '比赛引擎启动失败')
     })
     return undefined
-  }, [audioStarted, blueTeamId, commitSession, currentRun, params, redTeamId])
+  }, [audioStarted, blueTeamId, commitSession, currentRun, params, prematchGateClear, redTeamId])
 
   // 进入加时赛：先置 extraTime 标志，加时更衣室在 effect 里打开，
   // 引擎重开球在更衣室关闭（或无场景可开）后进行
@@ -377,19 +398,34 @@ export function HappySeedMatchBroadcast({ saveData = null, onMatchComplete = nul
       const presentedEvent = applyRuntimeDisciplinaryCard(event)
       runtimeEventQueueRef.current.push(presentedEvent)
       runtimeEventQueueRef.current = runtimeEventQueueRef.current.slice(-160)
-      sfxBus.consume(presentedEvent)
-      if (options.artwork !== false) showEventArtwork(presentedEvent)
+      // 哨声/进球音效与播报图片保持同步：图片延迟出现时，音效也同步延迟
+      if (options.artworkDelayMs > 0) {
+        scheduleRuntimeIncident(() => sfxBus.consume(presentedEvent), options.artworkDelayMs)
+      } else {
+        sfxBus.consume(presentedEvent)
+      }
+      if (options.artwork !== false) {
+        if (options.artworkDelayMs > 0) {
+          scheduleRuntimeIncident(() => showEventArtwork(presentedEvent), options.artworkDelayMs)
+        } else {
+          showEventArtwork(presentedEvent)
+        }
+      }
     }
 
     const unsubscribe = subscribeToRuntimeMatchEvents((sourceEvent) => {
       const derivedEvents = deriveFormalRuntimeIncidents(sourceEvent)
       if (sourceEvent.type === 'goal') {
+        lastGoalAtRef.current = Date.now()
         const reviewEvent = derivedEvents.find((event) => event.type === 'var-review')
         const resultEvent = derivedEvents.find((event) => event.type === 'var-result')
-        holdGoalPresentation()
         if (!reviewEvent || !resultEvent) {
-          deliverRuntimeEvent(sourceEvent)
-          scheduleRuntimeIncident(releaseGoalPresentation, DIRECT_GOAL_DISPLAY_MS)
+          deliverRuntimeEvent(sourceEvent, { artworkDelayMs: EVENT_ARTWORK_DELAY_MS })
+          // 球滚入网窝后再定格，与进球图片/哨声同一帧（而不是球刚碰门线就定格）
+          scheduleRuntimeIncident(() => {
+            holdGoalPresentation()
+            scheduleRuntimeIncident(releaseGoalPresentation, DIRECT_GOAL_DISPLAY_MS)
+          }, EVENT_ARTWORK_DELAY_MS)
           return
         }
 
@@ -397,16 +433,32 @@ export function HappySeedMatchBroadcast({ saveData = null, onMatchComplete = nul
         // The underlying goal event still reaches the factual queue, but its generic
         // artwork cannot replace the authored VAR checking screen.
         deliverRuntimeEvent(sourceEvent, { artwork: false })
-        deliverRuntimeEvent(reviewEvent)
+        deliverRuntimeEvent(reviewEvent, { artworkDelayMs: EVENT_ARTWORK_DELAY_MS })
+        // 球滚入网窝后再定格，与 VAR 检查画面同一帧
+        scheduleRuntimeIncident(holdGoalPresentation, EVENT_ARTWORK_DELAY_MS)
         scheduleRuntimeIncident(() => {
-          deliverRuntimeEvent(resultEvent)
+          deliverRuntimeEvent(resultEvent, { artworkDelayMs: EVENT_ARTWORK_DELAY_MS })
           scheduleRuntimeIncident(releaseGoalPresentation, VAR_RESULT_DISPLAY_MS)
         }, VAR_REVIEW_DISPLAY_MS)
         return
       }
 
+      // 进球后短暂窗口内，压制同一回合迟到的 save/penalty 事件：
+      // 球已越过门线，不可能再被扑出；已进球的回合也不应再判点球
+      const sinceGoal = Date.now() - lastGoalAtRef.current
+      if (sinceGoal < POST_GOAL_SUPPRESS_MS) {
+        if (sourceEvent.type === 'save') return
+        if (sourceEvent.type === 'penalty' && sourceEvent.detail?.decision !== true) return
+      }
+
       deliverRuntimeEvent(sourceEvent)
-      derivedEvents.forEach((derivedEvent) => deliverRuntimeEvent(derivedEvent))
+      derivedEvents.forEach((derivedEvent) => {
+        if (sinceGoal < POST_GOAL_SUPPRESS_MS
+          && derivedEvent.type === 'penalty'
+          && derivedEvent.detail?.decision !== true
+        ) return
+        deliverRuntimeEvent(derivedEvent)
+      })
     })
 
     return () => {
@@ -543,6 +595,7 @@ export function HappySeedMatchBroadcast({ saveData = null, onMatchComplete = nul
   const handleLockerRoomChoose = (choiceId) => {
     if (!lockerRoom?.scenarios?.length || lockerRoom.report) return
     const scenario = lockerRoom.scenarios[lockerRoom.index]
+    const choice = scenario.choices.find((candidate) => candidate.id === choiceId)
     const actors = (runtimeActors.actors || []).filter((actor) => (
       actor.side === 'red' && actor.state?.onPitch
     ))
@@ -558,6 +611,16 @@ export function HappySeedMatchBroadcast({ saveData = null, onMatchComplete = nul
     // 赛前且球员未就绪：记账，开赛后补打
     if (lockerRoom.phase === 'prematch' && !report.affected.length) {
       prematchChoicesRef.current.push({ scenario, choiceId })
+    }
+    // 换人类决策真正接入换人逻辑：赛前球员未就绪时跳过（开赛后补打），
+    // 中场/加时则立即执行换人并消耗换人名额
+    if (choice?.substitute && lockerRoom.phase !== 'prematch' && substitutionPlayersLeft > 0) {
+      const pair = pickLockerRoomSubstitution(getRuntimeActorSnapshot(), choice.substitute)
+      if (pair && substituteRuntimeActor('red', pair.outgoing.playerId, pair.incoming.playerId)) {
+        setSubstitutionWindowsUsed((current) => current + 1)
+        commitSession((current) => recordFormalSubstitution(current, pair.outgoing, pair.incoming))
+        report.resultText = `${pair.incoming.number}号${pair.incoming.name}替下${pair.outgoing.number}号${pair.outgoing.name}。${report.resultText}`
+      }
     }
     setRuntimeActors(getRuntimeActorSnapshot())
     setLockerRoom({ ...lockerRoom, report })
@@ -587,6 +650,7 @@ export function HappySeedMatchBroadcast({ saveData = null, onMatchComplete = nul
     }
     // 赛前更衣室的选择就是开赛手势：选完直接开赛，不再需要第二次点击
     if (wasPrematch) {
+      setPrematchGateClear(true)
       setPrematchPlanned(false)
       if (!audioStarted) {
         audioManager.unlock()
@@ -597,10 +661,17 @@ export function HappySeedMatchBroadcast({ saveData = null, onMatchComplete = nul
 
   // 赛前：开球前出现一次（测试环境跳过，避免遮挡其它交互测试）。
   // 此时比赛尚未启动，选择的效果先记入 prematchChoicesRef，开赛后补打到真实球员。
+  // 无论更衣室是否打开，都必须放行 prematchGateClear，否则比赛永远不会启动
   useEffect(() => {
-    if (import.meta.env.MODE === 'test') return undefined
+    if (import.meta.env.MODE === 'test') {
+      setPrematchGateClear(true)
+      return undefined
+    }
     const timer = window.setTimeout(() => {
-      if (!openLockerRoom('prematch')) setPrematchPlanned(false)
+      if (!openLockerRoom('prematch')) {
+        setPrematchGateClear(true)
+        setPrematchPlanned(false)
+      }
     }, 600)
     return () => window.clearTimeout(timer)
   }, [])
@@ -989,6 +1060,9 @@ export function HappySeedMatchBroadcast({ saveData = null, onMatchComplete = nul
       </div>
 
       <div className="broadcast-vignette" aria-hidden="true" />
+
+      {weather === 'rain' && <div className="broadcast-rain-overlay" aria-hidden="true" />}
+      {weather === 'rain' && <PixelRain />}
 
       {!audioStarted && !prematchPlanned && (
         <div className="broadcast-audio-start" role="dialog" aria-label="开始比赛并开启声音">

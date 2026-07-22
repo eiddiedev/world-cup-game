@@ -118,7 +118,7 @@ describe('FormalMatchSession 正式比赛权威链', () => {
     }
   })
 
-  it('opens seven match-aware decisions around the authored minute windows', () => {
+  it('opens ten match-aware decisions around the authored minute windows', () => {
     let session = startFormalMatchSession(createFormalMatchSession({
       teamName: '法国',
       opponentName: '巴西',
@@ -131,10 +131,13 @@ describe('FormalMatchSession 正式比赛权威链', () => {
       'long_shot_opportunity',
       'throwin_attack',
       'indirect_freekick_box',
+      'counter_attack_3v2',
+      'midfield_second_ball',
+      'half_space_through_run',
     ]
 
-    const eventTypes = ['foul', 'corner', 'possession-change', 'touch', 'touch', 'throw-in', 'foul']
-    const eventSides = ['blue', 'red', 'blue', 'blue', 'red', 'red', 'blue']
+    const eventTypes = ['foul', 'corner', 'possession-change', 'touch', 'touch', 'throw-in', 'foul', 'possession-change', 'touch', 'pass']
+    const eventSides = ['blue', 'red', 'blue', 'blue', 'red', 'red', 'blue', 'red', 'red', 'red']
 
     FORMAL_MATCH_DECISION_TARGET_MINUTES.forEach((minute, index) => {
       const eligibleMoment = index === 3
@@ -182,7 +185,7 @@ describe('FormalMatchSession 正式比赛权威链', () => {
       })
     })
 
-    expect(session.decisions).toHaveLength(7)
+    expect(session.decisions).toHaveLength(10)
     expect(session.commentary.at(-1)).toEqual(expect.objectContaining({
       minute: FORMAL_MATCH_DECISION_TARGET_MINUTES.at(-1),
       text: `第${FORMAL_MATCH_DECISION_TARGET_MINUTES.at(-1)}分钟决策已完成`,
@@ -237,7 +240,7 @@ describe('FormalMatchSession 正式比赛权威链', () => {
     expect(blueAdvanced.decisionPlan?.scenarioId).toBe('penalty_area_foul_risk')
   })
 
-  it('keeps the natural decision window mean around seven across 300 local matches', () => {
+  it('keeps the natural decision window mean around ten across 300 local matches', () => {
     const sourceTypes = [
       'touch', 'pass', 'shot', 'possession-change', 'tackle-contact',
       'corner', 'throw-in', 'goal-kick', 'goal', 'ball-out',
@@ -290,8 +293,8 @@ describe('FormalMatchSession 正式比赛权威链', () => {
       counts.push(session.decisions.length)
     }
     const mean = counts.reduce((total, value) => total + value, 0) / counts.length
-    expect(mean).toBeGreaterThanOrEqual(6.5)
-    expect(mean).toBeLessThanOrEqual(7.5)
+    expect(mean).toBeGreaterThanOrEqual(9.5)
+    expect(mean).toBeLessThanOrEqual(10.5)
   })
 
   it('uses native Runtime goals and the same minute for score and commentary', () => {

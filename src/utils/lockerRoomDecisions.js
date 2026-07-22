@@ -7,6 +7,50 @@ import { LOCKER_ROOM_DECISIONS } from '../data/lockerRoomDecisions.js'
 
 const clamp = (value, min, max) => Math.min(max, Math.max(min, Number(value) || 0))
 
+// 与 Runtime 换人资格校验保持一致：受伤/停赛/不可用的替补不能被换上场
+const INELIGIBLE_SOURCE_STATUSES = new Set(['injured', 'suspended', 'unavailable'])
+
+// 场景文案按阶段适配：赛前不出现“上半场/下半场/中场休息”等赛中表述
+export function getLockerRoomSituation(scenario, phase) {
+  return scenario?.situationByPhase?.[phase] || scenario?.situation || ''
+}
+
+/**
+ * 为更衣室换人决策挑选换人对象：
+ * strategy = 'primary' 换下评分最高的场上非门将球员（核心球员）
+ * strategy = 'lowest-stamina' 换下体能最低的非门将球员（轮换/抽筋）
+ * 换入者从替补席挑选：位置匹配优先，其次体能最高。
+ */
+export function pickLockerRoomSubstitution(actorSnapshot = {}, strategy = 'primary') {
+  const onPitch = (actorSnapshot.actors || []).filter((actor) => (
+    actor.side === 'red' && actor.state?.onPitch && !actor.isGoalkeeper
+  ))
+  if (!onPitch.length) return null
+  const outgoing = strategy === 'lowest-stamina'
+    ? [...onPitch].sort((left, right) => (
+      Number(left.state?.stamina ?? 100) - Number(right.state?.stamina ?? 100)
+    ))[0]
+    : [...onPitch].sort((left, right) => (
+      Number(right.rating || 0) - Number(left.rating || 0)
+    ))[0]
+  const bench = (actorSnapshot.sides?.red?.bench || []).filter((player) => (
+    player.state?.status === 'bench'
+    && player.naturalPosition !== 'GK'
+    && !INELIGIBLE_SOURCE_STATUSES.has(player.sourceStatus)
+  ))
+  if (!outgoing || !bench.length) return null
+  const incoming = [...bench].sort((left, right) => {
+    const leftExact = left.naturalPosition === outgoing.assignedPosition
+      || left.naturalPosition === outgoing.naturalPosition
+    const rightExact = right.naturalPosition === outgoing.assignedPosition
+      || right.naturalPosition === outgoing.naturalPosition
+    if (leftExact !== rightExact) return leftExact ? -1 : 1
+    return Number(right.state?.stamina || 0) - Number(left.state?.stamina || 0)
+  })[0]
+  if (!incoming) return null
+  return { outgoing, incoming }
+}
+
 function conditionForScoreDiff(scoreDiff) {
   if (scoreDiff > 0) return 'leading'
   if (scoreDiff < 0) return 'trailing'

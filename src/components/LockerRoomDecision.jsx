@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react'
+import { getLockerRoomSituation } from '../utils/lockerRoomDecisions.js'
 import '../styles/happySeedLockerRoom.css'
 
 const PHASE_LABELS = {
@@ -61,7 +62,7 @@ export default function LockerRoomDecision({ scenario, report, onChoose, onConti
 
         <section className="locker-room-panel">
           <h2>{scenario.title}</h2>
-          <p className="locker-room-situation">{scenario.situation}</p>
+          <p className="locker-room-situation">{getLockerRoomSituation(scenario, phase)}</p>
 
           {showChoices && (
             <div className="locker-room-choices" aria-label="更衣室选择">
