@@ -51,7 +51,7 @@ const SCRIPT_PATHS = [
   'scripts/match.rebuilt.js',
   'happyseed/runtime-v2.js?v=11',
   'happyseed/runtime-v3.js?v=5',
-  'standalone-match.js?v=11',
+  'standalone-match.js?v=15',
 ]
 
 const MATCH_EVENTS = [
@@ -630,7 +630,17 @@ export function bootHappySeedMatch(options = {}) {
     const restartingExistingRuntime = Boolean(window.__matchGame)
     ensureRuntimeSettings()
     window.__acPlay = Boolean(options.playerMode)
-    window.__happySeedHumanRecipes = getHappySeedHumanRecipes()
+    let studioRecipe = null
+    if (options.studioPreview) {
+      try {
+        studioRecipe = JSON.parse(window.sessionStorage.getItem('happyseed-player-studio-preview'))
+      } catch {
+        studioRecipe = null
+      }
+    }
+    window.__happySeedHumanRecipes = studioRecipe
+      ? [studioRecipe]
+      : (options.humanRecipes || getHappySeedHumanRecipes())
     window.__happySeedHumanActions = HAPPYSEED_HUMAN_ACTIONS
     window.__happySeedPixelStadiumConfig = getHappySeedPixelStadiumContract()
     selectedTeams = {
@@ -664,6 +674,8 @@ export function bootHappySeedMatch(options = {}) {
     window.__happySeedRuntimeActorConfig = runtimeActorConfig
     window.__happySeedTechnicalLab = Boolean(options.technicalLab)
     window.__happySeedHumanSlicePreview = Boolean(options.humanSlicePreview)
+    window.__happySeedStudioSoloPreview = Boolean(options.studioPreview)
+    window.__happySeedStudioStillPreview = Boolean(options.studioStillPreview)
     window.__happySeedMatchRealtimeMinutes = Number(options.time) || 3
     if (options.technicalLab) {
       window.__happySeedMatchVisualEventConfig = {
@@ -695,6 +707,7 @@ export function bootHappySeedMatch(options = {}) {
     })
     await started
     setSpeed(1)
+    if (options.studioPreview) setZoom(2.4)
     if (!options.technicalLab) formalDecisionStatus = 'waiting-opportunity'
     window.addEventListener('ab-match-ended', () => {
       bootPromise = null

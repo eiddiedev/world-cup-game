@@ -10,7 +10,6 @@ export default function PostMatchScreen({ saveData, updateSaveData, navigateTo }
   const team = getTeamById(saveData.currentRun?.teamId)
   const result = saveData.currentRun?.lastMatchResult
   const lineup = saveData.currentRun?.lineup || []
-  const playerStatuses = saveData.currentRun?.playerStatuses || {}
   const matchInjuries = saveData.currentRun?.matchInjuries || []
   const matchRedCards = saveData.currentRun?.matchRedCards || []
   const uniqueMatchInjuries = Array.from(new Set(matchInjuries))
@@ -20,37 +19,23 @@ export default function PostMatchScreen({ saveData, updateSaveData, navigateTo }
   // 判断是否真正打完所有比赛
   const isKnockoutDone = Boolean(saveData.currentRun?.isKnockoutMatch && knockoutRound === 'final' && result?.result)
 
-  // 状态变化
+  const rulePlayerStates = saveData.currentRun?.lastMatchRuleReport?.playerStates || {}
+
+  // 只展示 Runtime 权威状态，不在赛后页二次掷骰制造体力或伤病。
   const statusChanges = useMemo(() => {
     return lineup.map(player => {
-      const oldStatus = playerStatuses[player.id] || player.sta || 80
-      const change = Math.floor(Math.random() * 12) - 8
-      const newStatus = Math.max(20, Math.min(100, oldStatus + change))
-      return { ...player, oldStatus, newStatus, change: newStatus - oldStatus, isInjured: newStatus < 30 }
+      const state = rulePlayerStates[player.id] || {}
+      const oldStatus = Number(state.staminaBefore ?? player.sta ?? 80)
+      const newStatus = Number(state.stamina ?? oldStatus)
+      return {
+        ...player,
+        oldStatus: Math.round(oldStatus),
+        newStatus: Math.round(newStatus),
+        change: Math.round(newStatus - oldStatus),
+        isInjured: Boolean(state.injured),
+      }
     })
-  }, [lineup, playerStatuses])
-
-  const buildUpdatedRun = (baseRun) => {
-    const newStatuses = { ...(baseRun.playerStatuses || {}) }
-    const injuredPlayers = []
-    statusChanges.forEach(p => {
-      newStatuses[p.id] = p.newStatus
-      if (p.isInjured) injuredPlayers.push(p.id)
-    })
-    const updatedRoster = (baseRun.roster || []).map(p => {
-      const sc = statusChanges.find(s => s.id === p.id)
-      return sc ? { ...p, sta: sc.newStatus } : p
-    })
-    const injuredSet = new Set(injuredPlayers)
-    const updatedLineup = lineup.filter(p => !injuredSet.has(p.id))
-    return {
-      ...baseRun,
-      playerStatuses: newStatuses,
-      roster: updatedRoster,
-      lineup: updatedLineup.length >= 11 ? updatedLineup : lineup,
-      injuredPlayers: [...(baseRun.injuredPlayers || []), ...injuredPlayers],
-    }
-  }
+  }, [lineup, rulePlayerStates])
 
   if (!result) {
     return (
@@ -65,18 +50,19 @@ export default function PostMatchScreen({ saveData, updateSaveData, navigateTo }
   }
 
   const { homeScore, awayScore, opponent } = result
-  const isWin = homeScore > awayScore
-  const isDraw = homeScore === awayScore
+  const isWin = result.result === 'win'
+  const isDraw = result.result === 'draw'
   const resultText = isWin ? '胜利！' : isDraw ? '平局' : '失利'
   const resultEmoji = isWin ? '🎉' : isDraw ? '🤝' : '😢'
-  const mvp = lineup.length > 0 ? lineup[Math.floor(Math.random() * lineup.length)] : null
+  const mvp = lineup.length > 0
+    ? [...lineup].sort((left, right) => Number(right.rating || right.overall || 0) - Number(left.rating || left.overall || 0))[0]
+    : null
   const injuredCount = statusChanges.filter(p => p.isInjured).length
   const insights = buildPostMatchInsights(result, team?.name)
 
   const handleNextMatch = () => {
     try {
-      const updatedRun = buildUpdatedRun(saveData.currentRun)
-      const nextRun = getNextRunAfterMatch(updatedRun)
+      const nextRun = getNextRunAfterMatch(saveData.currentRun)
       updateSaveData({
         ...saveData,
         currentRun: nextRun,
@@ -91,10 +77,9 @@ export default function PostMatchScreen({ saveData, updateSaveData, navigateTo }
 
   const handleViewEnding = () => {
     try {
-      const updatedRun = buildUpdatedRun(saveData.currentRun)
       updateSaveData({
         ...saveData,
-        currentRun: { ...updatedRun, stage: 'ending', isKnockoutMatch: false },
+        currentRun: { ...saveData.currentRun, stage: 'ending', isKnockoutMatch: false },
       })
       navigateTo('ending')
     } catch (e) {

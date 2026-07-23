@@ -25,6 +25,12 @@ const OPPONENT_ID_TO_NAME = {
   'ivory_coast': '科特迪瓦', 'ecuador': '厄瓜多尔',
   'netherlands': '荷兰', 'tunisia': '突尼斯', 'sweden': '瑞典',
   'egypt': '埃及', 'iran': '伊朗', 'belgium': '比利时',
+  'spain': '西班牙', 'england': '英格兰', 'usa': '美国', 'canada': '加拿大',
+  'mexico': '墨西哥', 'capeverde': '佛得角',
+  'saudi': '沙特', 'uruguay': '乌拉圭', 'croatia': '克罗地亚', 'panama': '巴拿马',
+  'ghana': '加纳', 'paraguay': '巴拉圭', 'australia': '澳大利亚', 'turkey': '土耳其',
+  'bosnia': '波黑', 'qatar': '卡塔尔', 'switzerland': '瑞士',
+  'south_africa': '南非', 'south_korea': '韩国', 'czech': '捷克',
 }
 
 // 球队实力（用于模拟）
@@ -32,12 +38,18 @@ const TEAM_STRENGTH = {
   france: 95, brazil: 93, argentina: 92, portugal: 90,
   germany: 88, japan: 85, norway: 82, morocco: 80,
   newzealand: 75, curacao: 70,
+  spain: 96, england: 91, colombia: 83, usa: 79,
+  mexico: 78, canada: 74, capeverde: 68,
   // 对手实力
   iraq: 65, senegal: 75, haiti: 60, scotland: 72,
   jordan: 62, austria: 74, algeria: 70, congo: 63,
-  uzbekistan: 68, colombia: 78, ivory_coast: 73,
+  uzbekistan: 68, ivory_coast: 73,
   ecuador: 76, netherlands: 85, tunisia: 69, sweden: 77,
   egypt: 71, iran: 72, belgium: 86,
+  saudi: 64, uruguay: 80, croatia: 82, panama: 66,
+  ghana: 67, paraguay: 70, australia: 73, turkey: 76,
+  bosnia: 71, qatar: 65, switzerland: 79,
+  south_africa: 66, south_korea: 74, czech: 75,
 }
 
 // 同组对手映射（真实分组）
@@ -50,8 +62,14 @@ const GROUP_OPPONENTS = {
   japan: ['netherlands', 'tunisia', 'sweden'],
   norway: ['france', 'iraq', 'senegal'],
   morocco: ['brazil', 'haiti', 'scotland'],
-  newzealand: ['egypt', 'iran', 'belgium'],
   curacao: ['germany', 'ecuador', 'ivory_coast'],
+  spain: ['capeverde', 'saudi', 'uruguay'],
+  england: ['croatia', 'panama', 'ghana'],
+  colombia: ['portugal', 'congo', 'uzbekistan'],
+  usa: ['paraguay', 'australia', 'turkey'],
+  mexico: ['south_africa', 'south_korea', 'czech'],
+  canada: ['bosnia', 'qatar', 'switzerland'],
+  capeverde: ['spain', 'saudi', 'uruguay'],
 }
 
 /**
@@ -87,7 +105,9 @@ function simulateMatch(homeStrength, awayStrength, seed) {
  * 模拟整个小组赛（保证结果一致性）
  * 所有6场比赛一起模拟，确保不会出现A赢B、B赢C、C赢A的矛盾
  */
-function simulateGroupStage(playerTeamId, playerMatchResults) {
+// Exported for deterministic tournament-algorithm verification.
+// eslint-disable-next-line react-refresh/only-export-components
+export function simulateGroupStage(playerTeamId, playerMatchResults) {
   const opponents = GROUP_OPPONENTS[playerTeamId] || []
   if (opponents.length !== 3) return { rank: 1, teams: [] }
 

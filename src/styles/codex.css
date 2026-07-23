@@ -1,0 +1,524 @@
+/* 图鉴页面样式 */
+
+.codex-screen {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  padding: 12px 16px;
+  background: var(--pixel-bg, #1a1a2e);
+  overflow: hidden;
+}
+
+/* Header */
+.codex-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+  flex-shrink: 0;
+}
+
+.codex-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+
+.codex-header-icon {
+  width: 28px;
+  height: 28px;
+  image-rendering: pixelated;
+}
+
+.codex-header h1 {
+  margin: 0;
+  color: var(--pixel-gold, #f5d89a);
+  font-family: "Zpix", "Microsoft YaHei", sans-serif;
+  font-size: 24px;
+}
+
+.codex-progress-badge {
+  padding: 4px 12px;
+  background: rgba(245, 216, 154, 0.12);
+  border: 1px solid rgba(245, 216, 154, 0.3);
+  border-radius: 4px;
+  color: var(--pixel-gold, #f5d89a);
+  font-family: "Zpix", monospace;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+/* Tabs */
+.codex-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 12px;
+  flex-shrink: 0;
+  border-bottom: 2px solid rgba(245, 216, 154, 0.15);
+  padding-bottom: 0;
+}
+
+.codex-tab {
+  flex: 1;
+  padding: 8px 4px;
+  border: none;
+  border-bottom: 3px solid transparent;
+  background: transparent;
+  color: var(--pixel-shadow, #8a8a9a);
+  font-family: "Zpix", "Microsoft YaHei", sans-serif;
+  font-size: 12px;
+  cursor: pointer;
+  transition: color 150ms, border-color 150ms;
+  margin-bottom: -2px;
+}
+
+.codex-tab:hover {
+  color: var(--pixel-main, #e0e0e0);
+}
+
+.codex-tab.is-active {
+  color: var(--pixel-gold, #f5d89a);
+  border-bottom-color: var(--pixel-gold, #f5d89a);
+}
+
+/* Tab content area */
+.codex-tab-content {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 4px;
+}
+
+.codex-tab-content::-webkit-scrollbar {
+  width: 4px;
+}
+
+.codex-tab-content::-webkit-scrollbar-thumb {
+  background: rgba(245, 216, 154, 0.3);
+  border-radius: 2px;
+}
+
+/* ---- Tab 1: 国家档案 ---- */
+.codex-team-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.codex-team-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 6px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(91, 70, 48, 0.45);
+  border-radius: 4px;
+  transition: border-color 200ms, background 200ms;
+}
+
+.codex-team-card.is-complete {
+  border-color: rgba(245, 216, 154, 0.5);
+  background: rgba(245, 216, 154, 0.06);
+}
+
+.codex-team-card.is-incomplete {
+  opacity: 0.45;
+  filter: grayscale(0.8);
+}
+
+.codex-team-lock {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(27, 55, 100, 0.55);
+  z-index: 2;
+  pointer-events: none;
+}
+
+.codex-team-lock img {
+  width: 16px !important;
+  height: 16px !important;
+  max-width: 16px;
+  max-height: 16px;
+  object-fit: contain;
+  image-rendering: pixelated;
+}
+
+.codex-team-flag {
+  width: 32px;
+  height: 22px;
+  object-fit: cover;
+  image-rendering: pixelated;
+  border-radius: 2px;
+}
+
+.codex-team-name {
+  color: var(--pixel-main, #e0e0e0);
+  font-family: "Zpix", "Microsoft YaHei", sans-serif;
+  font-size: 12px;
+  text-align: center;
+}
+
+.codex-team-target {
+  color: var(--pixel-shadow, #8a8a9a);
+  font-size: 10px;
+  text-align: center;
+}
+
+.codex-team-result {
+  color: var(--pixel-gold, #f5d89a);
+  font-size: 10px;
+  text-align: center;
+}
+
+.codex-team-locked {
+  color: rgba(255, 255, 255, 0.25);
+  font-size: 10px;
+}
+
+.codex-team-check {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  color: #4caf50;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+/* ---- Tab 2: 奖杯陈列室 ---- */
+.codex-trophy-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.codex-trophy-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 4px;
+  transition: background 150ms;
+}
+
+.codex-trophy-item:hover {
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.trophy-icon {
+  flex-shrink: 0;
+}
+
+.trophy-icon.pixel-icon {
+  font-family: "Zpix", monospace;
+  font-size: 16px;
+  color: var(--pixel-gold, #f5d89a);
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  background: rgba(245, 216, 154, 0.08);
+  border: 1px solid rgba(245, 216, 154, 0.15);
+  border-radius: 2px;
+  -webkit-font-smoothing: none;
+}
+
+.trophy-flag {
+  width: 28px;
+  height: 18px;
+  object-fit: cover;
+  image-rendering: pixelated;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.trophy-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.trophy-info strong {
+  color: var(--pixel-main, #e0e0e0);
+  font-family: "Zpix", "Microsoft YaHei", sans-serif;
+  font-size: 12px;
+}
+
+.trophy-info span {
+  color: var(--pixel-gold, #f5d89a);
+  font-size: 10px;
+}
+
+.trophy-date {
+  color: var(--pixel-shadow, #8a8a9a);
+  font-size: 10px;
+  flex-shrink: 0;
+}
+
+/* ---- Tab 3: 世界杯记录 ---- */
+.codex-record-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.codex-record-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 3px;
+  border-bottom: 1px solid rgba(91, 70, 48, 0.35);
+}
+
+.codex-record-row:last-child {
+  border-bottom: none;
+}
+
+.codex-record-row:nth-child(odd) {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.record-label {
+  color: var(--pixel-shadow, #8a8a9a);
+  font-family: "Zpix", "Microsoft YaHei", sans-serif;
+  font-size: 12px;
+}
+
+.record-value {
+  color: var(--pixel-main, #e0e0e0);
+  font-family: "Zpix", monospace;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.record-value.is-empty {
+  color: rgba(255, 255, 255, 0.2);
+}
+
+/* ---- Tab 4: 成就 ---- */
+.codex-achievement-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+.codex-achievement-card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 2px solid rgba(91, 70, 48, 0.5);
+  border-radius: 4px;
+  transition: border-color 200ms, box-shadow 200ms;
+}
+
+.codex-achievement-card.is-unlocked {
+  border-color: rgba(201, 154, 46, 0.7);
+  box-shadow: 0 0 8px rgba(201, 154, 46, 0.15);
+  background: rgba(201, 154, 46, 0.06);
+}
+
+.codex-achievement-card.is-locked {
+  opacity: 0.5;
+  border-color: rgba(91, 70, 48, 0.3);
+}
+
+.achievement-icon {
+  font-size: 22px;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.achievement-icon.pixel-icon {
+  font-family: "Zpix", monospace;
+  font-size: 18px;
+  color: var(--pixel-gold, #f5d89a);
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  background: rgba(245, 216, 154, 0.08);
+  border: 1px solid rgba(245, 216, 154, 0.2);
+  border-radius: 2px;
+  image-rendering: pixelated;
+  -webkit-font-smoothing: none;
+}
+
+.achievement-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  flex: 1;
+}
+
+.achievement-name {
+  color: var(--pixel-main, #e0e0e0);
+  font-family: "Zpix", "Microsoft YaHei", sans-serif;
+  font-size: 12px;
+}
+
+.achievement-desc {
+  margin: 0;
+  color: var(--pixel-shadow, #8a8a9a);
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+.achievement-tiers {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.tier-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.tier-dot.is-filled {
+  background: var(--pixel-gold, #f5d89a);
+  border-color: var(--pixel-gold, #f5d89a);
+}
+
+.achievement-tiers small {
+  color: var(--pixel-shadow, #8a8a9a);
+  font-size: 10px;
+  margin-left: 4px;
+}
+
+.achievement-lock {
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  transform: translateY(-50%);
+  font-family: "Zpix", monospace;
+  font-size: 14px;
+  color: var(--pixel-shadow, #5B4630);
+  opacity: 0.6;
+  -webkit-font-smoothing: none;
+}
+
+/* Empty state */
+.codex-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 48px 24px;
+  text-align: center;
+}
+
+.codex-empty-icon {
+  opacity: 0.4;
+}
+
+.codex-empty-icon.pixel-icon {
+  font-family: "Zpix", monospace;
+  font-size: 36px;
+  color: var(--pixel-gold, #f5d89a);
+  width: 56px;
+  height: 56px;
+  display: grid;
+  place-items: center;
+  background: rgba(245, 216, 154, 0.06);
+  border: 2px solid rgba(245, 216, 154, 0.15);
+  border-radius: 4px;
+  -webkit-font-smoothing: none;
+}
+
+.codex-empty p {
+  margin: 0;
+  color: var(--pixel-main, #e0e0e0);
+  font-family: "Zpix", "Microsoft YaHei", sans-serif;
+  font-size: 12px;
+}
+
+.codex-empty small {
+  color: var(--pixel-shadow, #8a8a9a);
+  font-size: 10px;
+}
+
+/* ---- HomeScreen 图鉴入口面板 ---- */
+.codex-panel {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: auto;
+  padding: 8px 20px;
+  margin-top: 4px;
+  cursor: pointer;
+  border-color: var(--pixel-accent, #B34235) !important;
+  transition: transform 100ms, box-shadow 100ms;
+}
+
+.codex-panel:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 10px 10px 0 var(--pixel-shadow, #5B4630);
+}
+
+.codex-panel:active {
+  transform: translate(2px, 2px);
+  box-shadow: 4px 4px 0 var(--pixel-shadow, #5B4630);
+}
+
+.codex-panel-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.codex-panel-icon {
+  width: 24px;
+  height: 24px;
+  image-rendering: pixelated;
+}
+
+.codex-panel-label {
+  color: var(--pixel-main, #1B3764);
+  font-family: "Zpix", "Microsoft YaHei", sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.codex-panel-progress {
+  color: var(--pixel-accent, #B34235);
+  font-family: "Zpix", monospace;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+  .codex-team-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .codex-achievement-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .codex-tab {
+    font-size: 10px;
+    padding: 6px 2px;
+  }
+}

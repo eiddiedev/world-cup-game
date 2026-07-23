@@ -72,4 +72,23 @@ describe('formal match rules', () => {
     expect(settled.playerStatuses[target.playerId]).toBeGreaterThan(0)
     expect(settled.lastMatchRuleReport.matchId).toBe('group-1')
   })
+
+  it('only persists the coached side and releases one-match absences after the served match', () => {
+    const config = buildHappySeedRuntimeActorConfig()
+    const home = config.actors.find((actor) => actor.side === 'red' && !actor.isGoalkeeper)
+    const away = config.actors.find((actor) => actor.side === 'blue' && !actor.isGoalkeeper)
+    const actors = config.actors.map((actor) => (
+      actor.playerId === home.playerId || actor.playerId === away.playerId
+        ? { ...actor, state: { ...actor.state, injured: true } }
+        : actor
+    ))
+    const firstReport = buildFormalMatchRuleReport({ ...config, actors }, { matchId: 'group-1' })
+    const injured = settleRunMatchRules({}, firstReport)
+    expect(injured.injuredPlayers).toEqual([home.playerId])
+    expect(injured.playerMatchStates[away.playerId]).toBeUndefined()
+
+    const served = settleRunMatchRules(injured, buildFormalMatchRuleReport(config, { matchId: 'group-2' }))
+    expect(served.injuredPlayers).toEqual([])
+    expect(served.injuryMatches).toEqual({})
+  })
 })

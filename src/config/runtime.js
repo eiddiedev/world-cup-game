@@ -3,15 +3,21 @@ export const IS_DOUYIN_DEMO = import.meta.env?.MODE === 'douyin'
 export const DOUYIN_DEMO_TEAM_IDS = ['france', 'curacao']
 
 export const ALL_PLAYABLE_TEAM_IDS = [
-  'france',
-  'brazil',
+  'spain',
   'argentina',
+  'france',
+  'england',
+  'brazil',
   'portugal',
   'germany',
   'japan',
-  'norway',
   'morocco',
-  'newzealand',
+  'norway',
+  'colombia',
+  'usa',
+  'canada',
+  'mexico',
+  'capeverde',
   'curacao',
 ]
 

@@ -488,9 +488,17 @@ function commentaryForRuntimeEvent(session, event, actorSource) {
       type: 'period-change',
       tone: 'standard',
       text: event.detail?.period === 'stoppage-time'
-        ? `${event.detail?.half === 2 ? '下半场' : '上半场'}补时 ${Number(event.detail?.addedMinutes || 1)} 分钟。`
+        ? `${event.detail?.half === 4
+          ? '加时赛下半场'
+          : event.detail?.half === 3
+            ? '加时赛上半场'
+            : event.detail?.half === 2
+              ? '下半场'
+              : '上半场'}补时 ${Number(event.detail?.addedMinutes || 1)} 分钟。`
         : event.detail?.period === 'half-time'
-          ? '上半场结束。双方交换场地，下半场将从中圈重新开球。'
+          ? event.detail?.extraTime
+            ? '加时赛上半场结束。双方交换场地，加时赛下半场将从中圈重新开球。'
+            : '上半场结束。双方交换场地，下半场将从中圈重新开球。'
           : '全场比赛时间结束，裁判准备吹响终场哨。',
     },
     'throw-in-violation': { type: 'throw-in-violation', tone: 'standard', text: `${actor}手抛球犯规，裁判依据这次真实界外球交换球权。` },
@@ -988,11 +996,15 @@ export function settleFormalDecisionInSession(session, decision, resolution) {
     scenarioId: decision.coachDecisionEvent.sourceScenarioId,
     choiceId: resolution.choice.id,
     choiceLabel: resolution.choice.label,
+    situation: decision.situation || decision.coachDecisionEvent?.situation || decision.label,
     outcome: result.outcome,
     resultText: resolution.resultText,
     isSuccess: Boolean(result.isSuccess),
     coachDecisionEvent: decision.coachDecisionEvent,
     sourceEventId: session.pendingDecisionSourceEvent?.id || null,
+    riskLevel: resolution.choice.riskLevel || resolution.choice.risk || null,
+    replayTags: resolution.choice.replayTags || [],
+    postMatchReviewTag: resolution.choice.postMatchReviewTag || null,
     requiresRuntimeGoal: Boolean(resolution.requiresRuntimeGoal),
   }
   next.decisions.push(record)

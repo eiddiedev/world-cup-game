@@ -10,7 +10,7 @@ import {
 } from './happySeedRuntimeActors.js'
 
 describe('HappySeed Runtime 业务球员映射', () => {
-  it('maps two 23-player squads onto 22 unique runtime actor slots', () => {
+  it('maps two budget-sized squads onto 22 unique runtime actor slots', () => {
     const config = buildHappySeedRuntimeActorConfig({ red: 'france', blue: 'brazil' })
     const validation = validateHappySeedRuntimeActorConfig(config)
 
@@ -21,8 +21,9 @@ describe('HappySeed Runtime 业务球员映射', () => {
     })
     expect(config.sides.red.actors).toHaveLength(11)
     expect(config.sides.blue.actors).toHaveLength(11)
-    expect(config.sides.red.bench).toHaveLength(12)
-    expect(config.sides.blue.bench).toHaveLength(12)
+    expect(config.sides.red.bench.length).toBe(config.sides.red.squadPlayerIds.length - 11)
+    expect(config.sides.blue.bench.length).toBe(config.sides.blue.squadPlayerIds.length - 11)
+    expect(config.sides.red.bench.length).toBeGreaterThanOrEqual(0)
     expect(new Set(config.actors.map((actor) => actor.playerId)).size).toBe(22)
     expect(config.formations.red.name).toBe('4-3-3')
     expect(config.formations.blue.name).toBe('4-2-3-1')
@@ -168,5 +169,23 @@ describe('HappySeed Runtime 业务球员映射', () => {
 
     expect(plan.assignments).toHaveLength(10)
     expect(plan.assignments.some((assignment) => assignment.playerId === target.playerId)).toBe(false)
+  })
+
+  it('keeps suspended players in the 23-player squad but out of the next starting eleven', () => {
+    const base = buildHappySeedRuntimeActorConfig()
+    const suspended = base.actors.find((actor) => actor.side === 'red' && !actor.isGoalkeeper)
+    const next = buildHappySeedRuntimeActorConfig({
+      redSquadPlayerIds: base.sides.red.squadPlayerIds,
+      redLineupPlayerIds: base.sides.red.actors.map((actor) => actor.playerId),
+      redUnavailablePlayerIds: [suspended.playerId],
+      redPlayerStateById: {
+        [suspended.playerId]: { status: 'suspended', stamina: 44, morale: 63, form: 58 },
+      },
+    })
+
+    expect(next.actors.some((actor) => actor.playerId === suspended.playerId)).toBe(false)
+    expect(next.sides.red.bench.find((actor) => actor.playerId === suspended.playerId).state)
+      .toMatchObject({ status: 'suspended', stamina: 44, morale: 63, form: 58 })
+    expect(validateHappySeedRuntimeActorConfig(next).valid).toBe(true)
   })
 })

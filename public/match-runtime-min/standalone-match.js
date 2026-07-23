@@ -142,7 +142,7 @@
   }
   function effZoom() {
     var z = MATCH_ZOOM * (window.__matchZoomMul || 1) * autoZoom();
-    return ((z = z < 0.8 ? 0.8 : z > 3 ? 3 : z), z * introScale());
+    return ((z = z < 0.8 ? 0.8 : z > 6 ? 6 : z), z * introScale());
   }
   ((window.__matchZoom = {
     get: function () {
@@ -150,7 +150,7 @@
     },
     set: function (m) {
       ((window.__manualZoomAt = performance.now()),
-        (window.__matchZoomMul = Math.max(0.34, Math.min(2.4, m))));
+        (window.__matchZoomMul = Math.max(0.34, Math.min(6, m))));
       try {
         window.__matchGame.pitch.camera.instantZoom(effZoom());
       } catch {}
@@ -764,6 +764,8 @@
               teamId: config.sides.red.teamId,
               teamName: config.sides.red.teamName,
               formation: config.sides.red.formation,
+              tacticalStance: pitch.redTeam && pitch.redTeam._happySeedStance || "balanced",
+              tacticalEffects: pitch.redTeam && pitch.redTeam._happySeedTacticalEffects || null,
               bench: config.sides.red.bench.map(snapshotActor),
               substitutionHistory: config.sides.red.substitutionHistory,
             },
@@ -771,6 +773,8 @@
               teamId: config.sides.blue.teamId,
               teamName: config.sides.blue.teamName,
               formation: config.sides.blue.formation,
+              tacticalStance: pitch.blueTeam && pitch.blueTeam._happySeedStance || "balanced",
+              tacticalEffects: pitch.blueTeam && pitch.blueTeam._happySeedTacticalEffects || null,
               bench: config.sides.blue.bench.map(snapshotActor),
               substitutionHistory: config.sides.blue.substitutionHistory,
             },
@@ -2115,6 +2119,8 @@
                 humanRecipes = window.__happySeedHumanRecipes,
                 humanActions = window.__happySeedHumanActions || [],
                 humanActionMap = {},
+                studioSoloPreview = !!window.__happySeedStudioSoloPreview,
+                studioStillPreview = !!window.__happySeedStudioStillPreview,
                 hiddenAnimalSlots = [
                   "eyebrows",
                   "eyes",
@@ -2196,23 +2202,25 @@
                   for (var bodySlot in humanPartMap)
                     sp2[bodySlot] &&
                       ((sp2[bodySlot].texture = RefTex.fromImage(
-                        recipe.assets.playerRoot + "/" + humanPartMap[bodySlot],
+                        recipe.assets.parts && recipe.assets.parts[bodySlot] ||
+                          recipe.assets.playerRoot + "/" + humanPartMap[bodySlot],
                       )),
                       (sp2[bodySlot].tint = 16777215),
                       (sp2[bodySlot].visible = !0));
                   for (var kitSlot in humanKitMap)
                     sp2[kitSlot] &&
                       ((sp2[kitSlot].texture = RefTex.fromImage(
-                        recipe.assets.kitRoot + "/" + humanKitMap[kitSlot],
+                        recipe.assets.parts && recipe.assets.parts[kitSlot] ||
+                          recipe.assets.kitRoot + "/" + humanKitMap[kitSlot],
                       )),
                       (sp2[kitSlot].tint = 16777215),
                       (sp2[kitSlot].visible = !0));
                   sp2.chest_shirt &&
                     (sp2.chest_shirt.texture = RefTex.fromImage(
-                      recipe.assets.kitRoot +
-                        (entry.renderer.spine.facingCamera
-                          ? "/shirt_front.png"
-                          : "/shirt_back.png"),
+                      recipe.assets.parts && recipe.assets.parts[
+                        entry.renderer.spine.facingCamera ? "shirt_front" : "shirt_back"
+                      ] || recipe.assets.kitRoot +
+                        (entry.renderer.spine.facingCamera ? "/shirt_front.png" : "/shirt_back.png"),
                     ));
                   sp2.head &&
                     ((sp2.head.texture = RefTex.fromImage(
@@ -2229,13 +2237,15 @@
                   if (recipe.role === "goalkeeper") {
                     sp2.hand_left_glove &&
                       ((sp2.hand_left_glove.texture = RefTex.fromImage(
-                        recipe.assets.kitRoot + "/hand_left.png",
+                        recipe.assets.parts && recipe.assets.parts.hand_left_glove ||
+                          recipe.assets.kitRoot + "/hand_left.png",
                       )),
                       (sp2.hand_left_glove.tint = 16777215),
                       (sp2.hand_left_glove.visible = !0));
                     sp2.hand_right_glove &&
                       ((sp2.hand_right_glove.texture = RefTex.fromImage(
-                        recipe.assets.kitRoot + "/hand_right.png",
+                        recipe.assets.parts && recipe.assets.parts.hand_right_glove ||
+                          recipe.assets.kitRoot + "/hand_right.png",
                       )),
                       (sp2.hand_right_glove.tint = 16777215),
                       (sp2.hand_right_glove.visible = !0));
@@ -2267,6 +2277,7 @@
                   });
                   (label.anchor.set(.5, 1),
                     (label.position.y = -112),
+                    (label.visible = !studioSoloPreview),
                     renderer.addChild(label));
                   var ball = RefPixi.Sprite.fromImage(
                     "/match-runtime-min/data/balls/classic_1/texture.png",
@@ -2309,6 +2320,12 @@
               };
               humanRefs.push(makeHumanRef(humanRecipes[0], 0));
               stadR._happySeedHumanRefs = humanRefs;
+              if (studioSoloPreview) {
+                for (var soloPlayerIndex = 0;
+                  soloPlayerIndex < stadR.players.length;
+                  soloPlayerIndex += 1)
+                  stadR.players[soloPlayerIndex].visible = !1;
+              }
               var getHumanSliceSnapshot = function () {
                   var selectedAction = humanActionMap[humanControl.action] || {};
                   return {
@@ -2408,6 +2425,25 @@
                 origFrame(fr);
                 try {
                   var now = performance.now();
+                  if (studioStillPreview) {
+                    window.__introStart = 0;
+                    try {
+                      pitch.camera.free();
+                      pitch.camera.lookAt(pitch.center);
+                      pitch.camera.position.x = pitch.center.x;
+                      pitch.camera.position.y = pitch.center.y;
+                      pitch.camera.velocity &&
+                        ((pitch.camera.velocity.x = 0),
+                          (pitch.camera.velocity.y = 0));
+                      pitch.camera.instantZoom(effZoom());
+                    } catch {}
+                  }
+                  if (studioSoloPreview) {
+                    for (var hiddenPlayerIndex = 0;
+                      hiddenPlayerIndex < stadR.players.length;
+                      hiddenPlayerIndex += 1)
+                      stadR.players[hiddenPlayerIndex].visible = !1;
+                  }
                   if (
                     humanControl.autoCycle &&
                     now - humanControl.lastAutoCycleAt > 2200
@@ -2455,21 +2491,28 @@
                         2,
                         Math.min(
                           pitch.width - 2,
-                          bp.x + selectedRecipe.previewOffset.x,
+                          studioStillPreview
+                            ? pitch.center.x
+                            : bp.x + selectedRecipe.previewOffset.x,
                         ),
                       ),
                       targetY = Math.max(
                         2,
                         Math.min(
                           pitch.height - 2,
-                          bp.y + selectedRecipe.previewOffset.y,
+                          studioStillPreview
+                            ? pitch.center.y
+                            : bp.y + selectedRecipe.previewOffset.y,
                         ),
                       ),
                       dx2 = targetX - refObj.position.x,
                       dy2 = targetY - refObj.position.y,
                       dist = Math.sqrt(dx2 * dx2 + dy2 * dy2),
                       step = dist > .05 ? Math.min(10 * dt, dist) : 0;
-                    if (step) {
+                    if (studioSoloPreview) {
+                      ((refObj.position.x = targetX),
+                        (refObj.position.y = targetY));
+                    } else if (step) {
                       ((refObj.position.x += (dx2 / dist) * step),
                         (refObj.position.y += (dy2 / dist) * step));
                     }
@@ -3237,11 +3280,11 @@
     var team = side === "blue" ? pitch.blueTeam : pitch.redTeam;
     if (!team || !team.players) return !1;
     var presets = {
-      'all-out-attack': { shift: 0.15, ai: 3 },
-      attack: { shift: 0.07, ai: 2 },
-      balanced: { shift: 0, ai: 2 },
-      defend: { shift: -0.07, ai: 1 },
-      'park-bus': { shift: -0.14, ai: 1 },
+      'all-out-attack': { shift: 0.15, width: 1.18, ai: 3, runRisk: 1.28, staminaRate: 1.45 },
+      attack: { shift: 0.07, width: 1.1, ai: 3, runRisk: 1.14, staminaRate: 1.2 },
+      balanced: { shift: 0, width: 1, ai: 2, runRisk: 1, staminaRate: 1 },
+      defend: { shift: -0.07, width: .92, ai: 1, runRisk: .88, staminaRate: .82 },
+      'park-bus': { shift: -0.14, width: .82, ai: 1, runRisk: .72, staminaRate: .68 },
     },
       preset = presets[stance];
     if (!preset) return !1;
@@ -3258,7 +3301,7 @@
     team._happySeedBaseHomes.forEach(function (record) {
       if (!record || !record.player || !record.player.home) return;
       record.player.home.x = record.x + attackDir * preset.shift * pitch.width;
-      record.player.home.y = record.y;
+      record.player.home.y = pitch.height / 2 + (record.y - pitch.height / 2) * preset.width;
     });
     try { team.ai = preset.ai; } catch {}
     var ballOwner = pitch.ball && pitch.ball.owner;
@@ -3272,6 +3315,13 @@
       }
     });
     team._happySeedStance = stance;
+    team._happySeedTacticalEffects = {
+      pressHeight: preset.shift,
+      width: preset.width,
+      runRisk: preset.runRisk,
+      staminaRate: preset.staminaRate,
+      ai: preset.ai,
+    };
     return !0;
   };
   window.__happySeedGetTacticalStance = function (side) {
@@ -3738,6 +3788,8 @@
         }
       },
       "signal:pitch.Pitch.states.EndMatch.onEnter": function (game) {
+        var periodOverlay = document.querySelector(".match-period-transition");
+        periodOverlay && periodOverlay.classList.remove("is-visible");
         var redScore = game.pitch.redTeam.score | 0,
           blueScore = game.pitch.blueTeam.score | 0,
           fullClock = stoppageClockSnapshot(game),

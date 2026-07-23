@@ -8,8 +8,8 @@ import App from './App.jsx'
 import HomeScreen from './components/HomeScreen.jsx'
 import LineupScreen from './components/LineupScreen.jsx'
 import SettingsScreen from './components/SettingsScreen.jsx'
+import { simulateGroupStage } from './components/TournamentScreen.jsx'
 import { DECISION_LIBRARY } from './data/decisionLibrary.js'
-import { getPlayerMarketScore } from './data/playerBalance.js'
 import {
   DATA_RUNTIME_CONSTRAINTS,
   buildTeamAiContext,
@@ -49,7 +49,7 @@ import { getNextRunAfterMatch } from './utils/tournamentProgress.js'
 import { adaptLineupToFormation, autoSelectLineupForFormation } from './utils/lineupFormation.js'
 import { getTeamDefaultFormation } from './data/teamFormations.js'
 import {
-  NATIONAL_SQUAD_SIZE,
+  MIN_PURCHASE,
   buildRecommendedNationalSquad,
   validateNationalSquad,
 } from './data/rosterRules.js'
@@ -134,8 +134,7 @@ describe('home screen', () => {
     expect(screen.getByRole('button', { name: '设置' })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: '小人样板' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'AI与赞助' })).not.toBeInTheDocument()
-    expect(screen.getByRole('complementary', { name: '通关进度' })).toBeInTheDocument()
-    expect(screen.getAllByRole('listitem')).toHaveLength(10)
+    expect(screen.getByRole('button', { name: /图鉴/ })).toBeInTheDocument()
   })
 
   it('stores the selected mode when starting a player-mode save', () => {
@@ -158,7 +157,7 @@ describe('home screen', () => {
 })
 
 describe('mobile lineup interaction', () => {
-  it('lets a touch user select a bench player and place them on the pitch', () => {
+  it('renders the right-side bench with draggable players', () => {
     const goalkeeper = {
       id: 'touch-gk',
       name: '触屏门将',
@@ -193,17 +192,14 @@ describe('mobile lineup interaction', () => {
       />,
     )
 
-    const benchPlayer = screen.getByRole('button', { name: /选择触屏门将/ })
-    fireEvent.pointerDown(benchPlayer, { pointerType: 'touch' })
-    fireEvent.click(benchPlayer)
-    expect(benchPlayer).toHaveAttribute('aria-pressed', 'true')
+    // 右边替补席应包含可拖拽的球员
+    const benchPlayer = container.querySelector('.bench-player[draggable]')
+    expect(benchPlayer).toBeInTheDocument()
+    expect(benchPlayer).toHaveTextContent('触屏门将')
 
+    // 球场 GK 槽位应存在
     const goalkeeperSlot = container.querySelector('[data-slot-id="GK-0"]')
     expect(goalkeeperSlot).toBeInTheDocument()
-    fireEvent.click(goalkeeperSlot)
-
-    expect(goalkeeperSlot).toHaveTextContent('1')
-    expect(screen.queryByRole('button', { name: /选择触屏门将/ })).not.toBeInTheDocument()
   })
 })
 
@@ -375,24 +371,29 @@ describe('team and player data', () => {
     expect(getStorageKey(true)).toBe('targeting-2026-douyin-demo-save')
   })
 
-  it('keeps every selectable team at a 35-40 player pool with one named golden star', () => {
+  it('keeps every selectable team at a 24-player pool with one named golden star', () => {
     const goldenNames = [
+      '世一腰',
+      '潘帕球王',
       '法国超跑',
+      '大英巴图鲁',
       '桑巴舞者',
-      '当世球王',
       '边路游龙',
       '战车门卫',
-      '蓝武锋魂',
-      '北欧魔人',
-      '北非之狐',
-      '全白重炮',
-      '蓝浪飞翼',
+      '蓝武左刃',
+      '沙漠飞翼',
+      '魔人布欧',
+      '咖啡飞翼',
+      '美国队长',
+      '加拿大超跑',
+      '绿鹰中锋',
+      '草根门神',
+      '海岛门神',
     ]
 
     for (const team of teams) {
-      expect(team.players.length, team.name).toBeGreaterThanOrEqual(35)
-      expect(team.players.length, team.name).toBeLessThanOrEqual(40)
-      expect(team.players.filter((player) => player.position === 'GK').length, team.name).toBeGreaterThanOrEqual(3)
+      expect(team.players.length, team.name).toBe(24)
+      expect(team.players.filter((player) => player.position === 'GK').length, team.name).toBe(2)
       const goldenPlayers = team.players.filter((player) => player.isGolden)
       expect(goldenPlayers, team.name).toHaveLength(1)
       expect(goldenNames).toContain(goldenPlayers[0].name)
@@ -407,19 +408,20 @@ describe('team and player data', () => {
     expect(TEAM_DATA_SCHEMA_VERSION).toBe('team-roster-v2')
     expect(WORLD_CUP_TEAM_CAPACITY).toBe(48)
     expect(ROSTER_POOL_RULES).toMatchObject({
-      minimum: 35,
-      target: 38,
-      maximum: 40,
-      nationalSquadSize: 23,
-      nationalSquadMinimums: { GK: 2, DF: 6, MF: 6, FW: 3 },
-      positionTargets: { GK: 4, DF: 12, MF: 12, FW: 10 },
+      minimum: 24,
+      target: 24,
+      maximum: 24,
+      nationalSquadSize: 24,
+      minPurchase: 11,
+      nationalSquadMinimums: { GK: 2, DF: 3, MF: 3, FW: 2 },
+      positionTargets: { GK: 2, DF: 8, MF: 8, FW: 6 },
     })
     expect(VISUAL_RECIPE_RULE.idPattern).toBe('pixel/recipes/{teamId}/{playerId}.json')
 
     const catalogValidation = validateTeamCatalog(teams)
     expect(catalogValidation.valid).toBe(true)
-    expect(catalogValidation.teamCount).toBe(10)
-    expect(catalogValidation.remainingCapacity).toBe(38)
+    expect(catalogValidation.teamCount).toBe(16)
+    expect(catalogValidation.remainingCapacity).toBe(32)
 
     for (const teamId of SAMPLE_TEAM_IDS) {
       const team = teams.find(candidate => candidate.id === teamId)
@@ -428,9 +430,9 @@ describe('team and player data', () => {
       expect(team.dataStage).toBe('sample-complete')
       expect(team.schemaVersion).toBe(TEAM_DATA_SCHEMA_VERSION)
       expect(team.rosterSummary).toMatchObject({
-        poolSize: 38,
-        sourcePlayers: 23,
-        placeholderPlayers: 15,
+        poolSize: 24,
+        sourcePlayers: 24,
+        placeholderPlayers: 0,
       })
       expect(validation.valid, `${team.name}: ${validation.errors.join(', ')}`).toBe(true)
     }
@@ -446,49 +448,37 @@ describe('team and player data', () => {
     }
   })
 
-  it('calibrates budget pressure around strongest and cheapest 23-player squads', () => {
+  it('calibrates budget so the full 24-player pool exceeds budget but a minimum XI is affordable', () => {
     for (const team of teams) {
-      const byPriceDesc = [...team.players].sort((a, b) => b.price - a.price)
       const byPriceAsc = [...team.players].sort((a, b) => a.price - b.price)
-      const top13 = byPriceDesc.slice(0, 13).reduce((sum, player) => sum + player.price, 0)
-      const top23 = byPriceDesc.slice(0, NATIONAL_SQUAD_SIZE).reduce((sum, player) => sum + player.price, 0)
-      const low23 = byPriceAsc.slice(0, NATIONAL_SQUAD_SIZE).reduce((sum, player) => sum + player.price, 0)
+      const poolTotal = team.players.reduce((sum, player) => sum + player.price, 0)
+      const cheapestEleven = byPriceAsc.slice(0, 11).reduce((sum, player) => sum + player.price, 0)
 
-      expect(top13, `${team.name} top13`).toBeLessThanOrEqual(Math.round(team.budget * 1.05))
-      expect(top23, `${team.name} top23`).toBeGreaterThan(team.budget)
-      expect(low23, `${team.name} low23`).toBeLessThanOrEqual(team.budget)
+      expect(poolTotal, `${team.name} poolTotal`).toBeGreaterThan(team.budget)
+      expect(cheapestEleven, `${team.name} cheapestEleven`).toBeLessThanOrEqual(team.budget)
     }
   })
 
-  it('builds valid recommended 23-player national squads', () => {
+  it('builds valid recommended national squads of at least 11 players', () => {
     for (const team of teams) {
       const squad = buildRecommendedNationalSquad(team.players, team.budget, team.defaultFormation)
       const validation = validateNationalSquad(squad, team.budget)
 
-      expect(squad, team.name).toHaveLength(NATIONAL_SQUAD_SIZE)
+      expect(squad.length, team.name).toBeGreaterThanOrEqual(MIN_PURCHASE)
       expect(validation.valid, team.name).toBe(true)
     }
   })
 
-  it('prices all player pools in the same order as their market value score', () => {
+  it('gives every player pool 24 source-priced players with positive prices', () => {
     const allPreparedPlayers = teams.flatMap(team => team.players)
-    expect(allPreparedPlayers).toHaveLength(380)
+    expect(allPreparedPlayers).toHaveLength(384)
 
     for (const team of teams) {
-      const ranked = [...team.players].sort((a, b) => getPlayerMarketScore(b) - getPlayerMarketScore(a))
-      for (let index = 1; index < ranked.length; index += 1) {
-        expect(
-          ranked[index - 1].price,
-          `${team.name}: ${ranked[index - 1].name} should not cost less than ${ranked[index].name}`,
-        ).toBeGreaterThanOrEqual(ranked[index].price)
+      expect(team.players, team.name).toHaveLength(24)
+      for (const player of team.players) {
+        expect(player.price, `${team.name}: ${player.name}`).toBeGreaterThan(0)
       }
     }
-
-    const france = teams.find(team => team.id === 'france')
-    const firstKeeper = france.players.find(player => player.name === '铁臂门神')
-    const secondKeeper = france.players.find(player => player.name === '青春之盾')
-    expect(getPlayerMarketScore(firstKeeper)).toBeGreaterThan(getPlayerMarketScore(secondKeeper))
-    expect(firstKeeper.price).toBeGreaterThan(secondKeeper.price)
   })
 
   it('exposes shared team data contracts for local simulation and Volcengine AI analysis', () => {
@@ -555,7 +545,7 @@ describe('team and player data', () => {
 
 describe('match systems', () => {
   it('documents every selectable formation with a tactical style and use case', () => {
-    const formationNames = ['4-3-3', '4-4-2', '4-2-3-1', '4-3-2-1', '3-5-2', '3-4-3', '3-4-2-1', '5-3-2', '4-1-4-1', '4-4-1-1']
+    const formationNames = ['4-3-3', '4-4-2', '4-2-3-1', '4-3-2-1', '3-5-2', '3-4-3', '3-4-2-1', '5-3-2', '5-4-1', '4-1-4-1']
     expect(Object.keys(FORMATION_TACTICS)).toEqual(expect.arrayContaining(formationNames))
     formationNames.forEach(name => {
       expect(FORMATION_TACTICS[name].style).toBeTruthy()
@@ -645,7 +635,7 @@ describe('match systems', () => {
     expect(getTeamDefaultFormation('norway')).toBe('4-3-3')
     expect(getTeamDefaultFormation('morocco')).toBe('5-3-2')
     expect(getTeamDefaultFormation('newzealand')).toBe('5-3-2')
-    expect(getTeamDefaultFormation('curacao')).toBe('4-4-1-1')
+    expect(getTeamDefaultFormation('curacao')).toBe('4-4-2')
     teams.forEach(team => {
       expect(createNewRun(team.id).formation).toBe(getTeamDefaultFormation(team.id))
     })
@@ -772,6 +762,16 @@ describe('match systems', () => {
     expect(getNextRunAfterMatch({ ...run, stage: 'knockout', knockoutRound: 'r16' })).toMatchObject({
       stage: 'tournament',
       knockoutRound: 'qf',
+    })
+  })
+
+  it('ranks all sixteen playable teams from deterministic group results', () => {
+    teams.forEach((team) => {
+      const perfect = simulateGroupStage(team.id, ['win', 'win', 'win'])
+      expect(perfect.teams).toHaveLength(4)
+      expect(perfect.rank, team.id).toBe(1)
+      expect(perfect.teams[0]).toMatchObject({ id: team.id, points: 9, isPlayer: true })
+      expect(perfect.teams.reduce((sum, entry) => sum + entry.points, 0)).toBeGreaterThan(0)
     })
   })
 
@@ -996,8 +996,8 @@ describe('post-match review', () => {
         corners: 3,
       },
       decisions: [
-        { minute: 32, situation: '获得点球', choiceLabel: '射向左下角', resultText: '点球罚进', isSuccess: true },
-        { minute: 74, situation: '对方快速反击', choiceLabel: '战术犯规', resultText: '吃到黄牌', isSuccess: false },
+        { minute: 32, situation: '获得点球', choiceLabel: '射向左下角', resultText: '点球罚进', isSuccess: true, sourceEventId: 'runtime.penalty.32' },
+        { minute: 74, situation: '对方快速反击', choiceLabel: '战术犯规', resultText: '吃到黄牌', isSuccess: false, sourceEventId: 'runtime.counter.74' },
       ],
     }, '法国')
 
@@ -1005,6 +1005,34 @@ describe('post-match review', () => {
     expect(insights.decisionItems).toHaveLength(2)
     expect(insights.decisionItems[0]).toContain('32′')
     expect(insights.advice.join('')).toContain('纪律')
+  })
+
+  it('keeps at most five sourced decisions and explains injuries and suspensions', () => {
+    const decisions = Array.from({ length: 7 }, (_, index) => ({
+      minute: 10 + index,
+      situation: `关键回合${index + 1}`,
+      choiceLabel: '稳健处理',
+      resultText: '完成执行',
+      isSuccess: true,
+      sourceEventId: index === 0 ? null : `runtime.choice.${index}`,
+    }))
+    const insights = buildPostMatchInsights({
+      homeScore: 1,
+      awayScore: 0,
+      stats: {},
+      decisions,
+      matchRuleReport: {
+        playerStates: {
+          sentOff: { side: 'red', name: '后卫甲', redCard: true },
+          injured: { side: 'red', name: '前锋乙', injured: true },
+        },
+      },
+    }, '法国')
+
+    expect(insights.decisionItems).toHaveLength(5)
+    expect(insights.decisionItems.every((item) => item.includes('事件:runtime.choice.'))).toBe(true)
+    expect(insights.advice.join('')).toContain('停赛')
+    expect(insights.advice.join('')).toContain('伤停')
   })
 })
 
@@ -1039,11 +1067,11 @@ describe('landscape match presentation', () => {
     expect(getShootoutWinner([...shots, { team: 'away', scored: false }])).toBe('home')
   })
 
-  it('provides distinct pixel kits for all ten playable teams', () => {
+  it('provides distinct pixel kits for all sixteen playable teams', () => {
     const playableTeamIds = teams.map(team => team.id)
     const kits = playableTeamIds.map(teamId => getTeamKit(teamId))
 
-    expect(kits).toHaveLength(10)
+    expect(kits).toHaveLength(16)
     expect(new Set(kits.map(kit => kit.shirt)).size).toBeGreaterThanOrEqual(8)
     kits.forEach(kit => {
       expect(kit.shirt).toMatch(/^#/)

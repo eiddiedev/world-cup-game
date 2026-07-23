@@ -426,14 +426,21 @@ describe('HappySeed formal match broadcast', () => {
     render(<HappySeedMatchBroadcast />)
     fireEvent.click(screen.getByRole('button', { name: /换人.*3 次.*5 人/ }))
 
-    const outgoingPlayers = actorSnapshot.actors.filter((actor) => (
-      actor.side === 'red'
-      && actor.state.onPitch
-      && actor.assignedPosition === 'MF'
-    )).slice(0, 2)
-    const incomingPlayers = actorSnapshot.sides.red.bench.filter((player) => (
-      player.naturalPosition === 'MF'
-    )).slice(0, 2)
+    const bench = actorSnapshot.sides.red.bench
+    const onPitch = actorSnapshot.actors.filter((actor) => (
+      actor.side === 'red' && actor.state.onPitch
+    ))
+    // 选一个替补席至少2人、场上也至少2人的位置，保证能演示连续换人
+    const targetPosition = ['MF', 'DF', 'FW'].find((position) => (
+      bench.filter((player) => player.naturalPosition === position).length >= 2
+      && onPitch.filter((actor) => actor.assignedPosition === position).length >= 2
+    ))
+    const outgoingPlayers = onPitch
+      .filter((actor) => actor.assignedPosition === targetPosition)
+      .slice(0, 2)
+    const incomingPlayers = bench
+      .filter((player) => player.naturalPosition === targetPosition)
+      .slice(0, 2)
 
     outgoingPlayers.forEach((outgoing, index) => {
       const incoming = incomingPlayers[index]

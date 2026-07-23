@@ -121,6 +121,8 @@ function ActionButton({ label, input }) {
 export default function HappySeedRuntimeLab() {
   const params = useMemo(() => new URLSearchParams(window.location.search), [])
   const playerMode = params.get('play') === '1'
+  const studioPreview = params.get('studio') === '1'
+  const studioStillPreview = params.get('still') === '1'
   const [status, setStatus] = useState('正在准备比赛数据…')
   const [error, setError] = useState('')
   const [paused, setPaused] = useState(false)
@@ -131,7 +133,7 @@ export default function HappySeedRuntimeLab() {
   const [stadiumScene, setStadiumScene] = useState(() => getStadiumSceneSnapshot())
   const [runtimeActors, setRuntimeActors] = useState(() => getRuntimeActorSnapshot())
   const [visualEvents, setVisualEvents] = useState(() => getMatchVisualEventSnapshot())
-  const [activeLabStage, setActiveLabStage] = useState('events')
+  const [activeLabStage, setActiveLabStage] = useState(studioPreview ? 'human' : 'events')
   const [events, setEvents] = useState([])
   const [labScenarioId, setLabScenarioId] = useState(
     params.get('scenario') || DECISION_LIBRARY[0].id,
@@ -159,6 +161,8 @@ export default function HappySeedRuntimeLab() {
     bootHappySeedMatch({
       technicalLab: true,
       humanSlicePreview: true,
+      studioPreview,
+      studioStillPreview,
       red: params.get('red') || 'france',
       blue: params.get('blue') || 'brazil',
       playerMode,
@@ -173,7 +177,7 @@ export default function HappySeedRuntimeLab() {
     })
 
     return () => releasePlayerInput()
-  }, [params, playerMode])
+  }, [params, playerMode, studioPreview, studioStillPreview])
 
   useEffect(() => {
     const timer = window.setInterval(() => {
@@ -371,7 +375,7 @@ export default function HappySeedRuntimeLab() {
       : ['阶段 2', '人类骨架兼容切片']
 
   return (
-    <main className="happyseed-runtime-lab">
+    <main className={`happyseed-runtime-lab${studioPreview ? ' studio-runtime-embed' : ''}`}>
       <div id="gui" className="gui" aria-hidden="true">
         <canvas id="forceRefreshCanvas1" width="1" height="1" />
         <canvas id="forceRefreshCanvas2" width="1" height="1" />

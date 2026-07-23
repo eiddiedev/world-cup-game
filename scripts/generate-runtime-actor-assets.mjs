@@ -4,13 +4,14 @@ import {
   HAPPYSEED_HUMAN_PART_SET_ID,
   buildHappySeedKitPalette,
 } from '../src/utils/happySeedHumanPlayer.js'
+import { opponentTeams } from '../src/data/opponentTeams.js'
 import {
   drawKitPart,
   drawNumber,
   writePng,
 } from './generate-human-runtime-slice.mjs'
 
-const TEAM_IDS = [
+const PLAYABLE_TEAM_IDS = [
   'france',
   'brazil',
   'argentina',
@@ -21,7 +22,15 @@ const TEAM_IDS = [
   'morocco',
   'newzealand',
   'curacao',
+  'spain',
+  'england',
+  'colombia',
+  'usa',
+  'canada',
+  'mexico',
+  'capeverde',
 ]
+const TEAM_IDS = [...PLAYABLE_TEAM_IDS, ...opponentTeams.map(t => t.id)]
 const KIT_VARIANTS = [
   { path: 'home', role: 'outfield', paletteVariant: 'home' },
   { path: 'away', role: 'outfield', paletteVariant: 'away' },

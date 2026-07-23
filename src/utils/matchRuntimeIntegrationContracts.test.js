@@ -87,6 +87,17 @@ describe('Match Runtime integration contracts', () => {
     expect(standaloneRuntime).toMatch(/playerStates\.ReturnHome/)
   })
 
+  it('physically removes a red-carded actor from the native match', () => {
+    expect(standaloneRuntime).toContain('function removePhysicalActor(entry)')
+    expect(standaloneRuntime).toContain('window.__matchGame.removePlayer(entry.entity)')
+    expect(standaloneRuntime).toMatch(
+      /patch\.redCard === !0[\s\S]*state\.onPitch = !1[\s\S]*removePhysicalActor\(entry\)/,
+    )
+    expect(standaloneRuntime).toMatch(
+      /state\.yellowCards >= 2[\s\S]*state\.redCard = !0[\s\S]*removePhysicalActor\(entry\)/,
+    )
+  })
+
   it('returns temporary manual camera movement to continuous ball follow', () => {
     expect(runtimeStadium).toContain('manualReturnDelayMs: 2600')
     expect(runtimeStadium).toMatch(

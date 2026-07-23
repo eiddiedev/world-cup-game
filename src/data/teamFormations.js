@@ -8,7 +8,14 @@ const TEAM_DEFAULT_FORMATIONS = {
   norway: '4-3-3',
   morocco: '5-3-2',
   newzealand: '5-3-2',
-  curacao: '4-4-1-1',
+  curacao: '4-4-2',
+  spain: '4-3-3',
+  england: '4-2-3-1',
+  usa: '4-3-3',
+  canada: '4-4-2',
+  mexico: '4-3-3',
+  colombia: '4-2-3-1',
+  capeverde: '5-4-1',
 }
 
 const TEAM_TACTICAL_PROFILES = {
@@ -62,6 +69,41 @@ const TEAM_TACTICAL_PROFILES = {
     styleTags: ['防守反击', '速度冲击', '点球奇兵'],
     gameModel: '紧凑站位保护中路，后程换上速度点偷袭身后。',
   },
+  spain: {
+    formation: TEAM_DEFAULT_FORMATIONS.spain,
+    styleTags: ['传控', '高位压迫', '短传渗透'],
+    gameModel: '用极致的传控压制对手，前场三人组灵活换位撕裂防线。',
+  },
+  england: {
+    formation: TEAM_DEFAULT_FORMATIONS.england,
+    styleTags: ['速度冲击', '定位球', '边路传中'],
+    gameModel: '双后腰保护防线，边路爆点持续冲击，定位球制造杀机。',
+  },
+  usa: {
+    formation: TEAM_DEFAULT_FORMATIONS.usa,
+    styleTags: ['速度冲击', '前场压迫', '反击'],
+    gameModel: '用体能和速度打乱对手节奏，主场气势加成明显。',
+  },
+  canada: {
+    formation: TEAM_DEFAULT_FORMATIONS.canada,
+    styleTags: ['速度冲击', '防守反击', '定位球'],
+    gameModel: '紧凑阵型快速转换，依靠边路速度发动致命反击。',
+  },
+  mexico: {
+    formation: TEAM_DEFAULT_FORMATIONS.mexico,
+    styleTags: ['传控', '速度冲击', '定位球'],
+    gameModel: '短传配合撕开空间，主场高原体能优势明显。',
+  },
+  colombia: {
+    formation: TEAM_DEFAULT_FORMATIONS.colombia,
+    styleTags: ['传控', '个人盘带', '速度冲击'],
+    gameModel: '前腰核心串联全队，边路爆点一对一制造威胁。',
+  },
+  capeverde: {
+    formation: TEAM_DEFAULT_FORMATIONS.capeverde,
+    styleTags: ['防守反击', '定位球', '速度冲击'],
+    gameModel: '五后卫铁桶阵，抢断后快速找前场速度点。',
+  },
 }
 
 const TEAM_NAME_TO_ID = {
@@ -75,6 +117,13 @@ const TEAM_NAME_TO_ID = {
   摩洛哥: 'morocco',
   新西兰: 'newzealand',
   库拉索: 'curacao',
+  西班牙: 'spain',
+  英格兰: 'england',
+  美国: 'usa',
+  加拿大: 'canada',
+  墨西哥: 'mexico',
+  哥伦比亚: 'colombia',
+  佛得角: 'capeverde',
 }
 
 export function getTeamDefaultFormation(teamIdOrName) {

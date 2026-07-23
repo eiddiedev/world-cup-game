@@ -93,10 +93,20 @@ export function buildFormalMatchRuleReport(actorSource, options = {}) {
     number: actor.number,
     stamina: Number(actor.state?.stamina ?? 80),
     status: actor.state?.status || 'available',
+    side: actor.side,
+    onPitch: Boolean(actor.state?.onPitch),
     injured: Boolean(actor.state?.injured),
+    morale: Number(actor.state?.morale ?? 70),
+    form: Number(actor.state?.form ?? 70),
     yellowCards: Number(actor.state?.yellowCards || 0),
     redCard: Boolean(actor.state?.redCard),
     substitutedOut: Boolean(actor.state?.substitutedOut),
+    staminaBefore: Number(
+      options.previousPlayerStates?.[actor.playerId]?.stamina
+      ?? options.previousPlayerStatuses?.[actor.playerId]
+      ?? actor.operationAttributes?.sta
+      ?? 80,
+    ),
   }]))
 
   return {
@@ -116,10 +126,19 @@ export function buildFormalMatchRuleReport(actorSource, options = {}) {
     substitutionHistory: Object.fromEntries(Object.entries(actorSource?.sides || {}).map(
       ([side, sideData]) => [side, [...(sideData?.substitutionHistory || [])]],
     )),
+    tactics: Object.fromEntries(Object.entries(actorSource?.sides || {}).map(
+      ([side, sideData]) => [side, {
+        stance: sideData?.tacticalStance || 'balanced',
+        effects: sideData?.tacticalEffects || null,
+      }],
+    )),
   }
 }
 
 export function settleRunMatchRules(currentRun = {}, report = {}) {
+  const homePlayerIds = new Set(Object.entries(report.playerStates || {})
+    .filter(([, state]) => state.side === 'red')
+    .map(([playerId]) => playerId))
   const currentSuspensions = {
     ...(currentRun.suspensionMatches || {}),
   }
@@ -131,38 +150,53 @@ export function settleRunMatchRules(currentRun = {}, report = {}) {
       .map(([playerId, matches]) => [playerId, Math.max(0, Number(matches) - 1)])
       .filter(([, matches]) => matches > 0),
   )
-  unique(report.redCardedPlayerIds).forEach((playerId) => {
+  unique(report.redCardedPlayerIds).filter((playerId) => homePlayerIds.has(playerId)).forEach((playerId) => {
     nextSuspensions[playerId] = Math.max(nextSuspensions[playerId] || 0, 1)
+  })
+
+  const currentInjuries = { ...(currentRun.injuryMatches || {}) }
+  ;(currentRun.injuredPlayers || []).forEach((playerId) => {
+    if (!currentInjuries[playerId]) currentInjuries[playerId] = 1
+  })
+  const nextInjuries = Object.fromEntries(
+    Object.entries(currentInjuries)
+      .map(([playerId, matches]) => [playerId, Math.max(0, Number(matches) - 1)])
+      .filter(([, matches]) => matches > 0),
+  )
+  unique(report.injuredPlayerIds).filter((playerId) => homePlayerIds.has(playerId)).forEach((playerId) => {
+    const stamina = Number(report.playerStates?.[playerId]?.stamina ?? 50)
+    nextInjuries[playerId] = Math.max(nextInjuries[playerId] || 0, stamina <= 20 ? 2 : 1)
   })
 
   const playerMatchStates = {
     ...(currentRun.playerMatchStates || {}),
-    ...(report.playerStates || {}),
+    ...Object.fromEntries(Object.entries(report.playerStates || {})
+      .filter(([, state]) => state.side === 'red')),
   }
   const playerStatuses = {
     ...(currentRun.playerStatuses || {}),
   }
-  Object.entries(report.playerStates || {}).forEach(([playerId, state]) => {
+  Object.entries(report.playerStates || {}).filter(([, state]) => state.side === 'red').forEach(([playerId, state]) => {
     playerStatuses[playerId] = Math.max(0, Math.min(100, Number(state.stamina ?? 80)))
   })
   const normalizedReport = {
     schemaVersion: report.schemaVersion || FORMAL_MATCH_RULES_SCHEMA_VERSION,
     matchId: report.matchId || `match-${Number(currentRun.matchIndex) || 0}`,
     completedAt: report.completedAt || null,
-    injuredPlayerIds: unique(report.injuredPlayerIds),
-    redCardedPlayerIds: unique(report.redCardedPlayerIds),
+    playerStates: report.playerStates || {},
+    injuredPlayerIds: unique(report.injuredPlayerIds).filter((playerId) => homePlayerIds.has(playerId)),
+    redCardedPlayerIds: unique(report.redCardedPlayerIds).filter((playerId) => homePlayerIds.has(playerId)),
     formationHistory: report.formationHistory || {},
     substitutionHistory: report.substitutionHistory || {},
+    tactics: report.tactics || {},
   }
 
   return {
     ...currentRun,
     playerStatuses,
     playerMatchStates,
-    injuredPlayers: unique([
-      ...(currentRun.injuredPlayers || []),
-      ...normalizedReport.injuredPlayerIds,
-    ]),
+    injuredPlayers: Object.keys(nextInjuries),
+    injuryMatches: nextInjuries,
     suspendedPlayers: Object.keys(nextSuspensions),
     suspensionMatches: nextSuspensions,
     lastMatchRuleReport: normalizedReport,

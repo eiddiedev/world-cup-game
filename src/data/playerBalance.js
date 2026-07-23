@@ -1,16 +1,22 @@
 import { ROSTER_POOL_RULES, buildVisualRecipeId } from './teamDataSchema.js'
 
 const GOLDEN_SKILLS = {
-  法国超跑: '终点冲刺：反击、身后球、单刀节点速度判定提升，射门成功率小幅提升。',
-  桑巴舞者: '桑巴单挑：1v1盘带节点技术判定提升，同时更容易制造任意球。',
-  当世球王: '最后一传：禁区前沿技术判定提升，成功后队友下一脚射门更稳。',
-  边路游龙: '终局头槌：75分钟后传中、定位球、争顶节点身体提升，关键时刻临时加成。',
+  世一腰: '控场王冠：中场调度与拦截节点技术判定大幅提升，全队连续传球后关键一传更稳。',
+  潘帕球王: '绝境球王：落后时射门、直塞、任意球节点全面提升，加时赛再额外加成。',
+  法国超跑: '纵深爆破：反击与身后球节点速度判定大幅提升，单刀成功率显著加成。',
+  大英巴图鲁: '二次进攻：禁区射门与定位球抢点身体判定提升，补射、二点球更稳。',
+  桑巴舞者: '桑巴单挑：1v1盘带节点技术判定大幅提升，边路突破更容易制造犯规。',
+  边路游龙: '关键先生：75分钟后射门、争顶节点身体与技术提升，关键时刻临时加成。',
   战车门卫: '清道夫门将：对手直塞/单刀节点可提前出击，扑救判定提升但失败风险更高。',
-  蓝武锋魂: '小空间转身：高压逼抢和狭小空间节点技术提升，丢球风险降低。',
-  北欧魔人: '禁区引力：直塞、抢点、禁区射门节点身体提升，射门成功率提升。',
-  北非之狐: '右路弹射：边路推进和回追防守提升，成功后下一次传中更准。',
-  全白重炮: '全白支点：传中、高空球、二点球节点身体提升，队友补射更稳。',
-  蓝浪飞翼: '加勒比闪击：替补登场后短时间速度提升，点球大战胆量提升。',
+  蓝武左刃: '蓝武快刃：高压逼抢与狭小空间节点技术提升，边路内切射门更稳。',
+  沙漠飞翼: '沙漠反击：边路推进与回追防守提升，抢断后反击传中更准。',
+  魔人布欧: '禁区引力：直塞、抢点、禁区射门节点身体提升，射门成功率大幅提升。',
+  咖啡飞翼: '咖啡旋律：边路冲击与前场创造力节点技术提升，传中与直塞更准。',
+  美国队长: '主场浪潮：主场作战时速度与射门判定额外加成，前场压迫更凶狠。',
+  加拿大超跑: '枫叶快攻：抢断后快速转换节点速度爆发，反击单刀成功率提升。',
+  绿鹰中锋: '高原节奏：中锋抢点与连续跑动节点身体提升，主场气势额外加成。',
+  草根门神: '蓝鲨门线：门线反应与单刀扑救判定大幅提升，弱队防线更稳。',
+  海岛门神: '海岛门线：门将扑救与大赛关键节点判定提升，弱队上限核心。',
 }
 
 const TARGET_POSITION_COUNTS = ROSTER_POOL_RULES.positionTargets
@@ -39,22 +45,16 @@ function getTeamAssetName(teamId) {
     morocco: '摩洛哥',
     newzealand: '新西兰',
     curacao: '库拉索',
+    // 新球队暂无专属立绘，复用库拉索的通用头像
+    spain: '库拉索',
+    england: '库拉索',
+    usa: '库拉索',
+    canada: '库拉索',
+    mexico: '库拉索',
+    colombia: '库拉索',
+    capeverde: '库拉索',
   }
   return map[teamId] || teamId
-}
-
-const POSITION_LABELS = {
-  GK: '门将',
-  DF: '后卫',
-  MF: '中场',
-  FW: '前锋',
-}
-
-const RESERVE_ARCHETYPES = {
-  GK: ['扑救型', '出击型', '替补型', '青年型'],
-  DF: ['边卫', '中卫', '盯人', '清球', '轮换'],
-  MF: ['后腰', '组织', '跑动', '前腰', '轮换'],
-  FW: ['边锋', '中锋', '影锋', '冲刺', '轮换'],
 }
 
 function clamp(value, min = 35, max = 99) {
@@ -63,70 +63,6 @@ function clamp(value, min = 35, max = 99) {
 
 function ratingClamp(value) {
   return Math.round(clamp(value, 0, 99))
-}
-
-function buildReservePlayer(teamId, position, index, template, generatedIndex) {
-  const assetTeam = getTeamAssetName(teamId)
-  const reserveSerial = index + 1
-  const archetypes = RESERVE_ARCHETYPES[position] || RESERVE_ARCHETYPES.MF
-  const archetype = archetypes[index % archetypes.length]
-  const baseRating = clamp((template?.rating || 68) - 5 - (index % 3), 58, 76)
-  const number = 41 + generatedIndex
-  const name = `扩编${archetype}${POSITION_LABELS[position] || position}${reserveSerial}`
-  const spd = clamp((template?.spd || 68) - 4 + (position === 'FW' ? 2 : 0))
-  const phy = clamp((template?.phy || 68) - 3 + (position === 'DF' ? 2 : 0))
-  const tec = clamp((template?.tec || 68) - 4 + (position === 'MF' ? 3 : 0))
-  const def = position === 'GK'
-    ? clamp((template?.def || 78) - 3, 62, 86)
-    : position === 'DF'
-      ? clamp((template?.def || 76) - 2, 64, 86)
-      : position === 'MF'
-        ? clamp((template?.def || 62) - 2, 50, 78)
-        : clamp((template?.def || 44) - 2, 34, 62)
-
-  return {
-    id: `${teamId}_placeholder_${position.toLowerCase()}_${String(reserveSerial).padStart(2, '0')}`,
-    name,
-    position,
-    number,
-    rating: baseRating,
-    price: Math.max(28, Math.round((template?.price || 80) * 0.58)),
-    spd,
-    phy,
-    tec,
-    def,
-    sta: clamp((template?.sta || 82) - (index % 2), 70, 92),
-    star: Math.max(1, Math.min(3, template?.star || 3)),
-    form: 80,
-    height: template?.height || '182cm',
-    weight: template?.weight || '78kg',
-    description: '扩编大名单轮换球员，用来补足征召池和应对连续作战。',
-    isGolden: false,
-    isPlaceholder: true,
-    dataOrigin: 'generated-placeholder',
-    avatar: `/assets/${assetTeam}/${FALLBACK_AVATAR_BY_POSITION[position]}`,
-  }
-}
-
-function ensureRosterSize(players, teamId) {
-  const normalized = players.map((player) => normalizePlayer(player, teamId))
-  let generatedIndex = 0
-
-  for (const [position, targetCount] of Object.entries(TARGET_POSITION_COUNTS)) {
-    while (normalized.filter((player) => player.position === position).length < targetCount) {
-      const samePosition = normalized.filter((player) => player.position === position)
-      const template = samePosition[samePosition.length - 1] || normalized[normalized.length - 1]
-      const reserve = buildReservePlayer(teamId, position, samePosition.length, template, generatedIndex)
-      normalized.push(normalizePlayer(reserve, teamId))
-      generatedIndex += 1
-    }
-  }
-
-  return normalized.slice(0, ROSTER_POOL_SIZE)
-}
-
-function sum(players) {
-  return players.reduce((total, player) => total + player.price, 0)
 }
 
 const POSITION_VALUE_WEIGHTS = {
@@ -211,16 +147,21 @@ function normalizePlayer(player, teamId) {
     ...(player.spriteRecipe || {}),
     visualRecipeId,
   }
+  // 卡级兼容派生：优先读 cardTier（金/银/普），并由此派生 isGolden
+  const cardTier = player.cardTier || (player.isGolden ? '金' : '普')
+  const isGolden = cardTier === '金'
 
   return {
     ...player,
     id: playerId,
     teamId,
+    cardTier,
+    isGolden,
     nickname: player.nickname || player.name,
     position,
     pos: position,
     secondaryPositions: getSecondaryPositions({ ...player, position }),
-    age: player.age || (player.isGolden ? 28 : rating >= 84 ? 27 : rating >= 76 ? 25 : 22),
+    age: player.age || (isGolden ? 28 : rating >= 84 ? 27 : rating >= 76 ? 25 : 22),
     height: player.height || '182cm',
     weight: player.weight || '78kg',
     foot: player.foot || (position === 'GK' ? '右脚' : '双脚'),
@@ -248,8 +189,8 @@ function normalizePlayer(player, teamId) {
     pass: operationAttributes.passing,
     shoot: operationAttributes.shooting,
     tackle: operationAttributes.tackling,
-    hiddenTraits: player.hiddenTraits || (player.isGolden ? [GOLDEN_SKILLS[player.name]].filter(Boolean) : []),
-    hiddenSkill: player.isGolden ? GOLDEN_SKILLS[player.name] : player.hiddenSkill,
+    hiddenTraits: player.hiddenTraits || (isGolden ? [GOLDEN_SKILLS[player.name]].filter(Boolean) : []),
+    hiddenSkill: isGolden ? GOLDEN_SKILLS[player.name] : player.hiddenSkill,
     visualRecipeId,
     spriteRecipe,
     portraitRecipe: player.portraitRecipe || {
@@ -274,37 +215,8 @@ export function getPlayerMarketScore(player) {
   return Math.round((ratingScore + attributeScore + starBonus + goldenBonus) * 100) / 100
 }
 
-function rebalancePrices(players, budget) {
-  const byValue = [...players].sort((a, b) => {
-    const scoreDiff = getPlayerMarketScore(b) - getPlayerMarketScore(a)
-    return scoreDiff || (b.rating || 0) - (a.rating || 0)
-  })
-  const priceCurve = [
-    0.086, 0.082, 0.079, 0.076, 0.073, 0.070, 0.067, 0.064,
-    0.061, 0.058, 0.055, 0.052, 0.049, 0.046, 0.044, 0.042,
-    0.040, 0.038, 0.036, 0.034, 0.032, 0.030, 0.029, 0.028,
-    0.027, 0.026, 0.025, 0.024, 0.023, 0.022, 0.021, 0.020,
-    0.019, 0.018, 0.017, 0.016, 0.015, 0.014,
-  ]
-  const descendingPrices = priceCurve
-    .slice(0, byValue.length)
-    .map((ratio) => Math.max(24, Math.round(budget * ratio)))
-
-  byValue.forEach((player, index) => {
-    player.price = descendingPrices[index]
-  })
-
-  const cheapest = [...players].sort((a, b) => a.price - b.price)
-  while (sum(cheapest.slice(0, ROSTER_POOL_RULES.nationalSquadSize)) > budget) {
-    cheapest.slice(0, ROSTER_POOL_RULES.nationalSquadSize).forEach((player) => {
-      player.price = Math.max(20, player.price - 1)
-    })
-  }
-
-  return players
-}
-
-export function prepareTeamPlayers(players, teamId, budget) {
-  const roster = ensureRosterSize(players, teamId)
-  return rebalancePrices(roster, budget)
+export function prepareTeamPlayers(players, teamId, _budget) {
+  // 2026新体系：每队固定24人候选池、价格由策划稿指定，
+  // 不再补齐到38人、不再按预算曲线重算价格，仅做字段规范化。
+  return players.map(player => normalizePlayer(player, teamId))
 }

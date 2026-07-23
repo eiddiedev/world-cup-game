@@ -1,7 +1,7 @@
 export function buildPostMatchInsights(result, teamName) {
   const { homeScore, awayScore, stats = {}, decisions = [] } = result
-  const isWin = homeScore > awayScore
-  const isDraw = homeScore === awayScore
+  const isWin = result.result ? result.result === 'win' : homeScore > awayScore
+  const isDraw = result.result ? result.result === 'draw' : homeScore === awayScore
   const diff = Math.abs(homeScore - awayScore)
   const parts = []
 
@@ -29,15 +29,27 @@ export function buildPostMatchInsights(result, teamName) {
     parts.push(`本场完成${decisions.length}次临场决策，其中${successfulDecisions}次取得正面结果。`)
   }
 
-  const decisionItems = decisions.slice(-6).map(decision => {
+  const sourcedDecisions = decisions.filter((decision) => decision.sourceEventId)
+  const decisionItems = sourcedDecisions.slice(-5).slice(0, 5).map(decision => {
     const situation = decision.situation?.replace(/\{[^}]+\}/g, '').slice(0, 28) || '关键回合'
     const tags = decision.replayTags?.length ? `｜${decision.replayTags.join('/')}` : ''
     const risk = decision.riskLevel ? `｜风险:${decision.riskLevel}` : ''
     const reviewTag = decision.postMatchReviewTag ? `｜复盘:${decision.postMatchReviewTag}` : ''
-    return `${decision.minute ?? 0}′ ${situation}｜选择“${decision.choiceLabel}”：${decision.resultText}${risk}${tags}${reviewTag}`
+    return `${decision.minute ?? 0}′ ${situation}｜选择“${decision.choiceLabel}”：${decision.resultText}${risk}${tags}${reviewTag}｜事件:${decision.sourceEventId}`
   })
 
   const advice = []
+  const ruleReport = result.matchRuleReport || {}
+  const homeStates = Object.values(ruleReport.playerStates || {}).filter((state) => state.side === 'red')
+  const dismissed = homeStates.filter((state) => state.redCard)
+  const injured = homeStates.filter((state) => state.injured)
+  if (dismissed.length) {
+    advice.unshift(`${dismissed.map((state) => state.name).join('、')}被罚下并将停赛，下一场阵型必须按少员/缺员重新安排。`)
+  }
+  if (injured.length) {
+    advice.unshift(`${injured.map((state) => state.name).join('、')}确认伤停，恢复前不能进入比赛名单。`)
+  }
+
   if ((stats.myXG || 0) > homeScore + 0.8) advice.push('下一场可以优先选择更稳妥的射门方式，减少低质量强行打门。')
   if ((stats.oppXG || 0) > (stats.myXG || 0)) advice.push('对手机会质量更高，建议增加正牌后卫并减少后场冒险出球。')
   if ((stats.possession || 50) < 43) advice.push('控球偏低，中场需要更多接应点，避免比赛长期处于被动。')

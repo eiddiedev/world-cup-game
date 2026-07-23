@@ -879,6 +879,28 @@ describe('FormalMatchSession 正式比赛权威链', () => {
     }))
   })
 
+  it('labels extra-time stoppage and the 105-minute interval explicitly', () => {
+    const session = startFormalExtraTime(startFormalMatchSession(createFormalMatchSession()))
+    const advanced = advanceFormalMatchSession(session, {
+      snapshot: { minute: 106 },
+      runtimeMoment: moment,
+      actorSource,
+      decisionsEnabled: false,
+      runtimeEvents: [
+        runtimeEvent('period-change', 105, {
+          id: 'runtime.et.stoppage',
+          detail: { period: 'stoppage-time', half: 3, addedMinutes: 1 },
+        }),
+        runtimeEvent('period-change', 106, {
+          id: 'runtime.et.interval',
+          detail: { period: 'half-time', extraTime: true, addedMinutes: 1 },
+        }),
+      ],
+    })
+    expect(advanced.session.commentary.at(-2).text).toBe('加时赛上半场补时 1 分钟。')
+    expect(advanced.session.commentary.at(-1).text).toContain('加时赛上半场结束')
+  })
+
   it('marks extra time with a dedicated flag instead of the shared phase field', () => {
     const running = startFormalMatchSession(createFormalMatchSession())
     const extra = startFormalExtraTime(running)

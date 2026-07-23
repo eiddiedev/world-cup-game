@@ -1,0 +1,285 @@
+/* 聘书签署模态框样式 */
+
+.appointment-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(4px);
+  animation: overlayFadeIn 200ms ease-out;
+}
+
+@keyframes overlayFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.appointment-card {
+  position: relative;
+  width: 420px;
+  max-width: 92vw;
+  aspect-ratio: 3 / 4;
+  border-radius: 4px;
+  overflow: hidden;
+  background: #f5e6c8;
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.5);
+  animation: paperAppear 350ms ease-out;
+}
+
+.appointment-card.is-appearing {
+  animation: paperAppear 350ms ease-out;
+}
+
+@keyframes paperAppear {
+  from {
+    opacity: 0;
+    transform: scale(0.82) rotateX(8deg);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) rotateX(0deg);
+  }
+}
+
+/* 聘书背景图 */
+.appointment-bg {
+  position: absolute;
+  inset: 0;
+  background: #f5e6c8 url('/assets/聘书.png?v=2') center / 100% 100% no-repeat;
+  pointer-events: none;
+}
+
+/* 文案区域 */
+.appointment-text {
+  position: absolute;
+  top: 25%;
+  left: 9%;
+  right: 9%;
+  bottom: 32%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 8px 4px;
+  overflow: hidden;
+}
+
+.appointment-line {
+  margin: 0;
+  padding: 0;
+  font-family: "Zpix", "Microsoft YaHei", sans-serif;
+  font-size: 12px;
+  line-height: 2;
+  color: #3a2a1a;
+  text-align: center;
+  letter-spacing: 0.3px;
+}
+
+.appointment-line-spacer {
+  height: 10px;
+}
+
+/* 落款（协会名 + 年份） */
+.appointment-footer-text {
+  position: absolute;
+  bottom: 24%;
+  right: 14%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.appointment-org {
+  font-family: "Zpix", "Microsoft YaHei", sans-serif;
+  font-size: 12px;
+  color: #3a2a1a;
+  font-weight: 700;
+}
+
+.appointment-year {
+  font-family: "Zpix", monospace;
+  font-size: 12px;
+  color: #3a2a1a;
+}
+
+/* 签名 Canvas — 覆盖在聘书底部签名线位置 */
+.appointment-signature-canvas {
+  position: absolute;
+  bottom: 12%;
+  left: 10%;
+  width: 48%;
+  height: 10%;
+  cursor: crosshair;
+  touch-action: none;
+  z-index: 2;
+}
+
+/* 签名提示文字 — 在横线下方 */
+.appointment-sign-hint-inline {
+  position: absolute;
+  bottom: 8%;
+  left: 10%;
+  width: 48%;
+  text-align: center;
+  font-family: "Zpix", sans-serif;
+  font-size: 10px;
+  color: #8b6914;
+  opacity: 0.7;
+  animation: hintPulse 1.5s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* 印章 — 右下角圆圈位置 */
+.appointment-stamp {
+  position: absolute;
+  bottom: 5%;
+  right: 8%;
+  width: 22%;
+  height: auto;
+  opacity: 0;
+  transform: translateY(-30px) scale(1.3);
+  pointer-events: none;
+  z-index: 3;
+  transition: none;
+}
+
+.appointment-stamp.is-stamped {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  animation: stampDrop 250ms ease-in forwards;
+}
+
+@keyframes stampDrop {
+  0% {
+    opacity: 0;
+    transform: translateY(-30px) scale(1.3);
+  }
+  60% {
+    opacity: 1;
+    transform: translateY(2px) scale(0.95);
+  }
+  100% {
+    opacity: 0.88;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* 操作栏 */
+.appointment-actions {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 8px 16px;
+  background: linear-gradient(transparent, rgba(58, 42, 26, 0.85));
+  z-index: 10;
+}
+
+.appointment-btn-cancel {
+  padding: 6px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 4px;
+  background: transparent;
+  color: #f5e6d3;
+  font-family: "Zpix", sans-serif;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 150ms;
+}
+
+.appointment-btn-cancel:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.appointment-sign-hint {
+  display: none;
+}
+
+@keyframes hintPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.appointment-btn-confirm {
+  padding: 6px 20px;
+  border: none;
+  border-radius: 4px;
+  background: #8b1d32;
+  color: #fff;
+  font-family: "Zpix", sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 150ms, opacity 150ms;
+}
+
+.appointment-btn-confirm:hover:not(:disabled) {
+  background: #a52240;
+}
+
+.appointment-btn-confirm:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.appointment-stamping-text {
+  font-family: "Zpix", sans-serif;
+  font-size: 13px;
+  color: #f5d89a;
+  letter-spacing: 2px;
+}
+
+/* 响应式 */
+@media (max-width: 480px) {
+  .appointment-card {
+    width: 94vw;
+  }
+
+  .appointment-line {
+    font-size: 11px;
+    line-height: 1.9;
+  }
+
+  .appointment-text {
+    top: 23%;
+    left: 10%;
+    right: 10%;
+  }
+
+  .appointment-signature-canvas {
+    bottom: 12%;
+    left: 8%;
+    width: 50%;
+    height: 10%;
+  }
+
+  .appointment-sign-hint-inline {
+    bottom: 8%;
+    left: 8%;
+    width: 50%;
+  }
+
+  .appointment-stamp {
+    bottom: 3%;
+    right: 6%;
+    width: 24%;
+  }
+
+  .appointment-actions {
+    padding: 6px 10px;
+  }
+
+  .appointment-btn-confirm {
+    font-size: 12px;
+    padding: 5px 14px;
+  }
+}

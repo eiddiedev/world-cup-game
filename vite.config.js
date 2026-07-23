@@ -23,6 +23,7 @@ export default defineConfig(({ mode }) => {
             happySeedRuntime: fileURLToPath(new URL('./happyseed-runtime.html', import.meta.url)),
             happySeedRuntimeLab: fileURLToPath(new URL('./happyseed-runtime-lab.html', import.meta.url)),
             happySeedDecisionReview: fileURLToPath(new URL('./happyseed-decision-review.html', import.meta.url)),
+            pixelPlayerStudio: fileURLToPath(new URL('./pixel-player-studio.html', import.meta.url)),
           },
         },
       } : {}),

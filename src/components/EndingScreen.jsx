@@ -1,5 +1,8 @@
 import React from 'react'
 import { getTeamById } from '../data/teams'
+import { resultRank, checkAchievements } from '../data/codexAchievements'
+import { createInitialCodex } from '../utils/saveManager'
+import { calculatePrizeMoney, settleLogisticsBudget } from '../data/prizeMoney'
 
 /**
  * 结局页面
@@ -77,19 +80,68 @@ export default function EndingScreen({ saveData, updateSaveData, navigateTo, sho
 
   const ending = endings[finalResult]
 
+  // 计算本次征程奖金
+  const prizeMoney = calculatePrizeMoney(finalResult, matchResults)
+  const remainingLogisticsBudget = saveData.currentRun?.logisticsBudget || 0
+
   const handleNewGame = () => {
-    // 如果夺冠，记录冠军历史并解锁新球队
-    if (finalResult === 'champion') {
-      const allTeamIds = ['france', 'brazil', 'argentina', 'portugal', 'germany', 'japan', 'norway', 'morocco', 'newzealand', 'curacao']
-      const currentTeamId = team?.id
+    const currentTeamId = team?.id
+    const totalMatches = matchResults.length + knockoutResults.length
+    const totalWins = winCount + knockoutResults.filter(r => r === 'win').length
+    const isChampion = finalResult === 'champion'
+
+    // 结算后勤预算：未花完 + 奖金 累积到下一局
+    const teamId = team?.id
+    if (teamId) {
+      settleLogisticsBudget(teamId, remainingLogisticsBudget, prizeMoney, saveData)
+    }
+
+    // 构建更新后的 codex
+    const prevCodex = saveData.codex || createInitialCodex()
+    const codex = {
+      ...prevCodex,
+      records: { ...prevCodex.records },
+      teamResults: { ...prevCodex.teamResults },
+      runHistory: [...(prevCodex.runHistory || [])],
+      unlockedAchievements: [...(prevCodex.unlockedAchievements || [])],
+    }
+
+    // 记录本次征程
+    codex.runHistory.push({
+      teamId: currentTeamId,
+      result: finalResult,
+      date: new Date().toISOString(),
+    })
+
+    // 更新球队最好成绩
+    const prevResult = codex.teamResults[currentTeamId]
+    if (!prevResult || resultRank(finalResult) > resultRank(prevResult)) {
+      codex.teamResults[currentTeamId] = finalResult
+    }
+
+    // 更新累计记录
+    codex.records.totalMatches += totalMatches
+    codex.records.totalWins += totalWins
+
+    // 连胜/连封逻辑
+    if (finalResult === 'champion' || finalResult === 'finalist') {
+      codex.records.winStreak += totalWins
+      if (codex.records.winStreak > codex.records.bestWinStreak) {
+        codex.records.bestWinStreak = codex.records.winStreak
+      }
+    } else {
+      codex.records.winStreak = 0
+    }
+
+    // 如果夺冠，记录冠军历史
+    if (isChampion) {
+      const allTeamIds = ['spain', 'argentina', 'france', 'england', 'brazil', 'portugal', 'germany', 'japan', 'morocco', 'norway', 'colombia', 'usa', 'canada', 'mexico', 'capeverde', 'curacao']
       const nextUnlock = allTeamIds.find((id) => !saveData.unlockTeams.includes(id) && id !== currentTeamId)
 
       const newData = {
         ...saveData,
-        championshipHistory: [
-          ...saveData.championshipHistory,
-          currentTeamId,
-        ],
+        championshipHistory: [...saveData.championshipHistory, currentTeamId],
+        codex,
         currentRun: null,
       }
 
@@ -98,10 +150,24 @@ export default function EndingScreen({ saveData, updateSaveData, navigateTo, sho
         showToast(`解锁新球队：${nextUnlock}`)
       }
 
+      // 检查成就
+      const newAchievements = checkAchievements(newData)
+      if (newAchievements.length > 0) {
+        newData.codex.unlockedAchievements = [...newData.codex.unlockedAchievements, ...newAchievements]
+      }
+
       updateSaveData(newData)
     } else {
+      // 检查成就（非夺冠也可能解锁）
+      const tempData = { ...saveData, codex }
+      const newAchievements = checkAchievements(tempData)
+      if (newAchievements.length > 0) {
+        codex.unlockedAchievements = [...codex.unlockedAchievements, ...newAchievements]
+      }
+
       updateSaveData({
         ...saveData,
+        codex,
         currentRun: null,
       })
     }
@@ -144,6 +210,16 @@ export default function EndingScreen({ saveData, updateSaveData, navigateTo, sho
             <div className="stat-item">
               <span className="stat-label">积分</span>
               <span className="stat-value">{groupPoints}分</span>
+            </div>
+          </div>
+
+          {/* 奖金结算 */}
+          <div className="ending-prize">
+            <h4>💰 奖金结算</h4>
+            <div className="prize-detail">
+              <span>赛事奖金：+{prizeMoney}</span>
+              <span>剩余后勤预算：{remainingLogisticsBudget}</span>
+              <span className="prize-total">下届可用：{remainingLogisticsBudget + prizeMoney}</span>
             </div>
           </div>
 

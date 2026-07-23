@@ -1,0 +1,306 @@
+/* 后勤配置页面样式 — 统一像素风格 */
+.logistics-screen {
+  display: block !important;
+  height: 100dvh !important;
+  padding: 20px 20px 100px;
+  overflow-y: scroll !important;
+  overflow-x: hidden !important;
+  -webkit-overflow-scrolling: touch;
+  background: var(--pixel-bg);
+}
+
+/* 顶部标题栏 */
+.logistics-screen .logistics-header {
+  flex: 0 0 auto;
+}
+
+.logistics-screen .logistics-header .screen-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.logistics-screen .logistics-header .screen-header h1 {
+  font-family: "Zpix", "Microsoft YaHei", "PingFang SC", sans-serif;
+  font-size: 28px;
+  color: var(--pixel-main);
+}
+
+.logistics-screen .logistics-header .back-button {
+  background: none;
+  border: none;
+  color: var(--pixel-main);
+  font-size: 28px;
+  cursor: pointer;
+  padding: 4px 8px;
+  font-family: "Zpix", monospace;
+}
+
+/* 提示栏 */
+.logistics-hint {
+  display: block;
+  margin: 0 auto 16px;
+  padding: 12px 16px;
+  background: var(--pixel-main);
+  color: var(--pixel-bg);
+  font-family: "Zpix", monospace;
+  font-size: 14px;
+  line-height: 1.6;
+  text-align: center;
+  max-width: 800px;
+}
+
+/* 预算状态栏 */
+.logistics-budget-bar {
+  display: flex;
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  border: 4px solid var(--pixel-main);
+  background: var(--pixel-bg);
+  box-shadow: 4px 4px 0 var(--pixel-shadow);
+}
+
+.logistics-budget-bar .budget-label {
+  font-family: "Zpix", monospace;
+  font-size: 12px;
+  color: var(--pixel-shadow);
+}
+
+.logistics-budget-bar .budget-value {
+  font-family: "Zpix", monospace;
+  font-size: 24px;
+  color: var(--pixel-accent);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.logistics-budget-bar .coin-icon {
+  width: 24px;
+  height: 24px;
+  image-rendering: pixelated;
+}
+
+/* 3列卡片网格 */
+.logistics-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  width: 100%;
+  max-width: 1000px;
+  margin: 0 auto;
+  align-content: start;
+}
+
+@media (max-width: 700px) {
+  .logistics-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 440px) {
+  .logistics-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* 单个部门卡片 — 竖排结构 */
+.logistics-card {
+  background: #3a3d4a;
+  border: 3px solid #555;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  transition: border-color 0.2s, transform 0.12s;
+}
+
+.logistics-card:hover {
+  border-color: var(--pixel-gold);
+  transform: translateY(-2px);
+}
+
+.logistics-card.maxed {
+  border-color: var(--pixel-gold);
+  background: #3d3520;
+}
+
+/* 图标 */
+.card-icon-wrap {
+  width: 56px;
+  height: 56px;
+}
+
+.card-icon-wrap img {
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+}
+
+/* 部门名称 */
+.logistics-card .card-name {
+  font-family: "Zpix", monospace;
+  font-size: 14px;
+  color: #ffffff !important;
+  text-shadow: 1px 1px 0 #000;
+  margin-top: 2px;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  white-space: normal !important;
+  word-break: keep-all;
+  flex: none;
+}
+
+/* 等级行 */
+.card-level-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.level-badge {
+  font-family: "Zpix", monospace;
+  font-size: 12px;
+  background: var(--pixel-main);
+  color: #0f0;
+  padding: 2px 6px;
+  border: 1px solid #0f0;
+}
+
+.level-name {
+  font-family: "Zpix", monospace;
+  font-size: 12px;
+  color: #ccc;
+}
+
+/* 当前效果 */
+.card-effect {
+  font-family: "Zpix", monospace;
+  font-size: 12px;
+  color: #ccc;
+  margin: 2px 0 0;
+  line-height: 1.5;
+}
+
+/* 分隔线 */
+.card-divider {
+  border-top: 1px dashed #666;
+  margin: 4px 0;
+}
+
+/* 下一级效果 */
+.card-next {
+  font-family: "Zpix", monospace;
+  font-size: 12px;
+  color: #dda;
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* 操作按钮行 */
+.card-actions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin-top: 4px;
+}
+
+/* 升级按钮 — 简洁像素风 */
+.btn-upgrade {
+  font-family: "Zpix", monospace;
+  font-size: 12px;
+  padding: 5px 12px;
+  background: var(--pixel-main);
+  color: var(--pixel-bg);
+  border: 2px solid var(--pixel-gold);
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.btn-upgrade:hover:not(.disabled) {
+  background: var(--pixel-gold);
+  color: var(--pixel-main);
+}
+
+.btn-upgrade.disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+  border-color: #666;
+}
+
+.btn-upgrade .btn-coin {
+  width: 14px;
+  height: 14px;
+  image-rendering: pixelated;
+}
+
+/* 降级按钮 */
+.btn-downgrade {
+  font-family: "Zpix", monospace;
+  font-size: 11px;
+  padding: 4px 8px;
+  background: transparent;
+  color: #999;
+  border: 1px solid #666;
+  cursor: pointer;
+  transition: color 0.12s, border-color 0.12s;
+  white-space: nowrap;
+}
+
+.btn-downgrade:hover {
+  color: var(--pixel-accent);
+  border-color: var(--pixel-accent);
+}
+
+.maxed-text {
+  font-family: "Zpix", monospace;
+  font-size: 14px;
+  color: var(--pixel-gold);
+  font-weight: bold;
+}
+
+/* 等级进度条 */
+.card-progress {
+  display: flex;
+  gap: 4px;
+  margin-top: auto;
+  padding-top: 6px;
+}
+
+.pip {
+  flex: 1;
+  height: 4px;
+  background: #555;
+}
+
+.pip.active {
+  background: #4caf50;
+}
+
+.logistics-card.maxed .pip.active {
+  background: var(--pixel-gold);
+}
+
+/* 底部按钮栏 */
+.logistics-footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 20px;
+  background: var(--pixel-bg);
+  border-top: 3px solid var(--pixel-main);
+  z-index: 10;
+}

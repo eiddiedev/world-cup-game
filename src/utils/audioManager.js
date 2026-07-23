@@ -72,6 +72,12 @@ const SOUND_PATTERNS = {
   ],
 }
 
+// 噪声类音效配置（更真实的纸张/盖章声）
+const NOISE_SFX = {
+  paperUnfold: { duration: 0.35, filterFreq: 3200, filterQ: 1.2, attack: 0.02, decay: 0.30, volume: 0.38 },
+  stampHit: { duration: 0.18, filterFreq: 400, filterQ: 2.5, attack: 0.005, decay: 0.12, volume: 0.55, clickFreq: 1200 },
+}
+
 const MUSIC_NOTES = [262, 330, 392, 330, 294, 370, 440, 370, 330, 392, 494, 392, 349, 440, 523, 440]
 
 export class AudioManager {
@@ -156,6 +162,88 @@ export class AudioManager {
     Object.keys(SOUND_PATTERNS).forEach((name) => {
       this.sounds[name] = () => this.playPattern(SOUND_PATTERNS[name])
     })
+    // 注册噪声类音效
+    Object.keys(NOISE_SFX).forEach((name) => {
+      this.sounds[name] = () => this.playNoiseSfx(name)
+    })
+  }
+
+  /**
+   * 播放基于滤波白噪声的音效（纸张沙沙声、盖章冲击声等）
+   */
+  playNoiseSfx(name) {
+    const ctx = this.ensureSfxContext()
+    if (!ctx) return false
+    const cfg = NOISE_SFX[name]
+    if (!cfg) return false
+
+    const play = () => {
+      const sampleRate = ctx.sampleRate
+      const length = Math.ceil(sampleRate * cfg.duration)
+      const buffer = ctx.createBuffer(1, length, sampleRate)
+      const data = buffer.getChannelData(0)
+
+      // 生成白噪声 + 包络
+      for (let i = 0; i < length; i++) {
+        const t = i / sampleRate
+        // 包络：快速 attack + 指数 decay
+        let env = 0
+        if (t < cfg.attack) {
+          env = t / cfg.attack
+        } else {
+          env = Math.exp(-(t - cfg.attack) / (cfg.decay * 0.4))
+        }
+        // 纸张声加入随机幅度调制模拟沙沙感
+        const modulation = name === 'paperUnfold'
+          ? (0.6 + 0.4 * Math.sin(t * 47) * Math.sin(t * 131))
+          : 1.0
+        data[i] = (Math.random() * 2 - 1) * env * modulation
+      }
+
+      const source = ctx.createBufferSource()
+      source.buffer = buffer
+
+      // 带通滤波器塑形
+      const filter = ctx.createBiquadFilter()
+      filter.type = 'bandpass'
+      filter.frequency.value = cfg.filterFreq
+      filter.Q.value = cfg.filterQ
+
+      // 增益
+      const gain = ctx.createGain()
+      gain.gain.value = cfg.volume * this.soundVolume
+
+      source.connect(filter)
+      filter.connect(gain)
+      gain.connect(ctx.destination)
+      source.start()
+
+      // 盖章声额外叠加一个短促的 click 瞬态
+      if (cfg.clickFreq) {
+        const clickLen = Math.ceil(sampleRate * 0.015)
+        const clickBuf = ctx.createBuffer(1, clickLen, sampleRate)
+        const clickData = clickBuf.getChannelData(0)
+        for (let i = 0; i < clickLen; i++) {
+          const t = i / sampleRate
+          const clickEnv = Math.exp(-t / 0.004)
+          clickData[i] = Math.sin(2 * Math.PI * cfg.clickFreq * t) * clickEnv
+        }
+        const clickSrc = ctx.createBufferSource()
+        clickSrc.buffer = clickBuf
+        const clickGain = ctx.createGain()
+        clickGain.gain.value = 0.35 * this.soundVolume
+        clickSrc.connect(clickGain)
+        clickGain.connect(ctx.destination)
+        clickSrc.start()
+      }
+    }
+
+    if (ctx.state === 'suspended') {
+      ctx.resume().then(play).catch(() => {})
+      return true
+    }
+    play()
+    return true
   }
 
   preloadMatchSamples() {

@@ -84,6 +84,62 @@ export const TEAM_SCHEDULES = {
       { round: 3, date: '6月25日', opponent: '科特迪瓦', opponentStrength: 'medium' },
     ],
   },
+  spain: {
+    group: 'H',
+    groupStage: [
+      { round: 1, date: '6月14日', opponent: '佛得角', opponentStrength: 'weak' },
+      { round: 2, date: '6月20日', opponent: '沙特', opponentStrength: 'weak' },
+      { round: 3, date: '6月26日', opponent: '乌拉圭', opponentStrength: 'strong' },
+    ],
+  },
+  england: {
+    group: 'L',
+    groupStage: [
+      { round: 1, date: '6月15日', opponent: '克罗地亚', opponentStrength: 'strong' },
+      { round: 2, date: '6月21日', opponent: '巴拿马', opponentStrength: 'weak' },
+      { round: 3, date: '6月27日', opponent: '加纳', opponentStrength: 'medium' },
+    ],
+  },
+  colombia: {
+    group: 'K',
+    groupStage: [
+      { round: 1, date: '6月15日', opponent: '乌兹别克斯坦', opponentStrength: 'medium' },
+      { round: 2, date: '6月21日', opponent: '刚果民主共和国', opponentStrength: 'weak' },
+      { round: 3, date: '6月27日', opponent: '葡萄牙', opponentStrength: 'strong' },
+    ],
+  },
+  usa: {
+    group: 'D',
+    groupStage: [
+      { round: 1, date: '6月13日', opponent: '巴拉圭', opponentStrength: 'medium' },
+      { round: 2, date: '6月19日', opponent: '澳大利亚', opponentStrength: 'medium' },
+      { round: 3, date: '6月24日', opponent: '土耳其', opponentStrength: 'strong' },
+    ],
+  },
+  mexico: {
+    group: 'A',
+    groupStage: [
+      { round: 1, date: '6月12日', opponent: '南非', opponentStrength: 'medium' },
+      { round: 2, date: '6月18日', opponent: '韩国', opponentStrength: 'medium' },
+      { round: 3, date: '6月23日', opponent: '捷克', opponentStrength: 'strong' },
+    ],
+  },
+  canada: {
+    group: 'B',
+    groupStage: [
+      { round: 1, date: '6月13日', opponent: '波黑', opponentStrength: 'medium' },
+      { round: 2, date: '6月19日', opponent: '卡塔尔', opponentStrength: 'weak' },
+      { round: 3, date: '6月24日', opponent: '瑞士', opponentStrength: 'strong' },
+    ],
+  },
+  capeverde: {
+    group: 'H',
+    groupStage: [
+      { round: 1, date: '6月14日', opponent: '西班牙', opponentStrength: 'strong' },
+      { round: 2, date: '6月20日', opponent: '乌拉圭', opponentStrength: 'strong' },
+      { round: 3, date: '6月26日', opponent: '沙特', opponentStrength: 'weak' },
+    ],
+  },
 }
 
 export const KNOCKOUT_ROUNDS = [

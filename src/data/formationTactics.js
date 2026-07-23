@@ -47,17 +47,17 @@ export const FORMATION_TACTICS = {
     suitableFor: '适合面对强敌、保护领先和依靠快速反击。',
     counts: { GK: 1, DF: 5, MF: 3, FW: 2 },
   },
+  '5-4-1': {
+    style: '铁桶阵',
+    summary: '五后卫加四中场极致收缩，单前锋等待反击机会。',
+    suitableFor: '适合实力悬殊时死守平局、依靠定位球和反击偷分。',
+    counts: { GK: 1, DF: 5, MF: 4, FW: 1 },
+  },
   '4-1-4-1': {
     style: '中场压迫',
     summary: '单后腰保护中路，前方四名中场保持横向覆盖。',
     suitableFor: '适合高位逼抢、争夺二点球和限制对方中场核心。',
     counts: { GK: 1, DF: 4, MF: 5, FW: 1 },
-  },
-  '4-4-1-1': {
-    style: '快速反击',
-    summary: '影锋连接中场与前锋，防守时保持紧凑的四人线。',
-    suitableFor: '适合拥有全能二前锋、希望快速由守转攻的球队。',
-    counts: { GK: 1, DF: 4, MF: 4, FW: 2 },
   },
 }
 

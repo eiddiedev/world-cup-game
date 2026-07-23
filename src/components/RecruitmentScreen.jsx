@@ -3,6 +3,7 @@ import { getTeamById } from '../data/teams'
 import { getTeamDefaultFormation } from '../data/teamFormations'
 import {
   NATIONAL_SQUAD_SIZE,
+  MIN_PURCHASE,
   buildRecommendedNationalSquad,
   validateNationalSquad,
 } from '../data/rosterRules'
@@ -78,12 +79,12 @@ export default function RecruitmentScreen({ saveData, updateSaveData, navigateTo
 
   const handleConfirmRoster = () => {
     const validation = validateNationalSquad(purchasedPlayers, totalBudget)
-    if (validation.count !== NATIONAL_SQUAD_SIZE) {
-      showToast(`必须征召满${NATIONAL_SQUAD_SIZE}人`)
+    if (validation.count < MIN_PURCHASE) {
+      showToast(`至少征召${MIN_PURCHASE}人才能开赛`)
       return
     }
     if (validation.missing.length > 0) {
-      showToast('位置结构不足：至少2门将、6后卫、6中场、3前锋')
+      showToast('位置结构不足：至少2门将、3后卫、3中场、2前锋')
       return
     }
     if (validation.spent > totalBudget) {
@@ -98,10 +99,10 @@ export default function RecruitmentScreen({ saveData, updateSaveData, navigateTo
         purchasedPlayerIds: purchasedPlayers,
         roster: purchasedPlayers, // 保存完整阵容
         matchIndex: 0, // 从第一场比赛开始
-        stage: 'tournament',
+        stage: 'logistics',
       },
     })
-    navigateTo('tournament')
+    navigateTo('logistics')
   }
 
   // 一键推荐征召：按阵型、预算和最低位置结构推荐23人
@@ -183,18 +184,18 @@ export default function RecruitmentScreen({ saveData, updateSaveData, navigateTo
 
         <div style={{ textAlign: 'center' }}>
           <p className="recruitment-hint">
-            从{availablePlayers.length}人大名单中征召{NATIONAL_SQUAD_SIZE}人。默认阵型 {team.defaultFormation}，风格：{team.styleTags?.join(' / ')}。
+            从{availablePlayers.length}人候选池中征召（至少{MIN_PURCHASE}人，受预算约束）。默认阵型 {team.defaultFormation}，风格：{team.styleTags?.join(' / ')}。
           </p>
         </div>
 
         <div className="recruitment-stats">
           <div className="stat-item">
-            <span className="stat-label">预算</span>
-            <span className="stat-value budget">{remainingBudget}<img src="/assets/金币.png" alt="金币" className="coin-icon" /></span>
+            <span className="stat-label">征召点</span>
+            <span className="stat-value budget">{remainingBudget}<img src="/assets/征召点.png" alt="征召点" className="coin-icon" /></span>
           </div>
           <div className="stat-item">
             <span className="stat-label">已征召</span>
-            <span className="stat-value">{purchasedPlayers.length}/{NATIONAL_SQUAD_SIZE}</span>
+            <span className="stat-value">{purchasedPlayers.length}</span>
           </div>
           {positionOrder.map(pos => (
             <div key={pos} className="stat-item">
@@ -229,7 +230,7 @@ export default function RecruitmentScreen({ saveData, updateSaveData, navigateTo
             return (
               <div
                 key={player.id}
-                className={`game-card-v2 ${player.isGolden ? 'golden' : ''} ${isPurchased ? 'purchased' : ''}`}
+                className={`game-card-v2 ${player.isGolden ? 'golden' : ''} ${player.cardTier === '银' ? 'silver' : ''} ${isPurchased ? 'purchased' : ''}`}
                 onClick={() => setSelectedPlayer(player)}
               >
                 {/* 区域1：上半区 */}
@@ -246,7 +247,7 @@ export default function RecruitmentScreen({ saveData, updateSaveData, navigateTo
                   </div>
                   <div className="card-v2-price">
                     {player.price}
-                    <img src="/assets/金币.png" className="coin-icon" alt="金币" />
+                    <img src="/assets/征召点.png" className="coin-icon" alt="征召点" />
                   </div>
                   <div className="card-v2-name-row">
                     <span className="card-v2-name">{player.name}</span>

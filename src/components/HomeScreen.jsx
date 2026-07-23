@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { teams } from '../data/teams'
-import { getHomeProgress, hasContinueGame } from '../utils/saveManager'
+import { getHomeProgress, hasContinueGame, getCodexProgress } from '../utils/saveManager'
 
 const PRIMARY_MODES = [
   { id: 'coach', label: '教练模式' },
@@ -24,6 +24,7 @@ const CONTINUE_STAGES = new Set([
 export default function HomeScreen({ saveData, navigateTo, showToast }) {
   const [selectedMode, setSelectedMode] = useState(null)
   const progress = getHomeProgress(saveData, teams)
+  const codexProgress = getCodexProgress(saveData)
   const hasSave = hasContinueGame(saveData)
   const savedMode = saveData.currentRun?.gameMode || 'coach'
   const canContinueMode = hasSave && selectedMode === savedMode
@@ -95,26 +96,10 @@ export default function HomeScreen({ saveData, navigateTo, showToast }) {
           </button>
         </nav>
 
-        <aside className="PixelPanel unlock-panel" aria-label="通关进度">
-          <div className="unlock-copy">
-            <span>通关球队</span>
-            <strong>{progress.champion} / {progress.total}</strong>
-          </div>
-          <ul className="flag-strip">
-            {teams.map((team) => {
-              const isChampion = progress.championTeamIds.includes(team.id)
-              return (
-                <li
-                  key={team.id}
-                  className={`PixelBadge flag-chip ${isChampion ? 'is-champion' : 'is-normal'}`}
-                  aria-label={`${team.name}${isChampion ? '已通关' : '未通关'}`}
-                >
-                  <img src={team.flag} alt="" />
-                  {!isChampion && <img src="/assets/锁.png" alt="" className="lock-icon" />}
-                </li>
-              )
-            })}
-          </ul>
+        <aside className="PixelPanel codex-panel" onClick={() => navigateTo('codex')} role="button" tabIndex={0} aria-label="图鉴">
+          <img src="/assets/图鉴.png" alt="" className="codex-panel-icon" />
+          <span className="codex-panel-label">图鉴</span>
+          <span className="codex-panel-progress">{codexProgress.done}/{codexProgress.total}</span>
         </aside>
       </section>
 

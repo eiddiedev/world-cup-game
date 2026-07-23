@@ -1,0 +1,3109 @@
+{
+  "schemaVersion": "happyseed-kit-catalog-v1",
+  "kits": [
+    {
+      "teamId": "capeverde",
+      "teamName": "佛得角",
+      "kitType": "home",
+      "label": "普通球员",
+      "partSetId": "happyseed-human-v4",
+      "source": {
+        "kind": "magenta-master-individual",
+        "path": "/Users/a1234/Desktop/未命名文件夹/阿根廷门将.png"
+      },
+      "referencePath": "/pixel/kit-studio/sources/capeverde-home.png",
+      "runtimeRoot": "/pixel/kits/capeverde/home/happyseed-human-v4",
+      "status": "gold-pass",
+      "extractionMethod": "magenta-key-connected-component",
+      "files": [
+        {
+          "path": "/pixel/kits/capeverde/home/happyseed-human-v4/shirt_front.png",
+          "slotId": "shirt_front",
+          "width": 56,
+          "height": 52,
+          "bytes": 3753,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/capeverde/home/happyseed-human-v4/shirt_back.png",
+          "slotId": "shirt_back",
+          "width": 56,
+          "height": 52,
+          "bytes": 3213,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/capeverde/home/happyseed-human-v4/sleeve_left.png",
+          "slotId": "sleeve_left",
+          "width": 14,
+          "height": 22,
+          "bytes": 528,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/capeverde/home/happyseed-human-v4/sleeve_right.png",
+          "slotId": "sleeve_right",
+          "width": 23,
+          "height": 18,
+          "bytes": 388,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/capeverde/home/happyseed-human-v4/shorts.png",
+          "slotId": "shorts",
+          "width": 55,
+          "height": 8,
+          "bytes": 404,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/capeverde/home/happyseed-human-v4/shorts_leg.png",
+          "slotId": "shorts_leg",
+          "width": 12,
+          "height": 16,
+          "bytes": 444,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/capeverde/home/happyseed-human-v4/socks.png",
+          "slotId": "socks",
+          "width": 11,
+          "height": 14,
+          "bytes": 296,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/capeverde/home/happyseed-human-v4/shoes.png",
+          "slotId": "shoes",
+          "width": 16,
+          "height": 6,
+          "bytes": 240,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/capeverde/home/happyseed-human-v4/hand_left.png",
+          "slotId": "hand_left",
+          "width": 25,
+          "height": 28,
+          "bytes": 474,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/capeverde/home/happyseed-human-v4/hand_right.png",
+          "slotId": "hand_right",
+          "width": 23,
+          "height": 38,
+          "bytes": 469,
+          "passed": true
+        }
+      ]
+    },
+    {
+      "teamId": "capeverde",
+      "teamName": "佛得角",
+      "kitType": "goalkeeper",
+      "label": "门将",
+      "partSetId": "happyseed-human-v4",
+      "source": {
+        "kind": "magenta-master-individual",
+        "path": "/Users/a1234/Desktop/未命名文件夹/阿根廷门将.png"
+      },
+      "referencePath": "/pixel/kit-studio/sources/capeverde-goalkeeper.png",
+      "runtimeRoot": "/pixel/kits/capeverde/goalkeeper/happyseed-human-v4",
+      "status": "gold-pass",
+      "extractionMethod": "magenta-key-connected-component",
+      "files": [
+        {
+          "path": "/pixel/kits/capeverde/goalkeeper/happyseed-human-v4/shirt_front.png",
+          "slotId": "shirt_front",
+          "width": 56,
+          "height": 52,
+          "bytes": 4596,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/capeverde/goalkeeper/happyseed-human-v4/shirt_back.png",
+          "slotId": "shirt_back",
+          "width": 56,
+          "height": 52,
+          "bytes": 4352,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/capeverde/goalkeeper/happyseed-human-v4/sleeve_left.png",
+          "slotId": "sleeve_left",
+          "width": 14,
+          "height": 22,
+          "bytes": 688,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/capeverde/goalkeeper/happyseed-human-v4/sleeve_right.png",
+          "slotId": "sleeve_right",
+          "width": 23,
+          "height": 18,
+          "bytes": 545,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/capeverde/goalkeeper/happyseed-human-v4/shorts.png",
+          "slotId": "shorts",
+          "width": 55,
+          "height": 8,
+          "bytes": 411,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/capeverde/goalkeeper/happyseed-human-v4/shorts_leg.png",
+          "slotId": "shorts_leg",
+          "width": 12,
+          "height": 16,
+          "bytes": 501,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/capeverde/goalkeeper/happyseed-human-v4/socks.png",
+          "slotId": "socks",
+          "width": 11,
+          "height": 14,
+          "bytes": 287,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/capeverde/goalkeeper/happyseed-human-v4/shoes.png",
+          "slotId": "shoes",
+          "width": 16,
+          "height": 6,
+          "bytes": 263,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/capeverde/goalkeeper/happyseed-human-v4/hand_left.png",
+          "slotId": "hand_left",
+          "width": 25,
+          "height": 28,
+          "bytes": 491,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/capeverde/goalkeeper/happyseed-human-v4/hand_right.png",
+          "slotId": "hand_right",
+          "width": 23,
+          "height": 38,
+          "bytes": 487,
+          "passed": true
+        }
+      ]
+    },
+    {
+      "teamId": "canada",
+      "teamName": "加拿大",
+      "kitType": "home",
+      "label": "普通球员",
+      "partSetId": "happyseed-human-v4",
+      "source": {
+        "kind": "magenta-master-individual",
+        "path": "/Users/a1234/Desktop/未命名文件夹/阿根廷门将.png"
+      },
+      "referencePath": "/pixel/kit-studio/sources/canada-home.png",
+      "runtimeRoot": "/pixel/kits/canada/home/happyseed-human-v4",
+      "status": "gold-pass",
+      "extractionMethod": "magenta-key-connected-component",
+      "files": [
+        {
+          "path": "/pixel/kits/canada/home/happyseed-human-v4/shirt_front.png",
+          "slotId": "shirt_front",
+          "width": 56,
+          "height": 52,
+          "bytes": 3616,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/canada/home/happyseed-human-v4/shirt_back.png",
+          "slotId": "shirt_back",
+          "width": 56,
+          "height": 52,
+          "bytes": 3227,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/canada/home/happyseed-human-v4/sleeve_left.png",
+          "slotId": "sleeve_left",
+          "width": 14,
+          "height": 22,
+          "bytes": 146,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/canada/home/happyseed-human-v4/sleeve_right.png",
+          "slotId": "sleeve_right",
+          "width": 23,
+          "height": 18,
+          "bytes": 532,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/canada/home/happyseed-human-v4/shorts.png",
+          "slotId": "shorts",
+          "width": 55,
+          "height": 8,
+          "bytes": 374,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/canada/home/happyseed-human-v4/shorts_leg.png",
+          "slotId": "shorts_leg",
+          "width": 12,
+          "height": 16,
+          "bytes": 397,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/canada/home/happyseed-human-v4/socks.png",
+          "slotId": "socks",
+          "width": 11,
+          "height": 14,
+          "bytes": 282,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/canada/home/happyseed-human-v4/shoes.png",
+          "slotId": "shoes",
+          "width": 16,
+          "height": 6,
+          "bytes": 243,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/canada/home/happyseed-human-v4/hand_left.png",
+          "slotId": "hand_left",
+          "width": 25,
+          "height": 28,
+          "bytes": 456,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/canada/home/happyseed-human-v4/hand_right.png",
+          "slotId": "hand_right",
+          "width": 23,
+          "height": 38,
+          "bytes": 446,
+          "passed": true
+        }
+      ]
+    },
+    {
+      "teamId": "canada",
+      "teamName": "加拿大",
+      "kitType": "goalkeeper",
+      "label": "门将",
+      "partSetId": "happyseed-human-v4",
+      "source": {
+        "kind": "magenta-master-individual",
+        "path": "/Users/a1234/Desktop/未命名文件夹/阿根廷门将.png"
+      },
+      "referencePath": "/pixel/kit-studio/sources/canada-goalkeeper.png",
+      "runtimeRoot": "/pixel/kits/canada/goalkeeper/happyseed-human-v4",
+      "status": "gold-pass",
+      "extractionMethod": "magenta-key-connected-component",
+      "files": [
+        {
+          "path": "/pixel/kits/canada/goalkeeper/happyseed-human-v4/shirt_front.png",
+          "slotId": "shirt_front",
+          "width": 56,
+          "height": 52,
+          "bytes": 4896,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/canada/goalkeeper/happyseed-human-v4/shirt_back.png",
+          "slotId": "shirt_back",
+          "width": 56,
+          "height": 52,
+          "bytes": 4561,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/canada/goalkeeper/happyseed-human-v4/sleeve_left.png",
+          "slotId": "sleeve_left",
+          "width": 14,
+          "height": 22,
+          "bytes": 719,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/canada/goalkeeper/happyseed-human-v4/sleeve_right.png",
+          "slotId": "sleeve_right",
+          "width": 23,
+          "height": 18,
+          "bytes": 584,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/canada/goalkeeper/happyseed-human-v4/shorts.png",
+          "slotId": "shorts",
+          "width": 55,
+          "height": 8,
+          "bytes": 438,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/canada/goalkeeper/happyseed-human-v4/shorts_leg.png",
+          "slotId": "shorts_leg",
+          "width": 12,
+          "height": 16,
+          "bytes": 536,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/canada/goalkeeper/happyseed-human-v4/socks.png",
+          "slotId": "socks",
+          "width": 11,
+          "height": 14,
+          "bytes": 311,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/canada/goalkeeper/happyseed-human-v4/shoes.png",
+          "slotId": "shoes",
+          "width": 16,
+          "height": 6,
+          "bytes": 273,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/canada/goalkeeper/happyseed-human-v4/hand_left.png",
+          "slotId": "hand_left",
+          "width": 25,
+          "height": 28,
+          "bytes": 446,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/canada/goalkeeper/happyseed-human-v4/hand_right.png",
+          "slotId": "hand_right",
+          "width": 23,
+          "height": 38,
+          "bytes": 449,
+          "passed": true
+        }
+      ]
+    },
+    {
+      "teamId": "colombia",
+      "teamName": "哥伦比亚",
+      "kitType": "home",
+      "label": "普通球员",
+      "partSetId": "happyseed-human-v4",
+      "source": {
+        "kind": "magenta-master-individual",
+        "path": "/Users/a1234/Desktop/未命名文件夹/阿根廷门将.png"
+      },
+      "referencePath": "/pixel/kit-studio/sources/colombia-home.png",
+      "runtimeRoot": "/pixel/kits/colombia/home/happyseed-human-v4",
+      "status": "gold-pass",
+      "extractionMethod": "magenta-key-connected-component",
+      "files": [
+        {
+          "path": "/pixel/kits/colombia/home/happyseed-human-v4/shirt_front.png",
+          "slotId": "shirt_front",
+          "width": 56,
+          "height": 52,
+          "bytes": 4140,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/colombia/home/happyseed-human-v4/shirt_back.png",
+          "slotId": "shirt_back",
+          "width": 56,
+          "height": 52,
+          "bytes": 3513,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/colombia/home/happyseed-human-v4/sleeve_left.png",
+          "slotId": "sleeve_left",
+          "width": 14,
+          "height": 22,
+          "bytes": 673,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/colombia/home/happyseed-human-v4/sleeve_right.png",
+          "slotId": "sleeve_right",
+          "width": 23,
+          "height": 18,
+          "bytes": 505,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/colombia/home/happyseed-human-v4/shorts.png",
+          "slotId": "shorts",
+          "width": 55,
+          "height": 8,
+          "bytes": 362,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/colombia/home/happyseed-human-v4/shorts_leg.png",
+          "slotId": "shorts_leg",
+          "width": 12,
+          "height": 16,
+          "bytes": 486,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/colombia/home/happyseed-human-v4/socks.png",
+          "slotId": "socks",
+          "width": 11,
+          "height": 14,
+          "bytes": 246,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/colombia/home/happyseed-human-v4/shoes.png",
+          "slotId": "shoes",
+          "width": 16,
+          "height": 6,
+          "bytes": 282,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/colombia/home/happyseed-human-v4/hand_left.png",
+          "slotId": "hand_left",
+          "width": 25,
+          "height": 28,
+          "bytes": 459,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/colombia/home/happyseed-human-v4/hand_right.png",
+          "slotId": "hand_right",
+          "width": 23,
+          "height": 38,
+          "bytes": 538,
+          "passed": true
+        }
+      ]
+    },
+    {
+      "teamId": "colombia",
+      "teamName": "哥伦比亚",
+      "kitType": "goalkeeper",
+      "label": "门将",
+      "partSetId": "happyseed-human-v4",
+      "source": {
+        "kind": "magenta-master-individual",
+        "path": "/Users/a1234/Desktop/未命名文件夹/阿根廷门将.png"
+      },
+      "referencePath": "/pixel/kit-studio/sources/colombia-goalkeeper.png",
+      "runtimeRoot": "/pixel/kits/colombia/goalkeeper/happyseed-human-v4",
+      "status": "gold-pass",
+      "extractionMethod": "magenta-key-connected-component",
+      "files": [
+        {
+          "path": "/pixel/kits/colombia/goalkeeper/happyseed-human-v4/shirt_front.png",
+          "slotId": "shirt_front",
+          "width": 56,
+          "height": 52,
+          "bytes": 4492,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/colombia/goalkeeper/happyseed-human-v4/shirt_back.png",
+          "slotId": "shirt_back",
+          "width": 56,
+          "height": 52,
+          "bytes": 3122,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/colombia/goalkeeper/happyseed-human-v4/sleeve_left.png",
+          "slotId": "sleeve_left",
+          "width": 14,
+          "height": 22,
+          "bytes": 616,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/colombia/goalkeeper/happyseed-human-v4/sleeve_right.png",
+          "slotId": "sleeve_right",
+          "width": 23,
+          "height": 18,
+          "bytes": 536,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/colombia/goalkeeper/happyseed-human-v4/shorts.png",
+          "slotId": "shorts",
+          "width": 55,
+          "height": 8,
+          "bytes": 326,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/colombia/goalkeeper/happyseed-human-v4/shorts_leg.png",
+          "slotId": "shorts_leg",
+          "width": 12,
+          "height": 16,
+          "bytes": 486,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/colombia/goalkeeper/happyseed-human-v4/socks.png",
+          "slotId": "socks",
+          "width": 11,
+          "height": 14,
+          "bytes": 292,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/colombia/goalkeeper/happyseed-human-v4/shoes.png",
+          "slotId": "shoes",
+          "width": 16,
+          "height": 6,
+          "bytes": 270,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/colombia/goalkeeper/happyseed-human-v4/hand_left.png",
+          "slotId": "hand_left",
+          "width": 25,
+          "height": 28,
+          "bytes": 495,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/colombia/goalkeeper/happyseed-human-v4/hand_right.png",
+          "slotId": "hand_right",
+          "width": 23,
+          "height": 38,
+          "bytes": 505,
+          "passed": true
+        }
+      ]
+    },
+    {
+      "teamId": "mexico",
+      "teamName": "墨西哥",
+      "kitType": "home",
+      "label": "普通球员",
+      "partSetId": "happyseed-human-v4",
+      "source": {
+        "kind": "magenta-master-individual",
+        "path": "/Users/a1234/Desktop/未命名文件夹/阿根廷门将.png"
+      },
+      "referencePath": "/pixel/kit-studio/sources/mexico-home.png",
+      "runtimeRoot": "/pixel/kits/mexico/home/happyseed-human-v4",
+      "status": "gold-pass",
+      "extractionMethod": "magenta-key-connected-component",
+      "files": [
+        {
+          "path": "/pixel/kits/mexico/home/happyseed-human-v4/shirt_front.png",
+          "slotId": "shirt_front",
+          "width": 56,
+          "height": 52,
+          "bytes": 4229,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/mexico/home/happyseed-human-v4/shirt_back.png",
+          "slotId": "shirt_back",
+          "width": 56,
+          "height": 52,
+          "bytes": 4031,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/mexico/home/happyseed-human-v4/sleeve_left.png",
+          "slotId": "sleeve_left",
+          "width": 14,
+          "height": 22,
+          "bytes": 646,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/mexico/home/happyseed-human-v4/sleeve_right.png",
+          "slotId": "sleeve_right",
+          "width": 23,
+          "height": 18,
+          "bytes": 537,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/mexico/home/happyseed-human-v4/shorts.png",
+          "slotId": "shorts",
+          "width": 55,
+          "height": 8,
+          "bytes": 370,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/mexico/home/happyseed-human-v4/shorts_leg.png",
+          "slotId": "shorts_leg",
+          "width": 12,
+          "height": 16,
+          "bytes": 417,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/mexico/home/happyseed-human-v4/socks.png",
+          "slotId": "socks",
+          "width": 11,
+          "height": 14,
+          "bytes": 282,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/mexico/home/happyseed-human-v4/shoes.png",
+          "slotId": "shoes",
+          "width": 16,
+          "height": 6,
+          "bytes": 243,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/mexico/home/happyseed-human-v4/hand_left.png",
+          "slotId": "hand_left",
+          "width": 25,
+          "height": 28,
+          "bytes": 508,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/mexico/home/happyseed-human-v4/hand_right.png",
+          "slotId": "hand_right",
+          "width": 23,
+          "height": 38,
+          "bytes": 485,
+          "passed": true
+        }
+      ]
+    },
+    {
+      "teamId": "mexico",
+      "teamName": "墨西哥",
+      "kitType": "goalkeeper",
+      "label": "门将",
+      "partSetId": "happyseed-human-v4",
+      "source": {
+        "kind": "magenta-master-individual",
+        "path": "/Users/a1234/Desktop/未命名文件夹/阿根廷门将.png"
+      },
+      "referencePath": "/pixel/kit-studio/sources/mexico-goalkeeper.png",
+      "runtimeRoot": "/pixel/kits/mexico/goalkeeper/happyseed-human-v4",
+      "status": "gold-pass",
+      "extractionMethod": "magenta-key-connected-component",
+      "files": [
+        {
+          "path": "/pixel/kits/mexico/goalkeeper/happyseed-human-v4/shirt_front.png",
+          "slotId": "shirt_front",
+          "width": 56,
+          "height": 52,
+          "bytes": 6243,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/mexico/goalkeeper/happyseed-human-v4/shirt_back.png",
+          "slotId": "shirt_back",
+          "width": 56,
+          "height": 52,
+          "bytes": 5750,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/mexico/goalkeeper/happyseed-human-v4/sleeve_left.png",
+          "slotId": "sleeve_left",
+          "width": 14,
+          "height": 22,
+          "bytes": 533,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/mexico/goalkeeper/happyseed-human-v4/sleeve_right.png",
+          "slotId": "sleeve_right",
+          "width": 23,
+          "height": 18,
+          "bytes": 406,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/mexico/goalkeeper/happyseed-human-v4/shorts.png",
+          "slotId": "shorts",
+          "width": 55,
+          "height": 8,
+          "bytes": 375,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/mexico/goalkeeper/happyseed-human-v4/shorts_leg.png",
+          "slotId": "shorts_leg",
+          "width": 12,
+          "height": 16,
+          "bytes": 505,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/mexico/goalkeeper/happyseed-human-v4/socks.png",
+          "slotId": "socks",
+          "width": 11,
+          "height": 14,
+          "bytes": 331,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/mexico/goalkeeper/happyseed-human-v4/shoes.png",
+          "slotId": "shoes",
+          "width": 16,
+          "height": 6,
+          "bytes": 242,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/mexico/goalkeeper/happyseed-human-v4/hand_left.png",
+          "slotId": "hand_left",
+          "width": 25,
+          "height": 28,
+          "bytes": 470,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/mexico/goalkeeper/happyseed-human-v4/hand_right.png",
+          "slotId": "hand_right",
+          "width": 23,
+          "height": 38,
+          "bytes": 548,
+          "passed": true
+        }
+      ]
+    },
+    {
+      "teamId": "brazil",
+      "teamName": "巴西",
+      "kitType": "home",
+      "label": "普通球员",
+      "partSetId": "happyseed-human-v4",
+      "source": {
+        "kind": "magenta-master-individual",
+        "path": "/Users/a1234/Desktop/未命名文件夹/阿根廷门将.png"
+      },
+      "referencePath": "/pixel/kit-studio/sources/brazil-home.png",
+      "runtimeRoot": "/pixel/kits/brazil/home/happyseed-human-v4",
+      "status": "gold-pass",
+      "extractionMethod": "magenta-key-connected-component",
+      "files": [
+        {
+          "path": "/pixel/kits/brazil/home/happyseed-human-v4/shirt_front.png",
+          "slotId": "shirt_front",
+          "width": 56,
+          "height": 52,
+          "bytes": 4337,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/brazil/home/happyseed-human-v4/shirt_back.png",
+          "slotId": "shirt_back",
+          "width": 56,
+          "height": 52,
+          "bytes": 3908,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/brazil/home/happyseed-human-v4/sleeve_left.png",
+          "slotId": "sleeve_left",
+          "width": 14,
+          "height": 22,
+          "bytes": 613,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/brazil/home/happyseed-human-v4/sleeve_right.png",
+          "slotId": "sleeve_right",
+          "width": 23,
+          "height": 18,
+          "bytes": 609,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/brazil/home/happyseed-human-v4/shorts.png",
+          "slotId": "shorts",
+          "width": 55,
+          "height": 8,
+          "bytes": 387,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/brazil/home/happyseed-human-v4/shorts_leg.png",
+          "slotId": "shorts_leg",
+          "width": 12,
+          "height": 16,
+          "bytes": 416,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/brazil/home/happyseed-human-v4/socks.png",
+          "slotId": "socks",
+          "width": 11,
+          "height": 14,
+          "bytes": 295,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/brazil/home/happyseed-human-v4/shoes.png",
+          "slotId": "shoes",
+          "width": 16,
+          "height": 6,
+          "bytes": 255,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/brazil/home/happyseed-human-v4/hand_left.png",
+          "slotId": "hand_left",
+          "width": 25,
+          "height": 28,
+          "bytes": 473,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/brazil/home/happyseed-human-v4/hand_right.png",
+          "slotId": "hand_right",
+          "width": 23,
+          "height": 38,
+          "bytes": 523,
+          "passed": true
+        }
+      ]
+    },
+    {
+      "teamId": "brazil",
+      "teamName": "巴西",
+      "kitType": "goalkeeper",
+      "label": "门将",
+      "partSetId": "happyseed-human-v4",
+      "source": {
+        "kind": "magenta-master-individual",
+        "path": "/Users/a1234/Desktop/未命名文件夹/阿根廷门将.png"
+      },
+      "referencePath": "/pixel/kit-studio/sources/brazil-goalkeeper.png",
+      "runtimeRoot": "/pixel/kits/brazil/goalkeeper/happyseed-human-v4",
+      "status": "gold-pass",
+      "extractionMethod": "magenta-key-connected-component",
+      "files": [
+        {
+          "path": "/pixel/kits/brazil/goalkeeper/happyseed-human-v4/shirt_front.png",
+          "slotId": "shirt_front",
+          "width": 56,
+          "height": 52,
+          "bytes": 4012,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/brazil/goalkeeper/happyseed-human-v4/shirt_back.png",
+          "slotId": "shirt_back",
+          "width": 56,
+          "height": 52,
+          "bytes": 3523,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/brazil/goalkeeper/happyseed-human-v4/sleeve_left.png",
+          "slotId": "sleeve_left",
+          "width": 14,
+          "height": 22,
+          "bytes": 616,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/brazil/goalkeeper/happyseed-human-v4/sleeve_right.png",
+          "slotId": "sleeve_right",
+          "width": 23,
+          "height": 18,
+          "bytes": 522,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/brazil/goalkeeper/happyseed-human-v4/shorts.png",
+          "slotId": "shorts",
+          "width": 55,
+          "height": 8,
+          "bytes": 334,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/brazil/goalkeeper/happyseed-human-v4/shorts_leg.png",
+          "slotId": "shorts_leg",
+          "width": 12,
+          "height": 16,
+          "bytes": 488,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/brazil/goalkeeper/happyseed-human-v4/socks.png",
+          "slotId": "socks",
+          "width": 11,
+          "height": 14,
+          "bytes": 256,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/brazil/goalkeeper/happyseed-human-v4/shoes.png",
+          "slotId": "shoes",
+          "width": 16,
+          "height": 6,
+          "bytes": 239,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/brazil/goalkeeper/happyseed-human-v4/hand_left.png",
+          "slotId": "hand_left",
+          "width": 25,
+          "height": 28,
+          "bytes": 517,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/brazil/goalkeeper/happyseed-human-v4/hand_right.png",
+          "slotId": "hand_right",
+          "width": 23,
+          "height": 38,
+          "bytes": 507,
+          "passed": true
+        }
+      ]
+    },
+    {
+      "teamId": "curacao",
+      "teamName": "库拉索",
+      "kitType": "home",
+      "label": "普通球员",
+      "partSetId": "happyseed-human-v4",
+      "source": {
+        "kind": "magenta-master-individual",
+        "path": "/Users/a1234/Desktop/未命名文件夹/阿根廷门将.png"
+      },
+      "referencePath": "/pixel/kit-studio/sources/curacao-home.png",
+      "runtimeRoot": "/pixel/kits/curacao/home/happyseed-human-v4",
+      "status": "gold-pass",
+      "extractionMethod": "magenta-key-connected-component",
+      "files": [
+        {
+          "path": "/pixel/kits/curacao/home/happyseed-human-v4/shirt_front.png",
+          "slotId": "shirt_front",
+          "width": 56,
+          "height": 52,
+          "bytes": 3926,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/curacao/home/happyseed-human-v4/shirt_back.png",
+          "slotId": "shirt_back",
+          "width": 56,
+          "height": 52,
+          "bytes": 3226,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/curacao/home/happyseed-human-v4/sleeve_left.png",
+          "slotId": "sleeve_left",
+          "width": 14,
+          "height": 22,
+          "bytes": 585,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/curacao/home/happyseed-human-v4/sleeve_right.png",
+          "slotId": "sleeve_right",
+          "width": 23,
+          "height": 18,
+          "bytes": 518,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/curacao/home/happyseed-human-v4/shorts.png",
+          "slotId": "shorts",
+          "width": 55,
+          "height": 8,
+          "bytes": 389,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/curacao/home/happyseed-human-v4/shorts_leg.png",
+          "slotId": "shorts_leg",
+          "width": 12,
+          "height": 16,
+          "bytes": 427,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/curacao/home/happyseed-human-v4/socks.png",
+          "slotId": "socks",
+          "width": 11,
+          "height": 14,
+          "bytes": 266,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/curacao/home/happyseed-human-v4/shoes.png",
+          "slotId": "shoes",
+          "width": 16,
+          "height": 6,
+          "bytes": 236,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/curacao/home/happyseed-human-v4/hand_left.png",
+          "slotId": "hand_left",
+          "width": 25,
+          "height": 28,
+          "bytes": 447,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/curacao/home/happyseed-human-v4/hand_right.png",
+          "slotId": "hand_right",
+          "width": 23,
+          "height": 38,
+          "bytes": 452,
+          "passed": true
+        }
+      ]
+    },
+    {
+      "teamId": "curacao",
+      "teamName": "库拉索",
+      "kitType": "goalkeeper",
+      "label": "门将",
+      "partSetId": "happyseed-human-v4",
+      "source": {
+        "kind": "magenta-master-individual",
+        "path": "/Users/a1234/Desktop/未命名文件夹/阿根廷门将.png"
+      },
+      "referencePath": "/pixel/kit-studio/sources/curacao-goalkeeper.png",
+      "runtimeRoot": "/pixel/kits/curacao/goalkeeper/happyseed-human-v4",
+      "status": "gold-pass",
+      "extractionMethod": "magenta-key-connected-component",
+      "files": [
+        {
+          "path": "/pixel/kits/curacao/goalkeeper/happyseed-human-v4/shirt_front.png",
+          "slotId": "shirt_front",
+          "width": 56,
+          "height": 52,
+          "bytes": 3886,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/curacao/goalkeeper/happyseed-human-v4/shirt_back.png",
+          "slotId": "shirt_back",
+          "width": 56,
+          "height": 52,
+          "bytes": 3565,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/curacao/goalkeeper/happyseed-human-v4/sleeve_left.png",
+          "slotId": "sleeve_left",
+          "width": 14,
+          "height": 22,
+          "bytes": 440,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/curacao/goalkeeper/happyseed-human-v4/sleeve_right.png",
+          "slotId": "sleeve_right",
+          "width": 23,
+          "height": 18,
+          "bytes": 573,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/curacao/goalkeeper/happyseed-human-v4/shorts.png",
+          "slotId": "shorts",
+          "width": 55,
+          "height": 8,
+          "bytes": 359,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/curacao/goalkeeper/happyseed-human-v4/shorts_leg.png",
+          "slotId": "shorts_leg",
+          "width": 12,
+          "height": 16,
+          "bytes": 470,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/curacao/goalkeeper/happyseed-human-v4/socks.png",
+          "slotId": "socks",
+          "width": 11,
+          "height": 14,
+          "bytes": 294,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/curacao/goalkeeper/happyseed-human-v4/shoes.png",
+          "slotId": "shoes",
+          "width": 16,
+          "height": 6,
+          "bytes": 223,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/curacao/goalkeeper/happyseed-human-v4/hand_left.png",
+          "slotId": "hand_left",
+          "width": 25,
+          "height": 28,
+          "bytes": 481,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/curacao/goalkeeper/happyseed-human-v4/hand_right.png",
+          "slotId": "hand_right",
+          "width": 23,
+          "height": 38,
+          "bytes": 471,
+          "passed": true
+        }
+      ]
+    },
+    {
+      "teamId": "germany",
+      "teamName": "德国",
+      "kitType": "home",
+      "label": "普通球员",
+      "partSetId": "happyseed-human-v4",
+      "source": {
+        "kind": "magenta-master-individual",
+        "path": "/Users/a1234/Desktop/未命名文件夹/阿根廷门将.png"
+      },
+      "referencePath": "/pixel/kit-studio/sources/germany-home.png",
+      "runtimeRoot": "/pixel/kits/germany/home/happyseed-human-v4",
+      "status": "gold-pass",
+      "extractionMethod": "magenta-key-connected-component",
+      "files": [
+        {
+          "path": "/pixel/kits/germany/home/happyseed-human-v4/shirt_front.png",
+          "slotId": "shirt_front",
+          "width": 56,
+          "height": 52,
+          "bytes": 3596,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/germany/home/happyseed-human-v4/shirt_back.png",
+          "slotId": "shirt_back",
+          "width": 56,
+          "height": 52,
+          "bytes": 3022,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/germany/home/happyseed-human-v4/sleeve_left.png",
+          "slotId": "sleeve_left",
+          "width": 14,
+          "height": 22,
+          "bytes": 611,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/germany/home/happyseed-human-v4/sleeve_right.png",
+          "slotId": "sleeve_right",
+          "width": 23,
+          "height": 18,
+          "bytes": 455,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/germany/home/happyseed-human-v4/shorts.png",
+          "slotId": "shorts",
+          "width": 55,
+          "height": 8,
+          "bytes": 366,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/germany/home/happyseed-human-v4/shorts_leg.png",
+          "slotId": "shorts_leg",
+          "width": 12,
+          "height": 16,
+          "bytes": 458,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/germany/home/happyseed-human-v4/socks.png",
+          "slotId": "socks",
+          "width": 11,
+          "height": 14,
+          "bytes": 281,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/germany/home/happyseed-human-v4/shoes.png",
+          "slotId": "shoes",
+          "width": 16,
+          "height": 6,
+          "bytes": 254,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/germany/home/happyseed-human-v4/hand_left.png",
+          "slotId": "hand_left",
+          "width": 25,
+          "height": 28,
+          "bytes": 485,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/germany/home/happyseed-human-v4/hand_right.png",
+          "slotId": "hand_right",
+          "width": 23,
+          "height": 38,
+          "bytes": 513,
+          "passed": true
+        }
+      ]
+    },
+    {
+      "teamId": "germany",
+      "teamName": "德国",
+      "kitType": "goalkeeper",
+      "label": "门将",
+      "partSetId": "happyseed-human-v4",
+      "source": {
+        "kind": "magenta-master-individual",
+        "path": "/Users/a1234/Desktop/未命名文件夹/阿根廷门将.png"
+      },
+      "referencePath": "/pixel/kit-studio/sources/germany-goalkeeper.png",
+      "runtimeRoot": "/pixel/kits/germany/goalkeeper/happyseed-human-v4",
+      "status": "gold-pass",
+      "extractionMethod": "magenta-key-connected-component",
+      "files": [
+        {
+          "path": "/pixel/kits/germany/goalkeeper/happyseed-human-v4/shirt_front.png",
+          "slotId": "shirt_front",
+          "width": 56,
+          "height": 52,
+          "bytes": 4909,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/germany/goalkeeper/happyseed-human-v4/shirt_back.png",
+          "slotId": "shirt_back",
+          "width": 56,
+          "height": 52,
+          "bytes": 3523,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/germany/goalkeeper/happyseed-human-v4/sleeve_left.png",
+          "slotId": "sleeve_left",
+          "width": 14,
+          "height": 22,
+          "bytes": 713,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/germany/goalkeeper/happyseed-human-v4/sleeve_right.png",
+          "slotId": "sleeve_right",
+          "width": 23,
+          "height": 18,
+          "bytes": 304,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/germany/goalkeeper/happyseed-human-v4/shorts.png",
+          "slotId": "shorts",
+          "width": 55,
+          "height": 8,
+          "bytes": 381,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/germany/goalkeeper/happyseed-human-v4/shorts_leg.png",
+          "slotId": "shorts_leg",
+          "width": 12,
+          "height": 16,
+          "bytes": 457,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/germany/goalkeeper/happyseed-human-v4/socks.png",
+          "slotId": "socks",
+          "width": 11,
+          "height": 14,
+          "bytes": 326,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/germany/goalkeeper/happyseed-human-v4/shoes.png",
+          "slotId": "shoes",
+          "width": 16,
+          "height": 6,
+          "bytes": 226,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/germany/goalkeeper/happyseed-human-v4/hand_left.png",
+          "slotId": "hand_left",
+          "width": 25,
+          "height": 28,
+          "bytes": 516,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/germany/goalkeeper/happyseed-human-v4/hand_right.png",
+          "slotId": "hand_right",
+          "width": 23,
+          "height": 38,
+          "bytes": 526,
+          "passed": true
+        }
+      ]
+    },
+    {
+      "teamId": "norway",
+      "teamName": "挪威",
+      "kitType": "home",
+      "label": "普通球员",
+      "partSetId": "happyseed-human-v4",
+      "source": {
+        "kind": "magenta-master-individual",
+        "path": "/Users/a1234/Desktop/未命名文件夹/阿根廷门将.png"
+      },
+      "referencePath": "/pixel/kit-studio/sources/norway-home.png",
+      "runtimeRoot": "/pixel/kits/norway/home/happyseed-human-v4",
+      "status": "gold-pass",
+      "extractionMethod": "magenta-key-connected-component",
+      "files": [
+        {
+          "path": "/pixel/kits/norway/home/happyseed-human-v4/shirt_front.png",
+          "slotId": "shirt_front",
+          "width": 56,
+          "height": 52,
+          "bytes": 3827,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/norway/home/happyseed-human-v4/shirt_back.png",
+          "slotId": "shirt_back",
+          "width": 56,
+          "height": 52,
+          "bytes": 2973,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/norway/home/happyseed-human-v4/sleeve_left.png",
+          "slotId": "sleeve_left",
+          "width": 14,
+          "height": 22,
+          "bytes": 641,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/norway/home/happyseed-human-v4/sleeve_right.png",
+          "slotId": "sleeve_right",
+          "width": 23,
+          "height": 18,
+          "bytes": 508,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/norway/home/happyseed-human-v4/shorts.png",
+          "slotId": "shorts",
+          "width": 55,
+          "height": 8,
+          "bytes": 407,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/norway/home/happyseed-human-v4/shorts_leg.png",
+          "slotId": "shorts_leg",
+          "width": 12,
+          "height": 16,
+          "bytes": 381,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/norway/home/happyseed-human-v4/socks.png",
+          "slotId": "socks",
+          "width": 11,
+          "height": 14,
+          "bytes": 347,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/norway/home/happyseed-human-v4/shoes.png",
+          "slotId": "shoes",
+          "width": 16,
+          "height": 6,
+          "bytes": 233,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/norway/home/happyseed-human-v4/hand_left.png",
+          "slotId": "hand_left",
+          "width": 25,
+          "height": 28,
+          "bytes": 457,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/norway/home/happyseed-human-v4/hand_right.png",
+          "slotId": "hand_right",
+          "width": 23,
+          "height": 38,
+          "bytes": 457,
+          "passed": true
+        }
+      ]
+    },
+    {
+      "teamId": "norway",
+      "teamName": "挪威",
+      "kitType": "goalkeeper",
+      "label": "门将",
+      "partSetId": "happyseed-human-v4",
+      "source": {
+        "kind": "magenta-master-individual",
+        "path": "/Users/a1234/Desktop/未命名文件夹/阿根廷门将.png"
+      },
+      "referencePath": "/pixel/kit-studio/sources/norway-goalkeeper.png",
+      "runtimeRoot": "/pixel/kits/norway/goalkeeper/happyseed-human-v4",
+      "status": "gold-pass",
+      "extractionMethod": "magenta-key-connected-component",
+      "files": [
+        {
+          "path": "/pixel/kits/norway/goalkeeper/happyseed-human-v4/shirt_front.png",
+          "slotId": "shirt_front",
+          "width": 56,
+          "height": 52,
+          "bytes": 5501,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/norway/goalkeeper/happyseed-human-v4/shirt_back.png",
+          "slotId": "shirt_back",
+          "width": 56,
+          "height": 52,
+          "bytes": 5144,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/norway/goalkeeper/happyseed-human-v4/sleeve_left.png",
+          "slotId": "sleeve_left",
+          "width": 14,
+          "height": 22,
+          "bytes": 537,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/norway/goalkeeper/happyseed-human-v4/sleeve_right.png",
+          "slotId": "sleeve_right",
+          "width": 23,
+          "height": 18,
+          "bytes": 421,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/norway/goalkeeper/happyseed-human-v4/shorts.png",
+          "slotId": "shorts",
+          "width": 55,
+          "height": 8,
+          "bytes": 455,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/norway/goalkeeper/happyseed-human-v4/shorts_leg.png",
+          "slotId": "shorts_leg",
+          "width": 12,
+          "height": 16,
+          "bytes": 531,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/norway/goalkeeper/happyseed-human-v4/socks.png",
+          "slotId": "socks",
+          "width": 11,
+          "height": 14,
+          "bytes": 351,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/norway/goalkeeper/happyseed-human-v4/shoes.png",
+          "slotId": "shoes",
+          "width": 16,
+          "height": 6,
+          "bytes": 250,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/norway/goalkeeper/happyseed-human-v4/hand_left.png",
+          "slotId": "hand_left",
+          "width": 25,
+          "height": 28,
+          "bytes": 535,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/norway/goalkeeper/happyseed-human-v4/hand_right.png",
+          "slotId": "hand_right",
+          "width": 23,
+          "height": 38,
+          "bytes": 510,
+          "passed": true
+        }
+      ]
+    },
+    {
+      "teamId": "morocco",
+      "teamName": "摩洛哥",
+      "kitType": "home",
+      "label": "普通球员",
+      "partSetId": "happyseed-human-v4",
+      "source": {
+        "kind": "magenta-master-individual",
+        "path": "/Users/a1234/Desktop/未命名文件夹/阿根廷门将.png"
+      },
+      "referencePath": "/pixel/kit-studio/sources/morocco-home.png",
+      "runtimeRoot": "/pixel/kits/morocco/home/happyseed-human-v4",
+      "status": "gold-pass",
+      "extractionMethod": "magenta-key-connected-component",
+      "files": [
+        {
+          "path": "/pixel/kits/morocco/home/happyseed-human-v4/shirt_front.png",
+          "slotId": "shirt_front",
+          "width": 56,
+          "height": 52,
+          "bytes": 4271,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/morocco/home/happyseed-human-v4/shirt_back.png",
+          "slotId": "shirt_back",
+          "width": 56,
+          "height": 52,
+          "bytes": 3709,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/morocco/home/happyseed-human-v4/sleeve_left.png",
+          "slotId": "sleeve_left",
+          "width": 14,
+          "height": 22,
+          "bytes": 190,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/morocco/home/happyseed-human-v4/sleeve_right.png",
+          "slotId": "sleeve_right",
+          "width": 23,
+          "height": 18,
+          "bytes": 243,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/morocco/home/happyseed-human-v4/shorts.png",
+          "slotId": "shorts",
+          "width": 55,
+          "height": 8,
+          "bytes": 359,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/morocco/home/happyseed-human-v4/shorts_leg.png",
+          "slotId": "shorts_leg",
+          "width": 12,
+          "height": 16,
+          "bytes": 479,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/morocco/home/happyseed-human-v4/socks.png",
+          "slotId": "socks",
+          "width": 11,
+          "height": 14,
+          "bytes": 285,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/morocco/home/happyseed-human-v4/shoes.png",
+          "slotId": "shoes",
+          "width": 16,
+          "height": 6,
+          "bytes": 285,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/morocco/home/happyseed-human-v4/hand_left.png",
+          "slotId": "hand_left",
+          "width": 25,
+          "height": 28,
+          "bytes": 502,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/morocco/home/happyseed-human-v4/hand_right.png",
+          "slotId": "hand_right",
+          "width": 23,
+          "height": 38,
+          "bytes": 489,
+          "passed": true
+        }
+      ]
+    },
+    {
+      "teamId": "morocco",
+      "teamName": "摩洛哥",
+      "kitType": "goalkeeper",
+      "label": "门将",
+      "partSetId": "happyseed-human-v4",
+      "source": {
+        "kind": "magenta-master-individual",
+        "path": "/Users/a1234/Desktop/未命名文件夹/阿根廷门将.png"
+      },
+      "referencePath": "/pixel/kit-studio/sources/morocco-goalkeeper.png",
+      "runtimeRoot": "/pixel/kits/morocco/goalkeeper/happyseed-human-v4",
+      "status": "gold-pass",
+      "extractionMethod": "magenta-key-connected-component",
+      "files": [
+        {
+          "path": "/pixel/kits/morocco/goalkeeper/happyseed-human-v4/shirt_front.png",
+          "slotId": "shirt_front",
+          "width": 56,
+          "height": 52,
+          "bytes": 5081,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/morocco/goalkeeper/happyseed-human-v4/shirt_back.png",
+          "slotId": "shirt_back",
+          "width": 56,
+          "height": 52,
+          "bytes": 4623,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/morocco/goalkeeper/happyseed-human-v4/sleeve_left.png",
+          "slotId": "sleeve_left",
+          "width": 14,
+          "height": 22,
+          "bytes": 538,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/morocco/goalkeeper/happyseed-human-v4/sleeve_right.png",
+          "slotId": "sleeve_right",
+          "width": 23,
+          "height": 18,
+          "bytes": 448,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/morocco/goalkeeper/happyseed-human-v4/shorts.png",
+          "slotId": "shorts",
+          "width": 55,
+          "height": 8,
+          "bytes": 345,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/morocco/goalkeeper/happyseed-human-v4/shorts_leg.png",
+          "slotId": "shorts_leg",
+          "width": 12,
+          "height": 16,
+          "bytes": 455,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/morocco/goalkeeper/happyseed-human-v4/socks.png",
+          "slotId": "socks",
+          "width": 11,
+          "height": 14,
+          "bytes": 290,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/morocco/goalkeeper/happyseed-human-v4/shoes.png",
+          "slotId": "shoes",
+          "width": 16,
+          "height": 6,
+          "bytes": 269,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/morocco/goalkeeper/happyseed-human-v4/hand_left.png",
+          "slotId": "hand_left",
+          "width": 25,
+          "height": 28,
+          "bytes": 512,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/morocco/goalkeeper/happyseed-human-v4/hand_right.png",
+          "slotId": "hand_right",
+          "width": 23,
+          "height": 38,
+          "bytes": 523,
+          "passed": true
+        }
+      ]
+    },
+    {
+      "teamId": "japan",
+      "teamName": "日本",
+      "kitType": "home",
+      "label": "普通球员",
+      "partSetId": "happyseed-human-v4",
+      "source": {
+        "kind": "magenta-master-individual",
+        "path": "/Users/a1234/Desktop/未命名文件夹/阿根廷门将.png"
+      },
+      "referencePath": "/pixel/kit-studio/sources/japan-home.png",
+      "runtimeRoot": "/pixel/kits/japan/home/happyseed-human-v4",
+      "status": "gold-pass",
+      "extractionMethod": "magenta-key-connected-component",
+      "files": [
+        {
+          "path": "/pixel/kits/japan/home/happyseed-human-v4/shirt_front.png",
+          "slotId": "shirt_front",
+          "width": 56,
+          "height": 52,
+          "bytes": 4169,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/japan/home/happyseed-human-v4/shirt_back.png",
+          "slotId": "shirt_back",
+          "width": 56,
+          "height": 52,
+          "bytes": 3529,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/japan/home/happyseed-human-v4/sleeve_left.png",
+          "slotId": "sleeve_left",
+          "width": 14,
+          "height": 22,
+          "bytes": 603,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/japan/home/happyseed-human-v4/sleeve_right.png",
+          "slotId": "sleeve_right",
+          "width": 23,
+          "height": 18,
+          "bytes": 504,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/japan/home/happyseed-human-v4/shorts.png",
+          "slotId": "shorts",
+          "width": 55,
+          "height": 8,
+          "bytes": 364,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/japan/home/happyseed-human-v4/shorts_leg.png",
+          "slotId": "shorts_leg",
+          "width": 12,
+          "height": 16,
+          "bytes": 401,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/japan/home/happyseed-human-v4/socks.png",
+          "slotId": "socks",
+          "width": 11,
+          "height": 14,
+          "bytes": 259,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/japan/home/happyseed-human-v4/shoes.png",
+          "slotId": "shoes",
+          "width": 16,
+          "height": 6,
+          "bytes": 273,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/japan/home/happyseed-human-v4/hand_left.png",
+          "slotId": "hand_left",
+          "width": 25,
+          "height": 28,
+          "bytes": 471,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/japan/home/happyseed-human-v4/hand_right.png",
+          "slotId": "hand_right",
+          "width": 23,
+          "height": 38,
+          "bytes": 502,
+          "passed": true
+        }
+      ]
+    },
+    {
+      "teamId": "japan",
+      "teamName": "日本",
+      "kitType": "goalkeeper",
+      "label": "门将",
+      "partSetId": "happyseed-human-v4",
+      "source": {
+        "kind": "magenta-master-individual",
+        "path": "/Users/a1234/Desktop/未命名文件夹/阿根廷门将.png"
+      },
+      "referencePath": "/pixel/kit-studio/sources/japan-goalkeeper.png",
+      "runtimeRoot": "/pixel/kits/japan/goalkeeper/happyseed-human-v4",
+      "status": "gold-pass",
+      "extractionMethod": "magenta-key-connected-component",
+      "files": [
+        {
+          "path": "/pixel/kits/japan/goalkeeper/happyseed-human-v4/shirt_front.png",
+          "slotId": "shirt_front",
+          "width": 56,
+          "height": 52,
+          "bytes": 4389,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/japan/goalkeeper/happyseed-human-v4/shirt_back.png",
+          "slotId": "shirt_back",
+          "width": 56,
+          "height": 52,
+          "bytes": 3943,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/japan/goalkeeper/happyseed-human-v4/sleeve_left.png",
+          "slotId": "sleeve_left",
+          "width": 14,
+          "height": 22,
+          "bytes": 699,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/japan/goalkeeper/happyseed-human-v4/sleeve_right.png",
+          "slotId": "sleeve_right",
+          "width": 23,
+          "height": 18,
+          "bytes": 527,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/japan/goalkeeper/happyseed-human-v4/shorts.png",
+          "slotId": "shorts",
+          "width": 55,
+          "height": 8,
+          "bytes": 354,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/japan/goalkeeper/happyseed-human-v4/shorts_leg.png",
+          "slotId": "shorts_leg",
+          "width": 12,
+          "height": 16,
+          "bytes": 440,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/japan/goalkeeper/happyseed-human-v4/socks.png",
+          "slotId": "socks",
+          "width": 11,
+          "height": 14,
+          "bytes": 305,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/japan/goalkeeper/happyseed-human-v4/shoes.png",
+          "slotId": "shoes",
+          "width": 16,
+          "height": 6,
+          "bytes": 280,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/japan/goalkeeper/happyseed-human-v4/hand_left.png",
+          "slotId": "hand_left",
+          "width": 25,
+          "height": 28,
+          "bytes": 441,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/japan/goalkeeper/happyseed-human-v4/hand_right.png",
+          "slotId": "hand_right",
+          "width": 23,
+          "height": 38,
+          "bytes": 501,
+          "passed": true
+        }
+      ]
+    },
+    {
+      "teamId": "france",
+      "teamName": "法国",
+      "kitType": "home",
+      "label": "普通球员",
+      "partSetId": "happyseed-human-v4",
+      "source": {
+        "kind": "magenta-master-individual",
+        "path": "/Users/a1234/Desktop/未命名文件夹/阿根廷门将.png"
+      },
+      "referencePath": "/pixel/kit-studio/sources/france-home.png",
+      "runtimeRoot": "/pixel/kits/france/home/happyseed-human-v4",
+      "status": "gold-pass",
+      "extractionMethod": "magenta-key-connected-component",
+      "files": [
+        {
+          "path": "/pixel/kits/france/home/happyseed-human-v4/shirt_front.png",
+          "slotId": "shirt_front",
+          "width": 56,
+          "height": 52,
+          "bytes": 3596,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/france/home/happyseed-human-v4/shirt_back.png",
+          "slotId": "shirt_back",
+          "width": 56,
+          "height": 52,
+          "bytes": 3124,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/france/home/happyseed-human-v4/sleeve_left.png",
+          "slotId": "sleeve_left",
+          "width": 14,
+          "height": 22,
+          "bytes": 556,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/france/home/happyseed-human-v4/sleeve_right.png",
+          "slotId": "sleeve_right",
+          "width": 23,
+          "height": 18,
+          "bytes": 482,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/france/home/happyseed-human-v4/shorts.png",
+          "slotId": "shorts",
+          "width": 55,
+          "height": 8,
+          "bytes": 343,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/france/home/happyseed-human-v4/shorts_leg.png",
+          "slotId": "shorts_leg",
+          "width": 12,
+          "height": 16,
+          "bytes": 352,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/france/home/happyseed-human-v4/socks.png",
+          "slotId": "socks",
+          "width": 11,
+          "height": 14,
+          "bytes": 274,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/france/home/happyseed-human-v4/shoes.png",
+          "slotId": "shoes",
+          "width": 16,
+          "height": 6,
+          "bytes": 244,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/france/home/happyseed-human-v4/hand_left.png",
+          "slotId": "hand_left",
+          "width": 25,
+          "height": 28,
+          "bytes": 478,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/france/home/happyseed-human-v4/hand_right.png",
+          "slotId": "hand_right",
+          "width": 23,
+          "height": 38,
+          "bytes": 532,
+          "passed": true
+        }
+      ]
+    },
+    {
+      "teamId": "france",
+      "teamName": "法国",
+      "kitType": "goalkeeper",
+      "label": "门将",
+      "partSetId": "happyseed-human-v4",
+      "source": {
+        "kind": "magenta-master-individual",
+        "path": "/Users/a1234/Desktop/未命名文件夹/阿根廷门将.png"
+      },
+      "referencePath": "/pixel/kit-studio/sources/france-goalkeeper.png",
+      "runtimeRoot": "/pixel/kits/france/goalkeeper/happyseed-human-v4",
+      "status": "gold-pass",
+      "extractionMethod": "magenta-key-connected-component",
+      "files": [
+        {
+          "path": "/pixel/kits/france/goalkeeper/happyseed-human-v4/shirt_front.png",
+          "slotId": "shirt_front",
+          "width": 56,
+          "height": 52,
+          "bytes": 4571,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/france/goalkeeper/happyseed-human-v4/shirt_back.png",
+          "slotId": "shirt_back",
+          "width": 56,
+          "height": 52,
+          "bytes": 4173,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/france/goalkeeper/happyseed-human-v4/sleeve_left.png",
+          "slotId": "sleeve_left",
+          "width": 14,
+          "height": 22,
+          "bytes": 635,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/france/goalkeeper/happyseed-human-v4/sleeve_right.png",
+          "slotId": "sleeve_right",
+          "width": 23,
+          "height": 18,
+          "bytes": 485,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/france/goalkeeper/happyseed-human-v4/shorts.png",
+          "slotId": "shorts",
+          "width": 55,
+          "height": 8,
+          "bytes": 418,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/france/goalkeeper/happyseed-human-v4/shorts_leg.png",
+          "slotId": "shorts_leg",
+          "width": 12,
+          "height": 16,
+          "bytes": 448,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/france/goalkeeper/happyseed-human-v4/socks.png",
+          "slotId": "socks",
+          "width": 11,
+          "height": 14,
+          "bytes": 352,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/france/goalkeeper/happyseed-human-v4/shoes.png",
+          "slotId": "shoes",
+          "width": 16,
+          "height": 6,
+          "bytes": 256,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/france/goalkeeper/happyseed-human-v4/hand_left.png",
+          "slotId": "hand_left",
+          "width": 25,
+          "height": 28,
+          "bytes": 534,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/france/goalkeeper/happyseed-human-v4/hand_right.png",
+          "slotId": "hand_right",
+          "width": 23,
+          "height": 38,
+          "bytes": 532,
+          "passed": true
+        }
+      ]
+    },
+    {
+      "teamId": "usa",
+      "teamName": "美国",
+      "kitType": "home",
+      "label": "普通球员",
+      "partSetId": "happyseed-human-v4",
+      "source": {
+        "kind": "magenta-master-individual",
+        "path": "/Users/a1234/Desktop/未命名文件夹/阿根廷门将.png"
+      },
+      "referencePath": "/pixel/kit-studio/sources/usa-home.png",
+      "runtimeRoot": "/pixel/kits/usa/home/happyseed-human-v4",
+      "status": "gold-pass",
+      "extractionMethod": "magenta-key-connected-component",
+      "files": [
+        {
+          "path": "/pixel/kits/usa/home/happyseed-human-v4/shirt_front.png",
+          "slotId": "shirt_front",
+          "width": 56,
+          "height": 52,
+          "bytes": 3410,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/usa/home/happyseed-human-v4/shirt_back.png",
+          "slotId": "shirt_back",
+          "width": 56,
+          "height": 52,
+          "bytes": 3202,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/usa/home/happyseed-human-v4/sleeve_left.png",
+          "slotId": "sleeve_left",
+          "width": 14,
+          "height": 22,
+          "bytes": 402,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/usa/home/happyseed-human-v4/sleeve_right.png",
+          "slotId": "sleeve_right",
+          "width": 23,
+          "height": 18,
+          "bytes": 552,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/usa/home/happyseed-human-v4/shorts.png",
+          "slotId": "shorts",
+          "width": 55,
+          "height": 8,
+          "bytes": 312,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/usa/home/happyseed-human-v4/shorts_leg.png",
+          "slotId": "shorts_leg",
+          "width": 12,
+          "height": 16,
+          "bytes": 319,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/usa/home/happyseed-human-v4/socks.png",
+          "slotId": "socks",
+          "width": 11,
+          "height": 14,
+          "bytes": 245,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/usa/home/happyseed-human-v4/shoes.png",
+          "slotId": "shoes",
+          "width": 16,
+          "height": 6,
+          "bytes": 223,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/usa/home/happyseed-human-v4/hand_left.png",
+          "slotId": "hand_left",
+          "width": 25,
+          "height": 28,
+          "bytes": 459,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/usa/home/happyseed-human-v4/hand_right.png",
+          "slotId": "hand_right",
+          "width": 23,
+          "height": 38,
+          "bytes": 524,
+          "passed": true
+        }
+      ]
+    },
+    {
+      "teamId": "usa",
+      "teamName": "美国",
+      "kitType": "goalkeeper",
+      "label": "门将",
+      "partSetId": "happyseed-human-v4",
+      "source": {
+        "kind": "magenta-master-individual",
+        "path": "/Users/a1234/Desktop/未命名文件夹/阿根廷门将.png"
+      },
+      "referencePath": "/pixel/kit-studio/sources/usa-goalkeeper.png",
+      "runtimeRoot": "/pixel/kits/usa/goalkeeper/happyseed-human-v4",
+      "status": "gold-pass",
+      "extractionMethod": "magenta-key-connected-component",
+      "files": [
+        {
+          "path": "/pixel/kits/usa/goalkeeper/happyseed-human-v4/shirt_front.png",
+          "slotId": "shirt_front",
+          "width": 56,
+          "height": 52,
+          "bytes": 4283,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/usa/goalkeeper/happyseed-human-v4/shirt_back.png",
+          "slotId": "shirt_back",
+          "width": 56,
+          "height": 52,
+          "bytes": 3777,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/usa/goalkeeper/happyseed-human-v4/sleeve_left.png",
+          "slotId": "sleeve_left",
+          "width": 14,
+          "height": 22,
+          "bytes": 543,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/usa/goalkeeper/happyseed-human-v4/sleeve_right.png",
+          "slotId": "sleeve_right",
+          "width": 23,
+          "height": 18,
+          "bytes": 408,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/usa/goalkeeper/happyseed-human-v4/shorts.png",
+          "slotId": "shorts",
+          "width": 55,
+          "height": 8,
+          "bytes": 307,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/usa/goalkeeper/happyseed-human-v4/shorts_leg.png",
+          "slotId": "shorts_leg",
+          "width": 12,
+          "height": 16,
+          "bytes": 364,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/usa/goalkeeper/happyseed-human-v4/socks.png",
+          "slotId": "socks",
+          "width": 11,
+          "height": 14,
+          "bytes": 311,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/usa/goalkeeper/happyseed-human-v4/shoes.png",
+          "slotId": "shoes",
+          "width": 16,
+          "height": 6,
+          "bytes": 207,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/usa/goalkeeper/happyseed-human-v4/hand_left.png",
+          "slotId": "hand_left",
+          "width": 25,
+          "height": 28,
+          "bytes": 436,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/usa/goalkeeper/happyseed-human-v4/hand_right.png",
+          "slotId": "hand_right",
+          "width": 23,
+          "height": 38,
+          "bytes": 431,
+          "passed": true
+        }
+      ]
+    },
+    {
+      "teamId": "england",
+      "teamName": "英格兰",
+      "kitType": "home",
+      "label": "普通球员",
+      "partSetId": "happyseed-human-v4",
+      "source": {
+        "kind": "magenta-master-individual",
+        "path": "/Users/a1234/Desktop/未命名文件夹/阿根廷门将.png"
+      },
+      "referencePath": "/pixel/kit-studio/sources/england-home.png",
+      "runtimeRoot": "/pixel/kits/england/home/happyseed-human-v4",
+      "status": "gold-pass",
+      "extractionMethod": "magenta-key-connected-component",
+      "files": [
+        {
+          "path": "/pixel/kits/england/home/happyseed-human-v4/shirt_front.png",
+          "slotId": "shirt_front",
+          "width": 56,
+          "height": 52,
+          "bytes": 4030,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/england/home/happyseed-human-v4/shirt_back.png",
+          "slotId": "shirt_back",
+          "width": 56,
+          "height": 52,
+          "bytes": 3291,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/england/home/happyseed-human-v4/sleeve_left.png",
+          "slotId": "sleeve_left",
+          "width": 14,
+          "height": 22,
+          "bytes": 472,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/england/home/happyseed-human-v4/sleeve_right.png",
+          "slotId": "sleeve_right",
+          "width": 23,
+          "height": 18,
+          "bytes": 585,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/england/home/happyseed-human-v4/shorts.png",
+          "slotId": "shorts",
+          "width": 55,
+          "height": 8,
+          "bytes": 395,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/england/home/happyseed-human-v4/shorts_leg.png",
+          "slotId": "shorts_leg",
+          "width": 12,
+          "height": 16,
+          "bytes": 422,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/england/home/happyseed-human-v4/socks.png",
+          "slotId": "socks",
+          "width": 11,
+          "height": 14,
+          "bytes": 275,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/england/home/happyseed-human-v4/shoes.png",
+          "slotId": "shoes",
+          "width": 16,
+          "height": 6,
+          "bytes": 256,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/england/home/happyseed-human-v4/hand_left.png",
+          "slotId": "hand_left",
+          "width": 25,
+          "height": 28,
+          "bytes": 475,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/england/home/happyseed-human-v4/hand_right.png",
+          "slotId": "hand_right",
+          "width": 23,
+          "height": 38,
+          "bytes": 508,
+          "passed": true
+        }
+      ]
+    },
+    {
+      "teamId": "england",
+      "teamName": "英格兰",
+      "kitType": "goalkeeper",
+      "label": "门将",
+      "partSetId": "happyseed-human-v4",
+      "source": {
+        "kind": "magenta-master-individual",
+        "path": "/Users/a1234/Desktop/未命名文件夹/阿根廷门将.png"
+      },
+      "referencePath": "/pixel/kit-studio/sources/england-goalkeeper.png",
+      "runtimeRoot": "/pixel/kits/england/goalkeeper/happyseed-human-v4",
+      "status": "gold-pass",
+      "extractionMethod": "magenta-key-connected-component",
+      "files": [
+        {
+          "path": "/pixel/kits/england/goalkeeper/happyseed-human-v4/shirt_front.png",
+          "slotId": "shirt_front",
+          "width": 56,
+          "height": 52,
+          "bytes": 4612,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/england/goalkeeper/happyseed-human-v4/shirt_back.png",
+          "slotId": "shirt_back",
+          "width": 56,
+          "height": 52,
+          "bytes": 4109,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/england/goalkeeper/happyseed-human-v4/sleeve_left.png",
+          "slotId": "sleeve_left",
+          "width": 14,
+          "height": 22,
+          "bytes": 455,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/england/goalkeeper/happyseed-human-v4/sleeve_right.png",
+          "slotId": "sleeve_right",
+          "width": 23,
+          "height": 18,
+          "bytes": 366,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/england/goalkeeper/happyseed-human-v4/shorts.png",
+          "slotId": "shorts",
+          "width": 55,
+          "height": 8,
+          "bytes": 381,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/england/goalkeeper/happyseed-human-v4/shorts_leg.png",
+          "slotId": "shorts_leg",
+          "width": 12,
+          "height": 16,
+          "bytes": 448,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/england/goalkeeper/happyseed-human-v4/socks.png",
+          "slotId": "socks",
+          "width": 11,
+          "height": 14,
+          "bytes": 293,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/england/goalkeeper/happyseed-human-v4/shoes.png",
+          "slotId": "shoes",
+          "width": 16,
+          "height": 6,
+          "bytes": 248,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/england/goalkeeper/happyseed-human-v4/hand_left.png",
+          "slotId": "hand_left",
+          "width": 25,
+          "height": 28,
+          "bytes": 496,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/england/goalkeeper/happyseed-human-v4/hand_right.png",
+          "slotId": "hand_right",
+          "width": 23,
+          "height": 38,
+          "bytes": 499,
+          "passed": true
+        }
+      ]
+    },
+    {
+      "teamId": "portugal",
+      "teamName": "葡萄牙",
+      "kitType": "home",
+      "label": "普通球员",
+      "partSetId": "happyseed-human-v4",
+      "source": {
+        "kind": "magenta-master-individual",
+        "path": "/Users/a1234/Desktop/未命名文件夹/阿根廷门将.png"
+      },
+      "referencePath": "/pixel/kit-studio/sources/portugal-home.png",
+      "runtimeRoot": "/pixel/kits/portugal/home/happyseed-human-v4",
+      "status": "gold-pass",
+      "extractionMethod": "magenta-key-connected-component",
+      "files": [
+        {
+          "path": "/pixel/kits/portugal/home/happyseed-human-v4/shirt_front.png",
+          "slotId": "shirt_front",
+          "width": 56,
+          "height": 52,
+          "bytes": 3732,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/portugal/home/happyseed-human-v4/shirt_back.png",
+          "slotId": "shirt_back",
+          "width": 56,
+          "height": 52,
+          "bytes": 3155,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/portugal/home/happyseed-human-v4/sleeve_left.png",
+          "slotId": "sleeve_left",
+          "width": 14,
+          "height": 22,
+          "bytes": 181,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/portugal/home/happyseed-human-v4/sleeve_right.png",
+          "slotId": "sleeve_right",
+          "width": 23,
+          "height": 18,
+          "bytes": 197,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/portugal/home/happyseed-human-v4/shorts.png",
+          "slotId": "shorts",
+          "width": 55,
+          "height": 8,
+          "bytes": 322,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/portugal/home/happyseed-human-v4/shorts_leg.png",
+          "slotId": "shorts_leg",
+          "width": 12,
+          "height": 16,
+          "bytes": 433,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/portugal/home/happyseed-human-v4/socks.png",
+          "slotId": "socks",
+          "width": 11,
+          "height": 14,
+          "bytes": 273,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/portugal/home/happyseed-human-v4/shoes.png",
+          "slotId": "shoes",
+          "width": 16,
+          "height": 6,
+          "bytes": 230,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/portugal/home/happyseed-human-v4/hand_left.png",
+          "slotId": "hand_left",
+          "width": 25,
+          "height": 28,
+          "bytes": 462,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/portugal/home/happyseed-human-v4/hand_right.png",
+          "slotId": "hand_right",
+          "width": 23,
+          "height": 38,
+          "bytes": 443,
+          "passed": true
+        }
+      ]
+    },
+    {
+      "teamId": "portugal",
+      "teamName": "葡萄牙",
+      "kitType": "goalkeeper",
+      "label": "门将",
+      "partSetId": "happyseed-human-v4",
+      "source": {
+        "kind": "magenta-master-individual",
+        "path": "/Users/a1234/Desktop/未命名文件夹/阿根廷门将.png"
+      },
+      "referencePath": "/pixel/kit-studio/sources/portugal-goalkeeper.png",
+      "runtimeRoot": "/pixel/kits/portugal/goalkeeper/happyseed-human-v4",
+      "status": "gold-pass",
+      "extractionMethod": "magenta-key-connected-component",
+      "files": [
+        {
+          "path": "/pixel/kits/portugal/goalkeeper/happyseed-human-v4/shirt_front.png",
+          "slotId": "shirt_front",
+          "width": 56,
+          "height": 52,
+          "bytes": 4278,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/portugal/goalkeeper/happyseed-human-v4/shirt_back.png",
+          "slotId": "shirt_back",
+          "width": 56,
+          "height": 52,
+          "bytes": 3974,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/portugal/goalkeeper/happyseed-human-v4/sleeve_left.png",
+          "slotId": "sleeve_left",
+          "width": 14,
+          "height": 22,
+          "bytes": 580,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/portugal/goalkeeper/happyseed-human-v4/sleeve_right.png",
+          "slotId": "sleeve_right",
+          "width": 23,
+          "height": 18,
+          "bytes": 510,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/portugal/goalkeeper/happyseed-human-v4/shorts.png",
+          "slotId": "shorts",
+          "width": 55,
+          "height": 8,
+          "bytes": 354,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/portugal/goalkeeper/happyseed-human-v4/shorts_leg.png",
+          "slotId": "shorts_leg",
+          "width": 12,
+          "height": 16,
+          "bytes": 451,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/portugal/goalkeeper/happyseed-human-v4/socks.png",
+          "slotId": "socks",
+          "width": 11,
+          "height": 14,
+          "bytes": 284,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/portugal/goalkeeper/happyseed-human-v4/shoes.png",
+          "slotId": "shoes",
+          "width": 16,
+          "height": 6,
+          "bytes": 238,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/portugal/goalkeeper/happyseed-human-v4/hand_left.png",
+          "slotId": "hand_left",
+          "width": 25,
+          "height": 28,
+          "bytes": 457,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/portugal/goalkeeper/happyseed-human-v4/hand_right.png",
+          "slotId": "hand_right",
+          "width": 23,
+          "height": 38,
+          "bytes": 447,
+          "passed": true
+        }
+      ]
+    },
+    {
+      "teamId": "spain",
+      "teamName": "西班牙",
+      "kitType": "home",
+      "label": "普通球员",
+      "partSetId": "happyseed-human-v4",
+      "source": {
+        "kind": "magenta-master-individual",
+        "path": "/Users/a1234/Desktop/未命名文件夹/阿根廷门将.png"
+      },
+      "referencePath": "/pixel/kit-studio/sources/spain-home.png",
+      "runtimeRoot": "/pixel/kits/spain/home/happyseed-human-v4",
+      "status": "gold-pass",
+      "extractionMethod": "magenta-key-connected-component",
+      "files": [
+        {
+          "path": "/pixel/kits/spain/home/happyseed-human-v4/shirt_front.png",
+          "slotId": "shirt_front",
+          "width": 56,
+          "height": 52,
+          "bytes": 3611,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/spain/home/happyseed-human-v4/shirt_back.png",
+          "slotId": "shirt_back",
+          "width": 56,
+          "height": 52,
+          "bytes": 3024,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/spain/home/happyseed-human-v4/sleeve_left.png",
+          "slotId": "sleeve_left",
+          "width": 14,
+          "height": 22,
+          "bytes": 557,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/spain/home/happyseed-human-v4/sleeve_right.png",
+          "slotId": "sleeve_right",
+          "width": 23,
+          "height": 18,
+          "bytes": 566,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/spain/home/happyseed-human-v4/shorts.png",
+          "slotId": "shorts",
+          "width": 55,
+          "height": 8,
+          "bytes": 314,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/spain/home/happyseed-human-v4/shorts_leg.png",
+          "slotId": "shorts_leg",
+          "width": 12,
+          "height": 16,
+          "bytes": 361,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/spain/home/happyseed-human-v4/socks.png",
+          "slotId": "socks",
+          "width": 11,
+          "height": 14,
+          "bytes": 286,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/spain/home/happyseed-human-v4/shoes.png",
+          "slotId": "shoes",
+          "width": 16,
+          "height": 6,
+          "bytes": 217,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/spain/home/happyseed-human-v4/hand_left.png",
+          "slotId": "hand_left",
+          "width": 25,
+          "height": 28,
+          "bytes": 441,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/spain/home/happyseed-human-v4/hand_right.png",
+          "slotId": "hand_right",
+          "width": 23,
+          "height": 38,
+          "bytes": 472,
+          "passed": true
+        }
+      ]
+    },
+    {
+      "teamId": "spain",
+      "teamName": "西班牙",
+      "kitType": "goalkeeper",
+      "label": "门将",
+      "partSetId": "happyseed-human-v4",
+      "source": {
+        "kind": "magenta-master-individual",
+        "path": "/Users/a1234/Desktop/未命名文件夹/阿根廷门将.png"
+      },
+      "referencePath": "/pixel/kit-studio/sources/spain-goalkeeper.png",
+      "runtimeRoot": "/pixel/kits/spain/goalkeeper/happyseed-human-v4",
+      "status": "gold-pass",
+      "extractionMethod": "magenta-key-connected-component",
+      "files": [
+        {
+          "path": "/pixel/kits/spain/goalkeeper/happyseed-human-v4/shirt_front.png",
+          "slotId": "shirt_front",
+          "width": 56,
+          "height": 52,
+          "bytes": 4652,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/spain/goalkeeper/happyseed-human-v4/shirt_back.png",
+          "slotId": "shirt_back",
+          "width": 56,
+          "height": 52,
+          "bytes": 4218,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/spain/goalkeeper/happyseed-human-v4/sleeve_left.png",
+          "slotId": "sleeve_left",
+          "width": 14,
+          "height": 22,
+          "bytes": 680,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/spain/goalkeeper/happyseed-human-v4/sleeve_right.png",
+          "slotId": "sleeve_right",
+          "width": 23,
+          "height": 18,
+          "bytes": 601,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/spain/goalkeeper/happyseed-human-v4/shorts.png",
+          "slotId": "shorts",
+          "width": 55,
+          "height": 8,
+          "bytes": 403,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/spain/goalkeeper/happyseed-human-v4/shorts_leg.png",
+          "slotId": "shorts_leg",
+          "width": 12,
+          "height": 16,
+          "bytes": 519,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/spain/goalkeeper/happyseed-human-v4/socks.png",
+          "slotId": "socks",
+          "width": 11,
+          "height": 14,
+          "bytes": 293,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/spain/goalkeeper/happyseed-human-v4/shoes.png",
+          "slotId": "shoes",
+          "width": 16,
+          "height": 6,
+          "bytes": 226,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/spain/goalkeeper/happyseed-human-v4/hand_left.png",
+          "slotId": "hand_left",
+          "width": 25,
+          "height": 28,
+          "bytes": 528,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/spain/goalkeeper/happyseed-human-v4/hand_right.png",
+          "slotId": "hand_right",
+          "width": 23,
+          "height": 38,
+          "bytes": 576,
+          "passed": true
+        }
+      ]
+    },
+    {
+      "teamId": "argentina",
+      "teamName": "阿根廷",
+      "kitType": "home",
+      "label": "普通球员",
+      "partSetId": "happyseed-human-v4",
+      "source": {
+        "kind": "magenta-master-individual",
+        "path": "/Users/a1234/Desktop/未命名文件夹/阿根廷门将.png"
+      },
+      "referencePath": "/pixel/kit-studio/sources/argentina-home.png",
+      "runtimeRoot": "/pixel/kits/argentina/home/happyseed-human-v4",
+      "status": "gold-pass",
+      "extractionMethod": "magenta-key-connected-component",
+      "files": [
+        {
+          "path": "/pixel/kits/argentina/home/happyseed-human-v4/shirt_front.png",
+          "slotId": "shirt_front",
+          "width": 56,
+          "height": 52,
+          "bytes": 3673,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/argentina/home/happyseed-human-v4/shirt_back.png",
+          "slotId": "shirt_back",
+          "width": 56,
+          "height": 52,
+          "bytes": 3208,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/argentina/home/happyseed-human-v4/sleeve_left.png",
+          "slotId": "sleeve_left",
+          "width": 14,
+          "height": 22,
+          "bytes": 581,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/argentina/home/happyseed-human-v4/sleeve_right.png",
+          "slotId": "sleeve_right",
+          "width": 23,
+          "height": 18,
+          "bytes": 570,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/argentina/home/happyseed-human-v4/shorts.png",
+          "slotId": "shorts",
+          "width": 55,
+          "height": 8,
+          "bytes": 355,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/argentina/home/happyseed-human-v4/shorts_leg.png",
+          "slotId": "shorts_leg",
+          "width": 12,
+          "height": 16,
+          "bytes": 427,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/argentina/home/happyseed-human-v4/socks.png",
+          "slotId": "socks",
+          "width": 11,
+          "height": 14,
+          "bytes": 309,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/argentina/home/happyseed-human-v4/shoes.png",
+          "slotId": "shoes",
+          "width": 16,
+          "height": 6,
+          "bytes": 258,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/argentina/home/happyseed-human-v4/hand_left.png",
+          "slotId": "hand_left",
+          "width": 25,
+          "height": 28,
+          "bytes": 481,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/argentina/home/happyseed-human-v4/hand_right.png",
+          "slotId": "hand_right",
+          "width": 23,
+          "height": 38,
+          "bytes": 468,
+          "passed": true
+        }
+      ]
+    },
+    {
+      "teamId": "argentina",
+      "teamName": "阿根廷",
+      "kitType": "goalkeeper",
+      "label": "门将",
+      "partSetId": "happyseed-human-v4",
+      "source": {
+        "kind": "magenta-master-individual",
+        "path": "/Users/a1234/Desktop/未命名文件夹/阿根廷门将.png"
+      },
+      "referencePath": "/pixel/kit-studio/sources/argentina-goalkeeper.png",
+      "runtimeRoot": "/pixel/kits/argentina/goalkeeper/happyseed-human-v4",
+      "status": "gold-pass",
+      "extractionMethod": "magenta-key-connected-component",
+      "files": [
+        {
+          "path": "/pixel/kits/argentina/goalkeeper/happyseed-human-v4/shirt_front.png",
+          "slotId": "shirt_front",
+          "width": 56,
+          "height": 52,
+          "bytes": 4757,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/argentina/goalkeeper/happyseed-human-v4/shirt_back.png",
+          "slotId": "shirt_back",
+          "width": 56,
+          "height": 52,
+          "bytes": 3000,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/argentina/goalkeeper/happyseed-human-v4/sleeve_left.png",
+          "slotId": "sleeve_left",
+          "width": 14,
+          "height": 22,
+          "bytes": 556,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/argentina/goalkeeper/happyseed-human-v4/sleeve_right.png",
+          "slotId": "sleeve_right",
+          "width": 23,
+          "height": 18,
+          "bytes": 578,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/argentina/goalkeeper/happyseed-human-v4/shorts.png",
+          "slotId": "shorts",
+          "width": 55,
+          "height": 8,
+          "bytes": 372,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/argentina/goalkeeper/happyseed-human-v4/shorts_leg.png",
+          "slotId": "shorts_leg",
+          "width": 12,
+          "height": 16,
+          "bytes": 462,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/argentina/goalkeeper/happyseed-human-v4/socks.png",
+          "slotId": "socks",
+          "width": 11,
+          "height": 14,
+          "bytes": 290,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/argentina/goalkeeper/happyseed-human-v4/shoes.png",
+          "slotId": "shoes",
+          "width": 16,
+          "height": 6,
+          "bytes": 252,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/argentina/goalkeeper/happyseed-human-v4/hand_left.png",
+          "slotId": "hand_left",
+          "width": 25,
+          "height": 28,
+          "bytes": 453,
+          "passed": true
+        },
+        {
+          "path": "/pixel/kits/argentina/goalkeeper/happyseed-human-v4/hand_right.png",
+          "slotId": "hand_right",
+          "width": 23,
+          "height": 38,
+          "bytes": 463,
+          "passed": true
+        }
+      ]
+    }
+  ]
+}

@@ -144,6 +144,10 @@ export function HappySeedMatchBroadcast({ saveData = null, onMatchComplete = nul
     && params.get('events') !== 'auto'
     && params.get('decisions') !== 'off'
   ), [params])
+  const acceptanceMuted = useMemo(() => (
+    params.get('mute') === '1'
+    || (import.meta.env.DEV && params.has('time') && Number(params.get('time')) < 1)
+  ), [params])
   const currentRun = saveData?.currentRun || null
   const redTeamId = currentRun?.teamId || params.get('red') || 'france'
   const opponentTeam = getTeamById(currentRun?.currentOpponent)
@@ -222,8 +226,14 @@ export function HappySeedMatchBroadcast({ saveData = null, onMatchComplete = nul
   const lastGoalAtRef = useRef(0)
   const lastDecisionTickRef = useRef(null)
   const secondHalfStoppageBaselineRef = useRef(null)
+  const lastTacticalFatigueMinuteRef = useRef(0)
   const draggingInIdRef = useRef(null)
   const [sfxBus] = useState(() => createMatchSfxBus())
+
+  useEffect(() => {
+    if (!acceptanceMuted) return
+    audioManager.applySettings({ sound: false, music: false, vibration: false })
+  }, [acceptanceMuted])
 
   const commitSession = useCallback((updater) => {
     const next = typeof updater === 'function' ? updater(sessionRef.current) : updater
@@ -275,6 +285,11 @@ export function HappySeedMatchBroadcast({ saveData = null, onMatchComplete = nul
       redFormation: currentRun?.formation,
       redSquadPlayerIds: currentRun?.roster || currentRun?.purchasedPlayerIds || [],
       redLineupPlayerIds: currentRun?.lineup || [],
+      redPlayerStateById: currentRun?.playerMatchStates || {},
+      redUnavailablePlayerIds: [
+        ...(currentRun?.injuredPlayers || []),
+        ...(currentRun?.suspendedPlayers || []),
+      ],
       playerMode: false,
       ai: params.has('ai') ? Number(params.get('ai')) : 2,
       time: params.has('time') ? Number(params.get('time')) : FORMAL_MATCH_REALTIME_MINUTES,
@@ -489,6 +504,24 @@ export function HappySeedMatchBroadcast({ saveData = null, onMatchComplete = nul
       setVisualEvents(getMatchVisualEventSnapshot())
       setRuntimeActors(nextActors)
       setStadiumScene(getStadiumSceneSnapshot())
+      const elapsedFatigueMinutes = Math.max(
+        0,
+        Math.floor(Number(nextSnapshot.minute || 0)) - lastTacticalFatigueMinuteRef.current,
+      )
+      if (elapsedFatigueMinutes > 0 && sessionRef.current.status === 'running') {
+        const stanceRate = {
+          'all-out-attack': 1.45,
+          attack: 1.2,
+          balanced: 1,
+          defend: 0.82,
+          'park-bus': 0.68,
+        }[tacticalStance] || 1
+        ;(nextActors?.actors || []).filter((actor) => actor.side === 'red' && actor.state?.onPitch)
+          .forEach((actor) => setRuntimeActorState(actor.runtimeActorId, {
+            staminaDelta: -(elapsedFatigueMinutes * 0.18 * stanceRate),
+          }))
+        lastTacticalFatigueMinuteRef.current = Math.floor(Number(nextSnapshot.minute || 0))
+      }
       const runtimeEvents = sessionRef.current.status === 'ready'
         ? []
         : runtimeEventQueueRef.current.splice(0)
@@ -519,6 +552,7 @@ export function HappySeedMatchBroadcast({ saveData = null, onMatchComplete = nul
     decisionPhase,
     forcedScenarioIds,
     pendingDecisionPlan,
+    tacticalStance,
   ])
 
   const broadcast = useMemo(() => (

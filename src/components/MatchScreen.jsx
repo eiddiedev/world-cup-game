@@ -5,6 +5,7 @@ import {
   buildFormalMatchRuleReport,
   settleRunMatchRules,
 } from '../utils/formalMatchRules.js'
+import { getLogisticsModifiers } from '../utils/logisticsEffects.js'
 import { audioManager } from '../utils/audioManager.js'
 import '../styles/happySeedBroadcastV2.css'
 
@@ -21,19 +22,19 @@ export default function MatchScreen({
 }) {
   const [pendingShootout, setPendingShootout] = useState(null)
 
-  const persistMatchComplete = useCallback(({ report, actorSnapshot }, shootoutWinner = null) => {
+  const persistMatchComplete = useCallback(({ report, actorSnapshot }, shootoutWinner = null, shootoutResult = null) => {
     const currentRun = saveData.currentRun
     if (!currentRun || currentRun.lastMatchResult?.matchId === report.matchId) return
 
     const resolvedReport = shootoutWinner
       ? {
         ...report,
-        homeScore: report.homeScore + (shootoutWinner === 'home' ? 1 : 0),
-        awayScore: report.awayScore + (shootoutWinner === 'away' ? 1 : 0),
         result: shootoutWinner === 'home' ? 'win' : 'loss',
         shootout: {
           winner: shootoutWinner,
           regulationScore: [report.homeScore, report.awayScore],
+          score: [Number(shootoutResult?.homeScore || 0), Number(shootoutResult?.awayScore || 0)],
+          shots: shootoutResult?.shots || [],
         },
       }
       : report
@@ -42,7 +43,10 @@ export default function MatchScreen({
       matchId: resolvedReport.matchId,
       matchIndex: currentRun.matchIndex,
       completedAt: resolvedReport.completedAt,
+      previousPlayerStates: currentRun.playerMatchStates,
+      previousPlayerStatuses: currentRun.playerStatuses,
     })
+    const authoritativeReport = { ...resolvedReport, matchRuleReport: ruleReport }
     const settledRun = settleRunMatchRules(currentRun, ruleReport)
     const matchResults = currentRun.matchResults || []
     const isKnockout = Boolean(currentRun.isKnockoutMatch)
@@ -57,15 +61,15 @@ export default function MatchScreen({
         ...settledRun,
         matchInjuries,
         matchRedCards,
-        lastMatchResult: resolvedReport,
-        matchResults: isKnockout ? matchResults : [...matchResults, resolvedReport.result],
+        lastMatchResult: authoritativeReport,
+        matchResults: isKnockout ? matchResults : [...matchResults, authoritativeReport.result],
         stage: 'post-match',
       },
     }
     updateSaveData(nextSaveData)
     audioManager.playSound('whistle')
-    if (resolvedReport.result === 'win') audioManager.playWin()
-    else if (resolvedReport.result === 'loss') audioManager.playLose()
+    if (authoritativeReport.result === 'win') audioManager.playWin()
+    else if (authoritativeReport.result === 'loss') audioManager.playLose()
     navigateTo('post-match')
   }, [navigateTo, saveData, updateSaveData])
 
@@ -112,10 +116,11 @@ export default function MatchScreen({
           awayLineup={shootoutLineups.away}
           homeFormation={saveData.currentRun?.formation || '4-3-3'}
           awayFormation={pendingShootout.actorSnapshot?.sides?.blue?.formation || '4-3-3'}
-          onComplete={(winner) => {
+          stabilityBonus={getLogisticsModifiers(saveData.currentRun?.logisticsLevels).penaltyStabilityBonus}
+          onComplete={(winner, shootoutResult) => {
             const completion = pendingShootout
             setPendingShootout(null)
-            persistMatchComplete(completion, winner)
+            persistMatchComplete(completion, winner, shootoutResult)
           }}
         />
       )}

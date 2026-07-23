@@ -83,17 +83,17 @@ const formationPositions = {
     MF: [{ x: 30, y: 50 }, { x: 50, y: 45 }, { x: 70, y: 50 }],
     FW: [{ x: 35, y: 25 }, { x: 65, y: 25 }],
   },
+  '5-4-1': {
+    GK: [{ x: 50, y: 90 }],
+    DF: [{ x: 10, y: 65 }, { x: 25, y: 72 }, { x: 50, y: 75 }, { x: 75, y: 72 }, { x: 90, y: 65 }],
+    MF: [{ x: 15, y: 50 }, { x: 38, y: 55 }, { x: 62, y: 55 }, { x: 85, y: 50 }],
+    FW: [{ x: 50, y: 25 }],
+  },
   '4-1-4-1': {
     GK: [{ x: 50, y: 90 }],
     DF: [{ x: 15, y: 70 }, { x: 35, y: 75 }, { x: 65, y: 75 }, { x: 85, y: 70 }],
     MF: [{ x: 50, y: 60 }, { x: 15, y: 45 }, { x: 35, y: 48 }, { x: 65, y: 48 }, { x: 85, y: 45 }],
     FW: [{ x: 50, y: 20 }],
-  },
-  '4-4-1-1': {
-    GK: [{ x: 50, y: 90 }],
-    DF: [{ x: 15, y: 70 }, { x: 35, y: 75 }, { x: 65, y: 75 }, { x: 85, y: 70 }],
-    MF: [{ x: 15, y: 50 }, { x: 35, y: 55 }, { x: 65, y: 55 }, { x: 85, y: 50 }],
-    FW: [{ x: 50, y: 35 }, { x: 50, y: 18 }],
   },
 }
 
@@ -371,33 +371,6 @@ export default function LineupScreen({ saveData, updateSaveData, navigateTo, sho
     )
   }
 
-  const renderDemoBenchPlayer = (player) => {
-    const grade = getStatusGrade(player.form || 80)
-    const gradeColor = getStatusGradeColor(grade)
-    const isSelected = selectedBenchPlayerId === player.id
-
-    return (
-      <button
-        type="button"
-        key={player.id}
-        className={`demo-bench-row${isSelected ? ' is-selected' : ''}`}
-        draggable
-        aria-label={`选择${player.name}，然后点击战术板位置`}
-        aria-pressed={isSelected}
-        onDragStart={(e) => handleBenchDragStart(e, player)}
-        onDragEnd={handleDragEnd}
-        onClick={() => setSelectedBenchPlayerId(current => current === player.id ? null : player.id)}
-      >
-        <span className="demo-bench-position">{POSITION_NAMES[player.position] || player.position}</span>
-        <span className="demo-bench-name">{player.name}</span>
-        <span className="demo-bench-meta">
-          <strong>{player.rating}</strong>
-          <span style={{ color: gradeColor }}>{grade}</span>
-        </span>
-      </button>
-    )
-  }
-
   // 一键布阵 - 按能力值自动选择最佳阵容
   const handleAutoLineup = () => {
     const availablePlayers = allPlayers.filter(p => isPlayerAvailable(p.id))
@@ -586,21 +559,6 @@ export default function LineupScreen({ saveData, updateSaveData, navigateTo, sho
             <strong>{viewingOpponent ? opponentSetup.formation : selectedFormation}</strong>
           </div>
           <div className="demo-lineup-left">
-            {!viewingOpponent && (
-              <section
-                className="demo-bench-dock"
-                onDrop={handleBenchDrop}
-                onDragOver={handleDragOver}
-              >
-                <div className="demo-bench-title">
-                  <span>{selectedBenchPlayerId ? '点击场上位置' : '替补席'}</span>
-                  <strong>{getBenchPlayers().length}</strong>
-                </div>
-                <div className="demo-bench-list">
-                  {getBenchPlayers().map(renderDemoBenchPlayer)}
-                </div>
-              </section>
-            )}
             <div className="pitch-container">
               <img src="/assets/足球场.png" alt="球场" className="pitch-bg" />
               <div className="pitch-overlay">{renderPitchSlots()}</div>
@@ -783,7 +741,7 @@ export default function LineupScreen({ saveData, updateSaveData, navigateTo, sho
                     {showPlayerInfo.height && <span>📏 {showPlayerInfo.height}</span>}
                     {showPlayerInfo.weight && <span>⚖️ {showPlayerInfo.weight}</span>}
                   </div>
-                  {showPlayerInfo.price != null && <div className="player-info-price">💰 {showPlayerInfo.price} 金币</div>}
+                  {showPlayerInfo.price != null && <div className="player-info-price">{showPlayerInfo.price} 征召点</div>}
                 </div>
               </div>
               <div className="player-info-chart">{renderHexagonChart(showPlayerInfo, 100)}</div>

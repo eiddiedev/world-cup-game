@@ -177,6 +177,7 @@ describe('CoachDecisionEvent phase one', () => {
         resultText: commentary,
         isSuccess: true,
         postMatchReviewTag: event.postMatchReviewTag,
+        sourceEventId: 'runtime.freekick.61',
       }],
     }, '法国')
     expect(insights.decisionItems[0]).toContain('复盘:危险任意球')

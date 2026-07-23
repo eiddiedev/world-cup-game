@@ -1,4 +1,4 @@
-import { buildRecommendedNationalSquad } from '../data/rosterRules.js'
+import { buildRecommendedNationalSquad, MIN_PURCHASE, NATIONAL_SQUAD_SIZE } from '../data/rosterRules.js'
 import { getTeamDefaultFormation } from '../data/teamFormations.js'
 import { getTeamById } from '../data/teams.js'
 import { FORMATION_NAMES } from '../data/formationTactics.js'
@@ -126,6 +126,8 @@ function buildRuntimeSide({
   formation,
   squadPlayerIds,
   lineupPlayerIds,
+  playerStateById = {},
+  unavailablePlayerIds = [],
 }) {
   const team = getTeamById(teamId)
   if (!team) throw new Error(`未知球队：${teamId}`)
@@ -133,20 +135,22 @@ function buildRuntimeSide({
   const selectedFormation = formation || team.defaultFormation || getTeamDefaultFormation(team.id)
   const requestedSquadIds = normalizePlayerIds(squadPlayerIds)
   const requestedLineupIds = normalizePlayerIds(lineupPlayerIds)
+  const unavailableIds = normalizePlayerIds(unavailablePlayerIds)
   const selectablePool = team.players.filter((player) => (
     !INELIGIBLE_STATUSES.has(player.status)
     && (!requestedSquadIds.size || requestedSquadIds.has(player.id))
   ))
-  const squad = requestedSquadIds.size >= 23
-    ? selectablePool.slice(0, 23)
+  const squad = requestedSquadIds.size >= MIN_PURCHASE
+    ? selectablePool.slice(0, NATIONAL_SQUAD_SIZE)
     : buildRecommendedNationalSquad(
       team.players.filter((player) => !INELIGIBLE_STATUSES.has(player.status)),
       team.budget,
       selectedFormation,
     )
-  const requestedLineup = squad.filter((player) => requestedLineupIds.has(player.id))
+  const eligibleSquad = squad.filter((player) => !unavailableIds.has(player.id))
+  const requestedLineup = eligibleSquad.filter((player) => requestedLineupIds.has(player.id))
   const lineup = autoSelectLineupForFormation(
-    requestedLineup.length >= 11 ? requestedLineup : squad,
+    requestedLineup.length >= 11 ? requestedLineup : eligibleSquad,
     selectedFormation,
   )
   const playersById = new Map(squad.map((player) => [player.id, player]))
@@ -154,6 +158,7 @@ function buildRuntimeSide({
   const sideOffset = side === 'blue' ? 11 : 0
   const actors = lineup.map((slot, localIndex) => {
     const player = playersById.get(slot.playerId)
+    const persisted = playerStateById[player.id] || {}
     return {
       ...buildBusinessBinding(team, player, slot.position, kitVariant, 'active'),
       runtimeActorId: `${side}-${String(localIndex).padStart(2, '0')}`,
@@ -161,11 +166,29 @@ function buildRuntimeSide({
       runtimeLocalIndex: localIndex,
       side,
       formationSlotId: slot.slotId,
+      state: {
+        ...buildBusinessBinding(team, player, slot.position, kitVariant, 'active').state,
+        stamina: clamp(persisted.stamina ?? player.stamina ?? player.sta ?? 80, 0, 100),
+        morale: clamp(persisted.morale ?? player.morale ?? 70, 0, 99),
+        form: clamp(persisted.form ?? player.form ?? 70, 0, 99),
+      },
     }
   })
   const bench = squad
     .filter((player) => !lineupIds.has(player.id))
-    .map((player) => buildBusinessBinding(team, player, null, kitVariant, 'bench'))
+    .map((player) => {
+      const binding = buildBusinessBinding(team, player, null, kitVariant, 'bench')
+      const persisted = playerStateById[player.id] || {}
+      binding.state.stamina = clamp(persisted.stamina ?? binding.state.stamina, 0, 100)
+      binding.state.morale = clamp(persisted.morale ?? binding.state.morale, 0, 99)
+      binding.state.form = clamp(persisted.form ?? binding.state.form, 0, 99)
+      if (unavailableIds.has(player.id)) {
+        binding.state.status = persisted.status || (persisted.injured ? 'injured' : 'suspended')
+        binding.state.injured = binding.state.status === 'injured'
+        binding.sourceStatus = binding.state.status
+      }
+      return binding
+    })
 
   return {
     side,
@@ -201,6 +224,8 @@ export function buildHappySeedRuntimeActorConfig(options = {}) {
     formation: options.formations?.red?.name || options.redFormation,
     squadPlayerIds: options.redSquadPlayerIds,
     lineupPlayerIds: options.redLineupPlayerIds,
+    playerStateById: options.redPlayerStateById,
+    unavailablePlayerIds: options.redUnavailablePlayerIds,
   })
   const blue = buildRuntimeSide({
     teamId: options.blue || 'brazil',
@@ -209,6 +234,8 @@ export function buildHappySeedRuntimeActorConfig(options = {}) {
     formation: options.formations?.blue?.name || options.blueFormation,
     squadPlayerIds: options.blueSquadPlayerIds,
     lineupPlayerIds: options.blueLineupPlayerIds,
+    playerStateById: options.bluePlayerStateById,
+    unavailablePlayerIds: options.blueUnavailablePlayerIds,
   })
 
   return {
@@ -269,7 +296,7 @@ export function validateHappySeedRuntimeActorConfig(config) {
     if (sideActors.length !== 11) errors.push(`${side}-actor-count`)
     if (onPitch.length > 11) errors.push(`${side}-on-pitch-count`)
     if (new Set(squadIds).size !== squadIds.length) errors.push(`${side}-squad-duplicate`)
-    if (squadIds.length !== 23) errors.push(`${side}-squad-count`)
+    if (squadIds.length < MIN_PURCHASE || squadIds.length > NATIONAL_SQUAD_SIZE) errors.push(`${side}-squad-count`)
     if (sideActors.filter((actor) => actor.isGoalkeeper && actor.state?.onPitch).length > 1) {
       errors.push(`${side}-goalkeeper-count`)
     }

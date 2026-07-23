@@ -291,6 +291,7 @@ export default function PenaltyShootout({
   awayTeam,
   homeLineup = [],
   awayLineup = [],
+  stabilityBonus = 0,
   onComplete,
   onExit,
 }) {
@@ -380,7 +381,11 @@ export default function PenaltyShootout({
         text: winner === 'home' ? `${homeTeam}晋级！` : `${awayTeam}晋级！`,
       })
       audioManager.playSound('whistle')
-      schedule(() => onCompleteRef.current?.(winner), COMPLETE_DELAY)
+      schedule(() => onCompleteRef.current?.(winner, {
+        homeScore: nextShots.filter((item) => item.team === 'home' && item.scored).length,
+        awayScore: nextShots.filter((item) => item.team === 'away' && item.scored).length,
+        shots: nextShots,
+      }), COMPLETE_DELAY)
     } else {
       beginRound()
     }
@@ -435,6 +440,7 @@ export default function PenaltyShootout({
       overpowered,
       shooterTec,
       keeperDef,
+      stabilityBonus: scene.mode === 'shoot' ? stabilityBonus : 0,
       random: Math.random,
     })
 

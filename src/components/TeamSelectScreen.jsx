@@ -1,20 +1,29 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { teams, getDifficultyStars } from '../data/teams'
 import { createNewRun } from '../utils/saveManager'
+import { getAvailableLogisticsBudget } from '../data/prizeMoney'
 import { IS_DOUYIN_DEMO } from '../config/runtime'
+import AppointmentLetter from './AppointmentLetter'
 
 /**
  * 国家队选择页面
  * 直接点击球队开启征程
  */
 export default function TeamSelectScreen({ saveData, updateSaveData, navigateTo, showToast, gameMode = 'coach' }) {
+  const [appointmentTeam, setAppointmentTeam] = useState(null)
 
   const unlockedTeams = teams.filter((t) =>
     saveData.unlockTeams.includes(t.id)
   )
 
   const handleSelectTeam = (team) => {
-    const newRun = createNewRun(team.id, gameMode)
+    setAppointmentTeam(team)
+  }
+
+  const handleAppointmentConfirm = () => {
+    const team = appointmentTeam
+    setAppointmentTeam(null)
+    const newRun = createNewRun(team.id, gameMode, saveData)
     updateSaveData({
       ...saveData,
       currentRun: newRun,
@@ -66,9 +75,9 @@ export default function TeamSelectScreen({ saveData, updateSaveData, navigateTo,
                   </div>
                 </div>
                 <div className="hover-info-block">
-                  <span className="hover-info-label">金卡球星</span>
+                  <span className="hover-info-label">足协期望</span>
                   <div className="hover-info-star">
-                    ⭐ {team.goldenStar} · {team.goldenStarPosition}
+                    {team.faExpectation}
                   </div>
                 </div>
               </div>
@@ -85,8 +94,16 @@ export default function TeamSelectScreen({ saveData, updateSaveData, navigateTo,
                   <span className="stat-stars">{getDifficultyStars(team.difficulty)}</span>
                 </div>
                 <div className="team-stat-row">
-                  <span className="stat-label">预算</span>
-                  <span className="stat-budget">{team.budget}<img src="/assets/金币.png" alt="金币" className="coin-icon" /></span>
+                  <span className="stat-label">世界杯目标</span>
+                  <span className="stat-target">{team.worldCupTarget}</span>
+                </div>
+                <div className="team-stat-row">
+                  <span className="stat-label">征召点</span>
+                  <span className="stat-budget">{team.budget}<img src="/assets/征召点.png" alt="征召点" className="coin-icon" /></span>
+                </div>
+                <div className="team-stat-row">
+                  <span className="stat-label">后勤预算</span>
+                  <span className="stat-budget logistics-budget">{getAvailableLogisticsBudget(team.id, saveData)}<img src="/assets/金币.png" alt="后勤预算" className="coin-icon" /></span>
                 </div>
               </div>
               <div className="team-card-bottom">
@@ -97,12 +114,22 @@ export default function TeamSelectScreen({ saveData, updateSaveData, navigateTo,
                     <span className="team-name-en">{team.nameEn}</span>
                   </div>
                 </div>
-                <p className="team-card-flavor">{team.description}</p>
+                <p className="team-card-flavor">
+                  <span className="team-fa-message">{team.faMessage}</span>
+                </p>
               </div>
             </div>
           </div>
         ))}
       </div>
+
+      {appointmentTeam && (
+        <AppointmentLetter
+          team={appointmentTeam}
+          onConfirm={handleAppointmentConfirm}
+          onCancel={() => setAppointmentTeam(null)}
+        />
+      )}
     </div>
   )
 }

@@ -13,6 +13,8 @@ import SettingsScreen from './components/SettingsScreen'
 import PixelPlayerLab from './components/PixelPlayerLab'
 import EnhancementHubScreen from './components/EnhancementHubScreen'
 import PenaltyModeScreen from './components/PenaltyModeScreen'
+import CodexScreen from './components/CodexScreen'
+import LogisticsScreen from './components/LogisticsScreen'
 import { IS_DOUYIN_DEMO } from './config/runtime'
 
 /**
@@ -79,7 +81,7 @@ export default function App() {
       // Use latest save data to check stage (avoids stale closure issue)
       const latestData = loadSaveData()
       const stage = latestData?.currentRun?.stage
-      const isRecruitmentDone = stage && ['tournament', 'lineup', 'match', 'post-match', 'knockout', 'ending'].includes(stage)
+      const isRecruitmentDone = stage && ['logistics', 'tournament', 'lineup', 'match', 'post-match', 'knockout', 'ending'].includes(stage)
       if (isRecruitmentDone) {
         showToast('阵容已确认，无法返回招募页面')
         return
@@ -121,6 +123,10 @@ export default function App() {
         return <SettingsScreen {...screenProps} />
       case 'penalty-mode':
         return <PenaltyModeScreen {...screenProps} />
+      case 'codex':
+        return <CodexScreen {...screenProps} />
+      case 'logistics':
+        return <LogisticsScreen {...screenProps} />
       case 'enhancement-hub':
         return <EnhancementHubScreen {...screenProps} />
       case 'pixel-player-lab':

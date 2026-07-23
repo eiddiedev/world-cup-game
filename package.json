@@ -10,6 +10,7 @@
     "assets:human-slice": "node scripts/generate-human-runtime-slice.mjs && python3 scripts/apply_paper_doll_master.py",
     "assets:runtime-actors": "node scripts/generate-runtime-actor-assets.mjs && python3 scripts/apply_paper_doll_master.py",
     "assets:match-equipment": "python3 scripts/generate_pixel_match_equipment.py",
+    "assets:16-team-kits": "python3 scripts/build_16_team_kit_workflow.py",
     "assets:stadium-slice": "node scripts/generate-pixel-stadium-slice.mjs",
     "audit:human-slice": "node scripts/audit-human-runtime-slice.mjs",
     "audit:runtime-actors": "node scripts/audit-runtime-actor-assets.mjs",
@@ -24,6 +25,7 @@
     "test": "vitest"
   },
   "dependencies": {
+    "fflate": "^0.8.3",
     "react": "^19.2.6",
     "react-dom": "^19.2.6"
   },

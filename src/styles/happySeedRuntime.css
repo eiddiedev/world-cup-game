@@ -25,6 +25,13 @@ body {
   pointer-events: none;
 }
 
+.happyseed-runtime-lab.studio-runtime-embed .runtime-scoreboard,
+.happyseed-runtime-lab.studio-runtime-embed .runtime-diagnostics,
+.happyseed-runtime-lab.studio-runtime-embed .runtime-slice-panel,
+.happyseed-runtime-lab.studio-runtime-embed .runtime-toolbar {
+  display: none;
+}
+
 .happyseed-match-broadcast {
   position: relative;
   z-index: 20;

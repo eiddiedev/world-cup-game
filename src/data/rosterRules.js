@@ -1,8 +1,9 @@
-import { FORMATION_TACTICS } from './formationTactics.js'
 import { getPlayerMarketScore } from './playerBalance.js'
 import { ROSTER_POOL_RULES } from './teamDataSchema.js'
 
 export const NATIONAL_SQUAD_SIZE = ROSTER_POOL_RULES.nationalSquadSize
+
+export const MIN_PURCHASE = ROSTER_POOL_RULES.minPurchase
 
 export const NATIONAL_SQUAD_MINIMUMS = ROSTER_POOL_RULES.nationalSquadMinimums
 
@@ -21,16 +22,6 @@ function getRecruitmentScore(player) {
   const potential = player.potential ?? player.rating ?? 70
   const goldenBonus = player.isGolden ? 5 : 0
   return market * 0.82 + form * 0.08 + potential * 0.06 + goldenBonus
-}
-
-function getRecommendedMinimums(formation) {
-  const formationCounts = FORMATION_TACTICS[formation]?.counts || FORMATION_TACTICS['4-3-3'].counts
-  return {
-    GK: NATIONAL_SQUAD_MINIMUMS.GK,
-    DF: Math.max(NATIONAL_SQUAD_MINIMUMS.DF, formationCounts.DF + 2),
-    MF: Math.max(NATIONAL_SQUAD_MINIMUMS.MF, formationCounts.MF + 2),
-    FW: Math.max(NATIONAL_SQUAD_MINIMUMS.FW, formationCounts.FW + 1),
-  }
 }
 
 function sortBest(players) {
@@ -56,7 +47,7 @@ export function validateNationalSquad(players = [], budget = Infinity) {
     .map(([position, minimum]) => `${position}${minimum}`)
 
   return {
-    valid: count === NATIONAL_SQUAD_SIZE && spent <= budget && missing.length === 0,
+    valid: count >= MIN_PURCHASE && spent <= budget && missing.length === 0,
     count,
     spent,
     remaining: budget - spent,
@@ -65,55 +56,46 @@ export function validateNationalSquad(players = [], budget = Infinity) {
   }
 }
 
-export function buildRecommendedNationalSquad(players = [], budget, formation = '4-3-3') {
+export function buildRecommendedNationalSquad(players = [], budget, _formation = '4-3-3') {
   const selected = []
   const selectedIds = new Set()
-  const recommendedMinimums = getRecommendedMinimums(formation)
-
+  const spent = () => selected.reduce((sum, p) => sum + (p.price || 0), 0)
   const addPlayer = (player) => {
     if (!player || selectedIds.has(player.id)) return false
     selected.push(player)
     selectedIds.add(player.id)
     return true
   }
-
-  POSITION_ORDER.forEach(position => {
-    sortCheapest(players.filter(player => player.position === position))
-      .slice(0, recommendedMinimums[position])
-      .forEach(addPlayer)
-  })
-
-  sortCheapest(players.filter(player => !selectedIds.has(player.id)))
-    .forEach(player => {
-      if (selected.length < NATIONAL_SQUAD_SIZE) addPlayer(player)
-    })
-
-  let spent = selected.reduce((sum, player) => sum + (player.price || 0), 0)
-  if (spent > budget) {
-    return sortCheapest(players).slice(0, NATIONAL_SQUAD_SIZE)
+  const addIfAffordable = (player) => {
+    if (!player || selectedIds.has(player.id)) return false
+    if (spent() + (player.price || 0) > budget) return false
+    return addPlayer(player)
   }
 
-  let upgraded = true
-  while (upgraded) {
-    upgraded = false
-    for (let index = 0; index < selected.length; index += 1) {
-      const current = selected[index]
-      const better = sortBest(players)
-        .find(candidate => {
-          if (selectedIds.has(candidate.id)) return false
-          if (candidate.position !== current.position) return false
-          if (getRecruitmentScore(candidate) <= getRecruitmentScore(current)) return false
-          return spent - (current.price || 0) + (candidate.price || 0) <= budget
-        })
-      if (better) {
-        selectedIds.delete(current.id)
-        selectedIds.add(better.id)
-        selected[index] = better
-        spent = spent - (current.price || 0) + (better.price || 0)
-        upgraded = true
-      }
+  // 1. 先满足位置最低结构（最便宜优先，预算内）
+  POSITION_ORDER.forEach(position => {
+    sortCheapest(players.filter(player => player.position === position))
+      .slice(0, NATIONAL_SQUAD_MINIMUMS[position])
+      .forEach(addIfAffordable)
+  })
+
+  // 2. 补到至少 MIN_PURCHASE 人（最便宜优先，预算内）
+  sortCheapest(players.filter(player => !selectedIds.has(player.id)))
+    .forEach(player => {
+      if (selected.length < MIN_PURCHASE) addIfAffordable(player)
+    })
+
+  // 3. 预算允许下继续补强（最多到候选池上限）
+  let added = true
+  while (added && selected.length < NATIONAL_SQUAD_SIZE) {
+    added = false
+    const candidate = sortBest(players.filter(player => !selectedIds.has(player.id)))
+      .find(player => spent() + (player.price || 0) <= budget)
+    if (candidate) {
+      addPlayer(candidate)
+      added = true
     }
   }
 
-  return sortBest(selected).slice(0, NATIONAL_SQUAD_SIZE)
+  return sortBest(selected)
 }

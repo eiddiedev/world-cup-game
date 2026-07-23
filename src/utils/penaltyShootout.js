@@ -103,6 +103,7 @@ export function resolveShootoutAttempt({
   overpowered = false,
   shooterTec = 70,
   keeperDef = 70,
+  stabilityBonus = 0,
   random = Math.random,
 } = {}) {
   if (overpowered || !PENALTY_ZONES.includes(shooterZone)) {
@@ -116,7 +117,9 @@ export function resolveShootoutAttempt({
       : { scored: false, saved: true, missed: false }
   }
 
-  const postChance = Math.max(0.02, 0.1 - clamp01((shooterTec - 40) / 60) * 0.08)
+  // stabilityBonus reduces post/miss chance (from psychology team)
+  const basePostChance = Math.max(0.02, 0.1 - clamp01((shooterTec - 40) / 60) * 0.08)
+  const postChance = Math.max(0.01, basePostChance * (1 - stabilityBonus))
   if (random() < postChance) {
     return { scored: false, saved: false, missed: true, post: true }
   }

@@ -95,12 +95,12 @@ describe('MatchScreen 正式终场链', () => {
         stage: 'post-match',
         lastMatchResult: expect.objectContaining({
           result: 'win',
-          homeScore: 2,
+          homeScore: 1,
           awayScore: 1,
-          shootout: {
+          shootout: expect.objectContaining({
             winner: 'home',
             regulationScore: [1, 1],
-          },
+          }),
         }),
       }),
     }))
