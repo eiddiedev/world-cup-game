@@ -55,6 +55,7 @@ import { createMatchSfxBus } from '../utils/matchSfxBus.js'
 import { audioManager } from '../utils/audioManager.js'
 import { getMatchEventArtwork } from '../utils/matchEventArtwork.js'
 import LockerRoomDecision from './LockerRoomDecision.jsx'
+import GameLoadingScreen from './GameLoadingScreen.jsx'
 import PixelRain from './PixelRain.jsx'
 import PlayerControls from './PlayerControls.jsx'
 import { startGamepadInput, stopGamepadInput } from '../utils/gamepadInput.js'
@@ -171,6 +172,9 @@ export function HappySeedMatchBroadcast({ saveData = null, onMatchComplete = nul
   ), [params])
   const [status, setStatus] = useState('正在装配比赛现场…')
   const [error, setError] = useState('')
+  const [runtimeLoading, setRuntimeLoading] = useState(false)
+  const [runtimeProgress, setRuntimeProgress] = useState(0)
+  const [runtimeLoadingDetail, setRuntimeLoadingDetail] = useState('正在读取比赛资源')
   const [paused, setPaused] = useState(false)
   const [speed, setSelectedSpeed] = useState(1)
   const [showStats, setShowStats] = useState(false)
@@ -312,6 +316,9 @@ export function HappySeedMatchBroadcast({ saveData = null, onMatchComplete = nul
     if (!prematchGateClear) return undefined // 等赛前决策完成才开球
     if (bootedRef.current) return undefined
     bootedRef.current = true
+    setRuntimeLoading(true)
+    setRuntimeProgress(4)
+    setRuntimeLoadingDetail('正在读取比赛资源')
     // 天气已在 useState 初始化时确定，此处同步给引擎
     setWeather(window.__happySeedWeather || 'clear')
     const _logisticsMods = getLogisticsModifiers(currentRun?.logisticsLevels)
@@ -331,6 +338,10 @@ export function HappySeedMatchBroadcast({ saveData = null, onMatchComplete = nul
       time: params.has('time') ? Number(params.get('time')) : FORMAL_MATCH_REALTIME_MINUTES,
       matchStartStaminaBonus: _logisticsMods.matchStartStaminaBonus,
       moraleDecayReduction: _logisticsMods.moraleDecayReduction,
+      onProgress: (progress, detail) => {
+        setRuntimeProgress(progress)
+        if (detail) setRuntimeLoadingDetail(detail)
+      },
     }).then(() => {
       // 赛前更衣室的选择在比赛未启动时无法落人，开赛后统一补打
       if (prematchChoicesRef.current.length) {
@@ -354,12 +365,16 @@ export function HappySeedMatchBroadcast({ saveData = null, onMatchComplete = nul
       setVisualEvents(getMatchVisualEventSnapshot())
       setRuntimeActors(getRuntimeActorSnapshot())
       setStadiumScene(getStadiumSceneSnapshot())
+      setRuntimeProgress(100)
+      setRuntimeLoadingDetail('比赛现场准备完成')
+      requestAnimationFrame(() => requestAnimationFrame(() => setRuntimeLoading(false)))
       commitSession((current) => startFormalMatchSession(current))
       // 球员模式：开赛后自动换下体力不足的球员
       if (isPlayerMode) autoSubstituteRedSide()
     }).catch((bootError) => {
       console.error(bootError)
       setError(bootError.message || '比赛引擎启动失败')
+      setRuntimeLoading(true)
     })
     return undefined
   }, [audioStarted, blueTeamId, commitSession, currentRun, isPlayerMode, params, prematchGateClear, redTeamId])
@@ -1190,6 +1205,17 @@ export function HappySeedMatchBroadcast({ saveData = null, onMatchComplete = nul
           <div className="broadcast-rain-overlay" aria-hidden="true" />
           <PixelRain />
         </>,
+        document.body,
+      )}
+
+      {runtimeLoading && createPortal(
+        <GameLoadingScreen
+          title="比赛即将开始"
+          label="比赛资源加载中"
+          detail={runtimeLoadingDetail}
+          progress={runtimeProgress}
+          error={error}
+        />,
         document.body,
       )}
 

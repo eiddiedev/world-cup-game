@@ -5,6 +5,7 @@ import {
 import {
   HAPPYSEED_STADIUM_CAMERA_PRESETS,
   HAPPYSEED_STADIUM_LAYERS,
+  HAPPYSEED_PIXEL_STADIUM_ASSETS,
   getHappySeedPixelStadiumContract,
 } from '../utils/happySeedPixelStadium.js'
 import {
@@ -40,6 +41,7 @@ import {
   validateMatchRuntimeEventV1,
 } from '../utils/matchRuntimeEvent.js'
 import { runtimeMatchMinute } from '../utils/matchClock.js'
+import { preloadAssetUrls } from '../utils/visualAssetLoader.js'
 
 const RUNTIME_BASE = '/match-runtime-min'
 
@@ -83,6 +85,8 @@ const MATCH_EVENTS = [
 ]
 
 let bootPromise = null
+let dataCachePromise = null
+let runtimeCorePromise = null
 let speed = 1
 let matchDurationMinutes = 3
 let selectedTeams = { red: 'france', blue: 'brazil' }
@@ -161,17 +165,99 @@ function loadScript(path) {
 }
 
 async function preloadDataCaches() {
-  const [bundleResponse, dirlistResponse] = await Promise.all([
-    fetch(`${RUNTIME_BASE}/__data-bundle.json`),
-    fetch(`${RUNTIME_BASE}/__dirlist.json`),
-  ])
+  if (window.__dataBundleCache && window.__dirlistCache) return
+  if (dataCachePromise) return dataCachePromise
 
-  if (!bundleResponse.ok) {
-    throw new Error(`比赛数据包加载失败：HTTP ${bundleResponse.status}`)
-  }
+  dataCachePromise = (async () => {
+    const [bundleResponse, dirlistResponse] = await Promise.all([
+      fetch(`${RUNTIME_BASE}/__data-bundle.json`, { cache: 'force-cache' }),
+      fetch(`${RUNTIME_BASE}/__dirlist.json`, { cache: 'force-cache' }),
+    ])
 
-  window.__dataBundleCache = await bundleResponse.text()
-  if (dirlistResponse.ok) window.__dirlistCache = await dirlistResponse.text()
+    if (!bundleResponse.ok) {
+      throw new Error(`比赛数据包加载失败：HTTP ${bundleResponse.status}`)
+    }
+
+    window.__dataBundleCache = await bundleResponse.text()
+    if (dirlistResponse.ok) window.__dirlistCache = await dirlistResponse.text()
+  })().catch((error) => {
+    dataCachePromise = null
+    throw error
+  })
+  return dataCachePromise
+}
+
+const BODY_PART_FILES = [
+  'arm_left.png', 'arm_right.png', 'hand_left.png', 'hand_right.png',
+  'knee.png', 'neck.png', 'head_front.png', 'head_back.png',
+]
+
+const KIT_PART_FILES = [
+  'sleeve_left.png', 'sleeve_right.png', 'shorts.png', 'shorts_leg.png',
+  'socks.png', 'shoes.png', 'shirt_front.png', 'shirt_back.png',
+]
+
+export function collectHappySeedMatchAssetUrls(config) {
+  const urls = new Set(Object.values(HAPPYSEED_PIXEL_STADIUM_ASSETS))
+  const bindings = [
+    ...(config?.actors || []),
+    ...(config?.sides?.red?.bench || []),
+    ...(config?.sides?.blue?.bench || []),
+  ]
+
+  bindings.forEach((binding) => {
+    const visual = binding?.visual || binding?.business?.visual
+    if (!visual) return
+    if (visual.number) urls.add(visual.number)
+    if (visual.playerRoot) BODY_PART_FILES.forEach((file) => urls.add(`${visual.playerRoot}/${file}`))
+    if (visual.kitRoot) KIT_PART_FILES.forEach((file) => urls.add(`${visual.kitRoot}/${file}`))
+    if (visual.kitRoot && visual.role === 'goalkeeper') {
+      urls.add(`${visual.kitRoot}/hand_left.png`)
+      urls.add(`${visual.kitRoot}/hand_right.png`)
+    }
+  })
+  return [...urls]
+}
+
+export function preloadHappySeedRuntimeCore({ onProgress } = {}) {
+  if (runtimeCorePromise) return runtimeCorePromise
+  runtimeCorePromise = (async () => {
+    ensureRuntimeSettings()
+    onProgress?.(8, '正在读取比赛数据')
+    await Promise.all([
+      preloadDataCaches(),
+      preloadAssetUrls(Object.values(HAPPYSEED_PIXEL_STADIUM_ASSETS), {
+        concurrency: 4,
+        onProgress: ({ percent }) => onProgress?.(8 + Math.round(percent * 0.34), '正在准备世界杯球场'),
+      }),
+    ])
+    onProgress?.(45, '正在启动比赛引擎')
+    for (let index = 0; index < SCRIPT_PATHS.length; index += 1) {
+      await loadScript(SCRIPT_PATHS[index])
+      onProgress?.(45 + Math.round(((index + 1) / SCRIPT_PATHS.length) * 25), '正在启动比赛引擎')
+    }
+    onProgress?.(70, '比赛引擎准备完成')
+  })().catch((error) => {
+    runtimeCorePromise = null
+    throw error
+  })
+  return runtimeCorePromise
+}
+
+export async function preloadHappySeedMatchAssets(options = {}, { onProgress } = {}) {
+  await preloadHappySeedRuntimeCore({ onProgress })
+  const config = buildHappySeedRuntimeActorConfig({
+    ...options,
+    red: options.red || 'france',
+    blue: options.blue || 'brazil',
+  })
+  const urls = collectHappySeedMatchAssetUrls(config)
+  await preloadAssetUrls(urls, {
+    concurrency: 10,
+    onProgress: ({ percent }) => onProgress?.(70 + Math.round(percent * 0.25), '正在装配双方球员'),
+  })
+  onProgress?.(95, '正在布置比赛现场')
+  return config
 }
 
 function waitForMatchStart(timeoutMs = 30000, waitForNextStart = false) {
@@ -656,10 +742,10 @@ export function bootHappySeedMatch(options = {}) {
       red: options.red || 'france',
       blue: options.blue || 'brazil',
     }
-    runtimeActorConfig = buildHappySeedRuntimeActorConfig({
+    runtimeActorConfig = await preloadHappySeedMatchAssets({
       ...options,
       ...selectedTeams,
-    })
+    }, { onProgress: options.onProgress })
     representativeVisualEvents = buildRepresentativeMatchVisualEvents(runtimeActorConfig)
     matchVisualAuthorityState = createMatchVisualAuthorityState()
     matchVisualEventQueue = null
@@ -696,9 +782,6 @@ export function bootHappySeedMatch(options = {}) {
     }
     window.__matchFormations = options.formations || runtimeActorConfig.formations
     matchDurationMinutes = Number(options.time) || 3
-
-    await preloadDataCaches()
-    for (const path of SCRIPT_PATHS) await loadScript(path)
 
     if (typeof window.__startStandaloneMatch !== 'function') {
       throw new Error('运行时已加载，但没有暴露 __startStandaloneMatch')

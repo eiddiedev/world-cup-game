@@ -1,7 +1,13 @@
 import React, { useState, useEffect } from 'react'
 import { loadSaveData, persistSaveData, createNewRun } from './utils/saveManager'
-import { teams } from './data/teams'
+import { teams, getTeamById } from './data/teams'
 import { initAudio, audioManager } from './utils/audioManager'
+import { preloadAssetUrls } from './utils/visualAssetLoader'
+import { getCriticalStartupAssets, getSecondaryTeamAssets } from './utils/startupAssets'
+import {
+  preloadHappySeedMatchAssets,
+  preloadHappySeedRuntimeCore,
+} from './services/happySeedMatchRuntime'
 import HomeScreen from './components/HomeScreen'
 import TeamSelectScreen from './components/TeamSelectScreen'
 import RecruitmentScreen from './components/RecruitmentScreen'
@@ -17,7 +23,10 @@ import PenaltyModeScreen from './components/PenaltyModeScreen'
 import CodexScreen from './components/CodexScreen'
 import LogisticsScreen from './components/LogisticsScreen'
 import TrainingGround from './components/TrainingGround'
+import GameLoadingScreen from './components/GameLoadingScreen'
 import { IS_DOUYIN_DEMO } from './config/runtime'
+
+const IS_TEST_RUNTIME = import.meta.env.MODE === 'test'
 
 /**
  * 剑指美加墨 — 主应用组件
@@ -29,6 +38,11 @@ export default function App() {
   const [currentScreen, setCurrentScreen] = useState('home')
   const [activeGameMode, setActiveGameMode] = useState('coach')
   const [toast, setToast] = useState(null)
+  const [startup, setStartup] = useState({
+    ready: IS_TEST_RUNTIME,
+    progress: IS_TEST_RUNTIME ? 100 : 0,
+    detail: IS_TEST_RUNTIME ? '必要资源加载完成' : '正在准备主视觉',
+  })
 
   useEffect(() => {
     const data = loadSaveData()
@@ -44,10 +58,60 @@ export default function App() {
   }, [])
 
   useEffect(() => {
+    if (IS_TEST_RUNTIME) return undefined
+    let cancelled = false
+    preloadAssetUrls(getCriticalStartupAssets(teams), {
+      concurrency: 8,
+      onProgress: ({ percent, completed, total }) => {
+        if (cancelled) return
+        setStartup({
+          ready: false,
+          progress: percent,
+          detail: completed < 7 ? '正在准备主标题与背景' : `正在加载 16 支国家队资源 · ${completed}/${total}`,
+        })
+      },
+    }).then(({ failures }) => {
+      if (cancelled) return
+      if (failures.length) console.warn('[Startup] 部分资源稍后重试', failures)
+      setStartup({ ready: true, progress: 100, detail: '必要资源加载完成' })
+
+      const warmup = () => {
+        preloadAssetUrls(getSecondaryTeamAssets(teams), { concurrency: 6 }).catch(() => {})
+        preloadHappySeedRuntimeCore().catch((error) => {
+          console.warn('[Match preload] 比赛引擎将在进入比赛时重试', error)
+        })
+      }
+      if ('requestIdleCallback' in window) window.requestIdleCallback(warmup, { timeout: 1500 })
+      else window.setTimeout(warmup, 150)
+    })
+    return () => { cancelled = true }
+  }, [])
+
+  useEffect(() => {
     if (saveData?.settings) {
       audioManager.applySettings(saveData.settings)
     }
   }, [saveData?.settings])
+
+  useEffect(() => {
+    const run = saveData?.currentRun
+    if (!startup.ready || !run?.teamId) return
+    const opponent = getTeamById(run.currentOpponent)
+    preloadHappySeedMatchAssets({
+      red: run.teamId,
+      blue: opponent?.id || 'brazil',
+      redFormation: run.formation,
+      redSquadPlayerIds: run.roster || run.purchasedPlayerIds || [],
+      redLineupPlayerIds: run.lineup || [],
+      redPlayerStateById: run.playerMatchStates || {},
+      redUnavailablePlayerIds: [
+        ...(run.injuredPlayers || []),
+        ...(run.suspendedPlayers || []),
+      ],
+    }).catch((error) => {
+      console.warn('[Match preload] 本场资源将在开赛时重试', error)
+    })
+  }, [saveData?.currentRun, startup.ready])
 
   useEffect(() => {
     const handleGlobalPointerDown = (event) => {
@@ -160,7 +224,14 @@ export default function App() {
     setCurrentScreen(screen)
   }
 
-  if (!saveData) return <div className="loading">加载中...</div>
+  if (!saveData || !startup.ready) {
+    return (
+      <GameLoadingScreen
+        progress={startup.progress}
+        detail={saveData ? startup.detail : '正在读取本地存档'}
+      />
+    )
+  }
 
   const screenProps = {
     saveData,
