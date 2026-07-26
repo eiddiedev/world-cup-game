@@ -74,4 +74,3 @@ export async function preloadAssetUrls(urls, { concurrency = 6, onProgress } = {
   await Promise.all(Array.from({ length: Math.min(concurrency, total) }, worker))
   return { completed, total, failures }
 }
-

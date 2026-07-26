@@ -16,4 +16,3 @@ export function getSecondaryTeamAssets(teams = []) {
     (team.groupOpponents || []).map((opponent) => opponent.flag)
   )).filter(Boolean))]
 }
-

@@ -17,4 +17,3 @@ describe('startup asset priority', () => {
     expect(new Set(assets).size).toBe(assets.length)
   })
 })
-
