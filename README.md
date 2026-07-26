@@ -37,10 +37,10 @@
 
 16 支球队不是同一套数值换皮。西班牙、法国、阿根廷等强队承担夺冠压力；挪威与加拿大以突破历史为目标；佛得角追求小组出线；库拉索争取世界杯首胜。难度、阵容深度、预算、目标、技能和叙事共同构成不同的执教命题。
 
-更完整的评委材料：
+完整策划书与机制算法已经合并为一份项目文档：
 
-- [游戏策划书（评委版）](docs/JUDGE_GAME_DESIGN.md)
-- [机制算法与胜率证据（评委版）](docs/MECHANICS_AND_BALANCE.md)
+- [《剑指美加墨》游戏策划书（Markdown）](docs/剑指美加墨_游戏策划书.md)
+- [《剑指美加墨》游戏策划书（Word）](docs/剑指美加墨_游戏策划书_2026-07-26.docx)
 
 ## 核心公平原则
 
@@ -109,7 +109,7 @@ node scripts/intel-validation-sim.mjs --rounds 3000
 - `public/match-runtime-min/`：第三方物理核心与自有 HappySeed 适配层。
 - `public/assets/`：界面、头像、聘书、事件、点球和本地音频。
 - `public/pixel/`：生产像素球员、16 队球衣角色资源、装备和球场切片。
-- `docs/`：评委材料、设计说明、验收与开发交接。
+- `docs/`：游戏策划、机制算法、设计说明、验收与开发交接。
 - `scripts/`：资源生成、资产审计、包体构建与平衡模拟。
 
 `public/match-runtime-min/scripts/match.rebuilt.js` 是第三方物理核心，不直接修改；自有适配逻辑位于 `public/match-runtime-min/standalone-match.js`、`public/match-runtime-min/happyseed/` 和 `src/services/happySeedMatchRuntime.js`。

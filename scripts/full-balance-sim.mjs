@@ -318,9 +318,18 @@ function summarize(matches) {
     const m = mean(values)
     return Math.sqrt(mean(values.map((v) => (v - m) ** 2)))
   }
+  const goalDistribution = {
+    '0': goals.filter((value) => value === 0).length / Math.max(1, goals.length),
+    '1': goals.filter((value) => value === 1).length / Math.max(1, goals.length),
+    '2': goals.filter((value) => value === 2).length / Math.max(1, goals.length),
+    '3': goals.filter((value) => value === 3).length / Math.max(1, goals.length),
+    '4': goals.filter((value) => value === 4).length / Math.max(1, goals.length),
+    '5+': goals.filter((value) => value >= 5).length / Math.max(1, goals.length),
+  }
   return {
     matches: matches.length,
     goalsPerMatch: mean(goals), goalsStd: std(goals),
+    goalDistribution,
     decisionsPerMatch: mean(decisions),
     decisionGoalsPerMatch: mean(decisionGoals),
     decisionGoalShare: mean(decisionGoals) / Math.max(0.001, mean(goals)),
@@ -485,6 +494,7 @@ if (AS_JSON) {
   console.log(`全链路平衡仿真 · 每对阵 ${RUNS} 场 × ${Object.keys(matchupRecords).length} 对阵 = ${allMatches.length} 场 · 每队执教 ${TOURNAMENTS_PER_TEAM} 届锦标赛`)
   console.log('═'.repeat(68))
   console.log(`场均进球        ${num(report.overall.goalsPerMatch)} ± ${num(report.overall.goalsStd)}   (目标 ~3.0)`)
+  console.log(`进球分布        ${Object.entries(report.overall.goalDistribution).map(([goals, share]) => `${goals}球 ${pct(share)}`).join(' · ')}`)
   console.log(`场均角球        ${num(report.overall.cornersPerMatch)}          (目标 ~2.0)`)
   console.log(`场均点球        ${num(report.overall.penaltiesPerMatch)}          (目标 ~0.5)`)
   console.log(`场均黄牌        ${num(report.overall.yellowPerMatch)}          (目标 ~3.0)`)
