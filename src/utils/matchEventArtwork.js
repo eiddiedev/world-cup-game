@@ -8,8 +8,8 @@ export const MATCH_EVENT_ARTWORK = Object.freeze({
   'var-review:penalty': Object.freeze({ src: '/assets/比赛事件/VAR.png', label: '检查 VAR 中', headline: 'VAR 正在检查禁区内犯规。', holdMs: 2800 }),
   'var-result:valid': Object.freeze({ src: '/assets/比赛事件/VAR-GOAL.png', label: 'GOAL', headline: 'VAR 确认：进球有效！', holdMs: 3000 }),
   'var-result:disallowed': Object.freeze({ src: '/assets/比赛事件/VAR-NO-GOAL.png', label: 'NO GOAL', headline: 'VAR 确认：进球无效。', holdMs: 3000 }),
-  'var-result:penalty-awarded': Object.freeze({ src: '/assets/比赛事件/VAR-GOAL.png', label: 'PENALTY', headline: 'VAR 确认：判罚点球！', holdMs: 3000 }),
-  'var-result:no-penalty': Object.freeze({ src: '/assets/比赛事件/VAR-NO-GOAL.png', label: 'NO PENALTY', headline: 'VAR 确认：没有点球。', holdMs: 3000 }),
+  'var-result:penalty-awarded': Object.freeze({ src: null, label: '确认点球', headline: 'VAR 确认：判罚点球！', holdMs: 3000 }),
+  'var-result:no-penalty': Object.freeze({ src: null, label: '没有点球', headline: 'VAR 确认：没有点球。', holdMs: 3000 }),
   'card:yellow': Object.freeze({ src: '/assets/比赛事件/黄牌.png', label: '黄牌', headline: '裁判出示黄牌。', holdMs: 2100 }),
   'card:red': Object.freeze({ src: '/assets/比赛事件/红牌.png', label: '红牌', headline: '裁判出示红牌！', holdMs: 2100 }),
 })

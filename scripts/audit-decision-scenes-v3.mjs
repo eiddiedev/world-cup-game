@@ -80,6 +80,7 @@ for (const [index, scenario] of DECISION_LIBRARY.entries()) {
   for (const choice of script.choices) {
     choiceCount += 1
     let expectedBallStart = script.ball.normalized
+    let ballPathIndex = 0
     for (const affordance of choice.affordances) {
       if (affordance.kind !== 'ball-path') continue
       pathCount += 1
@@ -87,10 +88,25 @@ for (const [index, scenario] of DECISION_LIBRARY.entries()) {
       if (script.actors[affordance.role]?.side !== expectedSide) {
         throw new Error(`${scenario.id}/${choice.id}: ball source side mismatch`)
       }
-      if (JSON.stringify(affordance.points[0]) !== JSON.stringify(expectedBallStart)) {
+      if (ballPathIndex === 0 && affordance.startRole && script.actors[affordance.startRole]) {
+        const startActorId = script.actors[affordance.startRole].runtimeActorId
+        const stagedPosition = script.stagedActorPositions.find((entry) => (
+          entry.runtimeActorId === startActorId
+        ))
+        const livePosition = script.actorPositions.find((entry) => (
+          entry.runtimeActorId === startActorId
+        ))
+        expectedBallStart = stagedPosition?.normalized || livePosition?.normalized || expectedBallStart
+      }
+      const startMatches = affordance.startRole
+        ? Math.abs(affordance.points[0][0] - expectedBallStart[0]) < 0.001
+          && Math.abs(affordance.points[0][1] - expectedBallStart[1]) < 0.001
+        : JSON.stringify(affordance.points[0]) === JSON.stringify(expectedBallStart)
+      if (!startMatches) {
         throw new Error(`${scenario.id}/${choice.id}: ball path chain is discontinuous`)
       }
       expectedBallStart = affordance.points.at(-1)
+      ballPathIndex += 1
       if (affordance.runtimeEventType === 'pass' && !affordance.targetRole) {
         throw new Error(`${scenario.id}/${choice.id}: pass receiver is inferred instead of explicit`)
       }

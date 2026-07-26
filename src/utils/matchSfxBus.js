@@ -17,6 +17,11 @@ export function createMatchSfxBus(options = {}) {
         playedEventIds.add(event.id)
         return audio.playSound(event.type === 'shot' ? 'ballShot' : 'ballTouch')
       }
+      if (event.type === 'kickoff') {
+        playedEventIds.add(event.id)
+        // 开球哨声与观众音由引擎 ab-kickoff-played 事件驱动（球真正被开出时刻），此处不处理
+        return false
+      }
       if (event.type === 'save') {
         playedEventIds.add(event.id)
         return audio.playSave()
@@ -38,9 +43,13 @@ export function createMatchSfxBus(options = {}) {
         playedEventIds.add(event.id)
         return audio.playSound('periodWhistle')
       }
-      if (['foul', 'offside', 'card', 'throw-in-violation', 'penalty'].includes(event.type)) {
+      if (['foul', 'offside', 'throw-in-violation', 'penalty'].includes(event.type)) {
         playedEventIds.add(event.id)
         return audio.playSound('whistle')
+      }
+      if (event.type === 'card') {
+        playedEventIds.add(event.id)
+        return audio.playSound('cardWhistle')
       }
       return false
     },

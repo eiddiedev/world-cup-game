@@ -1,9 +1,11 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { audioManager } from '../utils/audioManager'
+import { createInitialSaveData } from '../utils/saveManager'
 
 const SETTING_ROWS = [
   { key: 'sound', label: '音效', desc: '按钮、进球、裁判和结算反馈' },
   { key: 'music', label: '音乐', desc: '像素风循环背景音乐' },
+  { key: 'stadium', label: '球场音效', desc: '比赛时观众助威声' },
   { key: 'vibration', label: '震动', desc: '点击和关键时刻轻微反馈' },
 ]
 
@@ -11,6 +13,7 @@ const DEFAULT_SETTINGS = {
   sound: true,
   music: true,
   vibration: true,
+  stadium: true,
   language: 'zh-CN',
 }
 
@@ -18,6 +21,8 @@ const DEFAULT_SETTINGS = {
  * 设置页面 — 只保留比赛需要的三项开关，沿用像素菜单风格。
  */
 export default function SettingsScreen({ saveData, updateSaveData, navigateTo }) {
+  const [showResetConfirm, setShowResetConfirm] = useState(false)
+
   const settings = {
     ...DEFAULT_SETTINGS,
     ...(saveData.settings || {}),
@@ -45,6 +50,15 @@ export default function SettingsScreen({ saveData, updateSaveData, navigateTo })
     if (key === 'music' && nextSettings.music) {
       audioManager.unlock()
     }
+  }
+
+  const handleResetAll = () => {
+    // 保留设置项，其余全部重置
+    const fresh = createInitialSaveData()
+    fresh.settings = settings
+    updateSaveData(fresh)
+    setShowResetConfirm(false)
+    audioManager.playSound('confirm')
   }
 
   return (
@@ -79,6 +93,34 @@ export default function SettingsScreen({ saveData, updateSaveData, navigateTo })
             )
           })}
         </div>
+      </section>
+
+      <section className="PixelPanel settings-panel settings-danger-zone" aria-label="危险操作">
+        {!showResetConfirm ? (
+          <button
+            type="button"
+            className="settings-row settings-reset-btn"
+            onClick={() => setShowResetConfirm(true)}
+          >
+            <span className="settings-copy">
+              <strong>回档</strong>
+              <span>重置所有进度、图鉴和后勤预算</span>
+            </span>
+          </button>
+        ) : (
+          <div className="settings-reset-confirm">
+            <p>确定要重置所有进度吗？</p>
+            <small>图鉴归零、后勤预算恢复初始、解锁球队重置</small>
+            <div className="settings-reset-actions">
+              <button type="button" className="settings-reset-cancel" onClick={() => setShowResetConfirm(false)}>
+                取消
+              </button>
+              <button type="button" className="settings-reset-confirm-btn" onClick={handleResetAll}>
+                确认重置
+              </button>
+            </div>
+          </div>
+        )}
       </section>
     </main>
   )

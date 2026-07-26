@@ -5,11 +5,12 @@
  */
 
 const RESULT_RANK = {
-  champion: 6,
-  finalist: 5,
-  semifinal: 4,
-  quarterfinal: 3,
-  round16: 2,
+  champion: 7,
+  finalist: 6,
+  semifinal: 5,
+  quarterfinal: 4,
+  round16: 3,
+  round32: 2,
   group: 1,
 }
 
@@ -86,13 +87,13 @@ export const CODEX_ACHIEVEMENTS = [
     desc: '落后3球最终取胜',
     icon: '↺',
     check(saveData) {
-      return saveData.codex?.records?.comebacksFrom3 || 0
+      return saveData.codex?.unlockedAchievements?.includes('miracle_comeback') ? 1 : 0
     },
   },
   {
     id: 'lightning_strike',
     name: '闪电战',
-    desc: '开场1分钟内进球',
+    desc: '开场5分钟内进球',
     icon: '⚡',
     check(saveData) {
       return saveData.codex?.unlockedAchievements?.includes('lightning_strike') ? 1 : 0
@@ -135,7 +136,8 @@ export const CODEX_ACHIEVEMENTS = [
     desc: '使用3种不同阵型夺冠',
     icon: '⊞',
     check(saveData) {
-      return saveData.codex?.unlockedAchievements?.includes('tactician') ? 1 : 0
+      const formations = saveData.codex?.championFormations || []
+      return formations.length >= 3 ? 1 : 0
     },
   },
   {
@@ -144,7 +146,8 @@ export const CODEX_ACHIEVEMENTS = [
     desc: '替补球员累计打入10球',
     icon: '⇄',
     check(saveData) {
-      return saveData.codex?.unlockedAchievements?.includes('super_sub') ? 1 : 0
+      const subGoals = saveData.codex?.records?.substituteGoals || 0
+      return subGoals >= 10 ? 1 : 0
     },
   },
   {
@@ -221,7 +224,7 @@ export const CODEX_ACHIEVEMENTS = [
   {
     id: 'perfectionist',
     name: '完美主义',
-    desc: '以全胜战绩夺冠（7战7胜）',
+    desc: '以全胜战绩夺冠（8战8胜）',
     icon: '◇',
     check(saveData) {
       return saveData.codex?.unlockedAchievements?.includes('perfectionist') ? 1 : 0

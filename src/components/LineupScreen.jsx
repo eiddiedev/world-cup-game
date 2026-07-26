@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react'
+import React, { useMemo, useRef, useState } from 'react'
 import { FORMATION_NAMES, FORMATION_TACTICS } from '../data/formationTactics.js'
 import { getTeamDefaultFormation } from '../data/teamFormations.js'
 import { getTeamById, getTeamFlag } from '../data/teams'
@@ -14,6 +14,9 @@ import {
   getOpponentMatchSetup,
   resolveOpponentStrength,
 } from '../utils/opponentTactics.js'
+import { getLogisticsModifiers } from '../utils/logisticsEffects.js'
+import { computeMatchIntel } from '../utils/scoutIntel.js'
+import '../styles/intel-panel.css'
 
 /**
  * 排兵布阵页面
@@ -130,6 +133,9 @@ export default function LineupScreen({ saveData, updateSaveData, navigateTo, sho
   const [selectedBenchPlayerId, setSelectedBenchPlayerId] = useState(null)
   const [showPositionWarning, setShowPositionWarning] = useState(null)
   const [dragSource, setDragSource] = useState(null) // 'bench' or 'pitch'
+  const [intelExpanded, setIntelExpanded] = useState(false)
+  const pointerDragRef = useRef(null)
+  const suppressPointerClickRef = useRef(false)
 
   // 球员可用性
   const injuredPlayersSet = new Set(saveData.currentRun?.injuredPlayers || [])
@@ -187,6 +193,22 @@ export default function LineupScreen({ saveData, updateSaveData, navigateTo, sho
     .filter(player => player && isPlayerAvailable(player.id))
 
   const lineupAssessment = calculateLineupRatings(getLineupPlayersFromSlots(), selectedFormation)
+
+  // 赛前情报计算（基于后勤等级）
+  const intelData = useMemo(() => {
+    const modifiers = getLogisticsModifiers(saveData.currentRun?.logisticsLevels)
+    if (modifiers.intelLevel === 0 && modifiers.scoutLevel === 0) return null
+    return computeMatchIntel({
+      opponentSetup,
+      opponentTeam,
+      opponentTeamId: saveData.currentRun?.currentOpponent,
+      opponentStrength,
+      playerLineup: getLineupPlayersFromSlots(),
+      playerFormation: selectedFormation,
+      intelLevel: modifiers.intelLevel,
+      scoutLevel: modifiers.scoutLevel,
+    })
+  }, [opponentSetup, opponentTeam, opponentStrength, startingLineup, selectedFormation, saveData.currentRun?.logisticsLevels])
 
   // 获取对手国旗
   const getOpponentFlag = (opponentName) => {
@@ -317,6 +339,78 @@ export default function LineupScreen({ saveData, updateSaveData, navigateTo, sho
     e.dataTransfer.dropEffect = 'move'
   }
 
+  // 移动端不会可靠触发 HTML5 drag/drop，使用 Pointer Events 补齐手指拖放。
+  const clearPointerDrag = () => {
+    const activeDrag = pointerDragRef.current
+    activeDrag?.element?.classList.remove('is-pointer-dragging')
+    pointerDragRef.current = null
+    setDraggedPlayer(null)
+    setDragSource(null)
+  }
+
+  const handlePlayerPointerDown = (e, player, source, slotId = null) => {
+    if (e.pointerType === 'mouse' || !player || !isPlayerAvailable(player.id)) return
+
+    const dragPlayer = slotId ? { ...player, _fromSlotId: slotId } : player
+    pointerDragRef.current = {
+      pointerId: e.pointerId,
+      player: dragPlayer,
+      source,
+      element: e.currentTarget,
+      startX: e.clientX,
+      startY: e.clientY,
+      moved: false,
+    }
+    e.currentTarget.setPointerCapture?.(e.pointerId)
+  }
+
+  const handlePlayerPointerMove = (e) => {
+    const activeDrag = pointerDragRef.current
+    if (!activeDrag || activeDrag.pointerId !== e.pointerId) return
+
+    const distance = Math.hypot(e.clientX - activeDrag.startX, e.clientY - activeDrag.startY)
+    if (!activeDrag.moved && distance >= 6) {
+      activeDrag.moved = true
+      activeDrag.element?.classList.add('is-pointer-dragging')
+      setDraggedPlayer(activeDrag.player)
+      setDragSource(activeDrag.source)
+    }
+
+    if (activeDrag.moved) e.preventDefault()
+  }
+
+  const handlePlayerPointerUp = (e) => {
+    const activeDrag = pointerDragRef.current
+    if (!activeDrag || activeDrag.pointerId !== e.pointerId) return
+
+    activeDrag.element?.releasePointerCapture?.(e.pointerId)
+    if (!activeDrag.moved) {
+      clearPointerDrag()
+      return
+    }
+
+    const dropTarget = document.elementFromPoint(e.clientX, e.clientY)
+    const pitchSlot = dropTarget?.closest?.('.pitch-slot[data-slot-id]')
+    const benchTarget = dropTarget?.closest?.('.bench-section')
+
+    if (pitchSlot) {
+      const [positionType, slotIndex] = pitchSlot.dataset.slotId.split('-')
+      preparePlayerPlacement(activeDrag.player, positionType, Number(slotIndex))
+    } else if (benchTarget && activeDrag.source === 'pitch') {
+      setStartingLineup(current => current.filter(slot => slot.playerId !== activeDrag.player.id))
+    }
+
+    suppressPointerClickRef.current = true
+    e.preventDefault()
+    e.stopPropagation()
+    clearPointerDrag()
+    window.setTimeout(() => {
+      suppressPointerClickRef.current = false
+    }, 0)
+  }
+
+  const handlePlayerPointerCancel = () => clearPointerDrag()
+
   // 点击球场位置显示球员信息
   const handleSlotClick = (positionType, slotIndex) => {
     const slotId = `${positionType}-${slotIndex}`
@@ -350,7 +444,12 @@ export default function LineupScreen({ saveData, updateSaveData, navigateTo, sho
         draggable={!unavailable}
         onDragStart={(e) => { if (!unavailable) handleBenchDragStart(e, player) }}
         onDragEnd={handleDragEnd}
+        onPointerDown={(e) => { if (!unavailable) handlePlayerPointerDown(e, player, 'bench') }}
+        onPointerMove={handlePlayerPointerMove}
+        onPointerUp={handlePlayerPointerUp}
+        onPointerCancel={handlePlayerPointerCancel}
         onClick={() => {
+          if (suppressPointerClickRef.current) return
           if (unavailable) showToast(`${player.name} 因${reason}无法上场`)
           else handleBenchClick(player)
         }}
@@ -490,6 +589,7 @@ export default function LineupScreen({ saveData, updateSaveData, navigateTo, sho
             style={{ left: `${pos.x}%`, top: `${pos.y}%` }}
             data-slot-id={slotId}
             onClick={() => {
+              if (suppressPointerClickRef.current) return
               if (viewingOpponent && player) {
                 setShowPlayerInfo(player)
               } else if (selectedBenchPlayerId) {
@@ -515,6 +615,12 @@ export default function LineupScreen({ saveData, updateSaveData, navigateTo, sho
               isDragging = false
               handleDragEnd()
             }}
+            onPointerDown={viewingOpponent || !player
+              ? undefined
+              : (e) => handlePlayerPointerDown(e, player, 'pitch', slotId)}
+            onPointerMove={viewingOpponent ? undefined : handlePlayerPointerMove}
+            onPointerUp={viewingOpponent ? undefined : handlePlayerPointerUp}
+            onPointerCancel={viewingOpponent ? undefined : handlePlayerPointerCancel}
           >
             {player ? (
               <span className="slot-number">{player.number || '?'}</span>
@@ -566,7 +672,7 @@ export default function LineupScreen({ saveData, updateSaveData, navigateTo, sho
           </div>
         </section>
 
-        <aside className="lineup-control-pane">
+        <aside className={`lineup-control-pane${intelExpanded && !viewingOpponent ? ' is-intel-expanded' : ''}`}>
           <button
             className={`lineup-view-toggle ${viewingOpponent ? 'active' : ''}`}
             onClick={() => setViewingOpponent(value => !value)}
@@ -599,6 +705,161 @@ export default function LineupScreen({ saveData, updateSaveData, navigateTo, sho
               <small>{(viewingOpponent ? opponentSetup.tactics : FORMATION_TACTICS[selectedFormation]).suitableFor}</small>
             </div>
           </section>
+
+          {/* 赛前情报面板 */}
+          {!viewingOpponent && (
+            <section className={`lineup-control-section intel-panel-section ${intelExpanded ? 'is-expanded' : 'is-collapsed'}`}>
+              <div className="lineup-section-title">
+                <span>赛前情报</span>
+                <button
+                  className="intel-toggle-btn"
+                  onClick={() => setIntelExpanded(v => !v)}
+                >
+                  {intelExpanded ? '收起' : '展开'}
+                </button>
+              </div>
+              {intelExpanded && (
+                intelData ? (
+                  <div className="intel-content">
+                    {/* 数据分析中心 */}
+                    {intelData.intel && (
+                      <div className="intel-group">
+                        <div className="intel-group-header">
+                          <img src="/assets/后勤/数据分析中心.png" alt="" className="intel-group-icon" />
+                          <span>数据分析中心</span>
+                          <span className="intel-group-level">Lv.{intelData.intel.level}</span>
+                        </div>
+                        {/* L1: 对手风格 */}
+                        <div className="intel-item">
+                          <span className="intel-item-label">风格</span>
+                          <div className="intel-tags">
+                            {intelData.intel.strengths.map(tag => (
+                              <span key={tag} className="intel-tag">{tag}</span>
+                            ))}
+                          </div>
+                        </div>
+                        {/* L2: 危险球员 + 弱点 */}
+                        {intelData.intel.level >= 2 && intelData.intel.dangerPlayer && (
+                          <div className="intel-item">
+                            <span className="intel-item-label">危险球员</span>
+                            <span className="intel-item-value danger">
+                              {intelData.intel.dangerPlayer.name}（{intelData.intel.dangerPlayer.position} 评分{intelData.intel.dangerPlayer.rating}）
+                            </span>
+                          </div>
+                        )}
+                        {intelData.intel.level >= 2 && intelData.intel.weakness && (
+                          <div className="intel-item">
+                            <span className="intel-item-label">弱点</span>
+                            <span className="intel-item-value warning">
+                              对手{intelData.intel.weakness.areaLabel}评分{intelData.intel.weakness.opponentRating}，
+                              我方{intelData.intel.weakness.playerAreaLabel}评分{intelData.intel.weakness.playerRating}
+                            </span>
+                          </div>
+                        )}
+                        {intelData.intel.level >= 2 && intelData.intel.weakness && (
+                          <div className="intel-item">
+                            <span className="intel-item-label">建议</span>
+                            <span className="intel-item-value highlight">{intelData.intel.weakness.advice}</span>
+                          </div>
+                        )}
+                        {/* L3: 战术建议 */}
+                        {intelData.intel.level >= 3 && intelData.intel.tacticalAdvice && (
+                          <div className="intel-advice-box">
+                            对手{intelData.intel.tacticalAdvice.opponentFormation}阵型被
+                            <span className="advice-formation"> {intelData.intel.tacticalAdvice.recommendedFormation} </span>
+                            克制。{intelData.intel.tacticalAdvice.reason}
+                          </div>
+                        )}
+                        {/* 未解锁提示 */}
+                        {intelData.intel.level < 2 && (
+                          <div className="intel-locked">
+                            <img src="/assets/锁.png" alt="" />
+                            <span>升级数据分析中心至Lv.2解锁弱点分析</span>
+                          </div>
+                        )}
+                        {intelData.intel.level < 3 && (
+                          <div className="intel-locked">
+                            <img src="/assets/锁.png" alt="" />
+                            <span>升级至Lv.3解锁战术建议</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    {/* 情报部门 */}
+                    {intelData.scout && (
+                      <div className="intel-group">
+                        <div className="intel-group-header">
+                          <img src="/assets/后勤/情报部门.png" alt="" className="intel-group-icon" />
+                          <span>情报部门</span>
+                          <span className="intel-group-level">Lv.{intelData.scout.level}</span>
+                        </div>
+                        {/* L1: 近期趋势 */}
+                        <div className="intel-item">
+                          <span className="intel-item-label">趋势</span>
+                          <span className="intel-item-value">{intelData.scout.formTrend}</span>
+                        </div>
+                        {/* L2: 门将 + 阵型 */}
+                        {intelData.scout.level >= 2 && intelData.scout.goalkeeper && (
+                          <div className="intel-item">
+                            <span className="intel-item-label">门将</span>
+                            <span className="intel-item-value">{intelData.scout.goalkeeper.tip}</span>
+                          </div>
+                        )}
+                        {intelData.scout.level >= 2 && intelData.scout.goalkeeper?.tendency && (
+                          <div className="intel-item">
+                            <span className="intel-item-label">扑点</span>
+                            <span className="intel-item-value danger">
+                              习惯扑{intelData.scout.goalkeeper.tendency.biasLabel}，{intelData.scout.goalkeeper.tendency.description}
+                            </span>
+                          </div>
+                        )}
+                        {intelData.scout.level >= 2 && intelData.scout.formationTendency && (
+                          <div className="intel-item">
+                            <span className="intel-item-label">阵型</span>
+                            <span className="intel-item-value">惯用 {intelData.scout.formationTendency}</span>
+                          </div>
+                        )}
+                        {/* L3: 战术预判 */}
+                        {intelData.scout.level >= 3 && intelData.scout.tacticalPrediction && (
+                          <>
+                            <div className="intel-item">
+                              <span className="intel-item-label">领先时</span>
+                              <span className="intel-item-value">{intelData.scout.tacticalPrediction.whenWinning}</span>
+                            </div>
+                            <div className="intel-item">
+                              <span className="intel-item-label">落后时</span>
+                              <span className="intel-item-value warning">{intelData.scout.tacticalPrediction.whenLosing}</span>
+                            </div>
+                            <div className="intel-item">
+                              <span className="intel-item-label">威胁</span>
+                              <span className="intel-item-value danger">{intelData.scout.tacticalPrediction.keyThreat}</span>
+                            </div>
+                          </>
+                        )}
+                        {/* 未解锁提示 */}
+                        {intelData.scout.level < 2 && (
+                          <div className="intel-locked">
+                            <img src="/assets/锁.png" alt="" />
+                            <span>升级情报部门至Lv.2解锁门将情报</span>
+                          </div>
+                        )}
+                        {intelData.scout.level < 3 && (
+                          <div className="intel-locked">
+                            <img src="/assets/锁.png" alt="" />
+                            <span>升级至Lv.3解锁战术预判</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="intel-empty-hint">
+                    升级数据分析中心或情报部门以解锁赛前情报
+                  </div>
+                )
+              )}
+            </section>
+          )}
 
           <section
             className={`lineup-control-section player-control-section${viewingOpponent ? ' is-opponent' : ''}`}

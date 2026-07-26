@@ -72,19 +72,43 @@ export function pickAiShooterZone(tec = 70, random = Math.random) {
 }
 
 /**
- * AI keeper picks a zone to dive to. Mostly random; better keepers
- * (high def) are a bit more likely to commit to a corner instead of
- * staying in the middle. Returns a zone string.
+ * AI keeper picks a zone to dive to. Better keepers (high def) are a bit
+ * more likely to commit to a corner instead of staying in the middle.
+ * If a tendency is provided ({ bias, strength }), the keeper will favor
+ * that direction with probability proportional to strength.
+ * Returns a zone string.
  */
-export function pickAiKeeperZone(def = 70, random = Math.random) {
+export function pickAiKeeperZone(def = 70, random = Math.random, tendency = null) {
   const skill = clamp01((def - 40) / 60)
-  const centerChance = 0.34 - skill * 0.14 // 34% -> 20% chance to hold center
-  const columnRoll = random()
-  const column = columnRoll < centerChance
-    ? 'center'
-    : columnRoll < centerChance + (1 - centerChance) / 2
-      ? 'left'
-      : 'right'
+  const baseCenterChance = 0.34 - skill * 0.14 // 34% -> 20% chance to hold center
+
+  let column
+  if (tendency && tendency.bias && tendency.strength > 0) {
+    // 有扑点习惯：按 strength 概率偏向偏好方向
+    const biasRoll = random()
+    if (biasRoll < tendency.strength) {
+      // 偏向偏好方向
+      column = tendency.bias
+    } else {
+      // 剩余概率按正常逻辑分配
+      const remaining = 1 - tendency.strength
+      const centerChance = baseCenterChance * remaining
+      const sideChance = (remaining - centerChance) / 2
+      const roll = random() * remaining
+      if (roll < centerChance) column = 'center'
+      else if (roll < centerChance + sideChance) column = 'left'
+      else column = 'right'
+    }
+  } else {
+    // 无习惯：原始逻辑
+    const columnRoll = random()
+    column = columnRoll < baseCenterChance
+      ? 'center'
+      : columnRoll < baseCenterChance + (1 - baseCenterChance) / 2
+        ? 'left'
+        : 'right'
+  }
+
   const row = random() < 0.42 ? 'top' : 'bottom'
   return `${column}-${row}`
 }

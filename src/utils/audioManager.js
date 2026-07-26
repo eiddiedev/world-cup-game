@@ -2,13 +2,20 @@ const DEFAULT_AUDIO_SETTINGS = {
   sound: true,
   music: true,
   vibration: true,
+  stadium: true,
 }
 
 const MATCH_SAMPLE_ASSETS = Object.freeze({
   ballTouch: '/match-runtime-min/happyseed/audio/soccer-kick-cc0.mp3',
   ballShot: '/match-runtime-min/happyseed/audio/soccer-kick-cc0.mp3',
   goalCheer: '/match-runtime-min/happyseed/audio/crowd-cheer-cc0.mp3',
+  postHit: '/match-runtime-min/happyseed/audio/post-hit.mp3',
+  save: '/match-runtime-min/happyseed/audio/save.m4a',
+  cardWhistle: '/match-runtime-min/happyseed/audio/whistle.mp3',
+  periodWhistle: '/match-runtime-min/happyseed/audio/period-whistle.mp3',
 })
+
+const CROWD_AMBIENT_ASSET = '/match-runtime-min/happyseed/audio/crowd-ambient.mp3'
 
 const SOUND_PATTERNS = {
   ballTouch: [
@@ -100,6 +107,11 @@ export class AudioManager {
     this.matchSamples = {}
     this._rainNode = null
     this._rainRequested = false
+    this._crowdNode = null
+    this._crowdRequested = false
+    this._crowdTimer = null
+    this._musicSuspended = false
+    this.stadiumEnabled = true
     this.buildSoundPlayers()
   }
 
@@ -152,10 +164,14 @@ export class AudioManager {
     this.soundEnabled = Boolean(merged.sound)
     this.musicEnabled = Boolean(merged.music)
     this.vibrationEnabled = Boolean(merged.vibration)
+    this.stadiumEnabled = Boolean(merged.stadium)
     if (!this.soundEnabled && this._rainNode) this.stopRainAmbient({ preserveRequest: true })
     else if (this.soundEnabled && this._rainRequested && !this._rainNode) this.startRainAmbient()
+    if ((!this.soundEnabled || !this.stadiumEnabled) && this._crowdNode) this.stopCrowdAmbient({ preserveRequest: true })
+    else if (this.soundEnabled && this.stadiumEnabled && this._crowdRequested && !this._crowdNode) this.startCrowdAmbient()
+    if (this._crowdNode) this._crowdNode.volume = Math.max(0, Math.min(1, this.soundVolume * 0.10))
     if (!this.musicEnabled) this.stopMusic()
-    else if (this.userUnlocked) this.startMusic()
+    else if (this.userUnlocked && !this._musicSuspended) this.startMusic()
   }
 
   buildSoundPlayers() {
@@ -187,12 +203,9 @@ export class AudioManager {
       for (let i = 0; i < length; i++) {
         const t = i / sampleRate
         // 包络：快速 attack + 指数 decay
-        let env = 0
-        if (t < cfg.attack) {
-          env = t / cfg.attack
-        } else {
-          env = Math.exp(-(t - cfg.attack) / (cfg.decay * 0.4))
-        }
+        const env = t < cfg.attack
+          ? t / cfg.attack
+          : Math.exp(-(t - cfg.attack) / (cfg.decay * 0.4))
         // 纸张声加入随机幅度调制模拟沙沙感
         const modulation = name === 'paperUnfold'
           ? (0.6 + 0.4 * Math.sin(t * 47) * Math.sin(t * 131))
@@ -265,7 +278,11 @@ export class AudioManager {
     const template = this.matchSamples[name]
     if (!template || !this.userUnlocked) return false
     const sample = template.cloneNode(true)
-    sample.volume = Math.max(0, Math.min(1, this.soundVolume * (name === 'goalCheer' ? 0.78 : 0.92)))
+    const volumeScale = name === 'goalCheer' ? 0.78
+      : name === 'cardWhistle' ? 0.72
+      : name === 'periodWhistle' ? 0.80
+      : 0.92
+    sample.volume = Math.max(0, Math.min(1, this.soundVolume * volumeScale))
     const playback = sample.play()
     if (playback?.catch) playback.catch(() => this.playPattern(SOUND_PATTERNS[name]))
     return true
@@ -343,7 +360,7 @@ export class AudioManager {
   playLose() { return this.playSound('lose') }
 
   startMusic() {
-    if (!this.musicEnabled || this.musicPlaying) return false
+    if (!this.musicEnabled || this.musicPlaying || this._musicSuspended) return false
     const ctx = this.ensureMusicContext()
     if (!ctx || !this.musicGain) return false
     this.musicPlaying = true
@@ -355,6 +372,17 @@ export class AudioManager {
     if (this.musicTimer) window.clearInterval(this.musicTimer)
     this.musicTimer = null
     this.musicPlaying = false
+  }
+
+  /** 比赛界面挂起像素风BGM，离开后恢复 */
+  suspendMusic() {
+    this._musicSuspended = true
+    this.stopMusic()
+  }
+
+  resumeMusic() {
+    this._musicSuspended = false
+    if (this.musicEnabled && this.userUnlocked) this.startMusic()
   }
 
   toggleMusic(force) {
@@ -386,6 +414,49 @@ export class AudioManager {
   vibrate(pattern = 16) {
     if (!this.vibrationEnabled || typeof navigator === 'undefined' || !navigator.vibrate) return false
     navigator.vibrate(pattern)
+    return true
+  }
+
+  /* ---------- 观众背景音（22秒播放 + 随机间隔） ---------- */
+  startCrowdAmbient() {
+    this._crowdRequested = true
+    if (this._crowdNode) return false
+    if (!this.soundEnabled || !this.stadiumEnabled) return false
+    if (typeof window === 'undefined' || typeof window.Audio !== 'function') return false
+
+    const audio = new window.Audio(CROWD_AMBIENT_ASSET)
+    audio.loop = false
+    audio.preload = 'auto'
+    audio.volume = Math.max(0, Math.min(1, this.soundVolume * 0.10))
+    // 播放结束后随机等待3~7秒再播下一轮，模拟真实球场助威声波浪感
+    audio.addEventListener('ended', () => {
+      if (!this._crowdRequested || !this._crowdNode) return
+      const gap = 3000 + Math.random() * 4000
+      this._crowdTimer = window.setTimeout(() => {
+        if (!this._crowdRequested || !this._crowdNode) return
+        audio.currentTime = 0
+        const p = audio.play()
+        if (p?.catch) p.catch(() => {})
+      }, gap)
+    })
+    const playback = audio.play()
+    if (playback?.catch) playback.catch(() => {})
+    this._crowdNode = audio
+    return true
+  }
+
+  stopCrowdAmbient({ preserveRequest = false } = {}) {
+    if (!preserveRequest) this._crowdRequested = false
+    if (this._crowdTimer) {
+      window.clearTimeout(this._crowdTimer)
+      this._crowdTimer = null
+    }
+    if (!this._crowdNode) return false
+    try {
+      this._crowdNode.pause()
+      this._crowdNode.currentTime = 0
+    } catch { /* already stopped */ }
+    this._crowdNode = null
     return true
   }
 

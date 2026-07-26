@@ -143,6 +143,7 @@ export const TEAM_SCHEDULES = {
 }
 
 export const KNOCKOUT_ROUNDS = [
+  { id: 'r32', name: '32强', matchCount: 16 },
   { id: 'r16', name: '16强', matchCount: 8 },
   { id: 'qf', name: '8强', matchCount: 4 },
   { id: 'sf', name: '4强', matchCount: 2 },

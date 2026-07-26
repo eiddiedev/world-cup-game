@@ -152,7 +152,7 @@ function nearestRedPlayerId(actorSource, runtimeMoment) {
   ]))
   const ball = runtimeMoment?.ball?.normalized || [0.5, 0.5]
   return (actorSource?.actors || [])
-    .filter((actor) => actor.side === 'red' && actor.state?.onPitch)
+    .filter((actor) => actor.side === 'red' && actor.state?.onPitch && !actor.isGoalkeeper)
     .map((actor) => ({ actor, point: positionMap.get(actor.runtimeActorId) }))
     .filter((entry) => Array.isArray(entry.point))
     .sort((left, right) => (
@@ -873,9 +873,24 @@ export function advanceFormalMatchSession(session, payload = {}) {
     return { session: next, decisionPlan: null }
   }
   if (payload.decisionsEnabled === false) {
+    // 点球/伤病事件不能丢失：当决策 UI 尚未回到 idle 时，暂存到 session 等下一轮拾取
+    const mandatoryEvent = (appliedEvents.accepted || []).find((ev) => (
+      ['penalty', 'injury'].includes(ev.type)
+    ))
+    if (mandatoryEvent && !next.pendingPrioritySourceEvent) {
+      next.pendingPrioritySourceEvent = mandatoryEvent
+    }
     return { session: next, decisionPlan: null }
   }
   const sourceEvents = appliedEvents.accepted
+  // 拾取上一轮因 decisionsEnabled=false 而暂存的点球/伤病事件
+  if (next.pendingPrioritySourceEvent) {
+    const pending = next.pendingPrioritySourceEvent
+    next.pendingPrioritySourceEvent = null
+    if (!sourceEvents.some((ev) => ev.id === pending.id)) {
+      sourceEvents.unshift(pending)
+    }
+  }
   if (!sourceEvents.length) return { session: next, decisionPlan: null }
   const targetMinute = FORMAL_MATCH_DECISION_TARGET_MINUTES[next.nextDecisionSlot]
   let priorityCandidate = payload.forcedScenarioIds?.[next.nextDecisionSlot]
@@ -952,7 +967,7 @@ export function advanceFormalMatchSession(session, payload = {}) {
   const sceneContract = FORMAL_DECISION_SCENE_CATALOG_V3[scenario.id]
   const preferredPlayerId = sceneContract?.primaryRole === 'homeGoalkeeper'
     ? redGoalkeeperPlayerId(payload.actorSource)
-    : owner?.side === 'red'
+    : owner?.side === 'red' && !owner.isGoalkeeper
       ? owner.playerId
       : nearestRedPlayerId(payload.actorSource, runtimeMoment)
   const sequenceIndex = next.nextDecisionSlot

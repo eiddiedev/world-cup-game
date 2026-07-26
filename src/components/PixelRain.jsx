@@ -32,7 +32,13 @@ export default function PixelRain({ density = 90, speed = 0.75 }) {
 
     let raf = 0
     let last = performance.now()
+    let frameSkip = 0
     const tick = (now) => {
+      raf = requestAnimationFrame(tick)
+      // 30fps 节流：雨滴动画不需要 60fps，减半 canvas 纹理上传
+      frameSkip++
+      if (frameSkip < 2) return
+      frameSkip = 0
       const dt = Math.min(48, now - last)
       last = now
       ctx.clearRect(0, 0, W, H)
@@ -45,7 +51,6 @@ export default function PixelRain({ density = 90, speed = 0.75 }) {
         ctx.fillStyle = `rgba(168, 198, 222, ${drop.alpha.toFixed(3)})`
         ctx.fillRect(Math.floor(drop.x), Math.floor(drop.y), 1, drop.len)
       }
-      raf = requestAnimationFrame(tick)
     }
     raf = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(raf)

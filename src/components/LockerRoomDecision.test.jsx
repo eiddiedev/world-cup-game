@@ -36,6 +36,25 @@ describe('LockerRoomDecision overlay', () => {
     expect(screen.getByRole('dialog')).not.toHaveTextContent(/体能[+-]/)
   })
 
+  it('marks a two-choice scenario so the mobile layout can center both decisions', () => {
+    const twoChoiceScenario = {
+      ...scenario,
+      choices: scenario.choices.slice(0, 2),
+    }
+    const { container } = render(
+      <LockerRoomDecision
+        scenario={twoChoiceScenario}
+        report={null}
+        onChoose={vi.fn()}
+        onContinue={vi.fn()}
+      />,
+    )
+
+    const choices = container.querySelector('.locker-room-choices')
+    expect(choices).toHaveAttribute('data-choice-count', '2')
+    expect(choices.querySelectorAll('.locker-room-choice')).toHaveLength(2)
+  })
+
   it('reveals the verdict color first, then the full report with an auto-continue hint', () => {
     const onChoose = vi.fn()
     const onContinue = vi.fn()

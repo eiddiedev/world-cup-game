@@ -31,7 +31,7 @@ body * {
      hidden and the game is canvas/sprite-based, so it isn't needed. */
 }
 
-canvas {
+body > canvas {
   /* Fill the viewport via CSS so the match is NEVER half-black, regardless of
      when (or whether) the JS resize fires. CRITICAL: the engine writes an
      INLINE style="width:Npx;height:Npx" on the canvas (its display size). An
@@ -40,7 +40,9 @@ canvas {
      leaves a black gap and no amount of CSS here helps. The PIXI buffer keeps
      the viewport aspect, so 100%/100% never distorts. This was the real reason
      the half-black canvas kept coming back. Lives in the SOURCE so build:match
-     can't overwrite it. */
+     can't overwrite it.
+     NOTE: selector scoped to body > canvas so it does NOT affect React canvases
+     (PixelRain, forceRefresh) that live inside #root. */
   position: fixed !important;
   inset: 0 !important;
   width: 100% !important;

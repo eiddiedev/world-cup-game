@@ -2,7 +2,7 @@
 /**
  * 剑指美加墨 — 全链路算法平衡 Monte Carlo 仿真
  *
- * 覆盖：10 支球队全对阵 + 世界杯赛制锦标赛。
+ * 覆盖：当前 16 支可执教球队全对阵 + 16 队锦标赛。
  * 测量：场均进球/角球/点球/黄牌/红牌、场均决策数、决策进球占比、
  *       强弱/强强胜率、冠军分布、用户选择质量对结果的影响。
  *
@@ -21,8 +21,8 @@ import {
 
 // ─── 可调参数（校准目标见文件尾部输出） ─────────────────────────────────────
 const P = {
-  nativeBaseGoals: 0.8,       // 原生（模拟对战）场均进球基准/队
-  strengthK: 0.5,             // 攻防差对进球期望的指数系数（公式内除以 10）
+  nativeBaseGoals: 0.85,      // 原生（模拟对战）场均进球基准/队
+  strengthK: 0.7,             // 攻防差对进球期望的指数系数（公式内除以 10）
   gkSaveBase: 0.0,            // 门将强度对进球期望的额外抑制
   decisionsBase: 5,           // 每场保底决策窗口数
   decisionExtraP: 0.4,        // 额外自然决策概率（4 次二项试验）
@@ -318,9 +318,18 @@ function summarize(matches) {
     const m = mean(values)
     return Math.sqrt(mean(values.map((v) => (v - m) ** 2)))
   }
+  const goalDistribution = {
+    '0': goals.filter((value) => value === 0).length / Math.max(1, goals.length),
+    '1': goals.filter((value) => value === 1).length / Math.max(1, goals.length),
+    '2': goals.filter((value) => value === 2).length / Math.max(1, goals.length),
+    '3': goals.filter((value) => value === 3).length / Math.max(1, goals.length),
+    '4': goals.filter((value) => value === 4).length / Math.max(1, goals.length),
+    '5+': goals.filter((value) => value >= 5).length / Math.max(1, goals.length),
+  }
   return {
     matches: matches.length,
     goalsPerMatch: mean(goals), goalsStd: std(goals),
+    goalDistribution,
     decisionsPerMatch: mean(decisions),
     decisionGoalsPerMatch: mean(decisionGoals),
     decisionGoalShare: mean(decisionGoals) / Math.max(0.001, mean(goals)),
@@ -365,7 +374,7 @@ for (const [a, b] of tiers) {
   }
 }
 
-// 锦标赛（世界杯赛制：两组各 5 队单循环，前二进四强）
+// 锦标赛（当前可玩阵容：4 组各 4 队单循环，前二进八强）
 // coachedId 作为玩家执教队参与全部其比赛（用户模式决策），其余比赛为中立模式。
 // 淘汰赛点球大战按实力加权（ELO），不再 50/50。
 function shootoutWinProb(x, y) {
@@ -374,8 +383,7 @@ function shootoutWinProb(x, y) {
 }
 function simTournament(coachedId = null) {
   const ids = Object.keys(teamModels)
-  const groupA = ids.slice(0, 5)
-  const groupB = ids.slice(5, 10)
+  const groups = Array.from({ length: 4 }, (_, index) => ids.slice(index * 4, index * 4 + 4))
   const playPairing = (x, y) => {
     if (x === coachedId) return simMatch(x, y, { strategy: 'balanced' })
     if (y === coachedId) {
@@ -398,15 +406,23 @@ function simTournament(coachedId = null) {
     }
     return Object.entries(table).sort((a, b) => b[1].pts - a[1].pts || b[1].gd - a[1].gd).map(([id]) => id)
   }
-  const [a1, a2] = playGroup(groupA)
-  const [b1, b2] = playGroup(groupB)
+  const qualified = groups.map((group) => playGroup(group).slice(0, 2))
   const knockout = (x, y) => {
     const match = playPairing(x, y)
     if (match.score.red !== match.score.blue) return match.score.red > match.score.blue ? x : y
     return random() < shootoutWinProb(x, y) ? x : y
   }
-  const final = [knockout(a1, b2), knockout(b1, a2)]
-  return knockout(final[0], final[1])
+  const quarterfinals = [
+    knockout(qualified[0][0], qualified[1][1]),
+    knockout(qualified[1][0], qualified[0][1]),
+    knockout(qualified[2][0], qualified[3][1]),
+    knockout(qualified[3][0], qualified[2][1]),
+  ]
+  const semifinals = [
+    knockout(quarterfinals[0], quarterfinals[2]),
+    knockout(quarterfinals[1], quarterfinals[3]),
+  ]
+  return knockout(semifinals[0], semifinals[1])
 }
 const coachedChampionships = {}
 const TOURNAMENTS_PER_TEAM = Math.max(300, Math.floor(RUNS / 4))
@@ -416,6 +432,13 @@ for (const coachedId of Object.keys(teamModels)) {
     if (simTournament(coachedId) === coachedId) wins += 1
   }
   coachedChampionships[coachedId] = wins / TOURNAMENTS_PER_TEAM
+}
+
+// 中立冠军分布：所有球队都由同一套中立策略驱动，结果合计为 100%。
+const NEUTRAL_TOURNAMENTS = Math.max(2000, RUNS * 5)
+const neutralChampionCounts = Object.fromEntries(Object.keys(teamModels).map((id) => [id, 0]))
+for (let tournament = 0; tournament < NEUTRAL_TOURNAMENTS; tournament += 1) {
+  neutralChampionCounts[simTournament(null)] += 1
 }
 
 // 用户影响力对照（法国 vs 巴西：最优 vs 随机 vs 最差选择；战术；换人；阵容）
@@ -439,13 +462,24 @@ const influence = {
 }
 
 const report = {
-  config: { runsPerPairing: RUNS, tournamentsPerTeam: TOURNAMENTS_PER_TEAM, seed: SEED, params: P },
+  config: {
+    runsPerPairing: RUNS,
+    tournamentsPerTeam: TOURNAMENTS_PER_TEAM,
+    neutralTournaments: NEUTRAL_TOURNAMENTS,
+    seed: SEED,
+    params: P,
+  },
   overall: summarize(allMatches),
   tierSummary,
   coachedChampionships: Object.fromEntries(
     Object.entries(coachedChampionships)
       .sort((a, b) => b[1] - a[1])
       .map(([id, pct]) => [id, { pct, tier: tierOf(id) }]),
+  ),
+  neutralChampionDistribution: Object.fromEntries(
+    Object.entries(neutralChampionCounts)
+      .sort((a, b) => b[1] - a[1])
+      .map(([id, count]) => [id, { pct: count / NEUTRAL_TOURNAMENTS, tier: tierOf(id) }]),
   ),
   influence,
   teamRatings: Object.fromEntries(sortedByRating.map((t) => [t.id, { rating: Number(t.rating.toFixed(1)), attack: Number(t.attack.toFixed(1)), defense: Number(t.defense.toFixed(1)), tier: tierOf(t.id) }])),
@@ -457,9 +491,10 @@ if (AS_JSON) {
   const pct = (v) => `${(v * 100).toFixed(1)}%`
   const num = (v) => v.toFixed(2)
   console.log('═'.repeat(68))
-  console.log(`全链路平衡仿真 · 每对阵 ${RUNS} 场 × 90 对阵 = ${allMatches.length} 场 · 每队执教 ${TOURNAMENTS_PER_TEAM} 届锦标赛`)
+  console.log(`全链路平衡仿真 · 每对阵 ${RUNS} 场 × ${Object.keys(matchupRecords).length} 对阵 = ${allMatches.length} 场 · 每队执教 ${TOURNAMENTS_PER_TEAM} 届锦标赛`)
   console.log('═'.repeat(68))
   console.log(`场均进球        ${num(report.overall.goalsPerMatch)} ± ${num(report.overall.goalsStd)}   (目标 ~3.0)`)
+  console.log(`进球分布        ${Object.entries(report.overall.goalDistribution).map(([goals, share]) => `${goals}球 ${pct(share)}`).join(' · ')}`)
   console.log(`场均角球        ${num(report.overall.cornersPerMatch)}          (目标 ~2.0)`)
   console.log(`场均点球        ${num(report.overall.penaltiesPerMatch)}          (目标 ~0.5)`)
   console.log(`场均黄牌        ${num(report.overall.yellowPerMatch)}          (目标 ~3.0)`)
@@ -474,6 +509,11 @@ if (AS_JSON) {
   console.log('─'.repeat(68))
   console.log('执教夺冠概率（该队作为玩家执教队）:')
   for (const [id, value] of Object.entries(report.coachedChampionships)) {
+    console.log(`  ${teamModels[id].name.padEnd(6)} ${pct(value.pct).padStart(7)}  (${value.tier})`)
+  }
+  console.log('─'.repeat(68))
+  console.log(`中立冠军分布（${NEUTRAL_TOURNAMENTS} 届，同一策略，合计 100%）:`)
+  for (const [id, value] of Object.entries(report.neutralChampionDistribution)) {
     console.log(`  ${teamModels[id].name.padEnd(6)} ${pct(value.pct).padStart(7)}  (${value.tier})`)
   }
   console.log('─'.repeat(68))

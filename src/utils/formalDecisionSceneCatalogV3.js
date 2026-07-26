@@ -88,13 +88,13 @@ export const FORMAL_DECISION_SCENE_CATALOG_V3 = Object.freeze({
     outcomeBallResponses: {
       contain_delay: {
         terminals: ['goal-against'],
-        affordance: B('opponent-shot', 'away', 'opponent'),
+        affordance: B('opponent-shot', 'away', 'opponent', { startRole: 'opponent' }),
       },
     },
   }),
   gk_one_on_one: scene('freeze-live', 'goalkeeper-one-on-one', 'gk_hold_line', {
-    gk_rush_out: [R('keeper-rush', 'homeGoalkeeper'), B('opponent-shot', 'away', 'opponent')],
-    gk_hold_line: [A('zone', 'keeper-line'), B('opponent-shot', 'away', 'opponent')],
+    gk_rush_out: [R('keeper-rush', 'homeGoalkeeper'), B('opponent-shot', 'away', 'opponent', { startRole: 'opponent' })],
+    gk_hold_line: [A('zone', 'keeper-line'), B('opponent-shot', 'away', 'opponent', { startRole: 'opponent' })],
   }, {
     primaryRole: 'homeGoalkeeper',
     outcomeTerminalOverrides: {
@@ -109,7 +109,7 @@ export const FORMAL_DECISION_SCENE_CATALOG_V3 = Object.freeze({
     outcomeBallResponses: {
       jockey_to_corner: {
         terminals: ['goal-against'],
-        affordance: B('opponent-shot', 'away', 'opponent'),
+        affordance: B('opponent-shot', 'away', 'opponent', { startRole: 'opponent' }),
       },
     },
     outcomeEffects: { jockey_to_corner: { forced_corner: 'queue-corner-blue' } },
@@ -168,7 +168,7 @@ export const FORMAL_DECISION_SCENE_CATALOG_V3 = Object.freeze({
     outcomeBallResponses: {
       stand_ground: {
         terminals: ['goal-against', 'blocker', 'home-corner-out'],
-        affordance: B('opponent-shot', 'away', 'opponent'),
+        affordance: B('opponent-shot', 'away', 'opponent', { startRole: 'opponent' }),
       },
     },
     outcomeEffects: { stand_ground: { deflected_corner: 'queue-corner-blue' } },
@@ -195,8 +195,8 @@ export const FORMAL_DECISION_SCENE_CATALOG_V3 = Object.freeze({
   }),
   box_scramble_clearance: scene('freeze-live', 'box-scramble', 'clear_far_side', {
     clear_far_side: [B('clearance-wide', 'home', 'primary', { targetRole: 'support' })],
-    body_block: [A('zone', 'goal-line-block'), B('opponent-shot', 'away', 'opponent')],
-    keeper_leave: [R('keeper-claim', 'homeGoalkeeper'), B('opponent-shot', 'away', 'opponent')],
+    body_block: [A('zone', 'goal-line-block'), B('opponent-shot', 'away', 'opponent', { startRole: 'opponent' })],
+    keeper_leave: [R('keeper-claim', 'homeGoalkeeper'), B('opponent-shot', 'away', 'opponent', { startRole: 'opponent' })],
   }, {
     outcomeTerminalOverrides: {
       clear_far_side: { corner: 'home-corner-out' },
@@ -227,7 +227,7 @@ export const FORMAL_DECISION_SCENE_CATALOG_V3 = Object.freeze({
   }, { sourceEventTypes: ['foul'], sourceEventSide: 'red', attackingSide: 'blue' }),
   box_second_ball_chaos: scene('freeze-live', 'box-second-ball', 'clear_first_time', {
     clear_first_time: [B('clearance-wide', 'home', 'primary', { targetRole: 'support' })],
-    body_on_line: [A('zone', 'goal-line-block'), B('opponent-shot', 'away', 'opponent')],
+    body_on_line: [A('zone', 'goal-line-block'), B('opponent-shot', 'away', 'opponent', { startRole: 'opponent' })],
     launch_counter: [B('counter-release', 'home', 'primary', { targetRole: 'support' })],
   }, {
     outcomeTerminalOverrides: {

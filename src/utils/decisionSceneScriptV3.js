@@ -175,7 +175,7 @@ function buildRoles(decision, actorSource, runtimeMoment) {
     clamp(origin[0] - homeAttackDirection * 0.09),
     clamp(0.5 + (origin[1] - 0.5) * 0.5),
   ]
-  const support = nearestActor(red.filter((actor) => !actor.isGoalkeeper), positions, supportZone, new Set([primary.runtimeActorId])) || red[1]
+  const support = nearestActor(red.filter((actor) => !actor.isGoalkeeper), positions, supportZone, new Set([primary.runtimeActorId])) || red.filter((actor) => !actor.isGoalkeeper && actor !== primary)[0] || red[1]
   const opponent = owner?.side === 'blue'
     ? owner
     : nearestActor(blue.filter((actor) => !actor.isGoalkeeper), positions, origin) || blue[1]
@@ -880,8 +880,10 @@ function stageLayout(contract, runtimeMoment, roles, context) {
   return { ball: point3(origin), actorPositions: staged, wallActorIds: stagedWallActorIds }
 }
 
-function copyChoice(choice, primaryName) {
-  const interpolate = (value) => String(value || '').replaceAll('{player}', primaryName)
+function copyChoice(choice, primaryName, supportName) {
+  const interpolate = (value) => String(value || '')
+    .replaceAll('{player}', primaryName)
+    .replaceAll('{player2}', supportName || primaryName)
   return {
     description: interpolate(choice.desc),
     risk: interpolate(choice.risk),
@@ -900,13 +902,23 @@ export function buildFormalDecisionSceneScriptV3(decision, actorSource, runtimeM
   const stagedSideChanges = contract.attackingSide
     && contract.mode === 'blackout-stage'
     && contract.attackingSide !== runtimeMoment.attackingSide
+  // blackout-stage 场景强制 attackingSide 时，必须根据球的实际位置推算 attackDirection，
+  // 否则 runtime 缓存的方向可能与球位不同步，导致球路射向己方球门。
+  // 角球/界外球/点球/点球大战除外：它们的球会被重新摆位，方向由 runtime 或合同提供。
+  const isEdgeSetPiece = contract.triggerId?.includes('corner') || contract.triggerId?.includes('throw-in')
+  const isPenaltySetPiece = contract.triggerId?.includes('penalty') || contract.triggerId === 'shootout-round'
+  const forcedDirection = contract.attackingSide && contract.mode === 'blackout-stage'
+    && !isEdgeSetPiece && !isPenaltySetPiece
+    ? (Number(runtimeMoment.ball?.normalized?.[0] || 0.5) < 0.5 ? -1 : 1)
+    : null
   const sceneMoment = contract.attackingSide && contract.mode === 'blackout-stage'
     ? {
       ...runtimeMoment,
       attackingSide: contract.attackingSide,
-      attackDirection: stagedSideChanges
-        ? -Number(runtimeMoment.attackDirection || 1)
-        : Number(runtimeMoment.attackDirection || (contract.attackingSide === 'blue' ? -1 : 1)),
+      attackDirection: forcedDirection
+        || (stagedSideChanges
+          ? -Number(runtimeMoment.attackDirection || 1)
+          : Number(runtimeMoment.attackDirection || (contract.attackingSide === 'blue' ? -1 : 1))),
     }
     : runtimeMoment
   let roles = buildRoles(decision, actorSource, sceneMoment)
@@ -931,6 +943,25 @@ export function buildFormalDecisionSceneScriptV3(decision, actorSource, runtimeM
       definitions.map((definition) => resolveAffordance(definition, context, roles)),
       context,
     )
+    // 如果最后一个 ball-path 的 targetRole 同时有 run-lane，球路终点应跟随跑位终点，
+    // 否则球飞向球员原始位置而球员已跑开，球可能被附近的对方门将拿到。
+    // 仅修改最后一个 ball-path，避免破坏多段传球链的连续性。
+    const runLanes = affordances.filter((a) => a.kind === 'run-lane')
+    if (runLanes.length) {
+      const ballPaths = affordances.filter((a) => a.kind === 'ball-path')
+      const lastBall = ballPaths[ballPaths.length - 1]
+      if (lastBall && lastBall.targetRole) {
+        const matchingRun = runLanes.find((r) => r.role === lastBall.targetRole)
+        if (matchingRun && matchingRun.points?.length === 4) {
+          const runEnd = matchingRun.points[3]
+          const start = lastBall.points[0]
+          const dx = runEnd[0] - start[0]
+          const dy = runEnd[1] - start[1]
+          lastBall.points[2] = [clamp(start[0] + dx * 0.72), clamp(start[1] + dy * 0.72), Math.max(lastBall.points[2][2], runEnd[2] || 0)]
+          lastBall.points[3] = [...runEnd]
+        }
+      }
+    }
     const ballAffordances = affordances.filter((affordance) => affordance.kind === 'ball-path')
     const ballAffordance = ballAffordances[0]
     const runAffordances = affordances.filter((affordance) => affordance.kind === 'run-lane')
@@ -972,26 +1003,61 @@ export function buildFormalDecisionSceneScriptV3(decision, actorSource, runtimeM
       const carryEnd = carryAffordance?.points?.at(-1)
       // 带球后射门：射门段必须从带球终点发出。若直接沿用响应球路的原始点列，
       // 球会在出球瞬间从持球人初始位置起飞（逼入底线变成原地直接射门）
-      const selectedPath = (carryThenShot ? curve(carryEnd, target, 0.34) : executionBallAffordance?.points)
+      // 当带球终点在边线/底线极端位置时，不能直接射门，必须先回传到禁区中央再射
+      const carryAtExtreme = carryEnd && (
+        carryEnd[1] < 0.12 || carryEnd[1] > 0.88
+        || (carryEnd[0] > 0.92 || carryEnd[0] < 0.08)
+      )
+      const cutbackPoint = carryAtExtreme && ['goal-for', 'goal-against'].includes(terminal)
+        ? point3([
+          clamp(context.homeAttackGoal[0] - context.homeDirection * 0.12),
+          0.5,
+          0,
+        ])
+        : null
+      const selectedPath = carryThenShot
+        ? (cutbackPoint ? curve(carryEnd, cutbackPoint, 0.12) : curve(carryEnd, target, 0.34))
+        : executionBallAffordance?.points
         || carryAffordance?.points
         || (ballOnlyOutcome ? curve(context.origin, target, 0.16) : null)
       const finalPassAffordance = sequenceBallAffordances.at(-1) || executionBallAffordance
       const receivingShooterRole = passThenShot ? receiverRoleForBallAction(finalPassAffordance) : null
       const finalOutcomeSourceRole = receivingShooterRole || outcomeSourceRole
       const outcomeSourceRuntimeActorId = roles.actors[finalOutcomeSourceRole].runtimeActorId
-      const receiverPoint = receivingShooterRole
+      let receiverPoint = receivingShooterRole
         ? point3(finalPassAffordance.points.at(-1))
         : null
+      // 传球后射门起点必须在合理射门距离内：如果接球点距球门太远（进攻进度<0.65），
+      // 强制前移到禁区前沿，避免中场超远射破门的不合理表现。
+      // 仅对多段传球序列生效（单段传中/回传的接球人已在禁区内）
+      if (receiverPoint && ['goal-for', 'goal-against'].includes(terminal)
+        && sequenceBallAffordances.length > 1) {
+        const goalX = terminal === 'goal-for' ? context.homeAttackGoal[0] : context.homeDefendGoal[0]
+        const shotDist = Math.abs(receiverPoint[0] - goalX)
+        if (shotDist > 0.35) {
+          receiverPoint = point3([
+            clamp(goalX - (terminal === 'goal-for' ? context.homeDirection : context.awayDirection) * 0.14),
+            clamp(receiverPoint[1], 0.35, 0.65),
+            0,
+          ])
+        }
+      }
       const suppressUnrealizedShot = terminal === 'hold'
         && executionBallAffordance?.runtimeEventType === 'shot'
       const passPath = passThenShot
         ? sequenceBallAffordances[0].points
         : null
+      // 底线回传射门：path 为回传后的射门段，selectedPath 为回传段
+      const cutbackShotPath = cutbackPoint
+        ? curve(cutbackPoint, target, terminal.includes('goal') ? 0.3 : 0.2)
+        : null
       const path = passThenShot
         ? curve(receiverPoint, target, terminal.includes('goal') ? 0.3 : 0.2)
-        : movesBall && !suppressUnrealizedShot
-          ? outcomePath(selectedPath, target, terminal, context, outcomeBallSide)
-          : null
+        : cutbackShotPath
+          ? cutbackShotPath
+          : movesBall && !suppressUnrealizedShot
+            ? outcomePath(selectedPath, target, terminal, context, outcomeBallSide)
+            : null
       const tackleAffordance = affordances.find((affordance) => (
         affordance.kind === 'duel-vector' && TACKLE_DUEL_INTENTS.has(affordance.intent)
       ))
@@ -1019,27 +1085,49 @@ export function buildFormalDecisionSceneScriptV3(decision, actorSource, runtimeM
         ? flightDurationMs(receiverPoint, target, 'shot')
         : null
       const carryFinishDurationMs = carryThenShot
-        ? flightDurationMs(carryEnd, target, 'shot')
+        ? (cutbackPoint
+          ? flightDurationMs(cutbackPoint, target, 'shot')
+          : flightDurationMs(carryEnd, target, 'shot'))
         : null
+      const cutbackPassMs = cutbackPoint ? 680 : 0
       const durationMs = carryThenShot || passThenShot
         ? passThenShot
           ? sequenceBallAffordances.length * 760 + passFinishDurationMs
-          : 1080 + carryFinishDurationMs
+          : 1080 + cutbackPassMs + carryFinishDurationMs
         : duelDurationMs
           || ballFlightDurationMs
           || (terminal === 'hold' ? 1050 : 1320)
       const shotAtMs = carryThenShot
-        ? 1080
+        ? 1080 + cutbackPassMs
         : passThenShot ? sequenceBallAffordances.length * 760 : null
       let pathSegments = passThenShot
-        ? [...sequenceBallAffordances.map((affordance) => affordance.points), path]
-        : null
+        ? (() => {
+          const segs = sequenceBallAffordances.map((affordance) => [...affordance.points.map((p) => [...p])])
+          // 如果射门起点被钳位，最后一段传球的终点也要对齐到钳位后的位置
+          const clampedReceiver = receiverPoint
+          const lastSeg = segs[segs.length - 1]
+          if (lastSeg && clampedReceiver) {
+            const origEnd = finalPassAffordance.points.at(-1)
+            if (Math.abs(origEnd[0] - clampedReceiver[0]) > 0.01
+              || Math.abs(origEnd[1] - clampedReceiver[1]) > 0.01) {
+              lastSeg[3] = [...clampedReceiver]
+            }
+          }
+          segs.push(path)
+          return segs
+        })()
+        : cutbackPoint && carryThenShot
+          ? [selectedPath, path]
+          : null
       let segmentEndTimes = pathSegments
-        ? pathSegments.map((_, index) => (
-          index < pathSegments.length - 1
+        ? pathSegments.map((_, index) => {
+          if (cutbackPoint && carryThenShot) {
+            return index === 0 ? 1080 + cutbackPassMs : durationMs
+          }
+          return index < pathSegments.length - 1
             ? (index + 1) * 760
             : durationMs
-        ))
+        })
         : null
       let duelReleaseBallAtMs = null
       if (duelWon && !path) {
@@ -1135,10 +1223,11 @@ export function buildFormalDecisionSceneScriptV3(decision, actorSource, runtimeM
         const keeperActor = roles.actors[keeperOutcomeRole]
         const keeperId = keeperActor.runtimeActorId
         if (!actorMotions.some((motion) => motion.runtimeActorId === keeperId)) {
-          const keeperPos = roles.positions.get(keeperId) || context[keeperOutcomeRole]
+          // 门将扑救始终从球门线出发，不使用运行时位置（可能因出击/清道夫而远离球门）
           const keeperGoalLineX = keeperOutcomeRole === 'homeGoalkeeper'
             ? context.homeDefendGoal[0]
             : context.homeAttackGoal[0]
+          const keeperPos = [keeperGoalLineX, 0.5, 0]
           const stepOut = keeperGoalLineX > 0.5 ? -0.014 : 0.014
           const aimY = path.at(-1)[1]
           const diveY = ['home-goalkeeper', 'away-goalkeeper'].includes(terminal)
@@ -1148,11 +1237,121 @@ export function buildFormalDecisionSceneScriptV3(decision, actorSource, runtimeM
             role: keeperOutcomeRole,
             runtimeActorId: keeperId,
             points: curve(
-              [keeperPos[0], keeperPos[1], 0],
-              [clamp(keeperPos[0] + stepOut, 0.01, 0.99), clamp(diveY, 0.34, 0.66), 0],
+              keeperPos,
+              [clamp(keeperGoalLineX + stepOut, 0.01, 0.99), clamp(diveY, 0.34, 0.66), 0],
               0.02,
               0,
             ),
+            carriesBall: false,
+          })
+        }
+      }
+      // semantic-action 决策生成真实跑位：formation/zone/actor/duel 不再原地晃动
+      const isSemanticAction = !ballOnlyOutcome && !carryAffordance && !passThenShot
+      if (isSemanticAction && actorMotions.length === 0) {
+        const formationAffordance = affordances.find((a) => a.kind === 'formation')
+        const zoneAffordance = affordances.find((a) => a.kind === 'zone')
+        const actorAffordance = affordances.find((a) => a.kind === 'actor')
+        const duelAffordance = affordances.find((a) => a.kind === 'duel-vector')
+        if (formationAffordance && formationAffordance.points?.length) {
+          // 全队向目标阵型点跑位：按最近距离匹配，最多 5 人可见位移
+          const homeOutfield = roles.groups.homeOutfield || []
+          const targets = formationAffordance.points
+          const assigned = new Set()
+          const motions = []
+          for (const target of targets) {
+            let best = null
+            let bestDist = Infinity
+            for (const actor of homeOutfield) {
+              if (assigned.has(actor.runtimeActorId)) continue
+              const pos = roles.positions.get(actor.runtimeActorId)
+              if (!pos) continue
+              const dist = Math.hypot(pos[0] - target[0], pos[1] - target[1])
+              if (dist < bestDist) { bestDist = dist; best = actor }
+            }
+            if (best && bestDist > 0.015) {
+              assigned.add(best.runtimeActorId)
+              const pos = roles.positions.get(best.runtimeActorId)
+              motions.push({
+                role: 'primary',
+                runtimeActorId: best.runtimeActorId,
+                points: curve([pos[0], pos[1], 0], target, 0.03, 0),
+                carriesBall: false,
+              })
+            }
+            if (motions.length >= 5) break
+          }
+          actorMotions.push(...motions)
+        } else if (zoneAffordance) {
+          // 防守区域：主角 + 最近 2 名队友向区域中心收拢
+          const zoneRole = zoneAffordance.intent === 'keeper-line' ? 'homeGoalkeeper' : 'primary'
+          const zoneActor = roles.actors[zoneRole]
+          // 门将始终使用球门线位置，不使用运行时位置（可能因出击/清道夫而远离球门）
+          const zoneActorPos = zoneAffordance.intent === 'keeper-line'
+            ? [context.homeDefendGoal[0], 0.5, 0]
+            : (roles.positions.get(zoneActor.runtimeActorId) || context[zoneRole])
+          const zoneCenter = zoneAffordance.center
+          if (Math.hypot(zoneActorPos[0] - zoneCenter[0], zoneActorPos[1] - zoneCenter[1]) > 0.01) {
+            actorMotions.push({
+              role: zoneRole,
+              runtimeActorId: zoneActor.runtimeActorId,
+              points: curve([zoneActorPos[0], zoneActorPos[1], 0], zoneCenter, 0.025, 0),
+              carriesBall: false,
+            })
+          }
+          const homeOutfield = roles.groups.homeOutfield || []
+          const nearby = homeOutfield
+            .filter((a) => a.runtimeActorId !== zoneActor.runtimeActorId)
+            .map((a) => ({ actor: a, pos: roles.positions.get(a.runtimeActorId) }))
+            .filter((entry) => entry.pos)
+            .sort((a, b) => (
+              Math.hypot(a.pos[0] - zoneCenter[0], a.pos[1] - zoneCenter[1])
+              - Math.hypot(b.pos[0] - zoneCenter[0], b.pos[1] - zoneCenter[1])
+            ))
+            .slice(0, 2)
+          for (const entry of nearby) {
+            const shrink = 0.35
+            const target = [
+              clamp(entry.pos[0] + (zoneCenter[0] - entry.pos[0]) * shrink),
+              clamp(entry.pos[1] + (zoneCenter[1] - entry.pos[1]) * shrink),
+              0,
+            ]
+            actorMotions.push({
+              role: 'primary',
+              runtimeActorId: entry.actor.runtimeActorId,
+              points: curve([entry.pos[0], entry.pos[1], 0], target, 0.02, 0),
+              carriesBall: false,
+            })
+          }
+        } else if (actorAffordance) {
+          // 主角向球/裁判方向前移 2-4% 归一化距离
+          const actorRole = actorAffordance.role || 'primary'
+          const actorRef = roles.actors[actorRole]
+          const actorPos = roles.positions.get(actorRef.runtimeActorId) || context[actorRole]
+          const dx = context.origin[0] - actorPos[0]
+          const dy = context.origin[1] - actorPos[1]
+          const dist = Math.hypot(dx, dy) || 1
+          const step = clamp(0.03, 0.015, 0.045)
+          actorMotions.push({
+            role: actorRole,
+            runtimeActorId: actorRef.runtimeActorId,
+            points: curve(
+              [actorPos[0], actorPos[1], 0],
+              [clamp(actorPos[0] + dx / dist * step), clamp(actorPos[1] + dy / dist * step), 0],
+              0.015, 0,
+            ),
+            carriesBall: false,
+          })
+        } else if (duelAffordance && !tackleAffordance) {
+          // 非铲球对抗：防守者逼近持球人
+          const duelRole = duelAffordance.role || 'primary'
+          const duelActor = roles.actors[duelRole]
+          const duelStart = duelAffordance.points[0]
+          const duelEnd = duelAffordance.points[1]
+          actorMotions.push({
+            role: duelRole,
+            runtimeActorId: duelActor.runtimeActorId,
+            points: curve(duelStart, duelEnd, 0.03, 0),
             carriesBall: false,
           })
         }
@@ -1233,7 +1432,7 @@ export function buildFormalDecisionSceneScriptV3(decision, actorSource, runtimeM
           }] : []),
         ].sort((left, right) => left.atMs - right.atMs),
         releaseBallAtMs: duelReleaseBallAtMs ?? (
-          carryThenShot ? shotAtMs : outcomePathFinal && !carryAffordance ? 0 : null
+          carryThenShot ? (cutbackPoint ? 1080 : shotAtMs) : outcomePathFinal && !carryAffordance ? 0 : null
         ),
         path: outcomePathFinal,
         passPath,
@@ -1277,7 +1476,7 @@ export function buildFormalDecisionSceneScriptV3(decision, actorSource, runtimeM
     return {
       id: choice.id,
       label: choice.label,
-      ...copyChoice(choice, roles.actors.primary.name),
+      ...copyChoice(choice, roles.actors.primary.name, roles.actors.support.name),
       affordances,
       sourceRole: choiceSourceRole,
       sourceRuntimeActorId: choiceSourceRuntimeActorId,
@@ -1390,10 +1589,22 @@ export function validateDecisionSceneScriptV3(script, decision = null) {
         if (!script.actors?.[affordance.role]) errors.push(`${choice.id}.ball-role`)
         if (affordance.points?.length !== 4) errors.push(`${choice.id}.ball-path`)
         const ballIndex = ballAffordances.indexOf(affordance)
-        const expectedStart = ballIndex > 0
+        let expectedStart = ballIndex > 0
           ? ballAffordances[ballIndex - 1].points?.at(-1)
           : script.ball.normalized
-        if (JSON.stringify(affordance.points?.[0]) !== JSON.stringify(expectedStart)) {
+        if (ballIndex === 0 && affordance.startRole && script.actors?.[affordance.startRole]) {
+          const startActorId = script.actors[affordance.startRole].runtimeActorId
+          const stagedPos = (script.stagedActorPositions || [])
+            .find((p) => p.runtimeActorId === startActorId)
+          const livePos = (script.actorPositions || [])
+            .find((p) => p.runtimeActorId === startActorId)
+          expectedStart = stagedPos?.normalized || livePos?.normalized || expectedStart
+        }
+        const startMatch = affordance.startRole
+          ? (Math.abs((affordance.points?.[0]?.[0] || 0) - (expectedStart?.[0] || 0)) < 0.001
+            && Math.abs((affordance.points?.[0]?.[1] || 0) - (expectedStart?.[1] || 0)) < 0.001)
+          : JSON.stringify(affordance.points?.[0]) === JSON.stringify(expectedStart)
+        if (!startMatch) {
           errors.push(`${choice.id}.ball-origin`)
         }
       }
@@ -1464,6 +1675,28 @@ export function validateDecisionSceneScriptV3(script, decision = null) {
           const ballEnd = outcome.path?.at(-1)
           if (!actorEnd || !ballEnd || Math.hypot(actorEnd[0] - ballEnd[0], actorEnd[1] - ballEnd[1]) < 0.04) {
             errors.push(`${choice.id}.outcome.actorStopsBeforeGoal`)
+          }
+          // 底线回传射门：pathSegments 必须连续且第一段从带球终点发出
+          if (outcome.pathSegments?.length) {
+            if (outcome.pathSegments.length !== outcome.segmentEndTimes?.length) {
+              errors.push(`${choice.id}.outcome.cutbackSegments`)
+            }
+            const cEnd = outcome.carryPath?.at(-1)
+            if (cEnd && outcome.pathSegments[0]) {
+              if (Math.abs(outcome.pathSegments[0][0][0] - cEnd[0]) > 1e-6
+                || Math.abs(outcome.pathSegments[0][0][1] - cEnd[1]) > 1e-6) {
+                errors.push(`${choice.id}.outcome.cutbackOrigin`)
+              }
+            }
+            for (let si = 1; si < (outcome.pathSegments?.length || 0); si += 1) {
+              if (JSON.stringify(outcome.pathSegments[si - 1].at(-1))
+                !== JSON.stringify(outcome.pathSegments[si][0])) {
+                errors.push(`${choice.id}.outcome.cutbackJoin`)
+              }
+            }
+            if (JSON.stringify(outcome.pathSegments.at(-1)) !== JSON.stringify(outcome.path)) {
+              errors.push(`${choice.id}.outcome.cutbackFinal`)
+            }
           }
         }
       }

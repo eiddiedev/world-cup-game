@@ -34,14 +34,102 @@ function stableHash(value = '') {
   )
 }
 
-function bodyProfileFor(player, assignedPosition) {
-  if (assignedPosition === 'GK') return 'france-goalkeeper'
-  return stableHash(player.id || player.playerId) % 2 === 0 ? 'france-outfield' : 'brazil-outfield'
+// ---------------------------------------------------------------------------
+// 5 head variant IDs (matching apply_paper_doll_master.py HEAD_PRESETS)
+// ---------------------------------------------------------------------------
+const HEAD_VARIANT_IDS = [
+  'head-euro-dark',     // 0: light skin + dark hair
+  'head-nordic-blonde', // 1: light skin + blonde hair
+  'head-asian-black',   // 2: medium skin + black hair
+  'head-mixed-curly',   // 3: medium-dark skin + curly hair
+  'head-dark-black',    // 4: dark skin + black hair
+]
+
+// Gold/Silver card players → correct skin tone (head variant index)
+// Based on real-world ethnicity of each star player
+// Keys are player.id values from data files
+const STAR_SKIN_TONE_MAP = {
+  // --- Gold cards ---
+  'argentina_潘帕球王': 0,       // Messi - white
+  'brazil_桑巴魔术': 3,          // Neymar - mixed/medium-dark
+  'canada_枫叶闪电': 4,          // A. Davies - dark
+  'capeverde_蓝鲨门神': 4,       // Vozinha - dark
+  'colombia_咖啡飞翼': 3,        // L. Díaz - medium-dark
+  'curacao_海岛门神': 4,         // Room - dark
+  'england_三狮重炮': 0,         // Kane - white
+  'france_高卢闪电': 4,          // Mbappé - dark
+  'germany_战车门神': 0,         // Neuer - white
+  'japan_蓝武左刃': 2,           // Kubo - east asian
+  'mexico_绿鹰中锋': 2,          // Quiñones - medium
+  'morocco_沙漠飞翼': 3,         // Hakimi - medium-dark
+  'norway_北海魔人': 1,          // Haaland - nordic blonde
+  'portugal_葡国战神': 0,        // Ronaldo - light
+  'spain_红潮司令': 0,           // Rodri - light
+  'usa_星条飞翼': 0,             // Pulisic - white
+  // --- Silver cards ---
+  'argentina_潘帕门神': 0,       // E. Martínez - white
+  'argentina_蓝白节拍': 0,       // Mac Allister - white
+  'argentina_蛛网猎手': 0,       // Álvarez - white
+  'brazil_桑巴节拍': 0,          // B. Guimarães - white
+  'brazil_桑巴飞刃': 4,          // Vinícius Jr - dark
+  'brazil_桑巴猎豹': 3,          // Martinelli - mixed
+  'canada_枫叶铁塔': 0,          // Cornelius - white
+  'canada_枫叶新星': 3,          // Saliba - medium-dark (Haitian)
+  'canada_枫叶猎手': 4,          // J. David - dark
+  'capeverde_蓝鲨铁腰': 4,       // K. Pina - dark
+  'capeverde_蓝鲨队长': 4,       // R. Mendes - dark
+  'colombia_咖啡门神': 2,        // Vargas - medium
+  'colombia_咖啡魔杖': 0,        // James - light
+  'curacao_海岛节拍': 4,         // J. Bacuna - dark
+  'curacao_海岛司令': 4,         // L. Bacuna - dark
+  'england_三狮门神': 0,         // Pickford - white
+  'england_三狮帝星': 3,         // Bellingham - mixed
+  'england_三狮飞翼': 4,         // Saka - dark
+  'france_双翼魔术': 4,          // Dembélé - dark
+  'france_高卢画师': 3,          // Olise - mixed-dark
+  'germany_德意铁轴': 0,         // Kimmich - white
+  'germany_日耳魔术': 3,         // Musiala - mixed
+  'germany_莱茵画师': 0,         // Wirtz - white
+  'japan_蓝武门神': 2,           // Suzuki - east asian
+  'japan_蓝武强弓': 2,           // Dōan - east asian
+  'japan_蓝武棋手': 2,           // Kamada - east asian
+  'mexico_绿鹰铁腰': 2,          // Edson Álvarez - medium
+  'mexico_绿鹰支点': 2,          // R. Jiménez - medium
+  'mexico_绿鹰飞翼': 2,          // Alvarado - medium
+  'morocco_北非门神': 3,         // Bono - medium-dark
+  'morocco_北非中枢': 3,         // Saibari - medium-dark
+  'morocco_北非魔术': 0,         // Brahim Díaz - light
+  'norway_北海铁壁': 1,          // Nyland - nordic
+  'norway_北海司令': 1,          // Ødegaard - nordic
+  'portugal_葡国门神': 0,        // Diogo Costa - light
+  'portugal_葡国司令': 0,        // B. Fernandes - light
+  'portugal_葡国节拍': 0,        // Vitinha - light
+  'spain_红潮门神': 0,           // Unai Simón - light
+  'spain_红潮新墙': 0,           // Cubarsí - light
+  'spain_红潮神童': 3,           // Yamal - mixed (Moroccan heritage)
+  'usa_星条快翼': 4,             // Robinson - dark
+  'usa_星条铁腰': 3,             // McKennie - mixed
+}
+
+function bodyProfileFor(player) {
+  const playerId = player.id || player.playerId || ''
+  // Gold/silver stars: use their correct skin tone
+  if (playerId in STAR_SKIN_TONE_MAP) {
+    return HEAD_VARIANT_IDS[STAR_SKIN_TONE_MAP[playerId]]
+  }
+  // If player data has explicit skinTone field
+  if (player.skinTone) {
+    const toneMap = { light: 0, 'light-blonde': 1, medium: 2, 'medium-dark': 3, dark: 4 }
+    const idx = toneMap[player.skinTone]
+    if (idx !== undefined) return HEAD_VARIANT_IDS[idx]
+  }
+  // Others: hash-based random among 5 variants
+  return HEAD_VARIANT_IDS[stableHash(playerId) % HEAD_VARIANT_IDS.length]
 }
 
 function buildVisualAssets(teamId, player, assignedPosition, kitVariant) {
   const role = assignedPosition === 'GK' ? 'goalkeeper' : 'outfield'
-  const bodyProfileId = bodyProfileFor(player, assignedPosition)
+  const bodyProfileId = bodyProfileFor(player)
   const kitType = role === 'goalkeeper'
     ? (kitVariant === 'away' ? 'away-goalkeeper' : 'goalkeeper')
     : kitVariant
@@ -119,6 +207,70 @@ function normalizePlayerIds(values = []) {
   return new Set(values.map((value) => value?.id || value?.playerId || value).filter(Boolean))
 }
 
+/**
+ * 国家队技能 → operationAttributes / state 修正映射
+ * 仅对 red 侧（玩家队）生效
+ */
+const TEAM_SKILL_MODIFIERS = {
+  france:     { all: { ballControl: 10, passing: 10 } },
+  brazil:     { all: { ballControl: 8, turning: 8 }, staminaPenalty: 10 },
+  argentina:  { all: { shooting: 12, passing: 8 } },
+  portugal:   { goldenStar: { shooting: 12, passing: 10, ballControl: 8 } },
+  germany:    { staminaBonus: 20 },
+  japan:      { all: { ballControl: 8, passing: 8 }, staminaPenalty: 12 },
+  norway:     { topPhysical: { shooting: 15, ballControl: 8 } },
+  morocco:    { all: { tackling: 10, sprint: 8 } },
+  newzealand: { penaltyBonus: 30 },
+  spain:      { all: { passing: 12, ballControl: 10 } },
+  england:    { all: { shooting: 8, tackling: 6 }, moraleBonus: 10 },
+  colombia:   { all: { ballControl: 10, turning: 8 } },
+  usa:        { all: { sprint: 8, tackling: 6 }, staminaBonus: 10 },
+  canada:     { all: { sprint: 12, turning: 6 } },
+  mexico:     { all: { sprint: 8, shooting: 6 }, staminaBonus: 8 },
+  capeverde:  { all: { tackling: 10, saving: 8 } },
+  curacao:    { all: { saving: 12, tackling: 6 } },
+}
+
+function applyTeamSkillModifiers(actors, teamId) {
+  const skill = TEAM_SKILL_MODIFIERS[teamId]
+  if (!skill) return actors
+  // 找出 goldenStar / topPhysical 目标
+  const team = getTeamById(teamId)
+  const goldenStarName = team?.goldenStar || ''
+  let topPhysicalId = null
+  if (skill.topPhysical) {
+    let maxPhy = 0
+    actors.forEach((a) => {
+      const phy = a.operationAttributes?.tackling || 0
+      if (phy > maxPhy) { maxPhy = phy; topPhysicalId = a.playerId }
+    })
+  }
+  return actors.map((actor) => {
+    const attrs = { ...actor.operationAttributes }
+    if (skill.all) {
+      for (const [key, val] of Object.entries(skill.all)) {
+        attrs[key] = Math.min(99, (attrs[key] || 50) + val)
+      }
+    }
+    if (skill.goldenStar && actor.name === goldenStarName) {
+      for (const [key, val] of Object.entries(skill.goldenStar)) {
+        attrs[key] = Math.min(99, (attrs[key] || 50) + val)
+      }
+    }
+    if (skill.topPhysical && actor.playerId === topPhysicalId) {
+      for (const [key, val] of Object.entries(skill.topPhysical)) {
+        attrs[key] = Math.min(99, (attrs[key] || 50) + val)
+      }
+    }
+    let stamina = actor.state.stamina
+    if (skill.staminaBonus) stamina = Math.min(100, stamina + skill.staminaBonus)
+    if (skill.staminaPenalty) stamina = Math.max(0, stamina - skill.staminaPenalty)
+    let morale = actor.state.morale
+    if (skill.moraleBonus) morale = Math.min(99, morale + skill.moraleBonus)
+    return { ...actor, operationAttributes: attrs, state: { ...actor.state, stamina, morale } }
+  })
+}
+
 function buildRuntimeSide({
   teamId,
   side,
@@ -128,6 +280,8 @@ function buildRuntimeSide({
   lineupPlayerIds,
   playerStateById = {},
   unavailablePlayerIds = [],
+  matchStartStaminaBonus = 0,
+  moraleDecayReduction = 0,
 }) {
   const team = getTeamById(teamId)
   if (!team) throw new Error(`未知球队：${teamId}`)
@@ -190,6 +344,19 @@ function buildRuntimeSide({
       return binding
     })
 
+  let finalActors = actors
+  // 仅对 red 侧应用后勤修正 + 国家队技能
+  if (side === 'red') {
+    finalActors = finalActors.map((actor) => {
+      let stamina = actor.state.stamina
+      let morale = actor.state.morale
+      if (matchStartStaminaBonus) stamina = clamp(stamina + matchStartStaminaBonus, 0, 100)
+      if (moraleDecayReduction) morale = clamp(morale + moraleDecayReduction * 20, 0, 99)
+      return { ...actor, state: { ...actor.state, stamina, morale } }
+    })
+    finalActors = applyTeamSkillModifiers(finalActors, teamId)
+  }
+
   return {
     side,
     teamId: team.id,
@@ -198,7 +365,7 @@ function buildRuntimeSide({
     kitVariant,
     runtimeFormation: buildHappySeedRuntimeFormation(selectedFormation, lineup),
     squadPlayerIds: squad.map((player) => player.id),
-    actors,
+    actors: finalActors,
     bench,
     inactive: [],
     substitutionHistory: [],
@@ -226,6 +393,8 @@ export function buildHappySeedRuntimeActorConfig(options = {}) {
     lineupPlayerIds: options.redLineupPlayerIds,
     playerStateById: options.redPlayerStateById,
     unavailablePlayerIds: options.redUnavailablePlayerIds,
+    matchStartStaminaBonus: options.matchStartStaminaBonus || 0,
+    moraleDecayReduction: options.moraleDecayReduction || 0,
   })
   const blue = buildRuntimeSide({
     teamId: options.blue || 'brazil',

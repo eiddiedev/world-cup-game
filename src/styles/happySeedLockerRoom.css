@@ -170,3 +170,78 @@
   .locker-room-panel { padding: 12px; }
   .locker-room-choice { min-height: 96px; }
 }
+
+@media (orientation: landscape) and (max-height: 600px) {
+  .locker-room-stage {
+    gap: 8px;
+    width: min(980px, calc(100vw - max(24px, env(safe-area-inset-left) + env(safe-area-inset-right))));
+    max-height: calc(100dvh - 12px);
+    overflow: hidden;
+  }
+
+  .locker-room-masthead {
+    gap: 2px;
+  }
+
+  .locker-room-masthead h1 {
+    font-size: clamp(30px, 9vh, 42px);
+    text-shadow: 3px 3px 0 rgba(0, 0, 0, .65);
+  }
+
+  .locker-room-masthead small {
+    padding: 2px 9px;
+    font-size: 10px;
+  }
+
+  .locker-room-panel {
+    gap: 8px;
+    padding: 10px 12px 12px;
+    border-width: 2px;
+    border-top-width: 4px;
+    box-shadow: 5px 5px 0 rgba(0, 0, 0, .45);
+  }
+
+  .locker-room-panel h2 {
+    font-size: clamp(15px, 4.2vh, 19px);
+  }
+
+  .locker-room-situation {
+    font-size: clamp(10px, 2.8vh, 12px);
+    line-height: 1.45;
+  }
+
+  .locker-room-choices {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .locker-room-choices[data-choice-count="2"] {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    justify-self: center;
+    width: 66.6667%;
+  }
+
+  .locker-room-choice {
+    gap: 4px;
+    min-height: 78px;
+    padding: 8px 8px 8px 13px;
+    border-width: 2px;
+    box-shadow: 3px 3px 0 rgba(2, 12, 13, .72);
+  }
+
+  .locker-room-choice::before {
+    top: -2px;
+    bottom: -2px;
+    left: -2px;
+    width: 5px;
+  }
+
+  .locker-room-choice strong {
+    font-size: clamp(12px, 3.3vh, 15px);
+  }
+
+  .locker-room-choice span {
+    font-size: clamp(9px, 2.45vh, 11px);
+    line-height: 1.35;
+  }
+}

@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { teams, getDifficultyStars } from '../data/teams'
 import { createNewRun } from '../utils/saveManager'
 import { getAvailableLogisticsBudget } from '../data/prizeMoney'
+import { autoSetupPlayerRun } from '../utils/playerModeSetup'
 import { IS_DOUYIN_DEMO } from '../config/runtime'
 import AppointmentLetter from './AppointmentLetter'
 
@@ -17,13 +18,32 @@ export default function TeamSelectScreen({ saveData, updateSaveData, navigateTo,
   )
 
   const handleSelectTeam = (team) => {
+    if (gameMode === 'player') {
+      // 球员模式：跳过聘书，直接建队
+      let newRun = createNewRun(team.id, gameMode, saveData)
+      newRun = autoSetupPlayerRun(newRun, saveData)
+      updateSaveData({ ...saveData, currentRun: newRun })
+      // 首次进入训练基地（已完成训练则直接到赛程）
+      navigateTo(newRun.trainingCompleted ? 'tournament' : 'training')
+      return
+    }
     setAppointmentTeam(team)
   }
 
   const handleAppointmentConfirm = () => {
     const team = appointmentTeam
     setAppointmentTeam(null)
-    const newRun = createNewRun(team.id, gameMode, saveData)
+    let newRun = createNewRun(team.id, gameMode, saveData)
+    if (gameMode === 'player') {
+      // 球员模式：自动建队（名单+首发+后勤），直达赛程
+      newRun = autoSetupPlayerRun(newRun, saveData)
+      updateSaveData({
+        ...saveData,
+        currentRun: newRun,
+      })
+      navigateTo('tournament')
+      return
+    }
     updateSaveData({
       ...saveData,
       currentRun: newRun,
@@ -97,14 +117,18 @@ export default function TeamSelectScreen({ saveData, updateSaveData, navigateTo,
                   <span className="stat-label">世界杯目标</span>
                   <span className="stat-target">{team.worldCupTarget}</span>
                 </div>
-                <div className="team-stat-row">
-                  <span className="stat-label">征召点</span>
-                  <span className="stat-budget">{team.budget}<img src="/assets/征召点.png" alt="征召点" className="coin-icon" /></span>
-                </div>
-                <div className="team-stat-row">
-                  <span className="stat-label">后勤预算</span>
-                  <span className="stat-budget logistics-budget">{getAvailableLogisticsBudget(team.id, saveData)}<img src="/assets/金币.png" alt="后勤预算" className="coin-icon" /></span>
-                </div>
+                {gameMode === 'coach' && (
+                  <>
+                    <div className="team-stat-row">
+                      <span className="stat-label">征召点</span>
+                      <span className="stat-budget">{team.budget}<img src="/assets/征召点.png" alt="征召点" className="coin-icon" /></span>
+                    </div>
+                    <div className="team-stat-row">
+                      <span className="stat-label">后勤预算</span>
+                      <span className="stat-budget logistics-budget">{getAvailableLogisticsBudget(team.id, saveData)}<img src="/assets/金币.png" alt="后勤预算" className="coin-icon" /></span>
+                    </div>
+                  </>
+                )}
               </div>
               <div className="team-card-bottom">
                 <div className="team-card-identity">

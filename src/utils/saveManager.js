@@ -13,6 +13,7 @@ export function createInitialCodex() {
   return {
     teamResults: {},
     runHistory: [],
+    championFormations: [],
     records: {
       fastestGoalMinute: null,
       mostGoalsInMatch: 0,
@@ -26,7 +27,7 @@ export function createInitialCodex() {
       totalGoals: 0,
       hatTricks: 0,
       penaltiesSaved: 0,
-      comebacksFrom3: 0,
+      substituteGoals: 0,
     },
     unlockedAchievements: [],
   }
@@ -40,6 +41,7 @@ export function createInitialSaveData() {
     unlockTeams: getPlayableTeamIds(),
     championshipHistory: [],
     currentRun: null,
+    playerModeRun: null,  // 球员模式独立存档
     logisticsBudgets: {},  // { [teamId]: number } 每队累积的后勤预算
     aiEnhancement: createInitialAiEnhancementState(),
     commercialization: createInitialCommercializationState(),

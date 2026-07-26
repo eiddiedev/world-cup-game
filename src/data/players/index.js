@@ -9,7 +9,6 @@ import { germanyPlayers } from './germany.js'
 import { japanPlayers } from './japan.js'
 import { norwayPlayers } from './norway.js'
 import { moroccoPlayers } from './morocco.js'
-import { newzealandPlayers } from './newzealand.js'
 import { curacaoPlayers } from './curacao.js'
 import { spainPlayers } from './spain.js'
 import { englandPlayers } from './england.js'
@@ -28,7 +27,6 @@ export const allPlayers = {
   japan: japanPlayers,
   norway: norwayPlayers,
   morocco: moroccoPlayers,
-  newzealand: newzealandPlayers,
   curacao: curacaoPlayers,
   spain: spainPlayers,
   england: englandPlayers,

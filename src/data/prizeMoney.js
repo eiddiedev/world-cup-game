@@ -37,6 +37,7 @@ export const INITIAL_LOGISTICS_BUDGET = {
 export const PRIZE_MONEY = {
   groupWin: 300,       // 每场小组赛胜利
   groupDraw: 100,      // 每场小组赛平局
+  round32: 400,        // 进入32强
   round16: 800,        // 进入16强
   quarterfinal: 1200,  // 进入8强
   semifinal: 2000,     // 进入4强（含季军争夺资格）
@@ -47,7 +48,7 @@ export const PRIZE_MONEY = {
 
 /**
  * 计算本次征程获得的总奖金
- * @param {string} finalResult - 'champion'|'finalist'|'semifinal'|'quarterfinal'|'round16'|'group'
+ * @param {string} finalResult - 'champion'|'finalist'|'semifinal'|'quarterfinal'|'round16'|'round32'|'group'
  * @param {string[]} matchResults - 小组赛结果数组 ['win','draw','loss',...]
  * @param {boolean} isThirdPlace - 是否为季军（四强淘汰后赢季军赛）
  */
@@ -67,6 +68,7 @@ export function calculatePrizeMoney(finalResult, matchResults = [], isThirdPlace
     semifinal: isThirdPlace ? PRIZE_MONEY.thirdPlace : PRIZE_MONEY.semifinal,
     quarterfinal: PRIZE_MONEY.quarterfinal,
     round16: PRIZE_MONEY.round16,
+    round32: PRIZE_MONEY.round32,
     group: 0,
   }
   total += stagePrize[finalResult] || 0
