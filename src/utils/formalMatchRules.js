@@ -1,4 +1,5 @@
 import { patchHappySeedRuntimeActor } from './happySeedRuntimeActors.js'
+import { getLogisticsModifiers } from './logisticsEffects.js'
 
 export const FORMAL_MATCH_RULES_SCHEMA_VERSION = 'formal-match-rules-v1'
 
@@ -135,7 +136,7 @@ export function buildFormalMatchRuleReport(actorSource, options = {}) {
   }
 }
 
-export function settleRunMatchRules(currentRun = {}, report = {}) {
+export function settleRunMatchRules(currentRun = {}, report = {}, options = {}) {
   const homePlayerIds = new Set(Object.entries(report.playerStates || {})
     .filter(([, state]) => state.side === 'red')
     .map(([playerId]) => playerId))
@@ -154,6 +155,10 @@ export function settleRunMatchRules(currentRun = {}, report = {}) {
     nextSuspensions[playerId] = Math.max(nextSuspensions[playerId] || 0, 1)
   })
 
+  // 后勤医疗部门：伤病概率减免
+  const logisticsLevels = options.logisticsLevels || currentRun.logisticsLevels || {}
+  const modifiers = getLogisticsModifiers(logisticsLevels)
+
   const currentInjuries = { ...(currentRun.injuryMatches || {}) }
   ;(currentRun.injuredPlayers || []).forEach((playerId) => {
     if (!currentInjuries[playerId]) currentInjuries[playerId] = 1
@@ -164,6 +169,10 @@ export function settleRunMatchRules(currentRun = {}, report = {}) {
       .filter(([, matches]) => matches > 0),
   )
   unique(report.injuredPlayerIds).filter((playerId) => homePlayerIds.has(playerId)).forEach((playerId) => {
+    // 如果 injuryProbMultiplier < 1，有概率免除伤病
+    if (modifiers.injuryProbMultiplier < 1 && Math.random() > modifiers.injuryProbMultiplier) {
+      return // 免除本次伤病
+    }
     const stamina = Number(report.playerStates?.[playerId]?.stamina ?? 50)
     nextInjuries[playerId] = Math.max(nextInjuries[playerId] || 0, stamina <= 20 ? 2 : 1)
   })

@@ -1,5 +1,7 @@
 {
-  "schemaVersion": "happyseed-kit-catalog-v1",
+  "schemaVersion": "happyseed-kit-catalog-v2",
+  "playableTeamCount": 16,
+  "runtimeRoleAssetSetsPerTeam": 2,
   "kits": [
     {
       "teamId": "capeverde",
@@ -8,8 +10,8 @@
       "label": "普通球员",
       "partSetId": "happyseed-human-v4",
       "source": {
-        "kind": "magenta-master-individual",
-        "path": "/Users/a1234/Desktop/未命名文件夹/阿根廷门将.png"
+        "kind": "local-authored-master",
+        "path": "/pixel/kit-studio/sources/capeverde-home.png"
       },
       "referencePath": "/pixel/kit-studio/sources/capeverde-home.png",
       "runtimeRoot": "/pixel/kits/capeverde/home/happyseed-human-v4",
@@ -21,7 +23,11 @@
           "slotId": "shirt_front",
           "width": 56,
           "height": 52,
-          "bytes": 3753,
+          "opaqueColors": 6,
+          "semiTransparentPixels": 0,
+          "bytes": 492,
+          "sha256": "75f1aeddf373aef399c09a81047e8ca38140087752415ee68ce46e56d06ad2b7",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -29,7 +35,11 @@
           "slotId": "shirt_back",
           "width": 56,
           "height": 52,
-          "bytes": 3213,
+          "opaqueColors": 6,
+          "semiTransparentPixels": 0,
+          "bytes": 460,
+          "sha256": "2f7d289de3ee976a6282e4841b4b0f3a794a7154e6abdf1870862b4593ff44d5",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -37,7 +47,11 @@
           "slotId": "sleeve_left",
           "width": 14,
           "height": 22,
-          "bytes": 528,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 178,
+          "sha256": "7ddf15ab282af3650332725a3f421e9756b8d0b97a913bea54aabcd0756431fe",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -45,7 +59,11 @@
           "slotId": "sleeve_right",
           "width": 23,
           "height": 18,
-          "bytes": 388,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 179,
+          "sha256": "259eaa18601cdc514bbdb384eabb87a56fe796196cfa6fe8b86ba4cac26e168a",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -53,7 +71,11 @@
           "slotId": "shorts",
           "width": 55,
           "height": 8,
-          "bytes": 404,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 165,
+          "sha256": "259eb722a9dd410ad10998181094aacc45ce69444e2b133461e5195935774726",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -61,7 +83,11 @@
           "slotId": "shorts_leg",
           "width": 12,
           "height": 16,
-          "bytes": 444,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 133,
+          "sha256": "625461665a987c984f6f3820d6e7a42f0b75953c230ba961d4911efa18871920",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -69,7 +95,11 @@
           "slotId": "socks",
           "width": 11,
           "height": 14,
-          "bytes": 296,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 126,
+          "sha256": "40c5018f5662c3157cc4c3ee02b4b3f17b2e754a93e22da2fee1bab97bbae2a9",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -77,7 +107,11 @@
           "slotId": "shoes",
           "width": 16,
           "height": 6,
-          "bytes": 240,
+          "opaqueColors": 3,
+          "semiTransparentPixels": 0,
+          "bytes": 135,
+          "sha256": "c9c14ea3bd569ce482c7ac74b7f83324650fbe0722b1d42f64689f6842bd031c",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -85,7 +119,11 @@
           "slotId": "hand_left",
           "width": 25,
           "height": 28,
+          "opaqueColors": 104,
+          "semiTransparentPixels": 0,
           "bytes": 474,
+          "sha256": "7403d0d0a996234c579958b956c57aecc02a0f8766859678884d96876b54c230",
+          "requiredAtRuntime": false,
           "passed": true
         },
         {
@@ -93,7 +131,11 @@
           "slotId": "hand_right",
           "width": 23,
           "height": 38,
+          "opaqueColors": 113,
+          "semiTransparentPixels": 0,
           "bytes": 469,
+          "sha256": "9c01ace10ead5121013558b36c9ddbaf4d9899b1b2e1f037c7b1747242bb75ee",
+          "requiredAtRuntime": false,
           "passed": true
         }
       ]
@@ -105,8 +147,8 @@
       "label": "门将",
       "partSetId": "happyseed-human-v4",
       "source": {
-        "kind": "magenta-master-individual",
-        "path": "/Users/a1234/Desktop/未命名文件夹/阿根廷门将.png"
+        "kind": "local-authored-master",
+        "path": "/pixel/kit-studio/sources/capeverde-goalkeeper.png"
       },
       "referencePath": "/pixel/kit-studio/sources/capeverde-goalkeeper.png",
       "runtimeRoot": "/pixel/kits/capeverde/goalkeeper/happyseed-human-v4",
@@ -118,7 +160,11 @@
           "slotId": "shirt_front",
           "width": 56,
           "height": 52,
-          "bytes": 4596,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 445,
+          "sha256": "bcb8ef7bbd4a3817cf597711c0b1cb97786024d8cccfafbc3699cf894bd04c06",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -126,7 +172,11 @@
           "slotId": "shirt_back",
           "width": 56,
           "height": 52,
-          "bytes": 4352,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 418,
+          "sha256": "e9c74969ee80fcc578246f94852eaff89330cb3cb464d72a32fe224fa8c2ad36",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -134,7 +184,11 @@
           "slotId": "sleeve_left",
           "width": 14,
           "height": 22,
-          "bytes": 688,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 180,
+          "sha256": "9377c25246f60c9776f12d0694f500d56296682b82b75fd10c0f9400e3e13655",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -142,7 +196,11 @@
           "slotId": "sleeve_right",
           "width": 23,
           "height": 18,
-          "bytes": 545,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 188,
+          "sha256": "d2274cb57d4e0ce13f7bc0ce0d7f2960dc01c4936fc771d3e9fa645f43b350c2",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -150,7 +208,11 @@
           "slotId": "shorts",
           "width": 55,
           "height": 8,
-          "bytes": 411,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 165,
+          "sha256": "41ef233fe2442a2164707427ae9794f546b16d31ad1eb994831371837d8f80c3",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -158,7 +220,11 @@
           "slotId": "shorts_leg",
           "width": 12,
           "height": 16,
-          "bytes": 501,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 143,
+          "sha256": "d415cbd25f7f078d38cb13a7f23b5cb9f057b5d5fe29c8ddcb9f6b158951c219",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -166,7 +232,11 @@
           "slotId": "socks",
           "width": 11,
           "height": 14,
-          "bytes": 287,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 129,
+          "sha256": "70799e6be652c793d46cc7b5783a97fa1b48792aebccd7ce1c03cfd208d65b17",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -174,23 +244,35 @@
           "slotId": "shoes",
           "width": 16,
           "height": 6,
-          "bytes": 263,
+          "opaqueColors": 3,
+          "semiTransparentPixels": 0,
+          "bytes": 135,
+          "sha256": "c9c14ea3bd569ce482c7ac74b7f83324650fbe0722b1d42f64689f6842bd031c",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
           "path": "/pixel/kits/capeverde/goalkeeper/happyseed-human-v4/hand_left.png",
           "slotId": "hand_left",
-          "width": 25,
-          "height": 28,
-          "bytes": 491,
+          "width": 26,
+          "height": 24,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 179,
+          "sha256": "57afd5f3a954ff1288c6aa152aed618693029da5ce1622fce4f8cbe6a1cdab2e",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
           "path": "/pixel/kits/capeverde/goalkeeper/happyseed-human-v4/hand_right.png",
           "slotId": "hand_right",
-          "width": 23,
-          "height": 38,
-          "bytes": 487,
+          "width": 26,
+          "height": 25,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 169,
+          "sha256": "3db046a28bc9c2c24b4ccf66c8221c5bab1000631c8f4bb55ac4f92d4de7a196",
+          "requiredAtRuntime": true,
           "passed": true
         }
       ]
@@ -202,8 +284,8 @@
       "label": "普通球员",
       "partSetId": "happyseed-human-v4",
       "source": {
-        "kind": "magenta-master-individual",
-        "path": "/Users/a1234/Desktop/未命名文件夹/阿根廷门将.png"
+        "kind": "local-authored-master",
+        "path": "/pixel/kit-studio/sources/canada-home.png"
       },
       "referencePath": "/pixel/kit-studio/sources/canada-home.png",
       "runtimeRoot": "/pixel/kits/canada/home/happyseed-human-v4",
@@ -215,7 +297,11 @@
           "slotId": "shirt_front",
           "width": 56,
           "height": 52,
-          "bytes": 3616,
+          "opaqueColors": 5,
+          "semiTransparentPixels": 0,
+          "bytes": 448,
+          "sha256": "3258e742f2ebbcf7f8cafccf021ef0f543a9c77de55b8ec18f0a93a9c3eafa9f",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -223,7 +309,11 @@
           "slotId": "shirt_back",
           "width": 56,
           "height": 52,
-          "bytes": 3227,
+          "opaqueColors": 5,
+          "semiTransparentPixels": 0,
+          "bytes": 412,
+          "sha256": "d2bc875ee656f26baf21f5efa3a9c8fc154bddd5b2caae99798265593f0cfd49",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -231,7 +321,11 @@
           "slotId": "sleeve_left",
           "width": 14,
           "height": 22,
-          "bytes": 146,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 176,
+          "sha256": "264e1db4a844bf3ea4354e8af587ee450d6c35d4b3704756f1453080400e9937",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -239,7 +333,11 @@
           "slotId": "sleeve_right",
           "width": 23,
           "height": 18,
-          "bytes": 532,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 183,
+          "sha256": "c1b63496b43f2b49a0289d7b0db58cf4aa97f92955476acd5608fb5f6ba384f3",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -247,7 +345,11 @@
           "slotId": "shorts",
           "width": 55,
           "height": 8,
-          "bytes": 374,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 165,
+          "sha256": "259eb722a9dd410ad10998181094aacc45ce69444e2b133461e5195935774726",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -255,7 +357,11 @@
           "slotId": "shorts_leg",
           "width": 12,
           "height": 16,
-          "bytes": 397,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 133,
+          "sha256": "625461665a987c984f6f3820d6e7a42f0b75953c230ba961d4911efa18871920",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -263,7 +369,11 @@
           "slotId": "socks",
           "width": 11,
           "height": 14,
-          "bytes": 282,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 126,
+          "sha256": "fcf58d954e97cec1f3e6c9504956458bbf4f727d78213ac3bb34ea3d2dfa86ee",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -271,7 +381,11 @@
           "slotId": "shoes",
           "width": 16,
           "height": 6,
-          "bytes": 243,
+          "opaqueColors": 3,
+          "semiTransparentPixels": 0,
+          "bytes": 135,
+          "sha256": "c9c14ea3bd569ce482c7ac74b7f83324650fbe0722b1d42f64689f6842bd031c",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -279,7 +393,11 @@
           "slotId": "hand_left",
           "width": 25,
           "height": 28,
+          "opaqueColors": 100,
+          "semiTransparentPixels": 0,
           "bytes": 456,
+          "sha256": "096e386f568a893f4d031804ba00fc86ca404071d22b2c2462a762093e48ce65",
+          "requiredAtRuntime": false,
           "passed": true
         },
         {
@@ -287,7 +405,11 @@
           "slotId": "hand_right",
           "width": 23,
           "height": 38,
+          "opaqueColors": 101,
+          "semiTransparentPixels": 0,
           "bytes": 446,
+          "sha256": "cf4e16cc5b7590087834a5c7fc7e7664f01c976cc2021a0f5be3614e455f0dcd",
+          "requiredAtRuntime": false,
           "passed": true
         }
       ]
@@ -299,8 +421,8 @@
       "label": "门将",
       "partSetId": "happyseed-human-v4",
       "source": {
-        "kind": "magenta-master-individual",
-        "path": "/Users/a1234/Desktop/未命名文件夹/阿根廷门将.png"
+        "kind": "local-authored-master",
+        "path": "/pixel/kit-studio/sources/canada-goalkeeper.png"
       },
       "referencePath": "/pixel/kit-studio/sources/canada-goalkeeper.png",
       "runtimeRoot": "/pixel/kits/canada/goalkeeper/happyseed-human-v4",
@@ -312,7 +434,11 @@
           "slotId": "shirt_front",
           "width": 56,
           "height": 52,
-          "bytes": 4896,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 445,
+          "sha256": "bcb8ef7bbd4a3817cf597711c0b1cb97786024d8cccfafbc3699cf894bd04c06",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -320,7 +446,11 @@
           "slotId": "shirt_back",
           "width": 56,
           "height": 52,
-          "bytes": 4561,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 418,
+          "sha256": "e9c74969ee80fcc578246f94852eaff89330cb3cb464d72a32fe224fa8c2ad36",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -328,7 +458,11 @@
           "slotId": "sleeve_left",
           "width": 14,
           "height": 22,
-          "bytes": 719,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 180,
+          "sha256": "9377c25246f60c9776f12d0694f500d56296682b82b75fd10c0f9400e3e13655",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -336,7 +470,11 @@
           "slotId": "sleeve_right",
           "width": 23,
           "height": 18,
-          "bytes": 584,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 188,
+          "sha256": "d2274cb57d4e0ce13f7bc0ce0d7f2960dc01c4936fc771d3e9fa645f43b350c2",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -344,7 +482,11 @@
           "slotId": "shorts",
           "width": 55,
           "height": 8,
-          "bytes": 438,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 165,
+          "sha256": "41ef233fe2442a2164707427ae9794f546b16d31ad1eb994831371837d8f80c3",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -352,7 +494,11 @@
           "slotId": "shorts_leg",
           "width": 12,
           "height": 16,
-          "bytes": 536,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 143,
+          "sha256": "d415cbd25f7f078d38cb13a7f23b5cb9f057b5d5fe29c8ddcb9f6b158951c219",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -360,7 +506,11 @@
           "slotId": "socks",
           "width": 11,
           "height": 14,
-          "bytes": 311,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 129,
+          "sha256": "70799e6be652c793d46cc7b5783a97fa1b48792aebccd7ce1c03cfd208d65b17",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -368,23 +518,35 @@
           "slotId": "shoes",
           "width": 16,
           "height": 6,
-          "bytes": 273,
+          "opaqueColors": 3,
+          "semiTransparentPixels": 0,
+          "bytes": 135,
+          "sha256": "c9c14ea3bd569ce482c7ac74b7f83324650fbe0722b1d42f64689f6842bd031c",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
           "path": "/pixel/kits/canada/goalkeeper/happyseed-human-v4/hand_left.png",
           "slotId": "hand_left",
-          "width": 25,
-          "height": 28,
-          "bytes": 446,
+          "width": 26,
+          "height": 24,
+          "opaqueColors": 3,
+          "semiTransparentPixels": 0,
+          "bytes": 177,
+          "sha256": "4cb02d70ac95353c2662ff794e2aa3d17f951689b8d65e6370d98a27e9d3dd82",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
           "path": "/pixel/kits/canada/goalkeeper/happyseed-human-v4/hand_right.png",
           "slotId": "hand_right",
-          "width": 23,
-          "height": 38,
-          "bytes": 449,
+          "width": 26,
+          "height": 25,
+          "opaqueColors": 3,
+          "semiTransparentPixels": 0,
+          "bytes": 168,
+          "sha256": "bf93c7c0d5d94ce3d025908b3f3a0f9ad88aa42fdf6ebbafe2b79a3a1f3471ca",
+          "requiredAtRuntime": true,
           "passed": true
         }
       ]
@@ -396,8 +558,8 @@
       "label": "普通球员",
       "partSetId": "happyseed-human-v4",
       "source": {
-        "kind": "magenta-master-individual",
-        "path": "/Users/a1234/Desktop/未命名文件夹/阿根廷门将.png"
+        "kind": "local-authored-master",
+        "path": "/pixel/kit-studio/sources/colombia-home.png"
       },
       "referencePath": "/pixel/kit-studio/sources/colombia-home.png",
       "runtimeRoot": "/pixel/kits/colombia/home/happyseed-human-v4",
@@ -409,7 +571,11 @@
           "slotId": "shirt_front",
           "width": 56,
           "height": 52,
-          "bytes": 4140,
+          "opaqueColors": 7,
+          "semiTransparentPixels": 0,
+          "bytes": 540,
+          "sha256": "9b95447fd2b989864aeee4681e1448fad24a3e664272d07ac7c56171a93de151",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -417,7 +583,11 @@
           "slotId": "shirt_back",
           "width": 56,
           "height": 52,
-          "bytes": 3513,
+          "opaqueColors": 7,
+          "semiTransparentPixels": 0,
+          "bytes": 552,
+          "sha256": "1b16ecf58ed2cc603f702eb868d83816b85474a07f9f3198d5a74f6f1c07d4ce",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -425,7 +595,11 @@
           "slotId": "sleeve_left",
           "width": 14,
           "height": 22,
-          "bytes": 673,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 195,
+          "sha256": "a43435b368b403f7cd142cba2f62cca2dff35c6aa52c043b5370a3b3eabbfd23",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -433,7 +607,11 @@
           "slotId": "sleeve_right",
           "width": 23,
           "height": 18,
-          "bytes": 505,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 190,
+          "sha256": "053030626735f3fcffbc48694f9dfd6404438af2a52d6332b74936d5b7bbec4c",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -441,7 +619,11 @@
           "slotId": "shorts",
           "width": 55,
           "height": 8,
-          "bytes": 362,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 157,
+          "sha256": "cad3c4565592b1134cb5863b9e22f215c96a3ddf5d3031637d8e6752526a8549",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -449,7 +631,11 @@
           "slotId": "shorts_leg",
           "width": 12,
           "height": 16,
-          "bytes": 486,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 148,
+          "sha256": "15dc366fe3656c50057b2b17e23dd0ac3aeedc04f3cc7ca40194daaf3034d864",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -457,7 +643,11 @@
           "slotId": "socks",
           "width": 11,
           "height": 14,
-          "bytes": 246,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 129,
+          "sha256": "6f87e3445bec2470264520f5725c2d72df85bf0f63e5ef0ac3ef86f4f230e28e",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -465,7 +655,11 @@
           "slotId": "shoes",
           "width": 16,
           "height": 6,
-          "bytes": 282,
+          "opaqueColors": 3,
+          "semiTransparentPixels": 0,
+          "bytes": 135,
+          "sha256": "c9c14ea3bd569ce482c7ac74b7f83324650fbe0722b1d42f64689f6842bd031c",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -473,7 +667,11 @@
           "slotId": "hand_left",
           "width": 25,
           "height": 28,
+          "opaqueColors": 106,
+          "semiTransparentPixels": 0,
           "bytes": 459,
+          "sha256": "373d4766bfa16407bbf8d8e32896081efa134ddf89705e4f1685094fa61572f8",
+          "requiredAtRuntime": false,
           "passed": true
         },
         {
@@ -481,7 +679,11 @@
           "slotId": "hand_right",
           "width": 23,
           "height": 38,
+          "opaqueColors": 136,
+          "semiTransparentPixels": 0,
           "bytes": 538,
+          "sha256": "e5ab80bc2233359099f284a1f5395ef2229930c61e5b234199c6c98cca9a5722",
+          "requiredAtRuntime": false,
           "passed": true
         }
       ]
@@ -493,8 +695,8 @@
       "label": "门将",
       "partSetId": "happyseed-human-v4",
       "source": {
-        "kind": "magenta-master-individual",
-        "path": "/Users/a1234/Desktop/未命名文件夹/阿根廷门将.png"
+        "kind": "local-authored-master",
+        "path": "/pixel/kit-studio/sources/colombia-goalkeeper.png"
       },
       "referencePath": "/pixel/kit-studio/sources/colombia-goalkeeper.png",
       "runtimeRoot": "/pixel/kits/colombia/goalkeeper/happyseed-human-v4",
@@ -506,7 +708,11 @@
           "slotId": "shirt_front",
           "width": 56,
           "height": 52,
-          "bytes": 4492,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 445,
+          "sha256": "bcb8ef7bbd4a3817cf597711c0b1cb97786024d8cccfafbc3699cf894bd04c06",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -514,7 +720,11 @@
           "slotId": "shirt_back",
           "width": 56,
           "height": 52,
-          "bytes": 3122,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 418,
+          "sha256": "e9c74969ee80fcc578246f94852eaff89330cb3cb464d72a32fe224fa8c2ad36",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -522,7 +732,11 @@
           "slotId": "sleeve_left",
           "width": 14,
           "height": 22,
-          "bytes": 616,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 180,
+          "sha256": "9377c25246f60c9776f12d0694f500d56296682b82b75fd10c0f9400e3e13655",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -530,7 +744,11 @@
           "slotId": "sleeve_right",
           "width": 23,
           "height": 18,
-          "bytes": 536,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 188,
+          "sha256": "d2274cb57d4e0ce13f7bc0ce0d7f2960dc01c4936fc771d3e9fa645f43b350c2",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -538,7 +756,11 @@
           "slotId": "shorts",
           "width": 55,
           "height": 8,
-          "bytes": 326,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 165,
+          "sha256": "41ef233fe2442a2164707427ae9794f546b16d31ad1eb994831371837d8f80c3",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -546,7 +768,11 @@
           "slotId": "shorts_leg",
           "width": 12,
           "height": 16,
-          "bytes": 486,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 143,
+          "sha256": "d415cbd25f7f078d38cb13a7f23b5cb9f057b5d5fe29c8ddcb9f6b158951c219",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -554,7 +780,11 @@
           "slotId": "socks",
           "width": 11,
           "height": 14,
-          "bytes": 292,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 129,
+          "sha256": "70799e6be652c793d46cc7b5783a97fa1b48792aebccd7ce1c03cfd208d65b17",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -562,23 +792,35 @@
           "slotId": "shoes",
           "width": 16,
           "height": 6,
-          "bytes": 270,
+          "opaqueColors": 3,
+          "semiTransparentPixels": 0,
+          "bytes": 135,
+          "sha256": "c9c14ea3bd569ce482c7ac74b7f83324650fbe0722b1d42f64689f6842bd031c",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
           "path": "/pixel/kits/colombia/goalkeeper/happyseed-human-v4/hand_left.png",
           "slotId": "hand_left",
-          "width": 25,
-          "height": 28,
-          "bytes": 495,
+          "width": 26,
+          "height": 24,
+          "opaqueColors": 3,
+          "semiTransparentPixels": 0,
+          "bytes": 177,
+          "sha256": "4cb02d70ac95353c2662ff794e2aa3d17f951689b8d65e6370d98a27e9d3dd82",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
           "path": "/pixel/kits/colombia/goalkeeper/happyseed-human-v4/hand_right.png",
           "slotId": "hand_right",
-          "width": 23,
-          "height": 38,
-          "bytes": 505,
+          "width": 26,
+          "height": 25,
+          "opaqueColors": 3,
+          "semiTransparentPixels": 0,
+          "bytes": 168,
+          "sha256": "bf93c7c0d5d94ce3d025908b3f3a0f9ad88aa42fdf6ebbafe2b79a3a1f3471ca",
+          "requiredAtRuntime": true,
           "passed": true
         }
       ]
@@ -590,8 +832,8 @@
       "label": "普通球员",
       "partSetId": "happyseed-human-v4",
       "source": {
-        "kind": "magenta-master-individual",
-        "path": "/Users/a1234/Desktop/未命名文件夹/阿根廷门将.png"
+        "kind": "local-authored-master",
+        "path": "/pixel/kit-studio/sources/mexico-home.png"
       },
       "referencePath": "/pixel/kit-studio/sources/mexico-home.png",
       "runtimeRoot": "/pixel/kits/mexico/home/happyseed-human-v4",
@@ -603,7 +845,11 @@
           "slotId": "shirt_front",
           "width": 56,
           "height": 52,
-          "bytes": 4229,
+          "opaqueColors": 5,
+          "semiTransparentPixels": 0,
+          "bytes": 434,
+          "sha256": "28caf66146fbe2cf234240c211c47d8d57d6b49f452011448e462a14d3d095af",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -611,7 +857,11 @@
           "slotId": "shirt_back",
           "width": 56,
           "height": 52,
-          "bytes": 4031,
+          "opaqueColors": 5,
+          "semiTransparentPixels": 0,
+          "bytes": 413,
+          "sha256": "b29b86a759915775f0f3674ff2d402b05c98bdcccd091514a7e43f67e8938f16",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -619,7 +869,11 @@
           "slotId": "sleeve_left",
           "width": 14,
           "height": 22,
-          "bytes": 646,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 179,
+          "sha256": "6b501dcae676c4ca8ff6f956a6624125ae682e9054aee47c4909ae67325d74aa",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -627,7 +881,11 @@
           "slotId": "sleeve_right",
           "width": 23,
           "height": 18,
-          "bytes": 537,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 178,
+          "sha256": "0f1bcee64a999e816914b3b7fafb13032a5ba6aebf2119611d2e9752a10bb589",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -635,7 +893,11 @@
           "slotId": "shorts",
           "width": 55,
           "height": 8,
-          "bytes": 370,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 165,
+          "sha256": "259eb722a9dd410ad10998181094aacc45ce69444e2b133461e5195935774726",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -643,7 +905,11 @@
           "slotId": "shorts_leg",
           "width": 12,
           "height": 16,
-          "bytes": 417,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 133,
+          "sha256": "625461665a987c984f6f3820d6e7a42f0b75953c230ba961d4911efa18871920",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -651,7 +917,11 @@
           "slotId": "socks",
           "width": 11,
           "height": 14,
-          "bytes": 282,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 125,
+          "sha256": "6387ebf23331fc6c995be123d78434b0bc792150622dd3745d3e34645f77af81",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -659,7 +929,11 @@
           "slotId": "shoes",
           "width": 16,
           "height": 6,
-          "bytes": 243,
+          "opaqueColors": 3,
+          "semiTransparentPixels": 0,
+          "bytes": 135,
+          "sha256": "c9c14ea3bd569ce482c7ac74b7f83324650fbe0722b1d42f64689f6842bd031c",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -667,7 +941,11 @@
           "slotId": "hand_left",
           "width": 25,
           "height": 28,
+          "opaqueColors": 117,
+          "semiTransparentPixels": 0,
           "bytes": 508,
+          "sha256": "6f8afc402747148821a733b8d8e7a579a87ab771bd3a137858deda5faaa8f663",
+          "requiredAtRuntime": false,
           "passed": true
         },
         {
@@ -675,7 +953,11 @@
           "slotId": "hand_right",
           "width": 23,
           "height": 38,
+          "opaqueColors": 109,
+          "semiTransparentPixels": 0,
           "bytes": 485,
+          "sha256": "09f3059fba2657cb326ff805b58921db9311aabb75c427bc0ef0f5faf5ba5387",
+          "requiredAtRuntime": false,
           "passed": true
         }
       ]
@@ -687,8 +969,8 @@
       "label": "门将",
       "partSetId": "happyseed-human-v4",
       "source": {
-        "kind": "magenta-master-individual",
-        "path": "/Users/a1234/Desktop/未命名文件夹/阿根廷门将.png"
+        "kind": "local-authored-master",
+        "path": "/pixel/kit-studio/sources/mexico-goalkeeper.png"
       },
       "referencePath": "/pixel/kit-studio/sources/mexico-goalkeeper.png",
       "runtimeRoot": "/pixel/kits/mexico/goalkeeper/happyseed-human-v4",
@@ -700,7 +982,11 @@
           "slotId": "shirt_front",
           "width": 56,
           "height": 52,
-          "bytes": 6243,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 445,
+          "sha256": "bcb8ef7bbd4a3817cf597711c0b1cb97786024d8cccfafbc3699cf894bd04c06",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -708,7 +994,11 @@
           "slotId": "shirt_back",
           "width": 56,
           "height": 52,
-          "bytes": 5750,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 418,
+          "sha256": "e9c74969ee80fcc578246f94852eaff89330cb3cb464d72a32fe224fa8c2ad36",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -716,7 +1006,11 @@
           "slotId": "sleeve_left",
           "width": 14,
           "height": 22,
-          "bytes": 533,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 180,
+          "sha256": "9377c25246f60c9776f12d0694f500d56296682b82b75fd10c0f9400e3e13655",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -724,7 +1018,11 @@
           "slotId": "sleeve_right",
           "width": 23,
           "height": 18,
-          "bytes": 406,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 188,
+          "sha256": "d2274cb57d4e0ce13f7bc0ce0d7f2960dc01c4936fc771d3e9fa645f43b350c2",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -732,7 +1030,11 @@
           "slotId": "shorts",
           "width": 55,
           "height": 8,
-          "bytes": 375,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 165,
+          "sha256": "41ef233fe2442a2164707427ae9794f546b16d31ad1eb994831371837d8f80c3",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -740,7 +1042,11 @@
           "slotId": "shorts_leg",
           "width": 12,
           "height": 16,
-          "bytes": 505,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 143,
+          "sha256": "d415cbd25f7f078d38cb13a7f23b5cb9f057b5d5fe29c8ddcb9f6b158951c219",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -748,7 +1054,11 @@
           "slotId": "socks",
           "width": 11,
           "height": 14,
-          "bytes": 331,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 129,
+          "sha256": "70799e6be652c793d46cc7b5783a97fa1b48792aebccd7ce1c03cfd208d65b17",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -756,23 +1066,35 @@
           "slotId": "shoes",
           "width": 16,
           "height": 6,
-          "bytes": 242,
+          "opaqueColors": 3,
+          "semiTransparentPixels": 0,
+          "bytes": 135,
+          "sha256": "c9c14ea3bd569ce482c7ac74b7f83324650fbe0722b1d42f64689f6842bd031c",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
           "path": "/pixel/kits/mexico/goalkeeper/happyseed-human-v4/hand_left.png",
           "slotId": "hand_left",
-          "width": 25,
-          "height": 28,
-          "bytes": 470,
+          "width": 26,
+          "height": 24,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 179,
+          "sha256": "57afd5f3a954ff1288c6aa152aed618693029da5ce1622fce4f8cbe6a1cdab2e",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
           "path": "/pixel/kits/mexico/goalkeeper/happyseed-human-v4/hand_right.png",
           "slotId": "hand_right",
-          "width": 23,
-          "height": 38,
-          "bytes": 548,
+          "width": 26,
+          "height": 25,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 169,
+          "sha256": "3db046a28bc9c2c24b4ccf66c8221c5bab1000631c8f4bb55ac4f92d4de7a196",
+          "requiredAtRuntime": true,
           "passed": true
         }
       ]
@@ -784,8 +1106,8 @@
       "label": "普通球员",
       "partSetId": "happyseed-human-v4",
       "source": {
-        "kind": "magenta-master-individual",
-        "path": "/Users/a1234/Desktop/未命名文件夹/阿根廷门将.png"
+        "kind": "local-authored-master",
+        "path": "/pixel/kit-studio/sources/brazil-home.png"
       },
       "referencePath": "/pixel/kit-studio/sources/brazil-home.png",
       "runtimeRoot": "/pixel/kits/brazil/home/happyseed-human-v4",
@@ -797,7 +1119,11 @@
           "slotId": "shirt_front",
           "width": 56,
           "height": 52,
-          "bytes": 4337,
+          "opaqueColors": 6,
+          "semiTransparentPixels": 0,
+          "bytes": 457,
+          "sha256": "60508c91f1f7954d8236cb2310ed4e96da52acb39f6a06e00b9c402d26e17693",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -805,7 +1131,11 @@
           "slotId": "shirt_back",
           "width": 56,
           "height": 52,
-          "bytes": 3908,
+          "opaqueColors": 5,
+          "semiTransparentPixels": 0,
+          "bytes": 420,
+          "sha256": "12f5dab844af35355b839856de244148dae1fabd8b8593124dd4896891192114",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -813,7 +1143,11 @@
           "slotId": "sleeve_left",
           "width": 14,
           "height": 22,
-          "bytes": 613,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 179,
+          "sha256": "b9437cb5d1bd4bf947acb009efd1f0df7c3ed4d8a93d24a2fff859ef40b8b447",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -821,7 +1155,11 @@
           "slotId": "sleeve_right",
           "width": 23,
           "height": 18,
-          "bytes": 609,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 190,
+          "sha256": "1e7d20ea49ce42b6162b7342b7b5e0a8cfe918569aef776704a7a5f28876eea6",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -829,7 +1167,11 @@
           "slotId": "shorts",
           "width": 55,
           "height": 8,
-          "bytes": 387,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 165,
+          "sha256": "062a71952a8f230e5035aef7f56e97c038f40cf6256f988b4a65711f870ecc2c",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -837,7 +1179,11 @@
           "slotId": "shorts_leg",
           "width": 12,
           "height": 16,
-          "bytes": 416,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 143,
+          "sha256": "5ef9bc1a8ea485e5882dcbde26b01c929259591743289f6726aaa567e45418b0",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -845,7 +1191,11 @@
           "slotId": "socks",
           "width": 11,
           "height": 14,
-          "bytes": 295,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 120,
+          "sha256": "152d92536bc7ec6de2566df31bc84e9971d66313b05b19a5800d835a04d532ed",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -853,7 +1203,11 @@
           "slotId": "shoes",
           "width": 16,
           "height": 6,
-          "bytes": 255,
+          "opaqueColors": 3,
+          "semiTransparentPixels": 0,
+          "bytes": 135,
+          "sha256": "c9c14ea3bd569ce482c7ac74b7f83324650fbe0722b1d42f64689f6842bd031c",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -861,7 +1215,11 @@
           "slotId": "hand_left",
           "width": 25,
           "height": 28,
+          "opaqueColors": 108,
+          "semiTransparentPixels": 0,
           "bytes": 473,
+          "sha256": "8f916cf94403a4d3c8b5a90938a81df16e198e083895230e9426e5c7a0e65d51",
+          "requiredAtRuntime": false,
           "passed": true
         },
         {
@@ -869,7 +1227,11 @@
           "slotId": "hand_right",
           "width": 23,
           "height": 38,
+          "opaqueColors": 117,
+          "semiTransparentPixels": 0,
           "bytes": 523,
+          "sha256": "cc99cdb2e5a74b0ff7e314733ac3b5da181c761e8277ed5fc903c13012a1d9c2",
+          "requiredAtRuntime": false,
           "passed": true
         }
       ]
@@ -881,8 +1243,8 @@
       "label": "门将",
       "partSetId": "happyseed-human-v4",
       "source": {
-        "kind": "magenta-master-individual",
-        "path": "/Users/a1234/Desktop/未命名文件夹/阿根廷门将.png"
+        "kind": "local-authored-master",
+        "path": "/pixel/kit-studio/sources/brazil-goalkeeper.png"
       },
       "referencePath": "/pixel/kit-studio/sources/brazil-goalkeeper.png",
       "runtimeRoot": "/pixel/kits/brazil/goalkeeper/happyseed-human-v4",
@@ -894,7 +1256,11 @@
           "slotId": "shirt_front",
           "width": 56,
           "height": 52,
-          "bytes": 4012,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 445,
+          "sha256": "bcb8ef7bbd4a3817cf597711c0b1cb97786024d8cccfafbc3699cf894bd04c06",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -902,7 +1268,11 @@
           "slotId": "shirt_back",
           "width": 56,
           "height": 52,
-          "bytes": 3523,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 418,
+          "sha256": "e9c74969ee80fcc578246f94852eaff89330cb3cb464d72a32fe224fa8c2ad36",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -910,7 +1280,11 @@
           "slotId": "sleeve_left",
           "width": 14,
           "height": 22,
-          "bytes": 616,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 180,
+          "sha256": "9377c25246f60c9776f12d0694f500d56296682b82b75fd10c0f9400e3e13655",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -918,7 +1292,11 @@
           "slotId": "sleeve_right",
           "width": 23,
           "height": 18,
-          "bytes": 522,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 188,
+          "sha256": "d2274cb57d4e0ce13f7bc0ce0d7f2960dc01c4936fc771d3e9fa645f43b350c2",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -926,7 +1304,11 @@
           "slotId": "shorts",
           "width": 55,
           "height": 8,
-          "bytes": 334,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 165,
+          "sha256": "41ef233fe2442a2164707427ae9794f546b16d31ad1eb994831371837d8f80c3",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -934,7 +1316,11 @@
           "slotId": "shorts_leg",
           "width": 12,
           "height": 16,
-          "bytes": 488,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 143,
+          "sha256": "d415cbd25f7f078d38cb13a7f23b5cb9f057b5d5fe29c8ddcb9f6b158951c219",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -942,7 +1328,11 @@
           "slotId": "socks",
           "width": 11,
           "height": 14,
-          "bytes": 256,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 129,
+          "sha256": "70799e6be652c793d46cc7b5783a97fa1b48792aebccd7ce1c03cfd208d65b17",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -950,23 +1340,35 @@
           "slotId": "shoes",
           "width": 16,
           "height": 6,
-          "bytes": 239,
+          "opaqueColors": 3,
+          "semiTransparentPixels": 0,
+          "bytes": 135,
+          "sha256": "c9c14ea3bd569ce482c7ac74b7f83324650fbe0722b1d42f64689f6842bd031c",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
           "path": "/pixel/kits/brazil/goalkeeper/happyseed-human-v4/hand_left.png",
           "slotId": "hand_left",
-          "width": 25,
-          "height": 28,
-          "bytes": 517,
+          "width": 26,
+          "height": 24,
+          "opaqueColors": 3,
+          "semiTransparentPixels": 0,
+          "bytes": 177,
+          "sha256": "4cb02d70ac95353c2662ff794e2aa3d17f951689b8d65e6370d98a27e9d3dd82",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
           "path": "/pixel/kits/brazil/goalkeeper/happyseed-human-v4/hand_right.png",
           "slotId": "hand_right",
-          "width": 23,
-          "height": 38,
-          "bytes": 507,
+          "width": 26,
+          "height": 25,
+          "opaqueColors": 3,
+          "semiTransparentPixels": 0,
+          "bytes": 168,
+          "sha256": "bf93c7c0d5d94ce3d025908b3f3a0f9ad88aa42fdf6ebbafe2b79a3a1f3471ca",
+          "requiredAtRuntime": true,
           "passed": true
         }
       ]
@@ -978,8 +1380,8 @@
       "label": "普通球员",
       "partSetId": "happyseed-human-v4",
       "source": {
-        "kind": "magenta-master-individual",
-        "path": "/Users/a1234/Desktop/未命名文件夹/阿根廷门将.png"
+        "kind": "local-authored-master",
+        "path": "/pixel/kit-studio/sources/curacao-home.png"
       },
       "referencePath": "/pixel/kit-studio/sources/curacao-home.png",
       "runtimeRoot": "/pixel/kits/curacao/home/happyseed-human-v4",
@@ -991,7 +1393,11 @@
           "slotId": "shirt_front",
           "width": 56,
           "height": 52,
-          "bytes": 3926,
+          "opaqueColors": 5,
+          "semiTransparentPixels": 0,
+          "bytes": 456,
+          "sha256": "438ba320a53e6f27ab2ec16b80bc2d5795d9ec490e5aa4d8cfe837c6bb839db5",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -999,7 +1405,11 @@
           "slotId": "shirt_back",
           "width": 56,
           "height": 52,
-          "bytes": 3226,
+          "opaqueColors": 5,
+          "semiTransparentPixels": 0,
+          "bytes": 441,
+          "sha256": "4733300d573fea7273a1e7db76b3ef4d54b38d125f5ebbf44ee2b8e24b2df221",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -1007,7 +1417,11 @@
           "slotId": "sleeve_left",
           "width": 14,
           "height": 22,
-          "bytes": 585,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 178,
+          "sha256": "28974582bab74100310776f00916fd67dc0b4cf75c19c84b5c1f0ecbdde40b6c",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -1015,7 +1429,11 @@
           "slotId": "sleeve_right",
           "width": 23,
           "height": 18,
-          "bytes": 518,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 180,
+          "sha256": "e351bf70ae33ed565f1d8be92d2f9684dc778e2e2ae9708d0587f910a64f7aae",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -1023,7 +1441,11 @@
           "slotId": "shorts",
           "width": 55,
           "height": 8,
-          "bytes": 389,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 157,
+          "sha256": "072e64dba39929d66af9ff286d83f90ced54a1a7d03a434064486f9ef926e37d",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -1031,7 +1453,11 @@
           "slotId": "shorts_leg",
           "width": 12,
           "height": 16,
-          "bytes": 427,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 148,
+          "sha256": "bd8d29bc80d06f2ff3f20a41afaa0c57b13b838e474f51070c41837497c5f6f4",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -1039,7 +1465,11 @@
           "slotId": "socks",
           "width": 11,
           "height": 14,
-          "bytes": 266,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 126,
+          "sha256": "810e8ef6c130e40e2caa0575276b6007d88ce13f1e4c7a810a85a8afae8010a7",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -1047,7 +1477,11 @@
           "slotId": "shoes",
           "width": 16,
           "height": 6,
-          "bytes": 236,
+          "opaqueColors": 3,
+          "semiTransparentPixels": 0,
+          "bytes": 135,
+          "sha256": "c9c14ea3bd569ce482c7ac74b7f83324650fbe0722b1d42f64689f6842bd031c",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -1055,7 +1489,11 @@
           "slotId": "hand_left",
           "width": 25,
           "height": 28,
+          "opaqueColors": 115,
+          "semiTransparentPixels": 0,
           "bytes": 447,
+          "sha256": "618b2d3c814919374798920966ae0553dfd8e1fc399c52478b09b550af3b8900",
+          "requiredAtRuntime": false,
           "passed": true
         },
         {
@@ -1063,7 +1501,11 @@
           "slotId": "hand_right",
           "width": 23,
           "height": 38,
+          "opaqueColors": 116,
+          "semiTransparentPixels": 0,
           "bytes": 452,
+          "sha256": "80f5910371970fd7fb2d05114641dde143bf51382ec2140349658690d3b94da7",
+          "requiredAtRuntime": false,
           "passed": true
         }
       ]
@@ -1075,8 +1517,8 @@
       "label": "门将",
       "partSetId": "happyseed-human-v4",
       "source": {
-        "kind": "magenta-master-individual",
-        "path": "/Users/a1234/Desktop/未命名文件夹/阿根廷门将.png"
+        "kind": "local-authored-master",
+        "path": "/pixel/kit-studio/sources/curacao-goalkeeper.png"
       },
       "referencePath": "/pixel/kit-studio/sources/curacao-goalkeeper.png",
       "runtimeRoot": "/pixel/kits/curacao/goalkeeper/happyseed-human-v4",
@@ -1088,7 +1530,11 @@
           "slotId": "shirt_front",
           "width": 56,
           "height": 52,
-          "bytes": 3886,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 445,
+          "sha256": "bcb8ef7bbd4a3817cf597711c0b1cb97786024d8cccfafbc3699cf894bd04c06",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -1096,7 +1542,11 @@
           "slotId": "shirt_back",
           "width": 56,
           "height": 52,
-          "bytes": 3565,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 418,
+          "sha256": "e9c74969ee80fcc578246f94852eaff89330cb3cb464d72a32fe224fa8c2ad36",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -1104,7 +1554,11 @@
           "slotId": "sleeve_left",
           "width": 14,
           "height": 22,
-          "bytes": 440,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 180,
+          "sha256": "9377c25246f60c9776f12d0694f500d56296682b82b75fd10c0f9400e3e13655",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -1112,7 +1566,11 @@
           "slotId": "sleeve_right",
           "width": 23,
           "height": 18,
-          "bytes": 573,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 188,
+          "sha256": "d2274cb57d4e0ce13f7bc0ce0d7f2960dc01c4936fc771d3e9fa645f43b350c2",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -1120,7 +1578,11 @@
           "slotId": "shorts",
           "width": 55,
           "height": 8,
-          "bytes": 359,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 165,
+          "sha256": "41ef233fe2442a2164707427ae9794f546b16d31ad1eb994831371837d8f80c3",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -1128,7 +1590,11 @@
           "slotId": "shorts_leg",
           "width": 12,
           "height": 16,
-          "bytes": 470,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 143,
+          "sha256": "d415cbd25f7f078d38cb13a7f23b5cb9f057b5d5fe29c8ddcb9f6b158951c219",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -1136,7 +1602,11 @@
           "slotId": "socks",
           "width": 11,
           "height": 14,
-          "bytes": 294,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 129,
+          "sha256": "70799e6be652c793d46cc7b5783a97fa1b48792aebccd7ce1c03cfd208d65b17",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -1144,23 +1614,35 @@
           "slotId": "shoes",
           "width": 16,
           "height": 6,
-          "bytes": 223,
+          "opaqueColors": 3,
+          "semiTransparentPixels": 0,
+          "bytes": 135,
+          "sha256": "c9c14ea3bd569ce482c7ac74b7f83324650fbe0722b1d42f64689f6842bd031c",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
           "path": "/pixel/kits/curacao/goalkeeper/happyseed-human-v4/hand_left.png",
           "slotId": "hand_left",
-          "width": 25,
-          "height": 28,
-          "bytes": 481,
+          "width": 26,
+          "height": 24,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 179,
+          "sha256": "57afd5f3a954ff1288c6aa152aed618693029da5ce1622fce4f8cbe6a1cdab2e",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
           "path": "/pixel/kits/curacao/goalkeeper/happyseed-human-v4/hand_right.png",
           "slotId": "hand_right",
-          "width": 23,
-          "height": 38,
-          "bytes": 471,
+          "width": 26,
+          "height": 25,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 169,
+          "sha256": "3db046a28bc9c2c24b4ccf66c8221c5bab1000631c8f4bb55ac4f92d4de7a196",
+          "requiredAtRuntime": true,
           "passed": true
         }
       ]
@@ -1172,8 +1654,8 @@
       "label": "普通球员",
       "partSetId": "happyseed-human-v4",
       "source": {
-        "kind": "magenta-master-individual",
-        "path": "/Users/a1234/Desktop/未命名文件夹/阿根廷门将.png"
+        "kind": "local-authored-master",
+        "path": "/pixel/kit-studio/sources/germany-home.png"
       },
       "referencePath": "/pixel/kit-studio/sources/germany-home.png",
       "runtimeRoot": "/pixel/kits/germany/home/happyseed-human-v4",
@@ -1185,7 +1667,11 @@
           "slotId": "shirt_front",
           "width": 56,
           "height": 52,
-          "bytes": 3596,
+          "opaqueColors": 6,
+          "semiTransparentPixels": 0,
+          "bytes": 475,
+          "sha256": "fde75535f1c8d0a33d36db08f499c9ff0459a403cbcfad715a9d2ee6de9d0de0",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -1193,7 +1679,11 @@
           "slotId": "shirt_back",
           "width": 56,
           "height": 52,
-          "bytes": 3022,
+          "opaqueColors": 6,
+          "semiTransparentPixels": 0,
+          "bytes": 419,
+          "sha256": "aaf45ffdd1b7620572a48cb4ff2bf0f3fb8d058952cf10756fa449cd5c186326",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -1201,7 +1691,11 @@
           "slotId": "sleeve_left",
           "width": 14,
           "height": 22,
-          "bytes": 611,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 180,
+          "sha256": "2557c2da4fec5317245b77101ba00c4570549185ba94e84aa169363e134c2c37",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -1209,7 +1703,11 @@
           "slotId": "sleeve_right",
           "width": 23,
           "height": 18,
-          "bytes": 455,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 197,
+          "sha256": "f4cdb25260a08dc00810ab2a33f7f0b3cd9a46b32ea73f2aba80a26c923782cf",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -1217,7 +1715,11 @@
           "slotId": "shorts",
           "width": 55,
           "height": 8,
-          "bytes": 366,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 167,
+          "sha256": "2e0e4a045d66ac2b4d92a3c889939a72d8ec8adbf3a794990a7e4a7402252658",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -1225,7 +1727,11 @@
           "slotId": "shorts_leg",
           "width": 12,
           "height": 16,
-          "bytes": 458,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 147,
+          "sha256": "3fb27ca8fa3cbf93775c76e9b0a1819a5affab0f58cb1497c2c69a4d775ced1d",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -1233,7 +1739,11 @@
           "slotId": "socks",
           "width": 11,
           "height": 14,
-          "bytes": 281,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 120,
+          "sha256": "152d92536bc7ec6de2566df31bc84e9971d66313b05b19a5800d835a04d532ed",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -1241,7 +1751,11 @@
           "slotId": "shoes",
           "width": 16,
           "height": 6,
-          "bytes": 254,
+          "opaqueColors": 3,
+          "semiTransparentPixels": 0,
+          "bytes": 135,
+          "sha256": "c9c14ea3bd569ce482c7ac74b7f83324650fbe0722b1d42f64689f6842bd031c",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -1249,7 +1763,11 @@
           "slotId": "hand_left",
           "width": 25,
           "height": 28,
+          "opaqueColors": 116,
+          "semiTransparentPixels": 0,
           "bytes": 485,
+          "sha256": "880ed1df04812efb6acaef5a89d6dd84d34f004fb9d0ed36756fa098ec3f5b47",
+          "requiredAtRuntime": false,
           "passed": true
         },
         {
@@ -1257,7 +1775,11 @@
           "slotId": "hand_right",
           "width": 23,
           "height": 38,
+          "opaqueColors": 122,
+          "semiTransparentPixels": 0,
           "bytes": 513,
+          "sha256": "ecd246e324c885f15b16e7215359461205006ebf4fa24035d35cf889b11261ad",
+          "requiredAtRuntime": false,
           "passed": true
         }
       ]
@@ -1269,8 +1791,8 @@
       "label": "门将",
       "partSetId": "happyseed-human-v4",
       "source": {
-        "kind": "magenta-master-individual",
-        "path": "/Users/a1234/Desktop/未命名文件夹/阿根廷门将.png"
+        "kind": "local-authored-master",
+        "path": "/pixel/kit-studio/sources/germany-goalkeeper.png"
       },
       "referencePath": "/pixel/kit-studio/sources/germany-goalkeeper.png",
       "runtimeRoot": "/pixel/kits/germany/goalkeeper/happyseed-human-v4",
@@ -1282,7 +1804,11 @@
           "slotId": "shirt_front",
           "width": 56,
           "height": 52,
-          "bytes": 4909,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 445,
+          "sha256": "bcb8ef7bbd4a3817cf597711c0b1cb97786024d8cccfafbc3699cf894bd04c06",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -1290,7 +1816,11 @@
           "slotId": "shirt_back",
           "width": 56,
           "height": 52,
-          "bytes": 3523,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 418,
+          "sha256": "e9c74969ee80fcc578246f94852eaff89330cb3cb464d72a32fe224fa8c2ad36",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -1298,7 +1828,11 @@
           "slotId": "sleeve_left",
           "width": 14,
           "height": 22,
-          "bytes": 713,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 180,
+          "sha256": "9377c25246f60c9776f12d0694f500d56296682b82b75fd10c0f9400e3e13655",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -1306,7 +1840,11 @@
           "slotId": "sleeve_right",
           "width": 23,
           "height": 18,
-          "bytes": 304,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 188,
+          "sha256": "d2274cb57d4e0ce13f7bc0ce0d7f2960dc01c4936fc771d3e9fa645f43b350c2",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -1314,7 +1852,11 @@
           "slotId": "shorts",
           "width": 55,
           "height": 8,
-          "bytes": 381,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 165,
+          "sha256": "41ef233fe2442a2164707427ae9794f546b16d31ad1eb994831371837d8f80c3",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -1322,7 +1864,11 @@
           "slotId": "shorts_leg",
           "width": 12,
           "height": 16,
-          "bytes": 457,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 143,
+          "sha256": "d415cbd25f7f078d38cb13a7f23b5cb9f057b5d5fe29c8ddcb9f6b158951c219",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -1330,7 +1876,11 @@
           "slotId": "socks",
           "width": 11,
           "height": 14,
-          "bytes": 326,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 129,
+          "sha256": "70799e6be652c793d46cc7b5783a97fa1b48792aebccd7ce1c03cfd208d65b17",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -1338,23 +1888,35 @@
           "slotId": "shoes",
           "width": 16,
           "height": 6,
-          "bytes": 226,
+          "opaqueColors": 3,
+          "semiTransparentPixels": 0,
+          "bytes": 135,
+          "sha256": "c9c14ea3bd569ce482c7ac74b7f83324650fbe0722b1d42f64689f6842bd031c",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
           "path": "/pixel/kits/germany/goalkeeper/happyseed-human-v4/hand_left.png",
           "slotId": "hand_left",
-          "width": 25,
-          "height": 28,
-          "bytes": 516,
+          "width": 26,
+          "height": 24,
+          "opaqueColors": 3,
+          "semiTransparentPixels": 0,
+          "bytes": 177,
+          "sha256": "4cb02d70ac95353c2662ff794e2aa3d17f951689b8d65e6370d98a27e9d3dd82",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
           "path": "/pixel/kits/germany/goalkeeper/happyseed-human-v4/hand_right.png",
           "slotId": "hand_right",
-          "width": 23,
-          "height": 38,
-          "bytes": 526,
+          "width": 26,
+          "height": 25,
+          "opaqueColors": 3,
+          "semiTransparentPixels": 0,
+          "bytes": 168,
+          "sha256": "bf93c7c0d5d94ce3d025908b3f3a0f9ad88aa42fdf6ebbafe2b79a3a1f3471ca",
+          "requiredAtRuntime": true,
           "passed": true
         }
       ]
@@ -1366,8 +1928,8 @@
       "label": "普通球员",
       "partSetId": "happyseed-human-v4",
       "source": {
-        "kind": "magenta-master-individual",
-        "path": "/Users/a1234/Desktop/未命名文件夹/阿根廷门将.png"
+        "kind": "local-authored-master",
+        "path": "/pixel/kit-studio/sources/norway-home.png"
       },
       "referencePath": "/pixel/kit-studio/sources/norway-home.png",
       "runtimeRoot": "/pixel/kits/norway/home/happyseed-human-v4",
@@ -1379,7 +1941,11 @@
           "slotId": "shirt_front",
           "width": 56,
           "height": 52,
-          "bytes": 3827,
+          "opaqueColors": 7,
+          "semiTransparentPixels": 0,
+          "bytes": 536,
+          "sha256": "bf211044690437d740d87471740e051e70f02a05b1ca441a41646fde65069ce5",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -1387,7 +1953,11 @@
           "slotId": "shirt_back",
           "width": 56,
           "height": 52,
-          "bytes": 2973,
+          "opaqueColors": 9,
+          "semiTransparentPixels": 0,
+          "bytes": 513,
+          "sha256": "9eae10658bc0f8c66f31f559a1e3f18f15b0fab797f66cbd0102e7b396ac8792",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -1395,7 +1965,11 @@
           "slotId": "sleeve_left",
           "width": 14,
           "height": 22,
-          "bytes": 641,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 179,
+          "sha256": "830c8a801240103c5f3a859a6c0c56be40c6da4ba3f861beb03d71ae71b82d84",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -1403,7 +1977,11 @@
           "slotId": "sleeve_right",
           "width": 23,
           "height": 18,
-          "bytes": 508,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 190,
+          "sha256": "beafd521636f72d5214ff04a53b98da43ef0943fdd84be6c4b378fe4900d8e4a",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -1411,7 +1989,11 @@
           "slotId": "shorts",
           "width": 55,
           "height": 8,
-          "bytes": 407,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 165,
+          "sha256": "3760ae5ca024e5b5401772e99d1883364febb7f6edaa4f328cbb12e526c4acc8",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -1419,7 +2001,11 @@
           "slotId": "shorts_leg",
           "width": 12,
           "height": 16,
-          "bytes": 381,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 142,
+          "sha256": "7684fa854904c1b7c7001245bef71a415664211b14e2dbb4bd61ef495e795543",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -1427,7 +2013,11 @@
           "slotId": "socks",
           "width": 11,
           "height": 14,
-          "bytes": 347,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 129,
+          "sha256": "6f87e3445bec2470264520f5725c2d72df85bf0f63e5ef0ac3ef86f4f230e28e",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -1435,7 +2025,11 @@
           "slotId": "shoes",
           "width": 16,
           "height": 6,
-          "bytes": 233,
+          "opaqueColors": 3,
+          "semiTransparentPixels": 0,
+          "bytes": 135,
+          "sha256": "c9c14ea3bd569ce482c7ac74b7f83324650fbe0722b1d42f64689f6842bd031c",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -1443,7 +2037,11 @@
           "slotId": "hand_left",
           "width": 25,
           "height": 28,
+          "opaqueColors": 112,
+          "semiTransparentPixels": 0,
           "bytes": 457,
+          "sha256": "022a25ca78a39623e29583e1124f1bc18fa464aafb0fd1af13820aa9fabe9c0d",
+          "requiredAtRuntime": false,
           "passed": true
         },
         {
@@ -1451,7 +2049,11 @@
           "slotId": "hand_right",
           "width": 23,
           "height": 38,
+          "opaqueColors": 103,
+          "semiTransparentPixels": 0,
           "bytes": 457,
+          "sha256": "2f812cb07419928e5be3c566967f5579f12c01d3faec6db884e08fb6bb535649",
+          "requiredAtRuntime": false,
           "passed": true
         }
       ]
@@ -1463,8 +2065,8 @@
       "label": "门将",
       "partSetId": "happyseed-human-v4",
       "source": {
-        "kind": "magenta-master-individual",
-        "path": "/Users/a1234/Desktop/未命名文件夹/阿根廷门将.png"
+        "kind": "local-authored-master",
+        "path": "/pixel/kit-studio/sources/norway-goalkeeper.png"
       },
       "referencePath": "/pixel/kit-studio/sources/norway-goalkeeper.png",
       "runtimeRoot": "/pixel/kits/norway/goalkeeper/happyseed-human-v4",
@@ -1476,7 +2078,11 @@
           "slotId": "shirt_front",
           "width": 56,
           "height": 52,
-          "bytes": 5501,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 445,
+          "sha256": "bcb8ef7bbd4a3817cf597711c0b1cb97786024d8cccfafbc3699cf894bd04c06",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -1484,7 +2090,11 @@
           "slotId": "shirt_back",
           "width": 56,
           "height": 52,
-          "bytes": 5144,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 418,
+          "sha256": "e9c74969ee80fcc578246f94852eaff89330cb3cb464d72a32fe224fa8c2ad36",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -1492,7 +2102,11 @@
           "slotId": "sleeve_left",
           "width": 14,
           "height": 22,
-          "bytes": 537,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 180,
+          "sha256": "9377c25246f60c9776f12d0694f500d56296682b82b75fd10c0f9400e3e13655",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -1500,7 +2114,11 @@
           "slotId": "sleeve_right",
           "width": 23,
           "height": 18,
-          "bytes": 421,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 188,
+          "sha256": "d2274cb57d4e0ce13f7bc0ce0d7f2960dc01c4936fc771d3e9fa645f43b350c2",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -1508,7 +2126,11 @@
           "slotId": "shorts",
           "width": 55,
           "height": 8,
-          "bytes": 455,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 165,
+          "sha256": "41ef233fe2442a2164707427ae9794f546b16d31ad1eb994831371837d8f80c3",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -1516,7 +2138,11 @@
           "slotId": "shorts_leg",
           "width": 12,
           "height": 16,
-          "bytes": 531,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 143,
+          "sha256": "d415cbd25f7f078d38cb13a7f23b5cb9f057b5d5fe29c8ddcb9f6b158951c219",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -1524,7 +2150,11 @@
           "slotId": "socks",
           "width": 11,
           "height": 14,
-          "bytes": 351,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 129,
+          "sha256": "70799e6be652c793d46cc7b5783a97fa1b48792aebccd7ce1c03cfd208d65b17",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -1532,23 +2162,35 @@
           "slotId": "shoes",
           "width": 16,
           "height": 6,
-          "bytes": 250,
+          "opaqueColors": 3,
+          "semiTransparentPixels": 0,
+          "bytes": 135,
+          "sha256": "c9c14ea3bd569ce482c7ac74b7f83324650fbe0722b1d42f64689f6842bd031c",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
           "path": "/pixel/kits/norway/goalkeeper/happyseed-human-v4/hand_left.png",
           "slotId": "hand_left",
-          "width": 25,
-          "height": 28,
-          "bytes": 535,
+          "width": 26,
+          "height": 24,
+          "opaqueColors": 3,
+          "semiTransparentPixels": 0,
+          "bytes": 177,
+          "sha256": "4cb02d70ac95353c2662ff794e2aa3d17f951689b8d65e6370d98a27e9d3dd82",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
           "path": "/pixel/kits/norway/goalkeeper/happyseed-human-v4/hand_right.png",
           "slotId": "hand_right",
-          "width": 23,
-          "height": 38,
-          "bytes": 510,
+          "width": 26,
+          "height": 25,
+          "opaqueColors": 3,
+          "semiTransparentPixels": 0,
+          "bytes": 168,
+          "sha256": "bf93c7c0d5d94ce3d025908b3f3a0f9ad88aa42fdf6ebbafe2b79a3a1f3471ca",
+          "requiredAtRuntime": true,
           "passed": true
         }
       ]
@@ -1560,8 +2202,8 @@
       "label": "普通球员",
       "partSetId": "happyseed-human-v4",
       "source": {
-        "kind": "magenta-master-individual",
-        "path": "/Users/a1234/Desktop/未命名文件夹/阿根廷门将.png"
+        "kind": "local-authored-master",
+        "path": "/pixel/kit-studio/sources/morocco-home.png"
       },
       "referencePath": "/pixel/kit-studio/sources/morocco-home.png",
       "runtimeRoot": "/pixel/kits/morocco/home/happyseed-human-v4",
@@ -1573,7 +2215,11 @@
           "slotId": "shirt_front",
           "width": 56,
           "height": 52,
-          "bytes": 4271,
+          "opaqueColors": 6,
+          "semiTransparentPixels": 0,
+          "bytes": 466,
+          "sha256": "12871542e67d656b976f827d19960295df0334b816959cd587ab8cd09ba5cd75",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -1581,7 +2227,11 @@
           "slotId": "shirt_back",
           "width": 56,
           "height": 52,
-          "bytes": 3709,
+          "opaqueColors": 5,
+          "semiTransparentPixels": 0,
+          "bytes": 426,
+          "sha256": "60086c36a49cb870ad0a96c5c64e5f4dad6ba9b6f37d3fef3acfc8e17433fd7c",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -1589,7 +2239,11 @@
           "slotId": "sleeve_left",
           "width": 14,
           "height": 22,
-          "bytes": 190,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 179,
+          "sha256": "e55144c8d4e04b617c2cde4e9b9baae17c891b4e2d1b3f6653089763995fc9aa",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -1597,7 +2251,11 @@
           "slotId": "sleeve_right",
           "width": 23,
           "height": 18,
-          "bytes": 243,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 189,
+          "sha256": "3156dbf0a3012c08bcbc1db2efb6f4568a0bb1d446937193da56e0cacac06aec",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -1605,7 +2263,11 @@
           "slotId": "shorts",
           "width": 55,
           "height": 8,
-          "bytes": 359,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 165,
+          "sha256": "0decc3e81936939a0d5ade7594b1958097dc363d9d0872bb8cd9192635cac3c3",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -1613,7 +2275,11 @@
           "slotId": "shorts_leg",
           "width": 12,
           "height": 16,
-          "bytes": 479,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 143,
+          "sha256": "ca8c410940549fde58e04e2d07ce38f7d51ae755f6cee449fd50c7ec83176ee2",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -1621,7 +2287,11 @@
           "slotId": "socks",
           "width": 11,
           "height": 14,
-          "bytes": 285,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 129,
+          "sha256": "3f9abbb64455f822ab3be78912e48cd83f02c0400473a2208c087098f2d6c306",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -1629,7 +2299,11 @@
           "slotId": "shoes",
           "width": 16,
           "height": 6,
-          "bytes": 285,
+          "opaqueColors": 3,
+          "semiTransparentPixels": 0,
+          "bytes": 135,
+          "sha256": "c9c14ea3bd569ce482c7ac74b7f83324650fbe0722b1d42f64689f6842bd031c",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -1637,7 +2311,11 @@
           "slotId": "hand_left",
           "width": 25,
           "height": 28,
+          "opaqueColors": 127,
+          "semiTransparentPixels": 0,
           "bytes": 502,
+          "sha256": "30a28e9c5a2246132a82b65ff967fd44189a5b52b7e3e1f083db58f50404eca1",
+          "requiredAtRuntime": false,
           "passed": true
         },
         {
@@ -1645,7 +2323,11 @@
           "slotId": "hand_right",
           "width": 23,
           "height": 38,
+          "opaqueColors": 130,
+          "semiTransparentPixels": 0,
           "bytes": 489,
+          "sha256": "78f2c4f8a3b98c6f9ee8e154db5e219f518c00a68aa2a85bbb4878fcf4d47601",
+          "requiredAtRuntime": false,
           "passed": true
         }
       ]
@@ -1657,8 +2339,8 @@
       "label": "门将",
       "partSetId": "happyseed-human-v4",
       "source": {
-        "kind": "magenta-master-individual",
-        "path": "/Users/a1234/Desktop/未命名文件夹/阿根廷门将.png"
+        "kind": "local-authored-master",
+        "path": "/pixel/kit-studio/sources/morocco-goalkeeper.png"
       },
       "referencePath": "/pixel/kit-studio/sources/morocco-goalkeeper.png",
       "runtimeRoot": "/pixel/kits/morocco/goalkeeper/happyseed-human-v4",
@@ -1670,7 +2352,11 @@
           "slotId": "shirt_front",
           "width": 56,
           "height": 52,
-          "bytes": 5081,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 445,
+          "sha256": "bcb8ef7bbd4a3817cf597711c0b1cb97786024d8cccfafbc3699cf894bd04c06",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -1678,7 +2364,11 @@
           "slotId": "shirt_back",
           "width": 56,
           "height": 52,
-          "bytes": 4623,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 418,
+          "sha256": "e9c74969ee80fcc578246f94852eaff89330cb3cb464d72a32fe224fa8c2ad36",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -1686,7 +2376,11 @@
           "slotId": "sleeve_left",
           "width": 14,
           "height": 22,
-          "bytes": 538,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 180,
+          "sha256": "9377c25246f60c9776f12d0694f500d56296682b82b75fd10c0f9400e3e13655",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -1694,7 +2388,11 @@
           "slotId": "sleeve_right",
           "width": 23,
           "height": 18,
-          "bytes": 448,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 188,
+          "sha256": "d2274cb57d4e0ce13f7bc0ce0d7f2960dc01c4936fc771d3e9fa645f43b350c2",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -1702,7 +2400,11 @@
           "slotId": "shorts",
           "width": 55,
           "height": 8,
-          "bytes": 345,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 165,
+          "sha256": "41ef233fe2442a2164707427ae9794f546b16d31ad1eb994831371837d8f80c3",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -1710,7 +2412,11 @@
           "slotId": "shorts_leg",
           "width": 12,
           "height": 16,
-          "bytes": 455,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 143,
+          "sha256": "d415cbd25f7f078d38cb13a7f23b5cb9f057b5d5fe29c8ddcb9f6b158951c219",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -1718,7 +2424,11 @@
           "slotId": "socks",
           "width": 11,
           "height": 14,
-          "bytes": 290,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 129,
+          "sha256": "70799e6be652c793d46cc7b5783a97fa1b48792aebccd7ce1c03cfd208d65b17",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -1726,23 +2436,35 @@
           "slotId": "shoes",
           "width": 16,
           "height": 6,
-          "bytes": 269,
+          "opaqueColors": 3,
+          "semiTransparentPixels": 0,
+          "bytes": 135,
+          "sha256": "c9c14ea3bd569ce482c7ac74b7f83324650fbe0722b1d42f64689f6842bd031c",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
           "path": "/pixel/kits/morocco/goalkeeper/happyseed-human-v4/hand_left.png",
           "slotId": "hand_left",
-          "width": 25,
-          "height": 28,
-          "bytes": 512,
+          "width": 26,
+          "height": 24,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 179,
+          "sha256": "57afd5f3a954ff1288c6aa152aed618693029da5ce1622fce4f8cbe6a1cdab2e",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
           "path": "/pixel/kits/morocco/goalkeeper/happyseed-human-v4/hand_right.png",
           "slotId": "hand_right",
-          "width": 23,
-          "height": 38,
-          "bytes": 523,
+          "width": 26,
+          "height": 25,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 169,
+          "sha256": "3db046a28bc9c2c24b4ccf66c8221c5bab1000631c8f4bb55ac4f92d4de7a196",
+          "requiredAtRuntime": true,
           "passed": true
         }
       ]
@@ -1754,8 +2476,8 @@
       "label": "普通球员",
       "partSetId": "happyseed-human-v4",
       "source": {
-        "kind": "magenta-master-individual",
-        "path": "/Users/a1234/Desktop/未命名文件夹/阿根廷门将.png"
+        "kind": "local-authored-master",
+        "path": "/pixel/kit-studio/sources/japan-home.png"
       },
       "referencePath": "/pixel/kit-studio/sources/japan-home.png",
       "runtimeRoot": "/pixel/kits/japan/home/happyseed-human-v4",
@@ -1767,7 +2489,11 @@
           "slotId": "shirt_front",
           "width": 56,
           "height": 52,
-          "bytes": 4169,
+          "opaqueColors": 5,
+          "semiTransparentPixels": 0,
+          "bytes": 440,
+          "sha256": "c6e39cd79186ff11c1f277837e81812f81b394a159a61d255973694ec620eee5",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -1775,7 +2501,11 @@
           "slotId": "shirt_back",
           "width": 56,
           "height": 52,
-          "bytes": 3529,
+          "opaqueColors": 5,
+          "semiTransparentPixels": 0,
+          "bytes": 422,
+          "sha256": "3d190619618f707c59d578fb2af2f98b0c347d1636ba45f98955fa12de843083",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -1783,7 +2513,11 @@
           "slotId": "sleeve_left",
           "width": 14,
           "height": 22,
-          "bytes": 603,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 180,
+          "sha256": "8a5e988fec9cd13b212d658766fee697540dc14803741542a60439733a48751f",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -1791,7 +2525,11 @@
           "slotId": "sleeve_right",
           "width": 23,
           "height": 18,
-          "bytes": 504,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 188,
+          "sha256": "86629a9a798b9577c76c9ebca5427980097f542bded8f2830fbb043a6b63371e",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -1799,7 +2537,11 @@
           "slotId": "shorts",
           "width": 55,
           "height": 8,
-          "bytes": 364,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 165,
+          "sha256": "062a71952a8f230e5035aef7f56e97c038f40cf6256f988b4a65711f870ecc2c",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -1807,7 +2549,11 @@
           "slotId": "shorts_leg",
           "width": 12,
           "height": 16,
-          "bytes": 401,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 143,
+          "sha256": "5ef9bc1a8ea485e5882dcbde26b01c929259591743289f6726aaa567e45418b0",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -1815,7 +2561,11 @@
           "slotId": "socks",
           "width": 11,
           "height": 14,
-          "bytes": 259,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 129,
+          "sha256": "c745b611a29e0879a3cab1ecea3316fd56bb6d214f97f263b1e0017e92046e4e",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -1823,7 +2573,11 @@
           "slotId": "shoes",
           "width": 16,
           "height": 6,
-          "bytes": 273,
+          "opaqueColors": 3,
+          "semiTransparentPixels": 0,
+          "bytes": 135,
+          "sha256": "c9c14ea3bd569ce482c7ac74b7f83324650fbe0722b1d42f64689f6842bd031c",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -1831,7 +2585,11 @@
           "slotId": "hand_left",
           "width": 25,
           "height": 28,
+          "opaqueColors": 115,
+          "semiTransparentPixels": 0,
           "bytes": 471,
+          "sha256": "624eafd4e45b3123acefeabfba27344492fdd494239be3e283e0eaf509d59694",
+          "requiredAtRuntime": false,
           "passed": true
         },
         {
@@ -1839,7 +2597,11 @@
           "slotId": "hand_right",
           "width": 23,
           "height": 38,
+          "opaqueColors": 122,
+          "semiTransparentPixels": 0,
           "bytes": 502,
+          "sha256": "19fcd641c6f0d008eec2b7a874fb936442b9fa2e9436034168c314c5f9744bdf",
+          "requiredAtRuntime": false,
           "passed": true
         }
       ]
@@ -1851,8 +2613,8 @@
       "label": "门将",
       "partSetId": "happyseed-human-v4",
       "source": {
-        "kind": "magenta-master-individual",
-        "path": "/Users/a1234/Desktop/未命名文件夹/阿根廷门将.png"
+        "kind": "local-authored-master",
+        "path": "/pixel/kit-studio/sources/japan-goalkeeper.png"
       },
       "referencePath": "/pixel/kit-studio/sources/japan-goalkeeper.png",
       "runtimeRoot": "/pixel/kits/japan/goalkeeper/happyseed-human-v4",
@@ -1864,7 +2626,11 @@
           "slotId": "shirt_front",
           "width": 56,
           "height": 52,
-          "bytes": 4389,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 445,
+          "sha256": "bcb8ef7bbd4a3817cf597711c0b1cb97786024d8cccfafbc3699cf894bd04c06",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -1872,7 +2638,11 @@
           "slotId": "shirt_back",
           "width": 56,
           "height": 52,
-          "bytes": 3943,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 418,
+          "sha256": "e9c74969ee80fcc578246f94852eaff89330cb3cb464d72a32fe224fa8c2ad36",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -1880,7 +2650,11 @@
           "slotId": "sleeve_left",
           "width": 14,
           "height": 22,
-          "bytes": 699,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 180,
+          "sha256": "9377c25246f60c9776f12d0694f500d56296682b82b75fd10c0f9400e3e13655",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -1888,7 +2662,11 @@
           "slotId": "sleeve_right",
           "width": 23,
           "height": 18,
-          "bytes": 527,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 188,
+          "sha256": "d2274cb57d4e0ce13f7bc0ce0d7f2960dc01c4936fc771d3e9fa645f43b350c2",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -1896,7 +2674,11 @@
           "slotId": "shorts",
           "width": 55,
           "height": 8,
-          "bytes": 354,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 165,
+          "sha256": "41ef233fe2442a2164707427ae9794f546b16d31ad1eb994831371837d8f80c3",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -1904,7 +2686,11 @@
           "slotId": "shorts_leg",
           "width": 12,
           "height": 16,
-          "bytes": 440,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 143,
+          "sha256": "d415cbd25f7f078d38cb13a7f23b5cb9f057b5d5fe29c8ddcb9f6b158951c219",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -1912,7 +2698,11 @@
           "slotId": "socks",
           "width": 11,
           "height": 14,
-          "bytes": 305,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 129,
+          "sha256": "70799e6be652c793d46cc7b5783a97fa1b48792aebccd7ce1c03cfd208d65b17",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -1920,23 +2710,35 @@
           "slotId": "shoes",
           "width": 16,
           "height": 6,
-          "bytes": 280,
+          "opaqueColors": 3,
+          "semiTransparentPixels": 0,
+          "bytes": 135,
+          "sha256": "c9c14ea3bd569ce482c7ac74b7f83324650fbe0722b1d42f64689f6842bd031c",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
           "path": "/pixel/kits/japan/goalkeeper/happyseed-human-v4/hand_left.png",
           "slotId": "hand_left",
-          "width": 25,
-          "height": 28,
-          "bytes": 441,
+          "width": 26,
+          "height": 24,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 179,
+          "sha256": "57afd5f3a954ff1288c6aa152aed618693029da5ce1622fce4f8cbe6a1cdab2e",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
           "path": "/pixel/kits/japan/goalkeeper/happyseed-human-v4/hand_right.png",
           "slotId": "hand_right",
-          "width": 23,
-          "height": 38,
-          "bytes": 501,
+          "width": 26,
+          "height": 25,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 169,
+          "sha256": "3db046a28bc9c2c24b4ccf66c8221c5bab1000631c8f4bb55ac4f92d4de7a196",
+          "requiredAtRuntime": true,
           "passed": true
         }
       ]
@@ -1948,8 +2750,8 @@
       "label": "普通球员",
       "partSetId": "happyseed-human-v4",
       "source": {
-        "kind": "magenta-master-individual",
-        "path": "/Users/a1234/Desktop/未命名文件夹/阿根廷门将.png"
+        "kind": "local-authored-master",
+        "path": "/pixel/kit-studio/sources/france-home.png"
       },
       "referencePath": "/pixel/kit-studio/sources/france-home.png",
       "runtimeRoot": "/pixel/kits/france/home/happyseed-human-v4",
@@ -1961,7 +2763,11 @@
           "slotId": "shirt_front",
           "width": 56,
           "height": 52,
-          "bytes": 3596,
+          "opaqueColors": 5,
+          "semiTransparentPixels": 0,
+          "bytes": 452,
+          "sha256": "a6ac52fc1ddf5017c3779aebf74a8b41f9ef41d7605484b92752c582a2250f49",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -1969,7 +2775,11 @@
           "slotId": "shirt_back",
           "width": 56,
           "height": 52,
-          "bytes": 3124,
+          "opaqueColors": 5,
+          "semiTransparentPixels": 0,
+          "bytes": 429,
+          "sha256": "259985ccb2040c796674ba387f381a964cba34f51ae379525a510dd54ab6da3d",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -1977,7 +2787,11 @@
           "slotId": "sleeve_left",
           "width": 14,
           "height": 22,
-          "bytes": 556,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 174,
+          "sha256": "9e0784702169e9fcaa1fd0f6272d18cb4de68eb4b69659f16a6029972020671b",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -1985,7 +2799,11 @@
           "slotId": "sleeve_right",
           "width": 23,
           "height": 18,
-          "bytes": 482,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 185,
+          "sha256": "1d683849853cd8697f4a0f13a2aca8feec5f4d8b5a2963ea6793f42b3f8d4cde",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -1993,7 +2811,11 @@
           "slotId": "shorts",
           "width": 55,
           "height": 8,
-          "bytes": 343,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 165,
+          "sha256": "259eb722a9dd410ad10998181094aacc45ce69444e2b133461e5195935774726",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -2001,7 +2823,11 @@
           "slotId": "shorts_leg",
           "width": 12,
           "height": 16,
-          "bytes": 352,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 133,
+          "sha256": "625461665a987c984f6f3820d6e7a42f0b75953c230ba961d4911efa18871920",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -2009,7 +2835,11 @@
           "slotId": "socks",
           "width": 11,
           "height": 14,
-          "bytes": 274,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 129,
+          "sha256": "3928e8aa3895810a60a261a0cf2ead83f9a805f9ee9d109900237db8940f5cf4",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -2017,7 +2847,11 @@
           "slotId": "shoes",
           "width": 16,
           "height": 6,
-          "bytes": 244,
+          "opaqueColors": 3,
+          "semiTransparentPixels": 0,
+          "bytes": 135,
+          "sha256": "c9c14ea3bd569ce482c7ac74b7f83324650fbe0722b1d42f64689f6842bd031c",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -2025,7 +2859,11 @@
           "slotId": "hand_left",
           "width": 25,
           "height": 28,
+          "opaqueColors": 113,
+          "semiTransparentPixels": 0,
           "bytes": 478,
+          "sha256": "630e5a5da97ac6f5cdebd7d52496e317934b819a688f7499319b57e56e7d4123",
+          "requiredAtRuntime": false,
           "passed": true
         },
         {
@@ -2033,7 +2871,11 @@
           "slotId": "hand_right",
           "width": 23,
           "height": 38,
+          "opaqueColors": 130,
+          "semiTransparentPixels": 0,
           "bytes": 532,
+          "sha256": "ed3b30e23116a5fe706d6a68c56441906a00b164a22fd29e44b7deab8b27b911",
+          "requiredAtRuntime": false,
           "passed": true
         }
       ]
@@ -2045,8 +2887,8 @@
       "label": "门将",
       "partSetId": "happyseed-human-v4",
       "source": {
-        "kind": "magenta-master-individual",
-        "path": "/Users/a1234/Desktop/未命名文件夹/阿根廷门将.png"
+        "kind": "local-authored-master",
+        "path": "/pixel/kit-studio/sources/france-goalkeeper.png"
       },
       "referencePath": "/pixel/kit-studio/sources/france-goalkeeper.png",
       "runtimeRoot": "/pixel/kits/france/goalkeeper/happyseed-human-v4",
@@ -2058,7 +2900,11 @@
           "slotId": "shirt_front",
           "width": 56,
           "height": 52,
-          "bytes": 4571,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 445,
+          "sha256": "bcb8ef7bbd4a3817cf597711c0b1cb97786024d8cccfafbc3699cf894bd04c06",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -2066,7 +2912,11 @@
           "slotId": "shirt_back",
           "width": 56,
           "height": 52,
-          "bytes": 4173,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 418,
+          "sha256": "e9c74969ee80fcc578246f94852eaff89330cb3cb464d72a32fe224fa8c2ad36",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -2074,7 +2924,11 @@
           "slotId": "sleeve_left",
           "width": 14,
           "height": 22,
-          "bytes": 635,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 180,
+          "sha256": "9377c25246f60c9776f12d0694f500d56296682b82b75fd10c0f9400e3e13655",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -2082,7 +2936,11 @@
           "slotId": "sleeve_right",
           "width": 23,
           "height": 18,
-          "bytes": 485,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 188,
+          "sha256": "d2274cb57d4e0ce13f7bc0ce0d7f2960dc01c4936fc771d3e9fa645f43b350c2",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -2090,7 +2948,11 @@
           "slotId": "shorts",
           "width": 55,
           "height": 8,
-          "bytes": 418,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 165,
+          "sha256": "41ef233fe2442a2164707427ae9794f546b16d31ad1eb994831371837d8f80c3",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -2098,7 +2960,11 @@
           "slotId": "shorts_leg",
           "width": 12,
           "height": 16,
-          "bytes": 448,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 143,
+          "sha256": "d415cbd25f7f078d38cb13a7f23b5cb9f057b5d5fe29c8ddcb9f6b158951c219",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -2106,7 +2972,11 @@
           "slotId": "socks",
           "width": 11,
           "height": 14,
-          "bytes": 352,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 129,
+          "sha256": "70799e6be652c793d46cc7b5783a97fa1b48792aebccd7ce1c03cfd208d65b17",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -2114,23 +2984,35 @@
           "slotId": "shoes",
           "width": 16,
           "height": 6,
-          "bytes": 256,
+          "opaqueColors": 3,
+          "semiTransparentPixels": 0,
+          "bytes": 135,
+          "sha256": "c9c14ea3bd569ce482c7ac74b7f83324650fbe0722b1d42f64689f6842bd031c",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
           "path": "/pixel/kits/france/goalkeeper/happyseed-human-v4/hand_left.png",
           "slotId": "hand_left",
-          "width": 25,
-          "height": 28,
-          "bytes": 534,
+          "width": 26,
+          "height": 24,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 179,
+          "sha256": "57afd5f3a954ff1288c6aa152aed618693029da5ce1622fce4f8cbe6a1cdab2e",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
           "path": "/pixel/kits/france/goalkeeper/happyseed-human-v4/hand_right.png",
           "slotId": "hand_right",
-          "width": 23,
-          "height": 38,
-          "bytes": 532,
+          "width": 26,
+          "height": 25,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 169,
+          "sha256": "3db046a28bc9c2c24b4ccf66c8221c5bab1000631c8f4bb55ac4f92d4de7a196",
+          "requiredAtRuntime": true,
           "passed": true
         }
       ]
@@ -2142,8 +3024,8 @@
       "label": "普通球员",
       "partSetId": "happyseed-human-v4",
       "source": {
-        "kind": "magenta-master-individual",
-        "path": "/Users/a1234/Desktop/未命名文件夹/阿根廷门将.png"
+        "kind": "local-authored-master",
+        "path": "/pixel/kit-studio/sources/usa-home.png"
       },
       "referencePath": "/pixel/kit-studio/sources/usa-home.png",
       "runtimeRoot": "/pixel/kits/usa/home/happyseed-human-v4",
@@ -2155,7 +3037,11 @@
           "slotId": "shirt_front",
           "width": 56,
           "height": 52,
-          "bytes": 3410,
+          "opaqueColors": 5,
+          "semiTransparentPixels": 0,
+          "bytes": 437,
+          "sha256": "16d269cb64e16c4da2b5cb433f5b18c8cb5e6d57bfd00c5e82788b089e419b52",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -2163,7 +3049,11 @@
           "slotId": "shirt_back",
           "width": 56,
           "height": 52,
-          "bytes": 3202,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 363,
+          "sha256": "95a5dca15fb2cccefeae5112b952ff353896cfc77f4dd47c0bb7e90d1a090d73",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -2171,7 +3061,11 @@
           "slotId": "sleeve_left",
           "width": 14,
           "height": 22,
-          "bytes": 402,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 180,
+          "sha256": "2557c2da4fec5317245b77101ba00c4570549185ba94e84aa169363e134c2c37",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -2179,7 +3073,11 @@
           "slotId": "sleeve_right",
           "width": 23,
           "height": 18,
-          "bytes": 552,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 197,
+          "sha256": "f4cdb25260a08dc00810ab2a33f7f0b3cd9a46b32ea73f2aba80a26c923782cf",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -2187,7 +3085,11 @@
           "slotId": "shorts",
           "width": 55,
           "height": 8,
-          "bytes": 312,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 165,
+          "sha256": "c55d91c59d7aa7aa8c17a4348769a19f9437d19de40231f1b7b62fc4bf0f7083",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -2195,7 +3097,11 @@
           "slotId": "shorts_leg",
           "width": 12,
           "height": 16,
-          "bytes": 319,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 142,
+          "sha256": "10e2e0ba9e2c69c8b96750b77257ed1c14e9c9dc05ddf896c42d68d2b5e5f8d9",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -2203,7 +3109,11 @@
           "slotId": "socks",
           "width": 11,
           "height": 14,
-          "bytes": 245,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 129,
+          "sha256": "3928e8aa3895810a60a261a0cf2ead83f9a805f9ee9d109900237db8940f5cf4",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -2211,7 +3121,11 @@
           "slotId": "shoes",
           "width": 16,
           "height": 6,
-          "bytes": 223,
+          "opaqueColors": 3,
+          "semiTransparentPixels": 0,
+          "bytes": 135,
+          "sha256": "c9c14ea3bd569ce482c7ac74b7f83324650fbe0722b1d42f64689f6842bd031c",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -2219,7 +3133,11 @@
           "slotId": "hand_left",
           "width": 25,
           "height": 28,
+          "opaqueColors": 102,
+          "semiTransparentPixels": 0,
           "bytes": 459,
+          "sha256": "5da506be33a10b6c9c087dc25063001afa9241826678afbc0f5b472b09483388",
+          "requiredAtRuntime": false,
           "passed": true
         },
         {
@@ -2227,7 +3145,11 @@
           "slotId": "hand_right",
           "width": 23,
           "height": 38,
+          "opaqueColors": 124,
+          "semiTransparentPixels": 0,
           "bytes": 524,
+          "sha256": "6ed67e7c0df4bac7b881a3d1acfc66f4380d20a6b825d755b5f400fcc4dfe72a",
+          "requiredAtRuntime": false,
           "passed": true
         }
       ]
@@ -2239,8 +3161,8 @@
       "label": "门将",
       "partSetId": "happyseed-human-v4",
       "source": {
-        "kind": "magenta-master-individual",
-        "path": "/Users/a1234/Desktop/未命名文件夹/阿根廷门将.png"
+        "kind": "local-authored-master",
+        "path": "/pixel/kit-studio/sources/usa-goalkeeper.png"
       },
       "referencePath": "/pixel/kit-studio/sources/usa-goalkeeper.png",
       "runtimeRoot": "/pixel/kits/usa/goalkeeper/happyseed-human-v4",
@@ -2252,7 +3174,11 @@
           "slotId": "shirt_front",
           "width": 56,
           "height": 52,
-          "bytes": 4283,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 445,
+          "sha256": "bcb8ef7bbd4a3817cf597711c0b1cb97786024d8cccfafbc3699cf894bd04c06",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -2260,7 +3186,11 @@
           "slotId": "shirt_back",
           "width": 56,
           "height": 52,
-          "bytes": 3777,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 418,
+          "sha256": "e9c74969ee80fcc578246f94852eaff89330cb3cb464d72a32fe224fa8c2ad36",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -2268,7 +3198,11 @@
           "slotId": "sleeve_left",
           "width": 14,
           "height": 22,
-          "bytes": 543,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 180,
+          "sha256": "9377c25246f60c9776f12d0694f500d56296682b82b75fd10c0f9400e3e13655",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -2276,7 +3210,11 @@
           "slotId": "sleeve_right",
           "width": 23,
           "height": 18,
-          "bytes": 408,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 188,
+          "sha256": "d2274cb57d4e0ce13f7bc0ce0d7f2960dc01c4936fc771d3e9fa645f43b350c2",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -2284,7 +3222,11 @@
           "slotId": "shorts",
           "width": 55,
           "height": 8,
-          "bytes": 307,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 165,
+          "sha256": "41ef233fe2442a2164707427ae9794f546b16d31ad1eb994831371837d8f80c3",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -2292,7 +3234,11 @@
           "slotId": "shorts_leg",
           "width": 12,
           "height": 16,
-          "bytes": 364,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 143,
+          "sha256": "d415cbd25f7f078d38cb13a7f23b5cb9f057b5d5fe29c8ddcb9f6b158951c219",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -2300,7 +3246,11 @@
           "slotId": "socks",
           "width": 11,
           "height": 14,
-          "bytes": 311,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 129,
+          "sha256": "70799e6be652c793d46cc7b5783a97fa1b48792aebccd7ce1c03cfd208d65b17",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -2308,23 +3258,35 @@
           "slotId": "shoes",
           "width": 16,
           "height": 6,
-          "bytes": 207,
+          "opaqueColors": 3,
+          "semiTransparentPixels": 0,
+          "bytes": 135,
+          "sha256": "c9c14ea3bd569ce482c7ac74b7f83324650fbe0722b1d42f64689f6842bd031c",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
           "path": "/pixel/kits/usa/goalkeeper/happyseed-human-v4/hand_left.png",
           "slotId": "hand_left",
-          "width": 25,
-          "height": 28,
-          "bytes": 436,
+          "width": 26,
+          "height": 24,
+          "opaqueColors": 3,
+          "semiTransparentPixels": 0,
+          "bytes": 177,
+          "sha256": "4cb02d70ac95353c2662ff794e2aa3d17f951689b8d65e6370d98a27e9d3dd82",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
           "path": "/pixel/kits/usa/goalkeeper/happyseed-human-v4/hand_right.png",
           "slotId": "hand_right",
-          "width": 23,
-          "height": 38,
-          "bytes": 431,
+          "width": 26,
+          "height": 25,
+          "opaqueColors": 3,
+          "semiTransparentPixels": 0,
+          "bytes": 168,
+          "sha256": "bf93c7c0d5d94ce3d025908b3f3a0f9ad88aa42fdf6ebbafe2b79a3a1f3471ca",
+          "requiredAtRuntime": true,
           "passed": true
         }
       ]
@@ -2336,8 +3298,8 @@
       "label": "普通球员",
       "partSetId": "happyseed-human-v4",
       "source": {
-        "kind": "magenta-master-individual",
-        "path": "/Users/a1234/Desktop/未命名文件夹/阿根廷门将.png"
+        "kind": "local-authored-master",
+        "path": "/pixel/kit-studio/sources/england-home.png"
       },
       "referencePath": "/pixel/kit-studio/sources/england-home.png",
       "runtimeRoot": "/pixel/kits/england/home/happyseed-human-v4",
@@ -2349,7 +3311,11 @@
           "slotId": "shirt_front",
           "width": 56,
           "height": 52,
-          "bytes": 4030,
+          "opaqueColors": 5,
+          "semiTransparentPixels": 0,
+          "bytes": 433,
+          "sha256": "bd158f709b02fe487e3000fe499f57612585de234857748c10b27a91e7c7954a",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -2357,7 +3323,11 @@
           "slotId": "shirt_back",
           "width": 56,
           "height": 52,
-          "bytes": 3291,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 378,
+          "sha256": "7ccc04d698189ec24c58712e819f904513cb9bd5c0550a56143a312c79e50aa9",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -2365,7 +3335,11 @@
           "slotId": "sleeve_left",
           "width": 14,
           "height": 22,
-          "bytes": 472,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 180,
+          "sha256": "2557c2da4fec5317245b77101ba00c4570549185ba94e84aa169363e134c2c37",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -2373,7 +3347,11 @@
           "slotId": "sleeve_right",
           "width": 23,
           "height": 18,
-          "bytes": 585,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 197,
+          "sha256": "f4cdb25260a08dc00810ab2a33f7f0b3cd9a46b32ea73f2aba80a26c923782cf",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -2381,7 +3359,11 @@
           "slotId": "shorts",
           "width": 55,
           "height": 8,
-          "bytes": 395,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 165,
+          "sha256": "3760ae5ca024e5b5401772e99d1883364febb7f6edaa4f328cbb12e526c4acc8",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -2389,7 +3371,11 @@
           "slotId": "shorts_leg",
           "width": 12,
           "height": 16,
-          "bytes": 422,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 142,
+          "sha256": "7684fa854904c1b7c7001245bef71a415664211b14e2dbb4bd61ef495e795543",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -2397,7 +3383,11 @@
           "slotId": "socks",
           "width": 11,
           "height": 14,
-          "bytes": 275,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 120,
+          "sha256": "152d92536bc7ec6de2566df31bc84e9971d66313b05b19a5800d835a04d532ed",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -2405,7 +3395,11 @@
           "slotId": "shoes",
           "width": 16,
           "height": 6,
-          "bytes": 256,
+          "opaqueColors": 3,
+          "semiTransparentPixels": 0,
+          "bytes": 135,
+          "sha256": "c9c14ea3bd569ce482c7ac74b7f83324650fbe0722b1d42f64689f6842bd031c",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -2413,7 +3407,11 @@
           "slotId": "hand_left",
           "width": 25,
           "height": 28,
+          "opaqueColors": 108,
+          "semiTransparentPixels": 0,
           "bytes": 475,
+          "sha256": "c590e93a6958ced8d72bc9162aaa93c94bfa7a30f8379b06f22b983e77332608",
+          "requiredAtRuntime": false,
           "passed": true
         },
         {
@@ -2421,7 +3419,11 @@
           "slotId": "hand_right",
           "width": 23,
           "height": 38,
+          "opaqueColors": 114,
+          "semiTransparentPixels": 0,
           "bytes": 508,
+          "sha256": "7bc6c87735047979d45fffa441247f1f30c8e1dad97a67c3f970f444f1be4dfc",
+          "requiredAtRuntime": false,
           "passed": true
         }
       ]
@@ -2433,8 +3435,8 @@
       "label": "门将",
       "partSetId": "happyseed-human-v4",
       "source": {
-        "kind": "magenta-master-individual",
-        "path": "/Users/a1234/Desktop/未命名文件夹/阿根廷门将.png"
+        "kind": "local-authored-master",
+        "path": "/pixel/kit-studio/sources/england-goalkeeper.png"
       },
       "referencePath": "/pixel/kit-studio/sources/england-goalkeeper.png",
       "runtimeRoot": "/pixel/kits/england/goalkeeper/happyseed-human-v4",
@@ -2446,7 +3448,11 @@
           "slotId": "shirt_front",
           "width": 56,
           "height": 52,
-          "bytes": 4612,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 445,
+          "sha256": "bcb8ef7bbd4a3817cf597711c0b1cb97786024d8cccfafbc3699cf894bd04c06",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -2454,7 +3460,11 @@
           "slotId": "shirt_back",
           "width": 56,
           "height": 52,
-          "bytes": 4109,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 418,
+          "sha256": "e9c74969ee80fcc578246f94852eaff89330cb3cb464d72a32fe224fa8c2ad36",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -2462,7 +3472,11 @@
           "slotId": "sleeve_left",
           "width": 14,
           "height": 22,
-          "bytes": 455,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 180,
+          "sha256": "9377c25246f60c9776f12d0694f500d56296682b82b75fd10c0f9400e3e13655",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -2470,7 +3484,11 @@
           "slotId": "sleeve_right",
           "width": 23,
           "height": 18,
-          "bytes": 366,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 188,
+          "sha256": "d2274cb57d4e0ce13f7bc0ce0d7f2960dc01c4936fc771d3e9fa645f43b350c2",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -2478,7 +3496,11 @@
           "slotId": "shorts",
           "width": 55,
           "height": 8,
-          "bytes": 381,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 165,
+          "sha256": "41ef233fe2442a2164707427ae9794f546b16d31ad1eb994831371837d8f80c3",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -2486,7 +3508,11 @@
           "slotId": "shorts_leg",
           "width": 12,
           "height": 16,
-          "bytes": 448,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 143,
+          "sha256": "d415cbd25f7f078d38cb13a7f23b5cb9f057b5d5fe29c8ddcb9f6b158951c219",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -2494,7 +3520,11 @@
           "slotId": "socks",
           "width": 11,
           "height": 14,
-          "bytes": 293,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 129,
+          "sha256": "70799e6be652c793d46cc7b5783a97fa1b48792aebccd7ce1c03cfd208d65b17",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -2502,23 +3532,35 @@
           "slotId": "shoes",
           "width": 16,
           "height": 6,
-          "bytes": 248,
+          "opaqueColors": 3,
+          "semiTransparentPixels": 0,
+          "bytes": 135,
+          "sha256": "c9c14ea3bd569ce482c7ac74b7f83324650fbe0722b1d42f64689f6842bd031c",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
           "path": "/pixel/kits/england/goalkeeper/happyseed-human-v4/hand_left.png",
           "slotId": "hand_left",
-          "width": 25,
-          "height": 28,
-          "bytes": 496,
+          "width": 26,
+          "height": 24,
+          "opaqueColors": 3,
+          "semiTransparentPixels": 0,
+          "bytes": 177,
+          "sha256": "4cb02d70ac95353c2662ff794e2aa3d17f951689b8d65e6370d98a27e9d3dd82",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
           "path": "/pixel/kits/england/goalkeeper/happyseed-human-v4/hand_right.png",
           "slotId": "hand_right",
-          "width": 23,
-          "height": 38,
-          "bytes": 499,
+          "width": 26,
+          "height": 25,
+          "opaqueColors": 3,
+          "semiTransparentPixels": 0,
+          "bytes": 168,
+          "sha256": "bf93c7c0d5d94ce3d025908b3f3a0f9ad88aa42fdf6ebbafe2b79a3a1f3471ca",
+          "requiredAtRuntime": true,
           "passed": true
         }
       ]
@@ -2530,8 +3572,8 @@
       "label": "普通球员",
       "partSetId": "happyseed-human-v4",
       "source": {
-        "kind": "magenta-master-individual",
-        "path": "/Users/a1234/Desktop/未命名文件夹/阿根廷门将.png"
+        "kind": "local-authored-master",
+        "path": "/pixel/kit-studio/sources/portugal-home.png"
       },
       "referencePath": "/pixel/kit-studio/sources/portugal-home.png",
       "runtimeRoot": "/pixel/kits/portugal/home/happyseed-human-v4",
@@ -2543,7 +3585,11 @@
           "slotId": "shirt_front",
           "width": 56,
           "height": 52,
-          "bytes": 3732,
+          "opaqueColors": 6,
+          "semiTransparentPixels": 0,
+          "bytes": 454,
+          "sha256": "195fc206ccec16ac3b5de0e6dc2a72045889a797a71330a93eb2760b7c172045",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -2551,7 +3597,11 @@
           "slotId": "shirt_back",
           "width": 56,
           "height": 52,
-          "bytes": 3155,
+          "opaqueColors": 5,
+          "semiTransparentPixels": 0,
+          "bytes": 419,
+          "sha256": "ff5d76ef8b3bb9c0e127818ea5452eada3eb4d169650ba1ba409dec0c01c00a6",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -2559,7 +3609,11 @@
           "slotId": "sleeve_left",
           "width": 14,
           "height": 22,
-          "bytes": 181,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 179,
+          "sha256": "662e033dcb95d8cdeace0bfe356f0955603aa0bd3324db0e183ae8e70bd05421",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -2567,7 +3621,11 @@
           "slotId": "sleeve_right",
           "width": 23,
           "height": 18,
-          "bytes": 197,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 189,
+          "sha256": "3c0520a46d32edb867298a0610dbe16f933cf66a1e2cde97f34a17648450ef91",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -2575,7 +3633,11 @@
           "slotId": "shorts",
           "width": 55,
           "height": 8,
-          "bytes": 322,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 165,
+          "sha256": "3c47f72771c517ed3760ad02ba0c363cc8155ed5c8eebe581e4a5e1e958f4b2b",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -2583,7 +3645,11 @@
           "slotId": "shorts_leg",
           "width": 12,
           "height": 16,
-          "bytes": 433,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 142,
+          "sha256": "977b30291ffe20c47a3fee4515b3ecd390fb5b9c5bd4eb4aa9dcb589812c77e7",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -2591,7 +3657,11 @@
           "slotId": "socks",
           "width": 11,
           "height": 14,
-          "bytes": 273,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 129,
+          "sha256": "5cbf6aa258d5552f8b9b11fb85a83388da5c73b07d55da51661502d0d789b926",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -2599,7 +3669,11 @@
           "slotId": "shoes",
           "width": 16,
           "height": 6,
-          "bytes": 230,
+          "opaqueColors": 3,
+          "semiTransparentPixels": 0,
+          "bytes": 135,
+          "sha256": "c9c14ea3bd569ce482c7ac74b7f83324650fbe0722b1d42f64689f6842bd031c",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -2607,7 +3681,11 @@
           "slotId": "hand_left",
           "width": 25,
           "height": 28,
+          "opaqueColors": 107,
+          "semiTransparentPixels": 0,
           "bytes": 462,
+          "sha256": "b3741f5e743e5be860ad2543601b728f2765ec6f16d5ad5ebfa1b54319d14770",
+          "requiredAtRuntime": false,
           "passed": true
         },
         {
@@ -2615,7 +3693,11 @@
           "slotId": "hand_right",
           "width": 23,
           "height": 38,
+          "opaqueColors": 99,
+          "semiTransparentPixels": 0,
           "bytes": 443,
+          "sha256": "52cedd475285422d288d43e3f15656c1b65fe89791b84827f45c379ec00c2bcd",
+          "requiredAtRuntime": false,
           "passed": true
         }
       ]
@@ -2627,8 +3709,8 @@
       "label": "门将",
       "partSetId": "happyseed-human-v4",
       "source": {
-        "kind": "magenta-master-individual",
-        "path": "/Users/a1234/Desktop/未命名文件夹/阿根廷门将.png"
+        "kind": "local-authored-master",
+        "path": "/pixel/kit-studio/sources/portugal-goalkeeper.png"
       },
       "referencePath": "/pixel/kit-studio/sources/portugal-goalkeeper.png",
       "runtimeRoot": "/pixel/kits/portugal/goalkeeper/happyseed-human-v4",
@@ -2640,7 +3722,11 @@
           "slotId": "shirt_front",
           "width": 56,
           "height": 52,
-          "bytes": 4278,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 445,
+          "sha256": "bcb8ef7bbd4a3817cf597711c0b1cb97786024d8cccfafbc3699cf894bd04c06",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -2648,7 +3734,11 @@
           "slotId": "shirt_back",
           "width": 56,
           "height": 52,
-          "bytes": 3974,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 418,
+          "sha256": "e9c74969ee80fcc578246f94852eaff89330cb3cb464d72a32fe224fa8c2ad36",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -2656,7 +3746,11 @@
           "slotId": "sleeve_left",
           "width": 14,
           "height": 22,
-          "bytes": 580,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 180,
+          "sha256": "9377c25246f60c9776f12d0694f500d56296682b82b75fd10c0f9400e3e13655",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -2664,7 +3758,11 @@
           "slotId": "sleeve_right",
           "width": 23,
           "height": 18,
-          "bytes": 510,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 188,
+          "sha256": "d2274cb57d4e0ce13f7bc0ce0d7f2960dc01c4936fc771d3e9fa645f43b350c2",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -2672,7 +3770,11 @@
           "slotId": "shorts",
           "width": 55,
           "height": 8,
-          "bytes": 354,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 165,
+          "sha256": "41ef233fe2442a2164707427ae9794f546b16d31ad1eb994831371837d8f80c3",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -2680,7 +3782,11 @@
           "slotId": "shorts_leg",
           "width": 12,
           "height": 16,
-          "bytes": 451,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 143,
+          "sha256": "d415cbd25f7f078d38cb13a7f23b5cb9f057b5d5fe29c8ddcb9f6b158951c219",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -2688,7 +3794,11 @@
           "slotId": "socks",
           "width": 11,
           "height": 14,
-          "bytes": 284,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 129,
+          "sha256": "70799e6be652c793d46cc7b5783a97fa1b48792aebccd7ce1c03cfd208d65b17",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -2696,23 +3806,35 @@
           "slotId": "shoes",
           "width": 16,
           "height": 6,
-          "bytes": 238,
+          "opaqueColors": 3,
+          "semiTransparentPixels": 0,
+          "bytes": 135,
+          "sha256": "c9c14ea3bd569ce482c7ac74b7f83324650fbe0722b1d42f64689f6842bd031c",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
           "path": "/pixel/kits/portugal/goalkeeper/happyseed-human-v4/hand_left.png",
           "slotId": "hand_left",
-          "width": 25,
-          "height": 28,
-          "bytes": 457,
+          "width": 26,
+          "height": 24,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 179,
+          "sha256": "57afd5f3a954ff1288c6aa152aed618693029da5ce1622fce4f8cbe6a1cdab2e",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
           "path": "/pixel/kits/portugal/goalkeeper/happyseed-human-v4/hand_right.png",
           "slotId": "hand_right",
-          "width": 23,
-          "height": 38,
-          "bytes": 447,
+          "width": 26,
+          "height": 25,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 169,
+          "sha256": "3db046a28bc9c2c24b4ccf66c8221c5bab1000631c8f4bb55ac4f92d4de7a196",
+          "requiredAtRuntime": true,
           "passed": true
         }
       ]
@@ -2724,8 +3846,8 @@
       "label": "普通球员",
       "partSetId": "happyseed-human-v4",
       "source": {
-        "kind": "magenta-master-individual",
-        "path": "/Users/a1234/Desktop/未命名文件夹/阿根廷门将.png"
+        "kind": "local-authored-master",
+        "path": "/pixel/kit-studio/sources/spain-home.png"
       },
       "referencePath": "/pixel/kit-studio/sources/spain-home.png",
       "runtimeRoot": "/pixel/kits/spain/home/happyseed-human-v4",
@@ -2737,7 +3859,11 @@
           "slotId": "shirt_front",
           "width": 56,
           "height": 52,
-          "bytes": 3611,
+          "opaqueColors": 5,
+          "semiTransparentPixels": 0,
+          "bytes": 477,
+          "sha256": "3ed2a8ed2f268219c0ca71a77f8fc97a2d965f1fa27d311f597dfed73c7e8327",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -2745,7 +3871,11 @@
           "slotId": "shirt_back",
           "width": 56,
           "height": 52,
-          "bytes": 3024,
+          "opaqueColors": 5,
+          "semiTransparentPixels": 0,
+          "bytes": 444,
+          "sha256": "62c2a53d5fa5b5b59aa3c8036409f88428133e49bd9d77313eaad8fec9996aab",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -2753,7 +3883,11 @@
           "slotId": "sleeve_left",
           "width": 14,
           "height": 22,
-          "bytes": 557,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 181,
+          "sha256": "f7c58d60c24f1c0325e06561f030cace1426d7b971a1bc6a57a1793f6fb176fc",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -2761,7 +3895,11 @@
           "slotId": "sleeve_right",
           "width": 23,
           "height": 18,
-          "bytes": 566,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 183,
+          "sha256": "86373bd9f94a02c1b1d55218dd218c2b0cef4ab5ea1995251b2292b2d1bfae77",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -2769,7 +3907,11 @@
           "slotId": "shorts",
           "width": 55,
           "height": 8,
-          "bytes": 314,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 165,
+          "sha256": "062a71952a8f230e5035aef7f56e97c038f40cf6256f988b4a65711f870ecc2c",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -2777,7 +3919,11 @@
           "slotId": "shorts_leg",
           "width": 12,
           "height": 16,
-          "bytes": 361,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 143,
+          "sha256": "5ef9bc1a8ea485e5882dcbde26b01c929259591743289f6726aaa567e45418b0",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -2785,7 +3931,11 @@
           "slotId": "socks",
           "width": 11,
           "height": 14,
-          "bytes": 286,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 126,
+          "sha256": "edefe0c31e1d7ee601259e8929d825e180a92404511fd60173f97f7a5025b474",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -2793,7 +3943,11 @@
           "slotId": "shoes",
           "width": 16,
           "height": 6,
-          "bytes": 217,
+          "opaqueColors": 3,
+          "semiTransparentPixels": 0,
+          "bytes": 135,
+          "sha256": "c9c14ea3bd569ce482c7ac74b7f83324650fbe0722b1d42f64689f6842bd031c",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -2801,7 +3955,11 @@
           "slotId": "hand_left",
           "width": 25,
           "height": 28,
+          "opaqueColors": 104,
+          "semiTransparentPixels": 0,
           "bytes": 441,
+          "sha256": "b53722f4d2e6ba55f6917e81f2a52c2b5639d5fa2347b554405969099e28dc6b",
+          "requiredAtRuntime": false,
           "passed": true
         },
         {
@@ -2809,7 +3967,11 @@
           "slotId": "hand_right",
           "width": 23,
           "height": 38,
+          "opaqueColors": 110,
+          "semiTransparentPixels": 0,
           "bytes": 472,
+          "sha256": "f3684834f6fc22f52ef1f5795ebe8a532792b1b4292ad18776be30acce809326",
+          "requiredAtRuntime": false,
           "passed": true
         }
       ]
@@ -2821,8 +3983,8 @@
       "label": "门将",
       "partSetId": "happyseed-human-v4",
       "source": {
-        "kind": "magenta-master-individual",
-        "path": "/Users/a1234/Desktop/未命名文件夹/阿根廷门将.png"
+        "kind": "local-authored-master",
+        "path": "/pixel/kit-studio/sources/spain-goalkeeper.png"
       },
       "referencePath": "/pixel/kit-studio/sources/spain-goalkeeper.png",
       "runtimeRoot": "/pixel/kits/spain/goalkeeper/happyseed-human-v4",
@@ -2834,7 +3996,11 @@
           "slotId": "shirt_front",
           "width": 56,
           "height": 52,
-          "bytes": 4652,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 445,
+          "sha256": "bcb8ef7bbd4a3817cf597711c0b1cb97786024d8cccfafbc3699cf894bd04c06",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -2842,7 +4008,11 @@
           "slotId": "shirt_back",
           "width": 56,
           "height": 52,
-          "bytes": 4218,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 418,
+          "sha256": "e9c74969ee80fcc578246f94852eaff89330cb3cb464d72a32fe224fa8c2ad36",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -2850,7 +4020,11 @@
           "slotId": "sleeve_left",
           "width": 14,
           "height": 22,
-          "bytes": 680,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 180,
+          "sha256": "9377c25246f60c9776f12d0694f500d56296682b82b75fd10c0f9400e3e13655",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -2858,7 +4032,11 @@
           "slotId": "sleeve_right",
           "width": 23,
           "height": 18,
-          "bytes": 601,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 188,
+          "sha256": "d2274cb57d4e0ce13f7bc0ce0d7f2960dc01c4936fc771d3e9fa645f43b350c2",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -2866,7 +4044,11 @@
           "slotId": "shorts",
           "width": 55,
           "height": 8,
-          "bytes": 403,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 165,
+          "sha256": "41ef233fe2442a2164707427ae9794f546b16d31ad1eb994831371837d8f80c3",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -2874,7 +4056,11 @@
           "slotId": "shorts_leg",
           "width": 12,
           "height": 16,
-          "bytes": 519,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 143,
+          "sha256": "d415cbd25f7f078d38cb13a7f23b5cb9f057b5d5fe29c8ddcb9f6b158951c219",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -2882,7 +4068,11 @@
           "slotId": "socks",
           "width": 11,
           "height": 14,
-          "bytes": 293,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 129,
+          "sha256": "70799e6be652c793d46cc7b5783a97fa1b48792aebccd7ce1c03cfd208d65b17",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -2890,23 +4080,35 @@
           "slotId": "shoes",
           "width": 16,
           "height": 6,
-          "bytes": 226,
+          "opaqueColors": 3,
+          "semiTransparentPixels": 0,
+          "bytes": 135,
+          "sha256": "c9c14ea3bd569ce482c7ac74b7f83324650fbe0722b1d42f64689f6842bd031c",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
           "path": "/pixel/kits/spain/goalkeeper/happyseed-human-v4/hand_left.png",
           "slotId": "hand_left",
-          "width": 25,
-          "height": 28,
-          "bytes": 528,
+          "width": 26,
+          "height": 24,
+          "opaqueColors": 3,
+          "semiTransparentPixels": 0,
+          "bytes": 177,
+          "sha256": "4cb02d70ac95353c2662ff794e2aa3d17f951689b8d65e6370d98a27e9d3dd82",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
           "path": "/pixel/kits/spain/goalkeeper/happyseed-human-v4/hand_right.png",
           "slotId": "hand_right",
-          "width": 23,
-          "height": 38,
-          "bytes": 576,
+          "width": 26,
+          "height": 25,
+          "opaqueColors": 3,
+          "semiTransparentPixels": 0,
+          "bytes": 168,
+          "sha256": "bf93c7c0d5d94ce3d025908b3f3a0f9ad88aa42fdf6ebbafe2b79a3a1f3471ca",
+          "requiredAtRuntime": true,
           "passed": true
         }
       ]
@@ -2918,8 +4120,8 @@
       "label": "普通球员",
       "partSetId": "happyseed-human-v4",
       "source": {
-        "kind": "magenta-master-individual",
-        "path": "/Users/a1234/Desktop/未命名文件夹/阿根廷门将.png"
+        "kind": "local-authored-master",
+        "path": "/pixel/kit-studio/sources/argentina-home.png"
       },
       "referencePath": "/pixel/kit-studio/sources/argentina-home.png",
       "runtimeRoot": "/pixel/kits/argentina/home/happyseed-human-v4",
@@ -2931,7 +4133,11 @@
           "slotId": "shirt_front",
           "width": 56,
           "height": 52,
-          "bytes": 3673,
+          "opaqueColors": 6,
+          "semiTransparentPixels": 0,
+          "bytes": 571,
+          "sha256": "71b49d8d884c0cda49c8220dc48df863b5330e0b0821f260a2d10d70a83d3062",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -2939,7 +4145,11 @@
           "slotId": "shirt_back",
           "width": 56,
           "height": 52,
-          "bytes": 3208,
+          "opaqueColors": 6,
+          "semiTransparentPixels": 0,
+          "bytes": 496,
+          "sha256": "7bd41afd27e8f7e50aa8a290f8923847074f9dd678f09e2374a2f4c5a0348aae",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -2947,7 +4157,11 @@
           "slotId": "sleeve_left",
           "width": 14,
           "height": 22,
-          "bytes": 581,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 180,
+          "sha256": "437f70e383b5e59b23ec3479cc674f46f2089e2f9284d7cbe20bee3a9f1bcfd4",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -2955,7 +4169,11 @@
           "slotId": "sleeve_right",
           "width": 23,
           "height": 18,
-          "bytes": 570,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 188,
+          "sha256": "7b47967efb08b79ccb90945c63c2d0c6d3e9034aa1d1700bc65dcd2b844406de",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -2963,7 +4181,11 @@
           "slotId": "shorts",
           "width": 55,
           "height": 8,
-          "bytes": 355,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 165,
+          "sha256": "259eb722a9dd410ad10998181094aacc45ce69444e2b133461e5195935774726",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -2971,7 +4193,11 @@
           "slotId": "shorts_leg",
           "width": 12,
           "height": 16,
-          "bytes": 427,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 133,
+          "sha256": "625461665a987c984f6f3820d6e7a42f0b75953c230ba961d4911efa18871920",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -2979,7 +4205,11 @@
           "slotId": "socks",
           "width": 11,
           "height": 14,
-          "bytes": 309,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 129,
+          "sha256": "1c9a0bb5d6c401c67a364796c8d7b49a08a00873b988c66c7bd04cb88c9032ba",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -2987,7 +4217,11 @@
           "slotId": "shoes",
           "width": 16,
           "height": 6,
-          "bytes": 258,
+          "opaqueColors": 3,
+          "semiTransparentPixels": 0,
+          "bytes": 135,
+          "sha256": "c9c14ea3bd569ce482c7ac74b7f83324650fbe0722b1d42f64689f6842bd031c",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -2995,7 +4229,11 @@
           "slotId": "hand_left",
           "width": 25,
           "height": 28,
+          "opaqueColors": 103,
+          "semiTransparentPixels": 0,
           "bytes": 481,
+          "sha256": "24f8ab3408f2c74c5aeeb1095f936473321e96dc921d54b190c06d72362b7d16",
+          "requiredAtRuntime": false,
           "passed": true
         },
         {
@@ -3003,7 +4241,11 @@
           "slotId": "hand_right",
           "width": 23,
           "height": 38,
+          "opaqueColors": 102,
+          "semiTransparentPixels": 0,
           "bytes": 468,
+          "sha256": "90d28c600f572b3143f9bc4e1847acc072da8c8ef7a940d959d3b3d2ded3b79b",
+          "requiredAtRuntime": false,
           "passed": true
         }
       ]
@@ -3015,8 +4257,8 @@
       "label": "门将",
       "partSetId": "happyseed-human-v4",
       "source": {
-        "kind": "magenta-master-individual",
-        "path": "/Users/a1234/Desktop/未命名文件夹/阿根廷门将.png"
+        "kind": "local-authored-master",
+        "path": "/pixel/kit-studio/sources/argentina-goalkeeper.png"
       },
       "referencePath": "/pixel/kit-studio/sources/argentina-goalkeeper.png",
       "runtimeRoot": "/pixel/kits/argentina/goalkeeper/happyseed-human-v4",
@@ -3028,7 +4270,11 @@
           "slotId": "shirt_front",
           "width": 56,
           "height": 52,
-          "bytes": 4757,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 445,
+          "sha256": "bcb8ef7bbd4a3817cf597711c0b1cb97786024d8cccfafbc3699cf894bd04c06",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -3036,7 +4282,11 @@
           "slotId": "shirt_back",
           "width": 56,
           "height": 52,
-          "bytes": 3000,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 418,
+          "sha256": "e9c74969ee80fcc578246f94852eaff89330cb3cb464d72a32fe224fa8c2ad36",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -3044,7 +4294,11 @@
           "slotId": "sleeve_left",
           "width": 14,
           "height": 22,
-          "bytes": 556,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 180,
+          "sha256": "9377c25246f60c9776f12d0694f500d56296682b82b75fd10c0f9400e3e13655",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -3052,7 +4306,11 @@
           "slotId": "sleeve_right",
           "width": 23,
           "height": 18,
-          "bytes": 578,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 188,
+          "sha256": "d2274cb57d4e0ce13f7bc0ce0d7f2960dc01c4936fc771d3e9fa645f43b350c2",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -3060,7 +4318,11 @@
           "slotId": "shorts",
           "width": 55,
           "height": 8,
-          "bytes": 372,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 165,
+          "sha256": "41ef233fe2442a2164707427ae9794f546b16d31ad1eb994831371837d8f80c3",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -3068,7 +4330,11 @@
           "slotId": "shorts_leg",
           "width": 12,
           "height": 16,
-          "bytes": 462,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 143,
+          "sha256": "d415cbd25f7f078d38cb13a7f23b5cb9f057b5d5fe29c8ddcb9f6b158951c219",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -3076,7 +4342,11 @@
           "slotId": "socks",
           "width": 11,
           "height": 14,
-          "bytes": 290,
+          "opaqueColors": 4,
+          "semiTransparentPixels": 0,
+          "bytes": 129,
+          "sha256": "70799e6be652c793d46cc7b5783a97fa1b48792aebccd7ce1c03cfd208d65b17",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
@@ -3084,23 +4354,35 @@
           "slotId": "shoes",
           "width": 16,
           "height": 6,
-          "bytes": 252,
+          "opaqueColors": 3,
+          "semiTransparentPixels": 0,
+          "bytes": 135,
+          "sha256": "c9c14ea3bd569ce482c7ac74b7f83324650fbe0722b1d42f64689f6842bd031c",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
           "path": "/pixel/kits/argentina/goalkeeper/happyseed-human-v4/hand_left.png",
           "slotId": "hand_left",
-          "width": 25,
-          "height": 28,
-          "bytes": 453,
+          "width": 26,
+          "height": 24,
+          "opaqueColors": 3,
+          "semiTransparentPixels": 0,
+          "bytes": 177,
+          "sha256": "4cb02d70ac95353c2662ff794e2aa3d17f951689b8d65e6370d98a27e9d3dd82",
+          "requiredAtRuntime": true,
           "passed": true
         },
         {
           "path": "/pixel/kits/argentina/goalkeeper/happyseed-human-v4/hand_right.png",
           "slotId": "hand_right",
-          "width": 23,
-          "height": 38,
-          "bytes": 463,
+          "width": 26,
+          "height": 25,
+          "opaqueColors": 3,
+          "semiTransparentPixels": 0,
+          "bytes": 168,
+          "sha256": "bf93c7c0d5d94ce3d025908b3f3a0f9ad88aa42fdf6ebbafe2b79a3a1f3471ca",
+          "requiredAtRuntime": true,
           "passed": true
         }
       ]

@@ -3,6 +3,21 @@ import { getAppointmentLetter } from '../data/appointmentLetters'
 import { audioManager } from '../utils/audioManager'
 import '../styles/appointmentLetter.css'
 
+const APPOINTMENT_CARD_WIDTH = 420
+const APPOINTMENT_CARD_HEIGHT = 560
+
+function getAppointmentScale() {
+  if (typeof window === 'undefined') return 1
+  const viewport = window.visualViewport
+  const width = viewport?.width || window.innerWidth
+  const height = viewport?.height || window.innerHeight
+  return Math.min(
+    1,
+    Math.max(0.45, (width - 16) / APPOINTMENT_CARD_WIDTH),
+    Math.max(0.45, (height - 16) / APPOINTMENT_CARD_HEIGHT),
+  )
+}
+
 /**
  * 聘书签署组件
  * 状态机：appearing → signing → stamping → done
@@ -14,8 +29,22 @@ export default function AppointmentLetter({ team, onConfirm, onCancel }) {
   const isDrawingRef = useRef(false)
   const strokeCountRef = useRef(0)
   const lastPointRef = useRef(null)
+  const [cardScale, setCardScale] = useState(getAppointmentScale)
 
   const letter = getAppointmentLetter(team.id)
+
+  // The letter is a fixed design canvas. Scale the whole canvas together so
+  // the signature line and stamp target never drift at mobile breakpoints.
+  useEffect(() => {
+    const updateScale = () => setCardScale(getAppointmentScale())
+    const viewport = window.visualViewport
+    window.addEventListener('resize', updateScale)
+    viewport?.addEventListener('resize', updateScale)
+    return () => {
+      window.removeEventListener('resize', updateScale)
+      viewport?.removeEventListener('resize', updateScale)
+    }
+  }, [])
 
   // 聘书出现时播放纸张音效
   useEffect(() => {
@@ -58,7 +87,7 @@ export default function AppointmentLetter({ team, onConfirm, onCancel }) {
     if (!canvas || !lastPointRef.current) return
     const ctx = canvas.getContext('2d')
     ctx.strokeStyle = '#1a1a2e'
-    ctx.lineWidth = 1.5
+    ctx.lineWidth = 3
     ctx.lineCap = 'round'
     ctx.lineJoin = 'round'
     ctx.beginPath()
@@ -91,7 +120,18 @@ export default function AppointmentLetter({ team, onConfirm, onCancel }) {
 
   return (
     <div className="appointment-overlay" role="dialog" aria-label={`${team.name}聘书`}>
-      <div className={`appointment-card ${phase === 'appearing' ? 'is-appearing' : ''}`}>
+      <div
+        className="appointment-card-scale"
+        style={{
+          width: `${APPOINTMENT_CARD_WIDTH * cardScale}px`,
+          height: `${APPOINTMENT_CARD_HEIGHT * cardScale}px`,
+        }}
+      >
+        <div
+          className="appointment-card-transform"
+          style={{ transform: `scale(${cardScale})` }}
+        >
+          <div className={`appointment-card ${phase === 'appearing' ? 'is-appearing' : ''}`}>
         {/* 聘书背景 */}
         <div className="appointment-bg" />
 
@@ -158,6 +198,8 @@ export default function AppointmentLetter({ team, onConfirm, onCancel }) {
           {phase === 'stamping' && (
             <span className="appointment-stamping-text">盖章中...</span>
           )}
+        </div>
+        </div>
         </div>
       </div>
     </div>

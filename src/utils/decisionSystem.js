@@ -55,9 +55,9 @@ function calcSuccessProb(
   }
   const normalizedAttr = totalWeight > 0 ? weightedSum / totalWeight : 70;
 
-  // 对手质量修正：实力差对决策结果的影响要可见
+  // 对手质量修正：实力差对决策结果的影响要显著
   const attrDiff = normalizedAttr - opponentAvgDef;
-  const opponentMult = Math.min(1.18, Math.max(0.78, 1.0 + attrDiff * 0.005));
+  const opponentMult = Math.min(1.28, Math.max(0.72, 1.0 + attrDiff * 0.008));
 
   // 基础成功率
   const baseProb = 0.22 + (normalizedAttr / 99) * 0.52;
@@ -65,11 +65,11 @@ function calcSuccessProb(
   // 最终概率
   const goldenMult = keyPlayer.isGolden ? 1.08 : 1.0;
   const difficultyModifier = {
-    1: 0.04,
-    2: 0.02,
+    1: 0.03,
+    2: 0.01,
     3: 0,
-    4: -0.08,
-    5: -0.22,
+    4: -0.04,
+    5: -0.10,
   }[teamDifficulty] ?? 0;
   return Math.min(0.86, Math.max(0.08, baseProb * formMult * clutchMult * goldenMult * opponentMult + teamDepthBonus + difficultyModifier));
 }

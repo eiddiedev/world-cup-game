@@ -9,6 +9,21 @@ import {
 } from '../data/rosterRules'
 
 /**
+ * 根据阵型字符串解析各位置最少人数
+ * 例: "4-3-3" → {GK:1, DF:4, MF:3, FW:3}
+ *     "4-2-3-1" → {GK:1, DF:4, MF:5, FW:1}
+ *     "5-3-2" → {GK:1, DF:5, MF:3, FW:2}
+ */
+function parseFormationMin(formationStr) {
+  const parts = formationStr.split('-').map(Number)
+  if (parts.length < 2) return { GK: 1, DF: 4, MF: 3, FW: 3 }
+  const df = parts[0]
+  const fw = parts[parts.length - 1]
+  const mf = parts.slice(1, -1).reduce((a, b) => a + b, 0)
+  return { GK: 1, DF: df, MF: mf, FW: fw }
+}
+
+/**
  * 球员招募页面
  * 按位置分组显示球员：GK → DF → MF → FW
  * 球员卡片设计 + 六维属性图
@@ -48,6 +63,10 @@ export default function RecruitmentScreen({ saveData, updateSaveData, navigateTo
 
   // 按价格排序（从高到低）
   const sortedPlayers = [...filteredPlayers].sort((a, b) => b.price - a.price)
+
+  // 当前阵型及各位置最少人数
+  const currentFormation = saveData.currentRun?.formation || getTeamDefaultFormation(team.id)
+  const formationMin = parseFormationMin(currentFormation)
 
   // 按位置统计已购球员
   const purchasedByPosition = positionOrder.reduce((acc, pos) => {
@@ -200,7 +219,7 @@ export default function RecruitmentScreen({ saveData, updateSaveData, navigateTo
           {positionOrder.map(pos => (
             <div key={pos} className="stat-item">
               <span className="stat-label">{positionNames[pos]}</span>
-              <span className="stat-value">{purchasedByPosition[pos]}</span>
+              <span className="stat-value">{purchasedByPosition[pos]}<span className="stat-min-hint">/≥{formationMin[pos]}</span></span>
             </div>
           ))}
         </div>

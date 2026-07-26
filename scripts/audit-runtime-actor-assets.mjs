@@ -1,6 +1,8 @@
 import { readFile, stat } from 'node:fs/promises'
 import path from 'node:path'
 import { HAPPYSEED_SLOT_TEXTURE_SIZES } from '../src/utils/happySeedHumanPlayer.js'
+import { ALL_PLAYABLE_TEAM_IDS } from '../src/config/runtime.js'
+import { opponentTeams } from '../src/data/opponentTeams.js'
 
 const projectRoot = path.resolve(import.meta.dirname, '..')
 const publicRoot = path.join(projectRoot, 'public')
@@ -13,6 +15,10 @@ const standaloneRuntimeSource = await readFile(
   'utf8',
 )
 const failures = []
+const expectedRuntimeTeamIds = new Set([
+  ...ALL_PLAYABLE_TEAM_IDS,
+  ...opponentTeams.map((team) => team.id),
+])
 
 function assert(condition, message) {
   if (!condition) failures.push(message)
@@ -31,7 +37,10 @@ function readPngSize(buffer) {
 }
 
 assert(manifest.schemaVersion === 'happyseed-runtime-actor-assets-v1', 'Schema version drift')
-assert(manifest.teamCount === 10, 'Stage 4 must cover the 10-team template')
+assert(
+  manifest.teamCount === expectedRuntimeTeamIds.size,
+  `Runtime assets must cover ${expectedRuntimeTeamIds.size} unique tournament teams`,
+)
 assert(manifest.kitVariantCount === 4, 'Each team needs home, away and two goalkeeper kits')
 assert(manifest.numberCount === 99, 'Jersey number atlas must cover 1-99')
 assert(manifest.fileCount === manifest.files.length, 'Manifest file count mismatch')

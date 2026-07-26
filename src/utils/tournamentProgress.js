@@ -1,6 +1,6 @@
 import { getLogisticsModifiers } from './logisticsEffects.js'
 
-const KNOCKOUT_ORDER = ['r16', 'qf', 'sf', 'final']
+const KNOCKOUT_ORDER = ['r32', 'r16', 'qf', 'sf', 'final']
 const BETWEEN_MATCH_STAMINA_RECOVERY = 10
 
 function recoverBetweenMatches(run) {
@@ -25,7 +25,7 @@ function isKnockoutRun(run) {
 }
 
 function getNextKnockoutRound(round) {
-  const index = KNOCKOUT_ORDER.indexOf(round || 'r16')
+  const index = KNOCKOUT_ORDER.indexOf(round || 'r32')
   return KNOCKOUT_ORDER[index + 1] || null
 }
 

@@ -20,7 +20,7 @@ const TARGET_MAP = {
   '四强': 'semifinal',
   '八强': 'quarterfinal',
   '16强': 'round16',
-  '小组出线': 'round16',
+  '小组出线': 'round32',
   '争取首胜': 'group',
 }
 
@@ -44,7 +44,6 @@ const RECORD_LABELS = [
   { key: 'fastestGoalMinute', label: '最快进球', unit: '分钟' },
   { key: 'hatTricks', label: '帽子戏法次数', unit: '次' },
   { key: 'penaltiesSaved', label: '扑出点球总数', unit: '个' },
-  { key: 'comebacksFrom3', label: '落后3球逆转', unit: '次' },
 ]
 
 const RESULT_LABELS = {
@@ -53,6 +52,7 @@ const RESULT_LABELS = {
   semifinal: '四强',
   quarterfinal: '八强',
   round16: '十六强',
+  round32: '三十二强',
   group: '小组赛',
 }
 
@@ -62,6 +62,7 @@ const RESULT_ICON = {
   semifinal: '◆',
   quarterfinal: '◇',
   round16: '○',
+  round32: '△',
   group: '·',
 }
 
@@ -144,7 +145,12 @@ function TeamsTab({ codex }) {
 
 /* ---- Tab 2: 奖杯陈列室 ---- */
 function TrophiesTab({ runHistory }) {
-  if (runHistory.length === 0) {
+  // 只展示有实际成绩（非小组赛淘汰）且 teamId 有效的记录
+  const filtered = runHistory.filter(
+    (run) => run.teamId && getTeamById(run.teamId) && run.result && run.result !== 'group'
+  )
+
+  if (filtered.length === 0) {
     return (
       <div className="codex-empty">
         <span className="codex-empty-icon pixel-icon">★</span>
@@ -156,15 +162,15 @@ function TrophiesTab({ runHistory }) {
 
   return (
     <div className="codex-trophy-list">
-      {runHistory.map((run, i) => {
+      {filtered.map((run, i) => {
         const team = getTeamById(run.teamId)
         const date = run.date ? new Date(run.date).toLocaleDateString('zh-CN') : ''
         return (
           <div key={i} className="codex-trophy-item">
             <span className="trophy-icon pixel-icon">{RESULT_ICON[run.result] || '·'}</span>
-            <img src={team?.flag} alt="" className="trophy-flag" />
+            <img src={team.flag} alt="" className="trophy-flag" />
             <div className="trophy-info">
-              <strong>{team?.name || run.teamId}</strong>
+              <strong>{team.name}</strong>
               <span>{RESULT_LABELS[run.result] || run.result}</span>
             </div>
             <time className="trophy-date">{date}</time>
@@ -205,10 +211,6 @@ function AchievementsTab({ saveData }) {
         const progress = getAchievementProgress(achievement, saveData)
         const maxTier = achievement.tiers ? achievement.tiers.length : 1
         const isUnlocked = progress >= maxTier
-        const tierLabel = achievement.tierLabels
-          ? (achievement.tierLabels[Math.min(progress, maxTier) - 1] || achievement.tierLabels[0])
-          : achievement.name
-
         return (
           <div
             key={achievement.id}
@@ -230,7 +232,7 @@ function AchievementsTab({ saveData }) {
                 <small>{progress}/{maxTier}</small>
               </div>
             )}
-            {!isUnlocked && <span className="achievement-lock">×</span>}
+            {!isUnlocked && !achievement.tiers && <span className="achievement-lock">×</span>}
           </div>
         )
       })}

@@ -448,12 +448,37 @@
           progress,
           activePath;
         if (active.execution.executionMode === "carry-then-shot") {
-          dribbling = elapsed < active.execution.shotAtMs;
-          activePath = dribbling ? active.execution.carryPath : active.execution.path;
-          progress = dribbling
-            ? clamp(elapsed / active.execution.shotAtMs)
-            : clamp((elapsed - active.execution.shotAtMs)
-              / Math.max(1, active.execution.durationMs - active.execution.shotAtMs));
+          var carryEndMs = active.execution.shotAtMs;
+          // 底线回传射门：带球结束后球走 pathSegments（回传→射门），而非直接射门
+          if (active.execution.pathSegments && active.execution.pathSegments.length) {
+            carryEndMs = active.execution.segmentEndTimes && active.execution.segmentEndTimes[0]
+              ? active.execution.segmentEndTimes[0] - (active.execution.shotAtMs - 1080)
+              : 1080;
+            if (elapsed < carryEndMs) {
+              dribbling = !0;
+              activePath = active.execution.carryPath;
+              progress = clamp(elapsed / carryEndMs);
+            } else {
+              dribbling = !1;
+              var segEndTimes = active.execution.segmentEndTimes || [];
+              var segIdx = active.execution.pathSegments.length - 1,
+                segStart = carryEndMs, segEnd = active.execution.durationMs;
+              for (var si = 0; si < active.execution.pathSegments.length; si++) {
+                var ce = segEndTimes[si] || active.execution.durationMs;
+                if (elapsed <= ce) { segIdx = si; segEnd = ce; break; }
+                segStart = ce;
+              }
+              activePath = active.execution.pathSegments[segIdx];
+              progress = clamp((elapsed - segStart) / Math.max(1, segEnd - segStart));
+            }
+          } else {
+            dribbling = elapsed < carryEndMs;
+            activePath = dribbling ? active.execution.carryPath : active.execution.path;
+            progress = dribbling
+              ? clamp(elapsed / carryEndMs)
+              : clamp((elapsed - carryEndMs)
+                / Math.max(1, active.execution.durationMs - carryEndMs));
+          }
         } else if (active.execution.pathSegments && active.execution.pathSegments.length) {
           var segmentEndTimes = active.execution.segmentEndTimes || [],
             segmentIndex = active.execution.pathSegments.length - 1,
@@ -483,10 +508,10 @@
             dy = nextPoint[1] - point[1],
             length = Math.sqrt(dx * dx + dy * dy) || 1,
             stride = Math.max(0, Math.sin(progress * Math.PI * 10)),
-            lead = .009 + stride * .007;
+            lead = .018 + stride * .012;
           point[0] += dx / length * lead;
           point[1] += dy / length * lead;
-          point[2] = Math.max(point[2] || 0, .12 + stride * .045);
+          point[2] = Math.max(point[2] || 0, .12 + stride * .08);
         }
         return worldPoint(point);
       }
@@ -500,7 +525,9 @@
           if (active.execution.executionMode === "ball-only-shot" &&
             motion.runtimeActorId === executionSourceRuntimeActorId()) return null;
           var motionDuration = active.execution.executionMode === "carry-then-shot" && motion.carriesBall
-              ? active.execution.shotAtMs
+              ? (active.execution.pathSegments && active.execution.pathSegments.length
+                ? 1080
+                : active.execution.shotAtMs)
               : active.execution.durationMs,
             progress = clamp((now - active.executionStartedAt) / motionDuration),
             point = cubic(motion.points, progress);
@@ -541,8 +568,8 @@
               dx = origin[0] - start[0],
               dy = origin[1] - start[1],
               length = Math.sqrt(dx * dx + dy * dy) || 1,
-              amount = .008 + index % 3 * .003,
-              lateral = index % 2 ? .003 : -.003;
+              amount = .022 + index % 3 * .008,
+              lateral = index % 2 ? .007 : -.007;
             return {
               entry: entry,
               distance: length,
@@ -556,7 +583,7 @@
             };
           })
           .sort(function (left, right) { return left.distance - right.distance; })
-          .slice(0, 6);
+          .slice(0, 10);
         active.ambientMotions.forEach(function (motion, index) {
           playEntryAnimation(
             motion.entry,
@@ -571,7 +598,7 @@
         if (!active || state.phase !== "executing" || now < active.executionStartedAt)
           return [];
         var progress = clamp((now - active.executionStartedAt) / active.execution.durationMs),
-          amount = Math.sin(Math.PI * progress);
+          amount = Math.min(1, progress * 1.8);
         return (active.ambientMotions || []).map(function (motion) {
           return {
             runtimeActorId: motion.runtimeActorId,
@@ -644,18 +671,27 @@
         if (!continuation || continuation.type !== "actor-possession") return !1;
         var entry = entryFor(continuation.runtimeActorId);
         if (!entry || !entry.entity || !entry.entity.position) return !1;
-        // 先清掉冻结瞬间残留的球权归属：老持球人仍标记 owner/inHands 时，
-        // forceTrap 一旦在引擎信号链上抛错，下面的直赋兜底会被 !owner 条件跳过，
-        // 球权永远确认不到，settle 无限重试，比赛冻结在执行阶段
+        // 强制清除所有球权归属：无论当前谁持球（包括门将 inHands），
+        // 都必须先完全释放，否则 forceTrap 在引擎信号链上抛错后球权永远确认不到
         try {
-          if (pitch.ball.inHands && pitch.ball.inHands !== entry.entity) pitch.ball.inHands = null;
+          if (pitch.ball.inHands) {
+            try { pitch.ball.inHands.dropBall && pitch.ball.inHands.dropBall(); } catch {}
+            pitch.ball.inHands = null;
+          }
         } catch {}
         try {
-          if (pitch.ball.owner && pitch.ball.owner !== entry.entity) {
-            try { pitch.ball.owner.release(); } catch {}
+          if (pitch.ball.owner) {
+            try { pitch.ball.owner.release && pitch.ball.owner.release(); } catch {}
             try { pitch.ball.owner.hasBall = !1; } catch {}
+            try { pitch.ball.owner.passing = !1; } catch {}
             pitch.ball.owner = null;
           }
+        } catch {}
+        // 遍历所有球员清除残留 hasBall 标记（防止引擎物理把球判给附近的人）
+        try {
+          (window.__matchGame.allPlayers || []).forEach(function (p) {
+            if (p !== entry.entity) { try { p.hasBall = !1; } catch {} }
+          });
         } catch {}
         // 原生扑救模式：门将已经把球抱在怀里（inHands），不再重放 trap
         if (pitch.ball.inHands !== entry.entity) {
@@ -760,8 +796,40 @@
         setBlackout(!1);
         affordanceLayer.removeChildren();
         if (cancelled) restoreCancelledSnapshot(finished);
+        // blackout-stage 正常完成时，将被摆位的球员（人墙、定位球主罚者等）恢复到决策前的位置，
+        // 否则人墙球员会卡在墙位不动（AI 来不及重新调度）
+        if (!cancelled && finished.script.mode === "blackout-stage" && finished.savedActors) {
+          var stagedIds = {};
+          (finished.script.stagedActorPositions || []).forEach(function (p) { stagedIds[p.runtimeActorId] = !0; });
+          finished.savedActors.forEach(function (position) {
+            if (!stagedIds[position.runtimeActorId]) return;
+            var entry = entryFor(position.runtimeActorId);
+            if (!entry || !entry.entity || !entry.entity.position) return;
+            entry.entity.position.x = position.x;
+            entry.entity.position.y = position.y;
+            entry.entity.position.z = position.z;
+            if (entry.entity.velocity) {
+              entry.entity.velocity.x = 0;
+              entry.entity.velocity.y = 0;
+            }
+          });
+        }
         restoreCamera();
-        if (!cancelled && window.__happySeedResumeAfterDecision) {
+        // freeze-incident 判罚点球后：不恢复比赛，将球放到中圈防止冻结瞬间的射门继续入网
+        if (!cancelled && finished.script.__suppressResumeForPenalty) {
+          try {
+            pitch.ball.placeAtPosition(pitch.width * 0.5, pitch.height * 0.5, 0.12);
+            if (pitch.ball.velocity) {
+              pitch.ball.velocity.x = 0;
+              pitch.ball.velocity.y = 0;
+              pitch.ball.velocity.z = 0;
+            }
+            try { pitch.ball.owner = null; } catch {}
+            try { pitch.ball.inHands = null; } catch {}
+          } catch (ballResetError) {
+            console.error("[decision-director-v3] penalty ball reset failed", ballResetError);
+          }
+        } else if (!cancelled && window.__happySeedResumeAfterDecision) {
           try {
             window.__happySeedResumeAfterDecision({
               goalCommitted: Boolean(finished.goalCommitted),
@@ -772,7 +840,27 @@
             console.error("[decision-director-v3] resume failed", resumeError);
           }
         }
-        try { finished.timeScaleToken != null && pitch.timeScale.reset(finished.timeScaleToken); } catch {}
+        // 安全网：如果引擎在决策结束后卡在非 Match 状态（如死球/门将持球等），
+        // 强制恢复到 Match 状态，避免球员静止不动
+        if (!cancelled && !finished.livePhysics) {
+          try {
+            var Pitch = runtime("pitch").Pitch;
+            var stateName = pitch.states.current && pitch.states.current.name;
+            if (stateName && stateName !== "Match" && stateName !== "GoalCelebration"
+              && stateName !== "Kickoff" && stateName !== "Goal") {
+              pitch.ballOutOfPlay = !1;
+              pitch.states.change(Pitch.states.Match);
+            }
+          } catch (stateError) {
+            console.error("[decision-director-v3] force Match state failed", stateError);
+          }
+        }
+        try {
+          if (finished.timeScaleToken != null) pitch.timeScale.reset(finished.timeScaleToken);
+          else pitch.timeScale.value = 1;
+        } catch (tsError) {
+          try { pitch.timeScale.value = 1; } catch (tsError2) { /* 忽略 */ }
+        }
         if (frameHandle != null) window.cancelAnimationFrame(frameHandle);
         frameHandle = null;
         active = null;
@@ -891,10 +979,24 @@
           state.continuationReady = handoffContinuation();
           if (!state.continuationReady) {
             if (now - active.handoffStartedAt < 1500) return;
-            // 球权交接长时间无法确认（持球人状态冲突等）：绝不能冻结比赛，
-            // 按散球结算，恢复后交给原生 AI 接续
-            console.warn("[decision-director-v3] 球权交接超时，按散球结算",
+            // 球权交接长时间无法确认：强制赋值球权，绝不冻结比赛
+            console.warn("[decision-director-v3] 球权交接超时，强制赋值结算",
               active.script.scenarioId, active.outcome);
+            var contEntry = entryFor(active.execution.continuation.runtimeActorId);
+            if (contEntry && contEntry.entity && contEntry.entity.position) {
+              try {
+                pitch.ball.owner = contEntry.entity;
+                contEntry.entity.hasBall = !0;
+                pitch.ball.placeAtPosition(
+                  contEntry.entity.position.x,
+                  contEntry.entity.position.y,
+                  Math.max(pitch.ball.radius || .12, .12),
+                );
+              } catch (forceError) {
+                console.error("[decision-director-v3] 强制球权失败", forceError);
+              }
+            }
+            state.continuationReady = !0;
           }
         }
         active.settled = !0;
@@ -966,6 +1068,11 @@
               settle(now);
             }
           } else {
+          // ball-carry 模式一开始就释放引擎球权，球位置完全由导演运动学控制
+          if (active.execution.carriesBall && !active.ballReleased && now >= active.executionStartedAt) {
+            active.ballReleased = !0;
+            releaseBall();
+          }
           if (!active.ballReleased
             && active.execution.releaseBallAtMs != null
             && now >= active.executionStartedAt + active.execution.releaseBallAtMs
@@ -988,6 +1095,11 @@
           applyActorMotion(now);
           runCues(now);
           if (now - active.executionStartedAt >= active.execution.durationMs) settle(now);
+          // 执行阶段硬超时：无论何种原因，12秒后强制结算，绝不冻结比赛
+          if (!active.settled && now - active.executionStartedAt >= 12000) {
+            console.warn("[decision-director-v3] 执行硬超时", active.script.scenarioId, active.outcome);
+            settle(now);
+          }
           }
         } else if (state.phase === "settled" && now >= active.restoreAt) {
           setPhase("restoring");
@@ -1152,6 +1264,16 @@
               active.script.stagedActorPositions.forEach(function (position) {
                 setFramePosition(frame, position);
               });
+            // blackout-stage 在 settled/restoring 阶段：将被摆位的球员恢复到决策前位置，
+            // 避免人墙球员卡死在墙位（物理引擎内部状态也需更新）
+            if ((state.phase === "settled" || state.phase === "restoring")
+              && active.script.mode === "blackout-stage" && active.savedActors) {
+              var stagedIds = {};
+              (active.script.stagedActorPositions || []).forEach(function (p) { stagedIds[p.runtimeActorId] = !0; });
+              active.savedActors.forEach(function (pos) {
+                if (stagedIds[pos.runtimeActorId]) setFramePosition(frame, { runtimeActorId: pos.runtimeActorId, normalized: [pos.x / pitch.width, pos.y / pitch.height] });
+              });
+            }
             var frameNow = performance.now(),
               motions = currentActorMotions(frameNow);
             applyAmbientMotions(frameNow, frame);

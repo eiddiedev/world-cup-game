@@ -65,7 +65,11 @@ export default function LockerRoomDecision({ scenario, report, onChoose, onConti
           <p className="locker-room-situation">{getLockerRoomSituation(scenario, phase)}</p>
 
           {showChoices && (
-            <div className="locker-room-choices" aria-label="更衣室选择">
+            <div
+              className="locker-room-choices"
+              data-choice-count={scenario.choices.length}
+              aria-label="更衣室选择"
+            >
               {scenario.choices.map((choice) => {
                 const chosen = report?.choiceId === choice.id
                 const classes = [

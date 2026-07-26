@@ -6,6 +6,7 @@ import {
   pickAiShooterZone,
   resolveShootoutAttempt,
 } from '../utils/penaltyShootout.js'
+import { getKeeperTendency } from '../data/keeperTendencies.js'
 import '../styles/happySeedBroadcastV2.css'
 
 // —— 画布与场景（背景图原生分辨率 1672×941，cover 铺满全屏）——
@@ -289,6 +290,7 @@ function keeperHitbox(frameKey, anchor, images, metrics, scale) {
 export default function PenaltyShootout({
   homeTeam,
   awayTeam,
+  awayTeamId,
   homeLineup = [],
   awayLineup = [],
   stabilityBonus = 0,
@@ -425,7 +427,7 @@ export default function PenaltyShootout({
       shooterZone = zone
       overpowered = length > POWER_LIMIT
       power = Math.min(1, length / POWER_LIMIT)
-      keeperZone = pickAiKeeperZone(keeperDef, Math.random)
+      keeperZone = pickAiKeeperZone(keeperDef, Math.random, getKeeperTendency(awayTeamId, awayTeam))
     } else {
       keeperZone = zone
       const aiPick = pickAiShooterZone(shooterTec, Math.random)

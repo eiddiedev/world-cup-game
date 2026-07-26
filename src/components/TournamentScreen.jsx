@@ -3,6 +3,7 @@ import { getTeamById, getTeamFlag } from '../data/teams'
 import { getTeamSchedule, KNOCKOUT_ROUNDS } from '../data/schedules'
 import { generateKnockoutOpponents } from '../services/aiService'
 import { getFallbackKnockoutOpponents, sanitizeKnockoutOpponents } from '../utils/knockoutResolver'
+import { refreshPlayerLineup } from '../utils/playerModeSetup'
 
 /**
  * 赛程页面
@@ -22,7 +23,7 @@ const OPPONENT_ID_TO_NAME = {
   'morocco': '摩洛哥', 'haiti': '海地', 'scotland': '苏格兰',
   'jordan': '约旦', 'austria': '奥地利', 'algeria': '阿尔及利亚',
   'congo': '刚果民主共和国', 'uzbekistan': '乌兹别克斯坦', 'colombia': '哥伦比亚',
-  'ivory_coast': '科特迪瓦', 'ecuador': '厄瓜多尔',
+  'ivory_coast': '科特迪瓦', 'ecuador': '厄瓜多尔', 'curacao': '库拉索',
   'netherlands': '荷兰', 'tunisia': '突尼斯', 'sweden': '瑞典',
   'egypt': '埃及', 'iran': '伊朗', 'belgium': '比利时',
   'spain': '西班牙', 'england': '英格兰', 'usa': '美国', 'canada': '加拿大',
@@ -31,15 +32,21 @@ const OPPONENT_ID_TO_NAME = {
   'ghana': '加纳', 'paraguay': '巴拉圭', 'australia': '澳大利亚', 'turkey': '土耳其',
   'bosnia': '波黑', 'qatar': '卡塔尔', 'switzerland': '瑞士',
   'south_africa': '南非', 'south_korea': '韩国', 'czech': '捷克',
+  // 可玩球队作为对手时的名称映射
+  'france': '法国', 'brazil': '巴西', 'germany': '德国', 'portugal': '葡萄牙',
+  'argentina': '阿根廷', 'japan': '日本', 'newzealand': '新西兰',
 }
 
 // 球队实力（用于模拟）
+// T1: 西班牙/法国  T2: 巴西/阿根廷/英格兰/葡萄牙
+// T3: 德国/日本/挪威/摩洛哥  T4: 哥伦比亚/美国/墨西哥/加拿大
+// T5: 佛得角/库拉索
 const TEAM_STRENGTH = {
-  france: 95, brazil: 93, argentina: 92, portugal: 90,
-  germany: 88, japan: 85, norway: 82, morocco: 80,
-  newzealand: 75, curacao: 70,
-  spain: 96, england: 91, colombia: 83, usa: 79,
-  mexico: 78, canada: 74, capeverde: 68,
+  spain: 98, france: 97,
+  brazil: 94, argentina: 93, england: 92, portugal: 91,
+  germany: 87, morocco: 84, norway: 81, japan: 79,
+  colombia: 76, usa: 74, mexico: 73, canada: 71,
+  capeverde: 64, curacao: 58,
   // 对手实力
   iraq: 65, senegal: 75, haiti: 60, scotland: 72,
   jordan: 62, austria: 74, algeria: 70, congo: 63,
@@ -230,7 +237,18 @@ export default function TournamentScreen({ saveData, updateSaveData, navigateTo 
     return simulateGroupStage(saveData.currentRun?.teamId, results)
   }, [groupFinished, results, saveData.currentRun?.teamId])
 
-  const advanced = groupFinished && playerRank <= 2
+  // 2026世界杯赛制：每组前2名直接出线，第3名根据积分概率出线（模拟“8个最好第3名”规则）
+  const thirdPlaceAdvanceProb = { 4: 0.85, 3: 0.55, 2: 0.20, 1: 0.05, 0: 0 }
+  const isThirdPlace = playerRank === 3
+  const thirdPlaceAdvanced = isThirdPlace && (() => {
+    // 使用确定性哈希保证同一存档结果一致
+    const seed = String(saveData.currentRun?.teamId || '') + String(groupPoints) + String(results.join(''))
+    let hash = 0
+    for (let i = 0; i < seed.length; i++) hash = ((hash << 5) - hash + seed.charCodeAt(i)) | 0
+    const pseudoRandom = ((hash >>> 0) % 1000) / 1000
+    return pseudoRandom < (thirdPlaceAdvanceProb[groupPoints] || 0)
+  })()
+  const advanced = groupFinished && (playerRank <= 2 || thirdPlaceAdvanced)
   const fallbackKnockoutOpponents = getFallbackKnockoutOpponents({
     teamId: saveData.currentRun?.teamId,
     teamName: team?.name,
@@ -245,7 +263,7 @@ export default function TournamentScreen({ saveData, updateSaveData, navigateTo 
 
   useEffect(() => {
     if (!advanced || !team || !schedule) return
-    if (saveData.currentRun?.knockoutOpponents?.r16) return
+    if (saveData.currentRun?.knockoutOpponents?.r32) return
 
     let cancelled = false
     generateKnockoutOpponents({
@@ -265,7 +283,7 @@ export default function TournamentScreen({ saveData, updateSaveData, navigateTo 
     })
 
     return () => { cancelled = true }
-  }, [advanced, playerRank, saveData.currentRun?.teamId, saveData.currentRun?.knockoutOpponents?.r16, schedule, team])
+  }, [advanced, playerRank, saveData.currentRun?.teamId, saveData.currentRun?.knockoutOpponents?.r32, schedule, team])
 
   if (!team || !schedule) {
     return (
@@ -281,6 +299,23 @@ export default function TournamentScreen({ saveData, updateSaveData, navigateTo 
 
   // 进入排兵布阵
   const handlePrepareMatch = (roundIndex) => {
+    const isPlayerMode = saveData.currentRun?.gameMode === 'player'
+    if (isPlayerMode) {
+      // 球员模式：自动刷新首发，跳过布阵页直接比赛
+      const refreshed = refreshPlayerLineup(saveData.currentRun)
+      updateSaveData({
+        ...saveData,
+        currentRun: {
+          ...refreshed,
+          matchIndex: roundIndex,
+          stage: 'match',
+          isKnockoutMatch: false,
+          currentOpponent: groupMatches[roundIndex]?.opponent || '未知',
+        },
+      })
+      navigateTo('match')
+      return
+    }
     updateSaveData({
       ...saveData,
       currentRun: {
@@ -296,6 +331,22 @@ export default function TournamentScreen({ saveData, updateSaveData, navigateTo 
 
   // 进入淘汰赛
   const handleKnockout = (roundId) => {
+    const isPlayerMode = saveData.currentRun?.gameMode === 'player'
+    if (isPlayerMode) {
+      const refreshed = refreshPlayerLineup(saveData.currentRun)
+      updateSaveData({
+        ...saveData,
+        currentRun: {
+          ...refreshed,
+          stage: 'match',
+          knockoutRound: roundId,
+          isKnockoutMatch: true,
+          currentOpponent: knockoutOpponents[roundId] || '待定',
+        },
+      })
+      navigateTo('match')
+      return
+    }
     updateSaveData({
       ...saveData,
       currentRun: {
@@ -325,17 +376,18 @@ export default function TournamentScreen({ saveData, updateSaveData, navigateTo 
 
       {/* 进度条 */}
       {(() => {
-        const totalMatches = 7
+        const totalMatches = 8
         const knockoutRoundIndex = (() => {
           const round = saveData.currentRun?.knockoutRound
-          if (round === 'r16') return 0
-          if (round === 'qf') return 1
-          if (round === 'sf') return 2
-          if (round === 'final') return 3
+          if (round === 'r32') return 0
+          if (round === 'r16') return 1
+          if (round === 'qf') return 2
+          if (round === 'sf') return 3
+          if (round === 'final') return 4
           return -1
         })()
         const completedMatches = groupFinished
-          ? 3 + (knockoutRoundIndex >= 0 ? knockoutRoundIndex : 0)
+          ? 3 + (knockoutRoundIndex >= 0 ? knockoutRoundIndex + 1 : 0)
           : results.length
         const pct = Math.min(100, (completedMatches / totalMatches) * 100)
         return (
@@ -396,7 +448,7 @@ export default function TournamentScreen({ saveData, updateSaveData, navigateTo 
 
                 {isCurrent && (
                   <button className="table-action-button tournament-action-button" onClick={() => handlePrepareMatch(index)}>
-                    排兵布阵
+                    {saveData.currentRun?.gameMode === 'player' ? '开始比赛' : '排兵布阵'}
                   </button>
                 )}
               </div>
@@ -446,7 +498,7 @@ export default function TournamentScreen({ saveData, updateSaveData, navigateTo 
               </div>
               <div className="knockout-bracket">
                 {KNOCKOUT_ROUNDS.map((round, roundIndex) => {
-                  const currentKnockoutRound = saveData.currentRun?.knockoutRound || 'r16'
+                  const currentKnockoutRound = saveData.currentRun?.knockoutRound || 'r32'
                   const currentRoundIndex = KNOCKOUT_ROUNDS.findIndex(r => r.id === currentKnockoutRound)
                   const isCurrent = currentKnockoutRound === round.id
                   const isCompleted = roundIndex < currentRoundIndex
@@ -463,7 +515,7 @@ export default function TournamentScreen({ saveData, updateSaveData, navigateTo 
                       </span>
                       {isCurrent && (
                         <button className="table-action-button tournament-action-button" onClick={() => handleKnockout(round.id)}>
-                          排兵布阵
+                          {saveData.currentRun?.gameMode === 'player' ? '开始比赛' : '排兵布阵'}
                         </button>
                       )}
                     </div>
@@ -474,7 +526,7 @@ export default function TournamentScreen({ saveData, updateSaveData, navigateTo 
           ) : (
             <div className="eliminated-message">
               <p>😔 小组赛未能晋级</p>
-              <p>小组第{playerRank}名，未能进入16强</p>
+              <p>小组第{playerRank}名，未能进入32强</p>
               <button
                 className="PixelButton compact-button"
                 onClick={() => {

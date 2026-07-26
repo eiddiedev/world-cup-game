@@ -51,7 +51,7 @@ const SCRIPT_PATHS = [
   'scripts/match.rebuilt.js',
   'happyseed/runtime-v2.js?v=11',
   'happyseed/runtime-v3.js?v=5',
-  'standalone-match.js?v=15',
+  'standalone-match.js?v=29',
 ]
 
 const MATCH_EVENTS = [
@@ -628,7 +628,16 @@ export function bootHappySeedMatch(options = {}) {
 
   bootPromise = (async () => {
     const restartingExistingRuntime = Boolean(window.__matchGame)
+    if (restartingExistingRuntime) {
+      window.__matchGame.__happySeedTrainingActive = false
+      window.__matchGame.__happySeedTrainingPlayerIndex = null
+      window.__matchGame.__happySeedTrainingDefenderIndex = null
+      try { window.__matchGame.resume() } catch { /* Runtime may still be loading. */ }
+    }
     ensureRuntimeSettings()
+    // 确保引擎 canvas 可见（上次卸载时可能被隐藏）
+    const existingCanvas = window.__matchGame?.renderer?.view
+    if (existingCanvas) existingCanvas.style.display = ''
     window.__acPlay = Boolean(options.playerMode)
     let studioRecipe = null
     if (options.studioPreview) {
@@ -721,6 +730,58 @@ export function bootHappySeedMatch(options = {}) {
   return bootPromise
 }
 
+/**
+ * 关闭当前比赛运行时，释放引擎状态，允许下次重新 boot。
+ * 用于训练基地退出时清理。
+ */
+export function shutdownMatchRuntime() {
+  bootPromise = null
+  const game = window.__matchGame
+  if (game) {
+    game.__happySeedTrainingActive = false
+    game.__happySeedTrainingPlayerIndex = null
+    game.__happySeedTrainingDefenderIndex = null
+    if (game.pitch) {
+      game.pitch.practice = false
+    }
+    for (const sprite of game.stadium?.players || []) {
+      if (!sprite) continue
+      sprite.visible = true
+      sprite.alpha = 1
+    }
+    for (const entry of game.stadium?._happySeedActorEntries || []) {
+      if (entry?.label) {
+        entry.label.visible = true
+        entry.label.alpha = 1
+      }
+    }
+    try { game.pause() } catch { /* Runtime may already be stopped. */ }
+    const canvas = game.renderer?.view
+    if (canvas) canvas.style.display = 'none'
+  }
+  // 注意：不置空 window.__matchGame，保留引擎实例
+  // 这样下次 bootHappySeedMatch 能找到 canvas 并恢复显示
+  // __startStandaloneMatch 内部会复用已有 game 实例并重新加载比赛
+  if (window.__touchInput) {
+    Object.assign(window.__touchInput, {
+      active: false,
+      vx: 0,
+      vy: 0,
+      shoot: false,
+      sprint: false,
+      pass: false,
+      lob: false,
+      switchPlayer: false,
+      tackle: false,
+    })
+  }
+  delete document.body.dataset.trainingRuntime
+  delete document.body.dataset.trainingPitchPlayers
+  delete document.body.dataset.trainingPitchState
+  delete document.body.dataset.trainingPlayerControlled
+  delete document.body.dataset.trainingPlayerPosition
+}
+
 export function pauseMatch() {
   const game = getGame()
   if (!game) return false
@@ -733,6 +794,14 @@ export function resumeMatch() {
   if (!game) return false
   game.resume()
   return true
+}
+
+/**
+ * 把已启动的正式比赛 Runtime 收敛为自由训练场。
+ * 具体的球员移除和自由训练状态切换在 Runtime 内完成。
+ */
+export function configureTrainingRuntime(options = {}) {
+  return window.__happySeedConfigureTraining?.(options) || null
 }
 
 export function setRuntimeGoalPresentationHold(active) {
@@ -1111,6 +1180,11 @@ function emitFormalDecisionRuntimeConsequences(script, choiceId, outcomeId) {
     // Keeping those meanings distinct lets the staged penalty scene select
     // the correct taker instead of only narrating a penalty that never occurs.
     push('penalty', opponent || primary, { side: 'blue', detail: { awardedSide: 'red' } })
+    // freeze-incident 模式下判罚点球：标记脚本禁止恢复比赛，
+    // 否则冻结瞬间的射门会继续飞入球网导致进球+点球双重计算
+    if (script.mode === 'freeze-incident') {
+      script.__suppressResumeForPenalty = true
+    }
   }
   if (DECISION_YELLOW_CARD_OUTCOMES.has(outcomeId)) {
     const bookedActor = outcomeId === 'yellow_card_dissent' ? captain : primary

@@ -199,9 +199,6 @@ export default function LogisticsScreen({ saveData, updateSaveData, navigateTo, 
         })}
       </div>
 
-      {/* 底部占位，确保内容不被固定footer遮挡 */}
-      <div style={{ height: 80 }} />
-
       <div className="logistics-footer">
         <button className="PixelButton secondary-button" onClick={handleAutoUpgrade}>
           <span className="button-face" aria-hidden="true"></span>

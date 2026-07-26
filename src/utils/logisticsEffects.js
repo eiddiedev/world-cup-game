@@ -117,31 +117,16 @@ export function getLogisticsModifiers(logisticsLevels = {}) {
 
 /**
  * 获取情报面板数据（用于 TournamentScreen 展示）
+ * @deprecated 请使用 computeMatchIntel 代替，该函数从真实数据计算情报
  * @param {object} modifiers - getLogisticsModifiers 的返回值
  * @param {object} opponent - 对手球队数据
  * @returns {object|null} 情报数据，null 表示无情报
  */
 export function getIntelPanelData(modifiers, opponent) {
   if (!opponent || modifiers.intelLevel === 0) return null
-
-  const intel = { level: modifiers.intelLevel }
-
-  if (modifiers.intelLevel >= 1) {
-    // 显示对手优势属性
-    intel.strengths = []
-    if (opponent.styleTags) intel.strengths = opponent.styleTags.slice(0, 3)
-  }
-
-  if (modifiers.intelLevel >= 2) {
-    // 显示危险球员 + 弱点
-    intel.dangerPlayer = opponent.goldenStar || null
-    intel.weakness = '右路防守较弱' // 简化实现，后续可动态计算
-  }
-
-  if (modifiers.intelLevel >= 3 && modifiers.tacticalAdvice) {
-    // 战术建议
-    intel.advice = '推荐防守反击，对方边后卫压上频繁'
-  }
-
-  return intel
+  // 兼容层：返回简化结构，新代码应直接使用 computeMatchIntel
+  return { level: modifiers.intelLevel, legacy: true }
 }
+
+// 推荐使用新版情报计算引擎
+export { computeMatchIntel } from './scoutIntel.js'

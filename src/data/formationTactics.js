@@ -62,3 +62,62 @@ export const FORMATION_TACTICS = {
 }
 
 export const FORMATION_NAMES = Object.keys(FORMATION_TACTICS)
+
+/**
+ * 阵型克制关系表
+ * weakTo: 该阵型被哪种阵型克制
+ * reason: 克制原因（基于真实足球战术逻辑）
+ */
+export const FORMATION_COUNTERS = {
+  '5-3-2': { weakTo: '4-3-3', reason: '三前锋拉开宽度可拉扯五后卫防线，边路空间暴露' },
+  '5-4-1': { weakTo: '3-4-3', reason: '三前锋加翼卫持续压上，铁桶阵难以兼顾宽度和纵深' },
+  '4-3-3': { weakTo: '4-2-3-1', reason: '双后腰可截断三前锋的边路供给，前腰压制单后腰' },
+  '4-4-2': { weakTo: '3-5-2', reason: '五中场人数优势可压制平行四人中场，控制球权' },
+  '4-2-3-1': { weakTo: '4-4-2', reason: '双前锋可拉扯双后腰的防守注意力，前腰失去保护' },
+  '4-3-2-1': { weakTo: '4-1-4-1', reason: '四中场横向覆盖可封锁中路渗透通道，单后腰保护纵深' },
+  '3-5-2': { weakTo: '4-3-3', reason: '三前锋可利用翼卫压上后的身后空间打反击' },
+  '3-4-3': { weakTo: '5-3-2', reason: '五后卫收缩禁区可化解三前锋冲击，反击打翼卫身后' },
+  '3-4-2-1': { weakTo: '4-4-2', reason: '平行中场宽度优势可压制三中卫出球路线' },
+  '4-1-4-1': { weakTo: '4-3-2-1', reason: '双影锋可在单后腰两侧制造人数优势，撕裂中场压迫线' },
+}
+
+/**
+ * 阵型战术行为模式（基于 style 分类）
+ * 用于情报部门 L3 战术预判
+ */
+export const FORMATION_BEHAVIOR = {
+  defensive: {
+    formations: ['5-3-2', '5-4-1'],
+    whenWinning: '全队收缩至本方半场，保留1-2名速度点等待反击',
+    whenLosing: '换上前锋增加进攻人数，但防线身后空间会暴露',
+    keyThreat: '定位球和快速反击是主要得分手段',
+  },
+  attacking: {
+    formations: ['4-3-3', '3-4-3'],
+    whenWinning: '维持前场压迫，继续控制比赛节奏',
+    whenLosing: '进一步压上，后卫线提至中圈附近，身后空间极大',
+    keyThreat: '持续的高位压迫和边路冲击',
+  },
+  balanced: {
+    formations: ['4-4-2', '4-2-3-1', '4-3-2-1', '4-1-4-1'],
+    whenWinning: '阵型整体后移5-10米，转为稳守反击模式',
+    whenLosing: '中场前压支援前锋，但中场与防线间会出现空当',
+    keyThreat: '攻守转换瞬间的速度和中路渗透',
+  },
+  possession: {
+    formations: ['3-5-2', '3-4-2-1'],
+    whenWinning: '用传控消耗时间，翼卫控制边路宽度',
+    whenLosing: '翼卫变为边锋全力压上，三中卫面对反击压力增大',
+    keyThreat: '中场人数优势带来的持续控球和渗透',
+  },
+}
+
+/**
+ * 根据阵型获取其行为模式分类
+ */
+export function getFormationBehavior(formation) {
+  for (const behavior of Object.values(FORMATION_BEHAVIOR)) {
+    if (behavior.formations.includes(formation)) return behavior
+  }
+  return FORMATION_BEHAVIOR.balanced
+}

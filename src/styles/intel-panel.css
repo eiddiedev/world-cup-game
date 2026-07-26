@@ -1,0 +1,160 @@
+/* 赛前情报面板样式 */
+
+.intel-panel-section {
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.intel-panel-section::-webkit-scrollbar {
+  width: 4px;
+}
+
+.intel-panel-section::-webkit-scrollbar-thumb {
+  background: var(--pixel-main);
+}
+
+.intel-toggle-btn {
+  padding: 2px 8px;
+  background: transparent;
+  color: var(--pixel-accent);
+  border: 2px solid var(--pixel-accent);
+  font-family: "Zpix", "Microsoft YaHei", sans-serif;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.intel-toggle-btn:hover {
+  background: var(--pixel-accent);
+  color: var(--pixel-bg);
+}
+
+/* 情报分组 */
+.intel-group {
+  margin-bottom: 8px;
+  padding: 6px;
+  border: 2px solid #2a4a7a;
+  background: #0d1b30;
+}
+
+.intel-group-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+  font-family: "Zpix", "Microsoft YaHei", sans-serif;
+  font-size: 12px;
+  color: #F3E3B4;
+}
+
+.intel-group-header .intel-group-icon {
+  width: 16px;
+  height: 16px;
+  image-rendering: pixelated;
+}
+
+.intel-group-level {
+  margin-left: auto;
+  font-size: 11px;
+  color: #C99A2E;
+}
+
+/* 情报条目 */
+.intel-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 4px 0;
+  border-bottom: 1px dashed #1B3764;
+  font-family: "Zpix", "Microsoft YaHei", sans-serif;
+  font-size: 12px;
+  color: #ccc;
+  line-height: 1.5;
+}
+
+.intel-item:last-child {
+  border-bottom: none;
+}
+
+.intel-item-label {
+  flex-shrink: 0;
+  color: #8ab4f8;
+  min-width: 56px;
+}
+
+.intel-item-value {
+  color: #eee;
+}
+
+.intel-item-value.highlight {
+  color: #4caf50;
+}
+
+.intel-item-value.warning {
+  color: #ff8800;
+}
+
+.intel-item-value.danger {
+  color: #ff4444;
+}
+
+/* 风格标签 */
+.intel-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.intel-tag {
+  padding: 1px 6px;
+  background: #1B3764;
+  border: 1px solid #2a4a7a;
+  color: #8ab4f8;
+  font-family: "Zpix", "Microsoft YaHei", sans-serif;
+  font-size: 11px;
+}
+
+/* 战术建议高亮框 */
+.intel-advice-box {
+  margin-top: 4px;
+  padding: 6px;
+  border: 2px solid #C99A2E;
+  background: #2a2510;
+  font-family: "Zpix", "Microsoft YaHei", sans-serif;
+  font-size: 12px;
+  color: #F3E3B4;
+  line-height: 1.6;
+}
+
+.intel-advice-box .advice-formation {
+  color: #4caf50;
+  font-weight: bold;
+}
+
+/* 锁定状态 */
+.intel-locked {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 0;
+  font-family: "Zpix", "Microsoft YaHei", sans-serif;
+  font-size: 11px;
+  color: #666;
+}
+
+.intel-locked img {
+  width: 12px;
+  height: 12px;
+  image-rendering: pixelated;
+  opacity: 0.5;
+}
+
+/* 无情报提示 */
+.intel-empty-hint {
+  padding: 8px;
+  text-align: center;
+  font-family: "Zpix", "Microsoft YaHei", sans-serif;
+  font-size: 12px;
+  color: #666;
+  line-height: 1.6;
+}

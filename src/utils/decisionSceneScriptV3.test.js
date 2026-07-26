@@ -433,12 +433,23 @@ describe('DecisionSceneScriptV3', () => {
             expect(Math.hypot(actorEnd[0] - ballEnd[0], actorEnd[1] - ballEnd[1]))
               .toBeGreaterThanOrEqual(0.04)
             expect(outcome.actions.some((action) => action.animation === 'shoot')).toBe(true)
-            // 射门段必须从带球终点发出，且射门动作落在带球者身上
-            // （回归：逼入底线曾从持球人初始位置直接射门，动作错挂防守人）
+            // 射门段必须从带球终点发出（或经过回传中间点），且射门动作落在带球者身上
             const carryEnd = outcome.carryPath.at(-1)
-            expect(Math.hypot(outcome.path[0][0] - carryEnd[0], outcome.path[0][1] - carryEnd[1]),
-              `${scenario.id}/${choice.id}`)
-              .toBeLessThan(1e-6)
+            if (outcome.pathSegments?.length) {
+              // 底线回传射门：第一段从带球终点发出，段间连续
+              expect(Math.hypot(outcome.pathSegments[0][0][0] - carryEnd[0], outcome.pathSegments[0][0][1] - carryEnd[1]),
+                `${scenario.id}/${choice.id}`)
+                .toBeLessThan(1e-6)
+              expect(outcome.pathSegments.at(-1)).toEqual(outcome.path)
+              for (let si = 1; si < outcome.pathSegments.length; si += 1) {
+                expect(outcome.pathSegments[si - 1].at(-1), `${scenario.id}/${choice.id}/seg-join`)
+                  .toEqual(outcome.pathSegments[si][0])
+              }
+            } else {
+              expect(Math.hypot(outcome.path[0][0] - carryEnd[0], outcome.path[0][1] - carryEnd[1]),
+                `${scenario.id}/${choice.id}`)
+                .toBeLessThan(1e-6)
+            }
             const carrierRole = outcome.actorMotions.find((motion) => motion.carriesBall)?.role
             expect(outcome.actions.some((action) => (
               action.animation === 'shoot' && action.role === carrierRole
@@ -527,7 +538,22 @@ describe('DecisionSceneScriptV3', () => {
       for (const choice of script.choices) {
         for (const affordance of choice.affordances) {
           if (affordance.kind === 'ball-path') {
-            expect(affordance.points[0], `${scenario.id}/${choice.id}`).toEqual(script.ball.normalized)
+            if (affordance.startRole && script.actors[affordance.startRole]) {
+              const startId = script.actors[affordance.startRole].runtimeActorId
+              const stagedPos = (script.stagedActorPositions || [])
+                .find((p) => p.runtimeActorId === startId)
+              const livePos = (script.actorPositions || [])
+                .find((p) => p.runtimeActorId === startId)
+              const expectedXY = stagedPos?.normalized || livePos?.normalized
+              if (expectedXY) {
+                expect(affordance.points[0][0], `${scenario.id}/${choice.id}/startRole-x`)
+                  .toBeCloseTo(expectedXY[0], 2)
+                expect(affordance.points[0][1], `${scenario.id}/${choice.id}/startRole-y`)
+                  .toBeCloseTo(expectedXY[1], 2)
+              }
+            } else {
+              expect(affordance.points[0], `${scenario.id}/${choice.id}`).toEqual(script.ball.normalized)
+            }
             expect(script.actors[affordance.role].side, `${scenario.id}/${choice.id}/${affordance.role}`)
               .toBe(affordance.side === 'home' ? 'red' : 'blue')
           }

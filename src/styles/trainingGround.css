@@ -1,0 +1,243 @@
+/* 训练基地覆盖层 — 叠在 HappySeedMatchBroadcast 上方 */
+
+/* 训练模式：隐藏比分牌、计时器、播报等正式比赛 HUD */
+body.training-mode .broadcast-scoreboard,
+body.training-mode .broadcast-commentary,
+body.training-mode .broadcast-status,
+body.training-mode .broadcast-controls,
+body.training-mode .broadcast-event-artwork,
+body.training-mode .broadcast-vignette {
+  display: none !important;
+}
+
+.training-ground-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 45;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* 所有交互子元素恢复 pointer-events */
+.training-ground-overlay .tg-banner,
+.training-ground-overlay .tg-hints,
+.training-ground-overlay .tg-top-actions,
+.training-ground-overlay .tg-loading {
+  pointer-events: auto;
+}
+
+.tg-notice {
+  position: fixed;
+  left: 50%;
+  top: 28%;
+  z-index: 46;
+  transform: translate(-50%, -50%);
+  padding: 8px 16px;
+  border: 2px solid #C99A2E;
+  background: rgba(10, 14, 28, 0.9);
+  color: #f5df9a;
+  font-family: "Zpix", "Microsoft YaHei", sans-serif;
+  font-size: 13px;
+  text-shadow: 1px 1px 0 #000;
+  box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.4);
+  pointer-events: none;
+  animation: tg-notice-in 160ms steps(2, end);
+}
+
+@keyframes tg-notice-in {
+  from { opacity: 0; transform: translate(-50%, -35%); }
+  to { opacity: 1; transform: translate(-50%, -50%); }
+}
+
+/* ── 顶部横幅 ──────────────────────────────────────────────── */
+.tg-banner {
+  position: fixed;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 45;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 18px;
+  background: rgba(10, 14, 28, 0.82);
+  border: 3px solid #C99A2E;
+  box-shadow:
+    2px 0 0 0 #C99A2E,
+    -2px 0 0 0 #C99A2E,
+    0 2px 0 0 #C99A2E,
+    0 -2px 0 0 #C99A2E,
+    4px 4px 0 rgba(0, 0, 0, 0.4);
+  image-rendering: pixelated;
+}
+
+.tg-banner-title {
+  font-family: "Zpix", monospace;
+  font-size: 16px;
+  color: #C99A2E;
+}
+
+.tg-banner-team {
+  font-family: "Zpix", "Microsoft YaHei", sans-serif;
+  font-size: 12px;
+  color: #e0d5b8;
+}
+
+/* ── 操作提示浮层 ──────────────────────────────────────────── */
+.tg-hints {
+  position: fixed;
+  top: 16px;
+  left: 16px;
+  transform: none;
+  z-index: 45;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 12px 20px;
+  background: rgba(10, 14, 28, 0.85);
+  border: 2px solid rgba(201, 154, 46, 0.6);
+  box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.4);
+}
+
+/* 常驻模式：不自动淡出，不阻挡触控 */
+.tg-hints-persistent {
+  animation: none;
+  opacity: 1;
+  pointer-events: none;
+}
+
+@keyframes tg-hints-fade {
+  0%, 75% { opacity: 1; }
+  100% { opacity: 0; pointer-events: none; }
+}
+
+.tg-hints-title {
+  font-family: "Zpix", monospace;
+  font-size: 13px;
+  color: #C99A2E;
+  margin: 0 0 4px;
+}
+
+.tg-hint-row {
+  font-family: "Zpix", "Microsoft YaHei", sans-serif;
+  font-size: 11px;
+  color: #e0d5b8;
+  line-height: 1.6;
+}
+
+.tg-hints-sub {
+  font-family: "Zpix", "Microsoft YaHei", sans-serif;
+  font-size: 10px;
+  color: #a89870;
+  margin: 6px 0 0;
+}
+
+/* ── 底部中央按钮组 ──────────────────────────────────────── */
+.tg-top-actions {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 45;
+  display: flex;
+  flex-direction: row;
+  gap: 12px;
+  pointer-events: auto;
+}
+
+.tg-btn {
+  font-family: "Zpix", "Microsoft YaHei", sans-serif;
+  font-size: 13px;
+  padding: 8px 16px;
+  border: 3px solid #1b3764;
+  border-radius: 50px;
+  color: #fff;
+  cursor: pointer;
+  text-shadow: 1px 1px 0 #000;
+  box-shadow:
+    2px 0 0 0 #1b3764,
+    -2px 0 0 0 #1b3764,
+    0 2px 0 0 #1b3764,
+    0 -2px 0 0 #1b3764,
+    3px 3px 0 rgba(0, 0, 0, 0.4);
+  image-rendering: pixelated;
+  transition: none;
+}
+
+.tg-btn:active {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0 rgba(0, 0, 0, 0.4);
+}
+
+.tg-btn-add {
+  background: #263B78;
+}
+
+.tg-btn-add.is-done {
+  background: #5b2c2c;
+  border-color: #8b4a3f;
+}
+
+.tg-btn-start {
+  background: #C99A2E;
+  border-color: #8b6914;
+  box-shadow:
+    2px 0 0 0 #8b6914,
+    -2px 0 0 0 #8b6914,
+    0 2px 0 0 #8b6914,
+    0 -2px 0 0 #8b6914,
+    3px 3px 0 rgba(0, 0, 0, 0.4);
+  color: #1a1a1a;
+  text-shadow: none;
+  font-weight: 700;
+}
+
+/* ── 加载提示 ──────────────────────────────────────────────── */
+.tg-loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(10, 14, 28, 0.9);
+  z-index: 50;
+}
+
+.tg-loading span {
+  font-family: "Zpix", monospace;
+  font-size: 18px;
+  color: #C99A2E;
+  animation: tg-pulse 1.2s steps(2, end) infinite;
+}
+
+@keyframes tg-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+/* ── 小屏适配 ──────────────────────────────────────────────── */
+@media (max-width: 600px) {
+  .tg-banner {
+    padding: 4px 12px;
+  }
+  .tg-banner-title {
+    font-size: 13px;
+  }
+  .tg-banner-team {
+    font-size: 10px;
+  }
+  .tg-hints {
+    top: 54px;
+    left: 8px;
+    padding: 8px 14px;
+    max-width: calc(100vw - 16px);
+  }
+  .tg-hint-row {
+    font-size: 10px;
+  }
+  .tg-btn {
+    font-size: 11px;
+    padding: 6px 12px;
+  }
+}

@@ -36,7 +36,7 @@
           activeCamera: "normal",
           cameraMode: "ball",
           cameraTarget: { x: pitch.center.x, y: pitch.center.y },
-          draggable: !0,
+          draggable: !1,
           lastManualCameraAt: 0,
           manualReturnDelayMs: 2600,
           crowdMotion: !0,
@@ -436,15 +436,9 @@
         return !0;
       }
 
-      function panBy(screenX, screenY) {
-        var scale = Math.max(.65, effZoom()) * 18;
-        window.__happySeedManualCamera = !0;
-        state.lastManualCameraAt = performance.now();
-        return focusAt(
-          state.cameraTarget.x - (Number(screenX) || 0) / scale,
-          state.cameraTarget.y - (Number(screenY) || 0) / scale,
-          "free",
-        );
+      function panBy() {
+        // 自由拖拽已禁用
+        return !1;
       }
 
       function snapshot() {
@@ -563,7 +557,6 @@
           }
           if (
             window.__happySeedManualCamera &&
-            !dragState &&
             now - state.lastManualCameraAt >= state.manualReturnDelayMs
           ) {
             followBall();
@@ -575,37 +568,9 @@
       };
 
       try {
-        var cameraView = window.__matchGame && window.__matchGame.renderer.view,
-          dragState = null;
+        var cameraView = window.__matchGame && window.__matchGame.renderer.view;
         if (cameraView) {
-          cameraView.style.touchAction = "none";
-          cameraView.addEventListener("pointerdown", function (event) {
-            if (event.button !== 0) return;
-            dragState = { id: event.pointerId, x: event.clientX, y: event.clientY };
-            try {
-              cameraView.setPointerCapture && cameraView.setPointerCapture(event.pointerId);
-            } catch {}
-          });
-          cameraView.addEventListener("pointermove", function (event) {
-            if (!dragState || dragState.id !== event.pointerId) return;
-            var dx = event.clientX - dragState.x,
-              dy = event.clientY - dragState.y;
-            dragState.x = event.clientX;
-            dragState.y = event.clientY;
-            panBy(dx, dy);
-          });
-          cameraView.addEventListener("pointerup", function (event) {
-            if (!dragState || dragState.id !== event.pointerId) return;
-            try {
-              cameraView.releasePointerCapture && cameraView.releasePointerCapture(event.pointerId);
-            } catch {}
-            dragState = null;
-            dispatchScene("ab-stadium-camera");
-          });
-          cameraView.addEventListener("pointercancel", function () {
-            dragState = null;
-            state.lastManualCameraAt = performance.now();
-          });
+          // 只保留滚轮缩放和双击重置，禁止拖拽平移
           cameraView.addEventListener("wheel", function (event) {
             event.preventDefault();
             window.__matchZoom.step(event.deltaY > 0 ? .9 : 1.1);
@@ -616,7 +581,7 @@
           });
         }
       } catch (error) {
-        console.error("[stadium-v2] 自由镜头初始化失败", error);
+        console.error("[stadium-v2] 镜头初始化失败", error);
       }
 
       state.ready = !0;

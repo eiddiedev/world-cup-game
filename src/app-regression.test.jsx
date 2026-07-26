@@ -112,7 +112,7 @@ describe('home screen', () => {
 
     await waitFor(() => {
       expect(screen.getByRole('heading', { name: '设置' })).toBeInTheDocument()
-      expect(screen.getByRole('button', { name: /音效/ })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /^音效/ })).toBeInTheDocument()
       expect(screen.getByRole('button', { name: /音乐/ })).toBeInTheDocument()
       expect(screen.getByRole('button', { name: /震动/ })).toBeInTheDocument()
     })
@@ -201,6 +201,80 @@ describe('mobile lineup interaction', () => {
     const goalkeeperSlot = container.querySelector('[data-slot-id="GK-0"]')
     expect(goalkeeperSlot).toBeInTheDocument()
   })
+
+  it('places a player with a touch pointer drag and keeps intel collapsed by default', () => {
+    const goalkeeper = {
+      id: 'touch-drag-gk',
+      name: '手势门将',
+      number: 1,
+      position: 'GK',
+      rating: 82,
+      form: 84,
+      speed: 50,
+      physical: 80,
+      technique: 70,
+      defense: 84,
+      stamina: 78,
+    }
+    const saveData = {
+      currentRun: {
+        teamId: 'france',
+        currentOpponent: '伊拉克',
+        roster: [goalkeeper],
+        lineup: [],
+        formation: '4-3-3',
+        injuredPlayers: [],
+        suspendedPlayers: [],
+        logisticsLevels: { dataCenter: 1, intelDepartment: 1 },
+      },
+    }
+
+    const { container } = render(
+      <LineupScreen
+        saveData={saveData}
+        updateSaveData={vi.fn()}
+        navigateTo={vi.fn()}
+        showToast={vi.fn()}
+      />,
+    )
+
+    expect(screen.getByRole('button', { name: '展开' })).toBeInTheDocument()
+    expect(container.querySelector('.intel-content')).not.toBeInTheDocument()
+
+    const benchPlayer = container.querySelector('.bench-player')
+    const goalkeeperSlot = container.querySelector('[data-slot-id="GK-0"]')
+    const originalElementFromPoint = document.elementFromPoint
+    Object.defineProperty(document, 'elementFromPoint', {
+      configurable: true,
+      value: vi.fn(() => goalkeeperSlot),
+    })
+
+    const createTouchPointerEvent = (type, clientX, clientY) => {
+      const event = new MouseEvent(type, {
+        bubbles: true,
+        cancelable: true,
+        clientX,
+        clientY,
+      })
+      Object.defineProperties(event, {
+        pointerId: { value: 7 },
+        pointerType: { value: 'touch' },
+      })
+      return event
+    }
+
+    fireEvent(benchPlayer, createTouchPointerEvent('pointerdown', 600, 320))
+    fireEvent(benchPlayer, createTouchPointerEvent('pointermove', 420, 180))
+    fireEvent(benchPlayer, createTouchPointerEvent('pointerup', 260, 180))
+
+    expect(goalkeeperSlot).toHaveTextContent('1')
+    expect(container.querySelector('.rating-count')).toHaveTextContent('1/11')
+
+    Object.defineProperty(document, 'elementFromPoint', {
+      configurable: true,
+      value: originalElementFromPoint,
+    })
+  })
 })
 
 describe('settings and audio', () => {
@@ -238,7 +312,7 @@ describe('settings and audio', () => {
       />,
     )
 
-    fireEvent.click(screen.getByRole('button', { name: /音效/ }))
+    fireEvent.click(screen.getByRole('button', { name: /^音效/ }))
 
     expect(updateSaveData).toHaveBeenCalledWith(expect.objectContaining({
       settings: expect.objectContaining({ sound: false }),
@@ -783,7 +857,7 @@ describe('match systems', () => {
       playerRank: 1,
     })
 
-    expect(Object.keys(opponents)).toEqual(['r16', 'qf', 'sf', 'final'])
+    expect(Object.keys(opponents)).toEqual(['r32', 'r16', 'qf', 'sf', 'final'])
     expect(Object.values(opponents)).not.toContain('待定')
     expect(Object.values(opponents)).not.toContain('A组第2')
     expect(Object.values(opponents)).not.toContain('法国')

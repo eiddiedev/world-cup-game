@@ -12,6 +12,17 @@
   animation: overlayFadeIn 200ms ease-out;
 }
 
+.appointment-card-scale {
+  position: relative;
+  flex: 0 0 auto;
+}
+
+.appointment-card-transform {
+  width: 420px;
+  height: 560px;
+  transform-origin: top left;
+}
+
 @keyframes overlayFadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
@@ -20,8 +31,8 @@
 .appointment-card {
   position: relative;
   width: 420px;
-  max-width: 92vw;
-  aspect-ratio: 3 / 4;
+  max-width: none;
+  height: 560px;
   border-radius: 4px;
   overflow: hidden;
   background: #f5e6c8;
@@ -109,10 +120,10 @@
 /* 签名 Canvas — 覆盖在聘书底部签名线位置 */
 .appointment-signature-canvas {
   position: absolute;
-  bottom: 12%;
+  bottom: 10%;
   left: 10%;
   width: 48%;
-  height: 10%;
+  height: 24%;
   cursor: crosshair;
   touch-action: none;
   z-index: 2;
@@ -238,48 +249,12 @@
   letter-spacing: 2px;
 }
 
-/* 响应式 */
-@media (max-width: 480px) {
-  .appointment-card {
-    width: 94vw;
-  }
-
-  .appointment-line {
-    font-size: 11px;
-    line-height: 1.9;
-  }
-
-  .appointment-text {
-    top: 23%;
-    left: 10%;
-    right: 10%;
-  }
-
-  .appointment-signature-canvas {
-    bottom: 12%;
-    left: 8%;
-    width: 50%;
-    height: 10%;
-  }
-
-  .appointment-sign-hint-inline {
-    bottom: 8%;
-    left: 8%;
-    width: 50%;
-  }
-
-  .appointment-stamp {
-    bottom: 3%;
-    right: 6%;
-    width: 24%;
-  }
-
-  .appointment-actions {
-    padding: 6px 10px;
-  }
-
-  .appointment-btn-confirm {
-    font-size: 12px;
-    padding: 5px 14px;
+@media (max-width: 480px), (orientation: landscape) and (max-height: 600px) {
+  .appointment-overlay {
+    padding:
+      max(8px, env(safe-area-inset-top))
+      max(8px, env(safe-area-inset-right))
+      max(8px, env(safe-area-inset-bottom))
+      max(8px, env(safe-area-inset-left));
   }
 }

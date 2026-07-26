@@ -1,16 +1,28 @@
 /* 后勤配置页面样式 — 统一像素风格 */
 .logistics-screen {
-  display: block !important;
+  display: flex !important;
+  flex-direction: column !important;
   height: 100dvh !important;
-  padding: 20px 20px 100px;
-  overflow-y: scroll !important;
-  overflow-x: hidden !important;
-  -webkit-overflow-scrolling: touch;
+  overflow: hidden !important;
   background: var(--pixel-bg);
 }
 
-/* 顶部标题栏 */
+/* 顶部固定区 */
 .logistics-screen .logistics-header {
+  flex: 0 0 auto;
+  padding: 20px 20px 0;
+}
+
+/* 中间滚动区 */
+.logistics-screen .logistics-grid {
+  flex: 1 1 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 16px 20px;
+}
+
+/* 底部固定区 */
+.logistics-screen .logistics-footer {
   flex: 0 0 auto;
 }
 
@@ -291,10 +303,6 @@
 
 /* 底部按钮栏 */
 .logistics-footer {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -302,5 +310,102 @@
   padding: 12px 20px;
   background: var(--pixel-bg);
   border-top: 3px solid var(--pixel-main);
-  z-index: 10;
+}
+
+/* ===== Mobile Landscape: compress header, expand card area ===== */
+@media (orientation: landscape) and (max-height: 500px) {
+  .logistics-screen .logistics-header {
+    padding: 6px 12px 0;
+  }
+
+  .logistics-screen .logistics-header .screen-header {
+    margin-bottom: 4px;
+  }
+
+  .logistics-screen .logistics-header .screen-header h1 {
+    font-size: 18px;
+  }
+
+  .logistics-screen .logistics-header .back-button {
+    font-size: 20px;
+    padding: 2px 6px;
+  }
+
+  .logistics-hint {
+    margin: 0 auto 6px;
+    padding: 4px 10px;
+    font-size: 10px;
+    line-height: 1.3;
+  }
+
+  .logistics-budget-bar {
+    margin-bottom: 6px;
+    padding: 4px 12px;
+  }
+
+  .logistics-budget-bar .budget-label {
+    font-size: 10px;
+  }
+
+  .logistics-budget-bar .budget-value {
+    font-size: 16px;
+  }
+
+  .logistics-budget-bar .coin-icon {
+    width: 16px;
+    height: 16px;
+  }
+
+  .logistics-screen .logistics-grid {
+    padding: 6px 12px;
+    gap: 8px;
+  }
+
+  .logistics-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+
+  .logistics-card {
+    padding: 8px;
+    gap: 3px;
+  }
+
+  .card-icon-wrap {
+    width: 32px;
+    height: 32px;
+  }
+
+  .logistics-card .card-name {
+    font-size: 11px;
+  }
+
+  .level-badge {
+    font-size: 10px;
+    padding: 1px 4px;
+  }
+
+  .level-name {
+    font-size: 10px;
+  }
+
+  .card-effect {
+    font-size: 10px;
+    line-height: 1.3;
+  }
+
+  .card-next {
+    font-size: 10px;
+    line-height: 1.3;
+  }
+
+  .btn-upgrade {
+    font-size: 10px;
+    padding: 3px 8px;
+  }
+
+  .logistics-footer {
+    padding: 6px 12px;
+    gap: 10px;
+  }
 }

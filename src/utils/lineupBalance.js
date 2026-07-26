@@ -15,7 +15,7 @@ const FORMATION_PROFILE = {
   '3-4-2-1': { attack: 1.12, defense: 0.92, midfield: 1.16, expectedDF: 3 },
   '5-3-2': { attack: 0.9, defense: 1.25, midfield: 0.95, expectedDF: 5 },
   '4-1-4-1': { attack: 1.0, defense: 1.1, midfield: 1.08, expectedDF: 4 },
-  '4-4-1-1': { attack: 1.05, defense: 1.0, midfield: 1.1, expectedDF: 4 },
+  '5-4-1': { attack: 0.82, defense: 1.3, midfield: 1.02, expectedDF: 5 },
 }
 
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value))

@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url'
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
   const isDouyinDemo = mode === 'douyin'
+  const isLabsBuild = mode === 'labs'
 
   return {
     base: isDouyinDemo ? './' : '/',
@@ -14,9 +15,9 @@ export default defineConfig(({ mode }) => {
       'process.env.NODE_ENV': JSON.stringify('production'),
     } : undefined,
     build: {
-      outDir: isDouyinDemo ? 'dist-douyin' : 'dist',
+      outDir: isDouyinDemo ? 'dist-douyin' : isLabsBuild ? 'dist-labs' : 'dist',
       emptyOutDir: true,
-      ...(!isDouyinDemo ? {
+      ...(!isDouyinDemo && isLabsBuild ? {
         rollupOptions: {
           input: {
             main: fileURLToPath(new URL('./index.html', import.meta.url)),
@@ -25,6 +26,10 @@ export default defineConfig(({ mode }) => {
             happySeedDecisionReview: fileURLToPath(new URL('./happyseed-decision-review.html', import.meta.url)),
             pixelPlayerStudio: fileURLToPath(new URL('./pixel-player-studio.html', import.meta.url)),
           },
+        },
+      } : !isDouyinDemo ? {
+        rollupOptions: {
+          input: fileURLToPath(new URL('./index.html', import.meta.url)),
         },
       } : {}),
       ...(isDouyinDemo ? {

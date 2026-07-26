@@ -61,7 +61,7 @@
     return f.join("-");
   }
   var MATCH_ZOOM =
-    window.innerWidth <= 900 || window.innerHeight <= 500 ? 1.36 : 1.66;
+    window.innerWidth <= 900 || window.innerHeight <= 500 ? 1.0 : 1.2;
   ((function () {
     try {
       var z = parseFloat(
@@ -71,8 +71,8 @@
     } catch {}
   })(),
     typeof window.__matchZoomMul != "number" && (window.__matchZoomMul = 1));
-  var INTRO_HOLD_MS = 200,
-    INTRO_MS = 2200,
+  var INTRO_HOLD_MS = 0,
+    INTRO_MS = 1200,
     REVEAL_FADE_MS = 980;
   function introCoverZoom(zf) {
     var rdr = window.__matchGame && window.__matchGame.renderer,
@@ -88,7 +88,7 @@
     if (t0 === -1) {
       if (
         performance.now() - (window.__introArmedAt || 0) <
-        REVEAL_FADE_MS + 5e3
+        REVEAL_FADE_MS + 400
       ) {
         var zfh = MATCH_ZOOM * (window.__matchZoomMul || 1);
         zfh = zfh < 0.8 ? 0.8 : zfh > 3 ? 3 : zfh;
@@ -364,15 +364,9 @@
         return !0;
       }
 
-      function panBy(screenX, screenY) {
-        var scale = Math.max(.65, effZoom()) * 18;
-        (window.__happySeedManualCamera = !0,
-          (sceneState.lastManualCameraAt = performance.now()));
-        return focusAt(
-          sceneState.cameraTarget.x - (Number(screenX) || 0) / scale,
-          sceneState.cameraTarget.y - (Number(screenY) || 0) / scale,
-          "free",
-        );
+      function panBy() {
+        // 自由拖拽已禁用，此函数不再执行任何操作
+        return !1;
       }
 
       window.__happySeedStadiumScene = {
@@ -466,7 +460,6 @@
           }
           if (
             window.__happySeedManualCamera &&
-            !dragState &&
             now - sceneState.lastManualCameraAt >=
               sceneState.manualReturnDelayMs
           ) {
@@ -478,44 +471,9 @@
       };
 
       try {
-        var cameraView = window.__matchGame && window.__matchGame.renderer.view,
-          dragState = null;
+        var cameraView = window.__matchGame && window.__matchGame.renderer.view;
         if (cameraView) {
-          (cameraView.style.touchAction = "none");
-          cameraView.addEventListener("pointerdown", function (pointerEvent) {
-            if (pointerEvent.button !== 0) return;
-            dragState = {
-              id: pointerEvent.pointerId,
-              x: pointerEvent.clientX,
-              y: pointerEvent.clientY,
-            };
-            try {
-              cameraView.setPointerCapture &&
-                cameraView.setPointerCapture(pointerEvent.pointerId);
-            } catch {}
-          });
-          cameraView.addEventListener("pointermove", function (pointerEvent) {
-            if (!dragState || dragState.id !== pointerEvent.pointerId) return;
-            var dx = pointerEvent.clientX - dragState.x,
-              dy = pointerEvent.clientY - dragState.y;
-            ((dragState.x = pointerEvent.clientX),
-              (dragState.y = pointerEvent.clientY),
-              panBy(dx, dy));
-          });
-          cameraView.addEventListener("pointerup", function (pointerEvent) {
-            if (!dragState || dragState.id !== pointerEvent.pointerId) return;
-            (function () {
-              try {
-                cameraView.releasePointerCapture &&
-                  cameraView.releasePointerCapture(pointerEvent.pointerId);
-              } catch {}
-            })();
-            ((dragState = null),
-              dispatchScene("ab-stadium-camera"));
-          });
-          cameraView.addEventListener("pointercancel", function () {
-            dragState = null;
-          });
+          // 只保留滚轮缩放和双击重置，移除拖拽平移
           cameraView.addEventListener(
             "wheel",
             function (wheelEvent) {
@@ -530,7 +488,7 @@
           });
         }
       } catch (cameraInputError) {
-        console.error("[stadium-slice] 自由镜头输入初始化失败", cameraInputError);
+        console.error("[stadium-slice] 镜头输入初始化失败", cameraInputError);
       }
 
       ((sceneState.ready = !0), dispatchScene("ab-stadium-slice-ready"));
@@ -683,8 +641,8 @@
         }
         if (entry.label) {
           (entry.label.text = actorLabel(actor),
-            (entry.label.position.y = -112),
-            (entry.label.style.fill = actor.side === "red" ? "#f2f6ff" : "#ffe66d"));
+            (entry.label.position.y = -92),
+            (entry.label.style.fill = actor.side === "red" ? "#ffe66d" : "#f2f6ff"));
         }
       }
 
@@ -692,14 +650,14 @@
         var actor = config.actors[actorIndex],
           renderer = stadium.players[actor.runtimeIndex],
           label = new Pixi.Text(actorLabel(actor), {
-            font: '800 13px "Zpix", "Arial Narrow", sans-serif',
-            fill: actor.side === "red" ? "#f2f6ff" : "#ffe66d",
+            font: '800 16px "Zpix", "Arial Narrow", sans-serif',
+            fill: actor.side === "red" ? "#ffe66d" : "#f2f6ff",
             align: "center",
             stroke: "#071119",
             strokeThickness: 4,
           });
         (label.anchor.set(.5, 1),
-          (label.position.y = -112),
+          (label.position.y = -92),
           renderer.addChild(label));
         var entry = {
           actor: actor,
@@ -788,6 +746,9 @@
         try {
           (window.__matchGame.removePlayer(entry.entity),
             (entry.actor._runtimeRemoved = !0));
+          if (entry.renderer) entry.renderer.visible = !1;
+          if (entry.label) entry.label.visible = !1;
+          if (entry.eventRing) entry.eventRing.visible = !1;
         } catch (removeError) {
           console.error("[runtime-actors] 移除在场球员失败", removeError);
         }
@@ -844,8 +805,8 @@
               (state.onPitch = !1),
               removePhysicalActor(entry));
           }
-          (applyActorTextures(entry),
-            dispatchActors("ab-runtime-actor-state"));
+          if (!entry.actor._runtimeRemoved) applyActorTextures(entry);
+          dispatchActors("ab-runtime-actor-state");
           return !0;
         },
         substitute: function (side, outPlayerId, inPlayerId) {
@@ -1689,6 +1650,9 @@
     var playerStates = runtime("players/states"),
       playerGlobals = runtime("players/global"),
       pitch = mode.game.pitch;
+    mode.game.__happySeedTrainingActive = !1;
+    mode.game.__happySeedTrainingPlayerIndex = null;
+    mode.game.__happySeedTrainingDefenderIndex = null;
     if (!(window.__matchFormations && window.__matchFormations.red)) {
       var redFormation = randomizeFormation(pitch.redTeam),
         blueFormation = randomizeFormation(pitch.blueTeam);
@@ -1762,6 +1726,13 @@
         }
     } catch {}
     (pitch.camera.followBall(), pitch.camera.instantZoom(effZoom()));
+    try {
+      delete document.body.dataset.trainingRuntime;
+      delete document.body.dataset.trainingPitchPlayers;
+      delete document.body.dataset.trainingPitchState;
+      delete document.body.dataset.trainingPlayerControlled;
+      delete document.body.dataset.trainingPlayerPosition;
+    } catch {}
   }
 
   function stoppageHalf(game) {
@@ -1913,8 +1884,22 @@
               keyboard.update(elapsed));
             var u0 = users.list[0],
               live = pitch.matchStarted && !pitch.ballOutOfPlay,
-              bpos = pitch.ball.position;
-            if (live && !this._wasLive) {
+              bpos = pitch.ball.position,
+              trainingTarget = mode.game.__happySeedTrainingActive
+                ? mode.game.allPlayers[mode.game.__happySeedTrainingPlayerIndex]
+                : null;
+            if (trainingTarget) {
+              this._wasLive = live;
+              u0.enabled = !0;
+              if (u0.team !== trainingTarget.team && u0.changeTeam)
+                try {
+                  u0.changeTeam(trainingTarget.team);
+                } catch {}
+              if (u0.player !== trainingTarget && u0.takeControl)
+                try {
+                  u0.takeControl(trainingTarget);
+                } catch {}
+            } else if (live && !this._wasLive) {
               var wrs = this._restartSpot,
                 wc = pitch.center;
               if (
@@ -1926,10 +1911,10 @@
                   window.dispatchEvent(new CustomEvent("ab-kickoff-played"));
                 } catch {}
             }
-            if (((this._wasLive = live), !live))
+            if (!trainingTarget && ((this._wasLive = live), !live))
               (u0.team && u0.changeTeam(null),
                 (this._restartSpot = { x: bpos.x, y: bpos.y }));
-            else if (!u0.team) {
+            else if (!trainingTarget && !u0.team) {
               var rs = this._restartSpot,
                 dxr = rs ? bpos.x - rs.x : 999,
                 dyr = rs ? bpos.y - rs.y : 999,
@@ -1966,6 +1951,23 @@
               }
             }
             users.update(elapsed);
+            if (trainingTarget)
+              try {
+                document.body.dataset.trainingPlayerControlled = String(
+                  !!(u0.enabled && u0.team === trainingTarget.team &&
+                    u0.player === trainingTarget && trainingTarget.user === u0),
+                );
+                document.body.dataset.trainingPlayerPosition = trainingTarget.position
+                  ? [Number(trainingTarget.position.x).toFixed(3),
+                    Number(trainingTarget.position.y).toFixed(3)].join(",")
+                  : "";
+              } catch {}
+            // 摇杆推满 = 加速（补充引擎默认 L1 映射）
+            if (u0.controller) {
+              var _sv = u0.controller.velocity,
+                _sm = Math.sqrt(_sv.x * _sv.x + _sv.y * _sv.y);
+              if (_sm > 0.85) u0.controller.sprint.isActive = !0;
+            }
             var ti = window.__touchInput;
             if (ti && ti.active && u0.controller) {
               var c = u0.controller;
@@ -1974,8 +1976,8 @@
               ((c.speed = sp > 1 ? 1 : sp),
                 sp > 0.001 &&
                   ((c.direction.x = ti.vx / sp), (c.direction.y = ti.vy / sp)),
-                ti.shoot && (c.shoot.isActive = !0),
-                ti.sprint && (c.sprint.isActive = !0),
+                (c.shoot.isActive = !!ti.shoot),
+                (c.sprint.isActive = !!ti.sprint),
                 ti.pass && ((c.pass.isActive = !0), (ti.pass = !1)),
                 ti.lob && ((c.lob.isActive = !0), (ti.lob = !1)),
                 ti.switchPlayer &&
@@ -1988,6 +1990,7 @@
                 (this._switchCd = 1.2));
             var cp = u0.player;
             if (
+              !mode.game.__happySeedTrainingActive &&
               live &&
               cp &&
               !cp.hasBall &&
@@ -2006,6 +2009,9 @@
               ) {
                 var fp = fps[fi];
                 if (!(!fp || fp.isGoalkeeper)) {
+                  // 训练基地：跳过被隐藏的球员，防止控制权切到不可见球员
+                  var _stadPlayers = mode.game.stadium && mode.game.stadium.players;
+                  if (_stadPlayers && _stadPlayers[fi] && _stadPlayers[fi].visible === false) continue;
                   var dx = fp.position.x - bx,
                     dy = fp.position.y - by,
                     d = Math.sqrt(dx * dx + dy * dy);
@@ -2270,7 +2276,7 @@
                     renderer.spine.setSkin(sourceRenderer.spine.skinName));
                   var label = new RefPixi.Text(recipe.shortLabel, {
                     font: '700 13px "Arial Narrow", sans-serif',
-                    fill: recipe.teamId === "brazil" ? "#ffe66d" : "#f2f6ff",
+                    fill: recipe.teamId === "brazil" ? "#f2f6ff" : "#ffe66d",
                     align: "center",
                     stroke: "#0a1320",
                     strokeThickness: 4,
@@ -2790,6 +2796,23 @@
         (game.allPlayers || []).find(function (player) {
           return player && player.hasBall && isRuntimeGoalkeeper(player);
         });
+    // 扑救后起身保护期：门将扑救后 2.5 秒内，即使没有 inHands/owner/hasBall，
+    // 只要球在门将附近，也视为门将控制球，对方球员不得抢球
+    if (!goalkeeper && game.__happySeedGkSaveAt && game.__happySeedGkSaveEntity) {
+      var elapsed = performance.now() - game.__happySeedGkSaveAt;
+      if (elapsed < 2500 && isRuntimeGoalkeeper(game.__happySeedGkSaveEntity)) {
+        var gkPos = game.__happySeedGkSaveEntity.position;
+        if (gkPos) {
+          var distToBall = Math.hypot(ball.position.x - gkPos.x, ball.position.y - gkPos.y);
+          if (distToBall < pitch.width * 0.06) {
+            goalkeeper = game.__happySeedGkSaveEntity;
+          }
+        }
+      } else {
+        game.__happySeedGkSaveAt = 0;
+        game.__happySeedGkSaveEntity = null;
+      }
+    }
     if (
       !goalkeeper ||
       !goalkeeper.position ||
@@ -2797,6 +2820,13 @@
       !isRuntimeGoalkeeper(goalkeeper)
     )
       return !1;
+    // 球员模式：玩家控制门将且有方向输入时，跳过安全限制，允许门将移动
+    if (window.__acPlay) {
+      var ti = window.__touchInput;
+      if (ti && ti.active && (Math.abs(ti.vx) > 0.1 || Math.abs(ti.vy) > 0.1)) {
+        return !1;
+      }
+    }
     var ownGoal = goalkeeper.team.goal,
       goalX = ownGoal && ownGoal.center
         ? ownGoal.center.x
@@ -2833,6 +2863,23 @@
     }
     game.__happySeedGoalkeeperSafetyClamps =
       Number(game.__happySeedGoalkeeperSafetyClamps || 0) + 1;
+    // 扑救起身保护期：将对方球员推离门将，防止抢球
+    if (game.__happySeedGkSaveAt && game.__happySeedGkSaveEntity === goalkeeper) {
+      var exclusionRadius = pitch.width * 0.08;
+      (game.allPlayers || []).forEach(function (player) {
+        if (!player || player === goalkeeper || !player.position || !player.team) return;
+        if (player.team === goalkeeper.team) return;
+        var dx = player.position.x - goalkeeper.position.x;
+        var dy = player.position.y - goalkeeper.position.y;
+        var dist = Math.hypot(dx, dy);
+        if (dist < exclusionRadius && dist > 0.01) {
+          var push = (exclusionRadius - dist) / dist;
+          player.position.x += dx * push;
+          player.position.y += dy * push;
+          if (player.velocity) { player.velocity.x = 0; player.velocity.y = 0; }
+        }
+      });
+    }
     try {
       window.dispatchEvent(
         new CustomEvent("ab-goalkeeper-safety-clamp", {
@@ -2941,6 +2988,11 @@
       game.__happySeedLastSaveShotEventId =
         payload && (payload.sourceEventId ||
           payload.detail && payload.detail.shotEventId) || null;
+      // 记录扑救时间戳和门将实体，用于起身保护期
+      game.__happySeedGkSaveAt = performance.now();
+      game.__happySeedGkSaveEntity = typeof primary === "string"
+        ? runtimeEntityForActorId(game, primary)
+        : primary;
     }
     return eventId;
   };
@@ -3270,6 +3322,177 @@
     }
     return !1;
   };
+  // 训练基地直接进入实时比赛状态，不再经过开球和死球流程。
+  // 多余球员会从 pitch.players / team.players 中真正移除，而不只是隐藏贴图。
+  window.__happySeedConfigureTraining = function (payload) {
+    payload = payload || {};
+    var game = window.__matchGame,
+      pitch = game && game.pitch,
+      Pitch = runtime("pitch").Pitch,
+      playerStates = runtime("players/states"),
+      playerGlobals = runtime("players/global"),
+      runtimeUsers = runtime("users"),
+      allPlayers = game && game.allPlayers || [];
+    if (!game || !pitch || !Pitch || !pitch.states || !allPlayers.length) return null;
+
+    var userList = runtimeUsers && runtimeUsers.list
+        || pitch.users && pitch.users.list
+        || pitch._users && pitch._users.list
+        || [],
+      user = userList[0] || null,
+      savedPlayer = allPlayers[game.__happySeedTrainingPlayerIndex],
+      controlled = savedPlayer && !savedPlayer.isGoalkeeper
+        ? savedPlayer
+        : user && user.player && !user.player.isGoalkeeper
+          ? user.player
+          : allPlayers.filter(function (player) {
+            return player && player.isControlled && !player.isGoalkeeper;
+          })[0] || allPlayers[6],
+      playerIndex = Math.max(0, allPlayers.indexOf(controlled)),
+      goalkeeperIndices = [];
+    game.__happySeedTrainingPlayerIndex = playerIndex;
+    for (var gi = 0; gi < allPlayers.length; gi += 1) {
+      if (allPlayers[gi] && allPlayers[gi].isGoalkeeper) goalkeeperIndices.push(gi);
+    }
+
+    var defenderIndex = Number.isInteger(payload.defenderIndex)
+        ? payload.defenderIndex
+        : Number.isInteger(game.__happySeedTrainingDefenderIndex)
+          ? game.__happySeedTrainingDefenderIndex
+          : -1,
+      defender = defenderIndex >= 0 ? allPlayers[defenderIndex] : null;
+    if (!defender || defender.isGoalkeeper || defender.team === controlled.team) {
+      defender = allPlayers.filter(function (candidate) {
+        return candidate
+          && !candidate.isGoalkeeper
+          && candidate !== controlled
+          && candidate.team !== controlled.team;
+      })[0] || null;
+      defenderIndex = allPlayers.indexOf(defender);
+    }
+    game.__happySeedTrainingDefenderIndex = defenderIndex;
+
+    var pw = pitch.width || 100,
+      ph = pitch.height || 60,
+      visibleIndices = goalkeeperIndices.concat([playerIndex]);
+    if (payload.defender && defenderIndex >= 0) visibleIndices.push(defenderIndex);
+    var keep = new Set(visibleIndices);
+
+    if (pitch.ball && pitch.ball.owner && !keep.has(allPlayers.indexOf(pitch.ball.owner))) {
+      try {
+        messages.releaseBall.send(pitch.ball.owner);
+        messages.releaseBall.send(pitch.ball);
+      } catch {}
+    }
+    if (pitch.ball && pitch.ball.inHands && pitch.ball.inHands.dropBall) {
+      try { pitch.ball.inHands.dropBall(); } catch {}
+    }
+
+    for (var i = 0; i < allPlayers.length; i += 1) {
+      var entity = allPlayers[i],
+        onPitch = entity && pitch.players.indexOf(entity) >= 0;
+      if (!entity) continue;
+      if (!keep.has(i) && onPitch) {
+        game.removePlayer(entity);
+        if (entity.placeAtPosition) entity.placeAtPosition(pw + 6 + i * .01, ph + 6);
+        if (entity.velocity) {
+          entity.velocity.x = 0;
+          entity.velocity.y = 0;
+        }
+      } else if (keep.has(i) && !onPitch) {
+        game.addPlayer(entity);
+        if (entity !== controlled) playerGlobals.forceAI(entity, null);
+        entity.states.change(playerStates.ReturnHome);
+      }
+    }
+
+    if (payload.initial && controlled && controlled.placeAtPosition) {
+      controlled.placeAtPosition(pw * .43, ph * .5);
+    }
+    if (payload.defender && defender && defender.placeAtPosition) {
+      var attacksRight = !controlled.team || !controlled.team.goal
+        || controlled.team.goal.center.x < pw * .5;
+      defender.placeAtPosition(attacksRight ? pw * .58 : pw * .42, ph * .5);
+      playerGlobals.forceAI(defender, null);
+      defender.states.change(playerStates.ReturnHome);
+    }
+
+    game.__happySeedTrainingActive = !0;
+    game.__happySeedDeferGoalRestart = !1;
+    game.__happySeedDeferredGoalKickoff = null;
+    game.__happySeedPendingGoalRestartHold = !1;
+    pitch.ballOutOfPlay = !1;
+    pitch.practice = !0;
+    pitch.matchStarted = !0;
+    pitch.matchEnded = !1;
+    try { pitch.matchTime = 0; } catch {}
+    try { pitch.states.change(Pitch.states.Match); } catch {
+      try { pitch.states.change(Pitch.states.Match); } catch {}
+    }
+
+    if (user && controlled) {
+      user.enabled = !0;
+      if (user.team !== controlled.team && user.changeTeam) {
+        try { user.changeTeam(controlled.team); } catch {}
+      }
+      if (user.takeControl) {
+        try { user.takeControl(controlled); } catch {}
+      }
+    }
+    if (controlled && (payload.initial || payload.resetBall)) {
+      if (pitch.ball.owner) {
+        try {
+          messages.releaseBall.send(pitch.ball.owner);
+          messages.releaseBall.send(pitch.ball);
+        } catch {}
+      }
+      if (pitch.ball.inHands && pitch.ball.inHands !== controlled && pitch.ball.inHands.dropBall) {
+        try { pitch.ball.inHands.dropBall(); } catch {}
+      }
+      var controlledX = Number(controlled.position && controlled.position.x),
+        controlledY = Number(controlled.position && controlled.position.y),
+        ballDirection = !controlled.team || !controlled.team.goal
+          || controlled.team.goal.center.x < pw * .5 ? 1 : -1;
+      if (!Number.isFinite(controlledX)) controlledX = pw * .43;
+      if (!Number.isFinite(controlledY)) controlledY = ph * .5;
+      pitch.ball.placeAtPosition(
+        controlledX + ballDirection * .28,
+        controlledY,
+        Math.max(Number(pitch.ball.radius || .12), .12)
+      );
+      if (pitch.ball.velocity) {
+        pitch.ball.velocity.x = 0;
+        pitch.ball.velocity.y = 0;
+        pitch.ball.velocity.z = 0;
+      }
+      if (pitch.prevStepBallPosition) {
+        pitch.prevStepBallPosition.x = pitch.ball.position.x;
+        pitch.prevStepBallPosition.y = pitch.ball.position.y;
+        pitch.prevStepBallPosition.z = pitch.ball.position.z;
+      }
+    }
+
+    var result = {
+      playerIndex: playerIndex,
+      defenderIndex: defenderIndex,
+      visibleIndices: Array.from(new Set(visibleIndices)),
+      pitchPlayerCount: pitch.players.length,
+      state: pitch.states.current && pitch.states.current.name || "",
+      playerControlled: !!(user && user.enabled && user.team === controlled.team
+        && user.player === controlled),
+    };
+    try {
+      document.body.dataset.trainingRuntime = "active";
+      document.body.dataset.trainingPitchPlayers = String(result.pitchPlayerCount);
+      document.body.dataset.trainingPitchState = result.state;
+      document.body.dataset.trainingPlayerControlled = String(result.playerControlled);
+      document.body.dataset.trainingPlayerPosition = controlled && controlled.position
+        ? [Number(controlled.position.x).toFixed(3), Number(controlled.position.y).toFixed(3)].join(",")
+        : "";
+    } catch {}
+    return result;
+  };
+  try { document.body.dataset.trainingRuntimeBridge = "ready"; } catch {}
   // 战术调整：通过平移全队 home 锚点实现压上/回收，team.ai 控制前插积极度。
   // 锚点始终以初始阵型为基准，反复切换不累积偏移。
   window.__happySeedSetTacticalStance = function (side, stance) {
@@ -3377,6 +3600,11 @@
         ) {
           game.stadium.controlIndicator &&
             (game.stadium.controlIndicator.showAI = !1);
+          // 球员模式：只隐藏脚印，保留持球圆圈
+          game.stadium.controlIndicator &&
+            (game.stadium.controlIndicator._showPassPaws = function () {},
+             game.stadium.controlIndicator.passLayer &&
+               (game.stadium.controlIndicator.passLayer.visible = !1));
           var _traj = game.stadium.trajectory;
           if (_traj) {
             for (var _li = 0; _li < _traj.userLines.length; _li++)
@@ -3780,11 +4008,44 @@
               var cur = game.pitch.states.current;
               cur &&
                 typeof cur.delay == "number" &&
-                (cur.delay =
-                  (REVEAL_FADE_MS + INTRO_HOLD_MS + INTRO_MS) / 1e3 + 1);
+                (cur.delay = 0.8);
             }
           } catch {}
+          // 教练模式：轮询开球状态，在延迟剩余约 0.5 秒时提前发出 ab-kickoff-played（哨声领先开球）
+          if (!acPlay()) {
+            game._kickoffPlayedEmitted = !1;
+            var kickoffStateRef = game.pitch.states.current;
+            (function pollKickoffPlayed() {
+              try {
+                if (game._kickoffPlayedEmitted) return;
+                var curState = game.pitch.states.current;
+                if (curState !== kickoffStateRef) return;
+                var rt = curState.readyTime,
+                  dl = curState.delay;
+                if (
+                  typeof rt == "number" &&
+                  typeof dl == "number" &&
+                  rt >= Math.max(0, dl - 0.5)
+                ) {
+                  game._kickoffPlayedEmitted = !0;
+                  window.dispatchEvent(new CustomEvent("ab-kickoff-played"));
+                  return;
+                }
+              } catch (pollErr) {}
+              window.requestAnimationFrame(pollKickoffPlayed);
+            })();
+          }
           game._kickoffSnapped = !0;
+        }
+      },
+      "signal:pitch.Pitch.states.Kickoff.onExit": function (game) {
+        // 兜底：若提前轮询未触发，则在开球状态结束时发出 ab-kickoff-played。
+        // 球员模式由 StandalonePlayPhase 的活球检测触发，避免重复。
+        if (!acPlay() && !game._kickoffPlayedEmitted) {
+          game._kickoffPlayedEmitted = !0;
+          try {
+            window.dispatchEvent(new CustomEvent("ab-kickoff-played"));
+          } catch {}
         }
       },
       "signal:pitch.Pitch.states.EndMatch.onEnter": function (game) {

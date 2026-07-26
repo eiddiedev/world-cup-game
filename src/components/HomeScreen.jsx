@@ -1,6 +1,5 @@
 import React, { useState } from 'react'
-import { teams } from '../data/teams'
-import { getHomeProgress, hasContinueGame, getCodexProgress } from '../utils/saveManager'
+import { hasContinueGame, getCodexProgress } from '../utils/saveManager'
 
 const PRIMARY_MODES = [
   { id: 'coach', label: '教练模式' },
@@ -21,13 +20,16 @@ const CONTINUE_STAGES = new Set([
  * 首页只呈现玩家真正需要选择的四个入口。
  * 开发实验、AI 和商业化能力保留在项目内部，不占用主菜单层级。
  */
-export default function HomeScreen({ saveData, navigateTo, showToast }) {
+export default function HomeScreen({ saveData, updateSaveData, navigateTo, showToast }) {
   const [selectedMode, setSelectedMode] = useState(null)
-  const progress = getHomeProgress(saveData, teams)
   const codexProgress = getCodexProgress(saveData)
   const hasSave = hasContinueGame(saveData)
   const savedMode = saveData.currentRun?.gameMode || 'coach'
-  const canContinueMode = hasSave && selectedMode === savedMode
+  // 球员模式独立存档判断
+  const playerModeHasSave = Boolean(saveData.playerModeRun)
+  const canContinueMode = selectedMode === 'player'
+    ? playerModeHasSave
+    : (hasSave && savedMode === 'coach')
 
   const openModeDialog = (mode) => setSelectedMode(mode)
 
@@ -43,6 +45,18 @@ export default function HomeScreen({ saveData, navigateTo, showToast }) {
       return
     }
 
+    if (selectedMode === 'player') {
+      // 球员模式：从 playerModeRun 恢复
+      const playerRun = saveData.playerModeRun
+      const stage = playerRun?.stage || 'tournament'
+      updateSaveData({ ...saveData, currentRun: playerRun })
+      setSelectedMode(null)
+      navigateTo(CONTINUE_STAGES.has(stage) ? stage : 'tournament', {
+        gameMode: 'player',
+      })
+      return
+    }
+
     const stage = saveData.currentRun?.stage || 'tournament'
     setSelectedMode(null)
     navigateTo(CONTINUE_STAGES.has(stage) ? stage : 'tournament', {
@@ -51,7 +65,6 @@ export default function HomeScreen({ saveData, navigateTo, showToast }) {
   }
 
   const selectedModeLabel = selectedMode === 'player' ? '球员模式' : '教练模式'
-  const savedModeLabel = savedMode === 'player' ? '球员模式' : '教练模式'
 
   return (
     <main className="screen home-screen">
@@ -143,11 +156,11 @@ export default function HomeScreen({ saveData, navigateTo, showToast }) {
             </div>
 
             <p className="mode-save-status">
-              {!hasSave
-                ? '当前没有进行中的存档'
-                : canContinueMode
-                  ? `可继续上次的${selectedModeLabel}`
-                  : `当前存档属于${savedModeLabel}`}
+              {selectedMode === 'player'
+                ? (playerModeHasSave ? '可继续上次的球员模式' : '该模式暂无存档')
+                : (!hasSave || savedMode !== 'coach'
+                  ? '该模式暂无存档'
+                  : '可继续上次的教练模式')}
             </p>
           </section>
         </div>

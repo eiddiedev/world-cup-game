@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
-import { loadSaveData, persistSaveData } from './utils/saveManager'
+import { loadSaveData, persistSaveData, createNewRun } from './utils/saveManager'
+import { teams } from './data/teams'
 import { initAudio, audioManager } from './utils/audioManager'
 import HomeScreen from './components/HomeScreen'
 import TeamSelectScreen from './components/TeamSelectScreen'
@@ -15,6 +16,7 @@ import EnhancementHubScreen from './components/EnhancementHubScreen'
 import PenaltyModeScreen from './components/PenaltyModeScreen'
 import CodexScreen from './components/CodexScreen'
 import LogisticsScreen from './components/LogisticsScreen'
+import TrainingGround from './components/TrainingGround'
 import { IS_DOUYIN_DEMO } from './config/runtime'
 
 /**
@@ -62,7 +64,74 @@ export default function App() {
     return () => document.removeEventListener('pointerdown', handleGlobalPointerDown, true)
   }, [])
 
+  // 测试快捷键：C 直接夺冠 / R 雨天比赛
+  useEffect(() => {
+    const onKeyDown = (event) => {
+      if (event.repeat || event.ctrlKey || event.metaKey || event.altKey) return
+      const tag = event.target?.tagName
+      if (tag === 'INPUT' || tag === 'TEXTAREA') return
+      if (event.key === 'r' || event.key === 'R') {
+        // 强制雨天 + 教练模式快速进入比赛
+        window.__happySeedForceWeather = 'rain'
+        const team = teams.find(t => t.id === 'france') || teams[0]
+        const playerIds = (team.players || []).map(p => p.id)
+        const lineup = playerIds.slice(0, 11)
+        setSaveData((prev) => {
+          const base = prev || loadSaveData()
+          const newRun = {
+            ...createNewRun(team.id, 'coach', base),
+            stage: 'match',
+            purchasedPlayerIds: playerIds,
+            roster: playerIds,
+            lineup,
+          }
+          const next = { ...base, currentRun: newRun }
+          persistSaveData(next)
+          return next
+        })
+        setActiveGameMode('coach')
+        setCurrentScreen('match')
+        return
+      }
+      if (event.key === 'c' || event.key === 'C') {
+        setSaveData((prev) => {
+          if (!prev?.currentRun) return prev
+          const next = {
+            ...prev,
+            currentRun: {
+              ...prev.currentRun,
+              knockoutRound: 'final',
+              isKnockoutMatch: false,
+              stage: 'ending',
+              matchResults: ['win', 'win', 'win'],
+              knockoutResults: ['win', 'win', 'win', 'win', 'win'],
+              lastMatchResult: {
+                result: 'win',
+                homeScore: 3,
+                awayScore: 0,
+                teamName: prev.currentRun.teamId || '',
+                opponent: '对手',
+              },
+            },
+          }
+          if (next.currentRun.gameMode === 'player') {
+            next.playerModeRun = next.currentRun
+          }
+          persistSaveData(next)
+          return next
+        })
+        setCurrentScreen('ending')
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [])
+
   const updateSaveData = (newData) => {
+    // 球员模式存档同步：当 currentRun 属于球员模式时，同步写入 playerModeRun
+    if (newData.currentRun?.gameMode === 'player') {
+      newData = { ...newData, playerModeRun: newData.currentRun }
+    }
     setSaveData(newData)
     persistSaveData(newData)
   }
@@ -127,6 +196,8 @@ export default function App() {
         return <CodexScreen {...screenProps} />
       case 'logistics':
         return <LogisticsScreen {...screenProps} />
+      case 'training':
+        return <TrainingGround {...screenProps} />
       case 'enhancement-hub':
         return <EnhancementHubScreen {...screenProps} />
       case 'pixel-player-lab':
