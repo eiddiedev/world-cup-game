@@ -2,8 +2,13 @@ import React, { useState, useEffect } from 'react'
 import { loadSaveData, persistSaveData, createNewRun } from './utils/saveManager'
 import { teams, getTeamById } from './data/teams'
 import { initAudio, audioManager } from './utils/audioManager'
-import { preloadAssetUrls } from './utils/visualAssetLoader'
-import { getCriticalStartupAssets, getSecondaryTeamAssets } from './utils/startupAssets'
+import { preloadAssetUrls, preloadAssetUrlsSoftly } from './utils/visualAssetLoader'
+import {
+  getCriticalStartupAssets,
+  getPenaltyShootoutAssets,
+  getSecondaryTeamAssets,
+  getSelectedTeamPlayerAssets,
+} from './utils/startupAssets'
 import {
   preloadHappySeedMatchAssets,
   preloadHappySeedRuntimeCore,
@@ -27,6 +32,33 @@ import GameLoadingScreen from './components/GameLoadingScreen'
 import { IS_DOUYIN_DEMO } from './config/runtime'
 
 const IS_TEST_RUNTIME = import.meta.env.MODE === 'test'
+
+function scheduleSoftTask(callback, { delayMs = 1200, idleTimeoutMs = 3500 } = {}) {
+  let idleId = null
+  let cancelled = false
+  const delayId = window.setTimeout(() => {
+    if (cancelled) return
+    if ('requestIdleCallback' in window) {
+      idleId = window.requestIdleCallback(() => {
+        if (!cancelled) callback()
+      }, { timeout: idleTimeoutMs })
+    } else {
+      callback()
+    }
+  }, delayMs)
+
+  return () => {
+    cancelled = true
+    window.clearTimeout(delayId)
+    if (idleId != null && 'cancelIdleCallback' in window) window.cancelIdleCallback(idleId)
+  }
+}
+
+function shouldSoftLoadHeavyAssets() {
+  const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection
+  if (connection?.saveData) return false
+  return !['slow-2g', '2g'].includes(connection?.effectiveType)
+}
 
 /**
  * 剑指美加墨 — 主应用组件
@@ -61,31 +93,44 @@ export default function App() {
     if (IS_TEST_RUNTIME) return undefined
     let cancelled = false
     preloadAssetUrls(getCriticalStartupAssets(teams), {
-      concurrency: 8,
+      concurrency: 6,
       onProgress: ({ percent, completed, total }) => {
         if (cancelled) return
         setStartup({
           ready: false,
           progress: percent,
-          detail: completed < 7 ? '正在准备主标题与背景' : `正在加载 16 支国家队资源 · ${completed}/${total}`,
+          detail: completed < 14
+            ? `正在准备主标题与基础图标 · ${completed}/${total}`
+            : `正在加载 16 支国家队选择卡片 · ${completed}/${total}`,
         })
       },
     }).then(({ failures }) => {
       if (cancelled) return
       if (failures.length) console.warn('[Startup] 部分资源稍后重试', failures)
       setStartup({ ready: true, progress: 100, detail: '必要资源加载完成' })
-
-      const warmup = () => {
-        preloadAssetUrls(getSecondaryTeamAssets(teams), { concurrency: 6 }).catch(() => {})
-        preloadHappySeedRuntimeCore().catch((error) => {
-          console.warn('[Match preload] 比赛引擎将在进入比赛时重试', error)
-        })
-      }
-      if ('requestIdleCallback' in window) window.requestIdleCallback(warmup, { timeout: 1500 })
-      else window.setTimeout(warmup, 150)
     })
     return () => { cancelled = true }
   }, [])
+
+  useEffect(() => {
+    if (IS_TEST_RUNTIME || !startup.ready) return undefined
+    let cancelled = false
+    const cancelTask = scheduleSoftTask(() => {
+      preloadHappySeedRuntimeCore()
+        .then(() => {
+          if (cancelled) return
+          return preloadAssetUrls(getSecondaryTeamAssets(teams), { concurrency: 2 })
+        })
+        .catch((error) => {
+          console.warn('[Match preload] 比赛引擎将在进入比赛时重试', error)
+        })
+    })
+
+    return () => {
+      cancelled = true
+      cancelTask()
+    }
+  }, [startup.ready])
 
   useEffect(() => {
     if (saveData?.settings) {
@@ -96,22 +141,64 @@ export default function App() {
   useEffect(() => {
     const run = saveData?.currentRun
     if (!startup.ready || !run?.teamId) return
+    const selectedTeam = getTeamById(run.teamId)
     const opponent = getTeamById(run.currentOpponent)
-    preloadHappySeedMatchAssets({
-      red: run.teamId,
-      blue: opponent?.id || 'brazil',
-      redFormation: run.formation,
-      redSquadPlayerIds: run.roster || run.purchasedPlayerIds || [],
-      redLineupPlayerIds: run.lineup || [],
-      redPlayerStateById: run.playerMatchStates || {},
-      redUnavailablePlayerIds: [
-        ...(run.injuredPlayers || []),
-        ...(run.suspendedPlayers || []),
-      ],
-    }).catch((error) => {
-      console.warn('[Match preload] 本场资源将在开赛时重试', error)
-    })
-  }, [saveData?.currentRun, startup.ready])
+    let cancelled = false
+    let penaltyTimer = null
+    const cancelTask = scheduleSoftTask(async () => {
+      const selectedPlayerAssets = preloadAssetUrls(getSelectedTeamPlayerAssets(selectedTeam), {
+        concurrency: 4,
+      })
+
+      try {
+        await Promise.all([
+          preloadHappySeedRuntimeCore(),
+          selectedPlayerAssets,
+        ])
+        if (cancelled) return
+
+        await preloadHappySeedMatchAssets({
+          red: run.teamId,
+          blue: opponent?.id || 'brazil',
+          redFormation: run.formation,
+          redSquadPlayerIds: run.roster || run.purchasedPlayerIds || [],
+          redLineupPlayerIds: run.lineup || [],
+          redPlayerStateById: run.playerMatchStates || {},
+          redUnavailablePlayerIds: [
+            ...(run.injuredPlayers || []),
+            ...(run.suspendedPlayers || []),
+          ],
+        }, { assetConcurrency: 3 })
+        if (cancelled || !shouldSoftLoadHeavyAssets()) return
+
+        penaltyTimer = window.setTimeout(() => {
+          preloadAssetUrlsSoftly(getPenaltyShootoutAssets(), {
+            batchSize: 1,
+            pauseMs: 900,
+            shouldContinue: () => !cancelled,
+          }).catch(() => {})
+        }, 3000)
+      } catch (error) {
+        console.warn('[Match preload] 本场资源将在开赛时重试', error)
+      }
+    }, { delayMs: 350, idleTimeoutMs: 1800 })
+
+    return () => {
+      cancelled = true
+      cancelTask()
+      if (penaltyTimer != null) window.clearTimeout(penaltyTimer)
+    }
+  }, [
+    saveData?.currentRun?.teamId,
+    saveData?.currentRun?.currentOpponent,
+    saveData?.currentRun?.formation,
+    saveData?.currentRun?.roster,
+    saveData?.currentRun?.purchasedPlayerIds,
+    saveData?.currentRun?.lineup,
+    saveData?.currentRun?.injuredPlayers,
+    saveData?.currentRun?.suspendedPlayers,
+    startup.ready,
+  ])
 
   useEffect(() => {
     const handleGlobalPointerDown = (event) => {

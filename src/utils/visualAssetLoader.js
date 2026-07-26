@@ -74,3 +74,24 @@ export async function preloadAssetUrls(urls, { concurrency = 6, onProgress } = {
   await Promise.all(Array.from({ length: Math.min(concurrency, total) }, worker))
   return { completed, total, failures }
 }
+
+export async function preloadAssetUrlsSoftly(urls, {
+  batchSize = 1,
+  pauseMs = 700,
+  shouldContinue = () => true,
+} = {}) {
+  const queue = [...new Set(urls.filter(Boolean))]
+  const failures = []
+
+  for (let cursor = 0; cursor < queue.length && shouldContinue(); cursor += batchSize) {
+    const batch = queue.slice(cursor, cursor + batchSize)
+    const result = await preloadAssetUrls(batch, { concurrency: 1 })
+    failures.push(...result.failures)
+
+    if (cursor + batchSize < queue.length && shouldContinue()) {
+      await new Promise((resolve) => window.setTimeout(resolve, pauseMs))
+    }
+  }
+
+  return { failures }
+}

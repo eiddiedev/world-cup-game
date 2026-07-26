@@ -244,7 +244,10 @@ export function preloadHappySeedRuntimeCore({ onProgress } = {}) {
   return runtimeCorePromise
 }
 
-export async function preloadHappySeedMatchAssets(options = {}, { onProgress } = {}) {
+export async function preloadHappySeedMatchAssets(options = {}, {
+  onProgress,
+  assetConcurrency = 10,
+} = {}) {
   await preloadHappySeedRuntimeCore({ onProgress })
   const config = buildHappySeedRuntimeActorConfig({
     ...options,
@@ -253,7 +256,7 @@ export async function preloadHappySeedMatchAssets(options = {}, { onProgress } =
   })
   const urls = collectHappySeedMatchAssetUrls(config)
   await preloadAssetUrls(urls, {
-    concurrency: 10,
+    concurrency: assetConcurrency,
     onProgress: ({ percent }) => onProgress?.(70 + Math.round(percent * 0.25), '正在装配双方球员'),
   })
   onProgress?.(95, '正在布置比赛现场')
