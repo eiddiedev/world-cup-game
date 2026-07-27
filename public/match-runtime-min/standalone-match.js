@@ -1824,6 +1824,7 @@
     var pitch = game && game.pitch,
       clock = game && game.__happySeedStoppageClock;
     if (!pitch || !clock || !pitch.matchStarted) return;
+    if (game.__happySeedTrainingActive) return;
     var half = stoppageHalf(game),
       snapshot = stoppageClockSnapshot(game),
       director = window.__happySeedDecisionDirectorV3

@@ -28,8 +28,8 @@
 /* 摇杆底盘 — 圆形 + 像素粗糙边 */
 .pc-joystick-base {
   position: relative;
-  width: 120px;
-  height: 120px;
+  width: 140px;
+  height: 140px;
   background: rgba(10, 14, 28, 0.65);
   border: 4px solid #f0e68c;
   border-radius: 50%;
@@ -49,8 +49,8 @@
 
 /* 摇杆旋钮 — 圆形 + 像素边 */
 .pc-joystick-knob {
-  width: 44px;
-  height: 44px;
+  width: 52px;
+  height: 52px;
   background: #f0e68c;
   border: 3px solid #1b3764;
   border-radius: 50%;
@@ -78,8 +78,8 @@
 /* ===== 右侧菱形动作键 — 圆形 + 像素粗糙边 ===== */
 .pc-dpad {
   position: relative;
-  width: 160px;
-  height: 160px;
+  width: 180px;
+  height: 180px;
 }
 
 /* 覆盖 .happyseed-match-broadcast button 的全局方形样式 */
@@ -87,7 +87,7 @@
   border-radius: 50%;
   border: 3px solid #1b3764;
   font-family: "Zpix", "Microsoft YaHei", "PingFang SC", sans-serif;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 400;
   color: #fff;
   text-shadow: 1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000;
@@ -101,11 +101,11 @@
 
 .pc-action {
   position: absolute;
-  width: 56px;
-  height: 56px;
+  width: 64px;
+  height: 64px;
   border-radius: 50%;
   font-family: "Zpix", "Microsoft YaHei", "PingFang SC", sans-serif;
-  font-size: 13px;
+  font-size: 14px;
   color: #fff;
   text-shadow: 1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000;
   border: 3px solid #1b3764;
@@ -141,28 +141,28 @@
 .happyseed-match-broadcast .pc-btn-top {
   top: 0;
   left: 50%;
-  margin-left: -28px;
+  margin-left: -32px;
   background: #C99A2E;
 }
 .pc-btn-bottom,
 .happyseed-match-broadcast .pc-btn-bottom {
   bottom: 0;
   left: 50%;
-  margin-left: -28px;
+  margin-left: -32px;
   background: #C99A2E;
 }
 .pc-btn-left,
 .happyseed-match-broadcast .pc-btn-left {
   left: 0;
   top: 50%;
-  margin-top: -28px;
+  margin-top: -32px;
   background: #C99A2E;
 }
 .pc-btn-right,
 .happyseed-match-broadcast .pc-btn-right {
   right: 0;
   top: 50%;
-  margin-top: -28px;
+  margin-top: -32px;
   background: #C99A2E;
 }
 
@@ -177,26 +177,26 @@
     padding: 0 max(32px, 6vw) max(28px, 6vh);
   }
   .pc-joystick-base {
-    width: 108px;
-    height: 108px;
+    width: 120px;
+    height: 120px;
   }
   .pc-joystick-knob {
-    width: 40px;
-    height: 40px;
+    width: 44px;
+    height: 44px;
   }
   .pc-dpad {
-    width: 148px;
-    height: 148px;
+    width: 160px;
+    height: 160px;
   }
   .pc-action {
-    width: 50px;
-    height: 50px;
+    width: 56px;
+    height: 56px;
     font-size: 12px;
   }
-  .pc-btn-top { margin-left: -25px; }
-  .pc-btn-bottom { margin-left: -25px; }
-  .pc-btn-left { margin-top: -25px; }
-  .pc-btn-right { margin-top: -25px; }
+  .pc-btn-top { margin-left: -28px; }
+  .pc-btn-bottom { margin-left: -28px; }
+  .pc-btn-left { margin-top: -28px; }
+  .pc-btn-right { margin-top: -28px; }
 }
 
 /* 平板/大屏横屏 — 控件放大并进一步内移 */
@@ -205,24 +205,24 @@
     padding: 0 max(48px, 6vw) max(32px, 6vh);
   }
   .pc-joystick-base {
-    width: 140px;
-    height: 140px;
+    width: 168px;
+    height: 168px;
   }
   .pc-joystick-knob {
-    width: 52px;
-    height: 52px;
+    width: 62px;
+    height: 62px;
   }
   .pc-dpad {
-    width: 180px;
-    height: 180px;
+    width: 210px;
+    height: 210px;
   }
   .pc-action {
-    width: 64px;
-    height: 64px;
-    font-size: 14px;
+    width: 76px;
+    height: 76px;
+    font-size: 15px;
   }
-  .pc-btn-top { margin-left: -32px; }
-  .pc-btn-bottom { margin-left: -32px; }
-  .pc-btn-left { margin-top: -32px; }
-  .pc-btn-right { margin-top: -32px; }
+  .pc-btn-top { margin-left: -38px; }
+  .pc-btn-bottom { margin-left: -38px; }
+  .pc-btn-left { margin-top: -38px; }
+  .pc-btn-right { margin-top: -38px; }
 }

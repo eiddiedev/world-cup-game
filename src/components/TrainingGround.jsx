@@ -119,6 +119,9 @@ export default function TrainingGround({ saveData, navigateTo, updateSaveData })
       if (Number(pitch.matchTime || 0) > 10) {
         try { pitch.matchTime = 0 } catch { /* Some Runtime builds expose a readonly clock. */ }
       }
+      if (Number(pitch.time || 0) > 10) {
+        try { pitch.time = 0 } catch { /* Some Runtime builds expose a readonly clock. */ }
+      }
 
       for (let i = 0; i < players.length; i++) {
         const sprite = players[i]
