@@ -8,7 +8,8 @@
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
-  padding: 0 20px 24px;
+  /* 基础样式：使用视口比例确保任何屏幕尺寸下控件都在拇指热区 */
+  padding: 0 max(24px, 5vw) max(20px, 5vh);
   pointer-events: none;
   user-select: none;
   -webkit-user-select: none;
@@ -173,7 +174,7 @@
 /* 小屏适配 — 参考主流手游（原神/和平精英）摇杆位于拇指自然落点 */
 @media (max-width: 600px) {
   .player-controls {
-    padding: 0 max(40px, calc(env(safe-area-inset-left) + 28px)) max(36px, calc(env(safe-area-inset-bottom) + 24px));
+    padding: 0 max(32px, 6vw) max(28px, 6vh);
   }
   .pc-joystick-base {
     width: 108px;
@@ -198,14 +199,30 @@
   .pc-btn-right { margin-top: -25px; }
 }
 
-/* 横屏手机（landscape）— 控件放在双手拇指自然热区，明显离开屏幕边角 */
-@media (max-width: 1100px) and (orientation: landscape) {
+/* 平板/大屏横屏 — 控件放大并进一步内移 */
+@media (min-width: 900px) {
   .player-controls {
-    padding: 0 max(64px, 9vw) max(28px, 8vh);
+    padding: 0 max(48px, 6vw) max(32px, 6vh);
   }
-}
-
-/* 抖音互动空间/开发模式手机布局 — 始终使用舒适位置 */
-.douyin-demo .player-controls {
-  padding: 0 max(64px, 9vw) max(28px, 8vh);
+  .pc-joystick-base {
+    width: 140px;
+    height: 140px;
+  }
+  .pc-joystick-knob {
+    width: 52px;
+    height: 52px;
+  }
+  .pc-dpad {
+    width: 180px;
+    height: 180px;
+  }
+  .pc-action {
+    width: 64px;
+    height: 64px;
+    font-size: 14px;
+  }
+  .pc-btn-top { margin-left: -32px; }
+  .pc-btn-bottom { margin-left: -32px; }
+  .pc-btn-left { margin-top: -32px; }
+  .pc-btn-right { margin-top: -32px; }
 }
