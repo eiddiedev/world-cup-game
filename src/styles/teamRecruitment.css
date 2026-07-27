@@ -1036,13 +1036,13 @@
 
 /* ===== iPhone landscape (≤500px height): zoom entire recruitment screen ===== */
 @media (orientation: landscape) and (max-height: 500px) {
-  /* Eliminate black block: ensure root bg matches page bg */
-  html, body, .app, .douyin-demo {
-    background: var(--pixel-bg, #F3E3B4) !important;
+  /* Parent must not clip the zoomed child — use JS-applied class instead of :has() */
+  .douyin-demo.zoom-page-active {
+    height: auto !important;
+    overflow: visible !important;
   }
 
-  /* Override the 600px block's zoom:1 with higher specificity */
-  .douyin-demo .screen.recruitment-screen {
+  .douyin-demo.zoom-page-active .screen.recruitment-screen {
     zoom: 0.55 !important;
     width: 100% !important;
     height: calc(100dvh / 0.55) !important;

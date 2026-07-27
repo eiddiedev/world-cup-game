@@ -366,7 +366,7 @@ export default function App() {
   }
 
   return (
-    <div className={`app${useDouyinLayout ? ' douyin-demo' : ''}`}>
+    <div className={`app${useDouyinLayout ? ' douyin-demo' : ''}${currentScreen === 'recruitment' ? ' zoom-page-active' : ''}`}>
       {renderScreen()}
       {toast && <div className="toast">{toast}</div>}
     </div>
