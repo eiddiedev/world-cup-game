@@ -5515,6 +5515,8 @@ button {
     padding: 6px 10px calc(48px + env(safe-area-inset-bottom)) !important;
     overflow: hidden !important;
     background: var(--pixel-bg) !important;
+    display: flex !important;
+    flex-direction: column !important;
   }
 
   .recruitment-screen .screen-header {
@@ -5567,34 +5569,83 @@ button {
     font-size: 10px !important;
   }
 
-  /* Override douyin-demo card sizing: use desktop proportions */
+  /* Override douyin-demo card sizing: compact cards that fit the viewport */
   .recruitment-screen .player-grid,
   .douyin-demo .recruitment-screen .player-grid {
     display: grid !important;
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     grid-auto-columns: unset !important;
-    gap: 8px !important;
+    gap: 6px !important;
     flex: 1 !important;
     min-height: 0 !important;
     overflow-y: auto !important;
     -webkit-overflow-scrolling: touch !important;
     padding: 0 2px 8px !important;
+    align-content: start !important;
   }
 
   .recruitment-screen .game-card-v2,
   .douyin-demo .recruitment-screen .game-card-v2 {
-    aspect-ratio: 11 / 14 !important;
+    aspect-ratio: auto !important;
     width: 100% !important;
     height: auto !important;
+    max-height: calc(100dvh - 180px) !important;
     min-height: 0 !important;
     align-self: start !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
   }
 
   .recruitment-screen .card-v2-top,
   .douyin-demo .recruitment-screen .card-v2-top {
-    height: auto !important;
-    flex: 1 1 auto !important;
+    height: clamp(80px, 22dvh, 140px) !important;
+    flex: 0 0 auto !important;
     min-height: 0 !important;
+  }
+
+  .recruitment-screen .card-v2-avatar,
+  .douyin-demo .recruitment-screen .card-v2-avatar {
+    width: 60% !important;
+  }
+
+  .recruitment-screen .card-v2-name-row,
+  .douyin-demo .recruitment-screen .card-v2-name-row {
+    padding: 2px 4px !important;
+  }
+
+  .recruitment-screen .card-v2-name,
+  .douyin-demo .recruitment-screen .card-v2-name {
+    font-size: 10px !important;
+  }
+
+  .recruitment-screen .card-v2-stats,
+  .douyin-demo .recruitment-screen .card-v2-stats {
+    padding: 2px 4px !important;
+    gap: 1px !important;
+  }
+
+  .recruitment-screen .card-v2-stat .stat-label,
+  .douyin-demo .recruitment-screen .card-v2-stat .stat-label {
+    font-size: 7px !important;
+  }
+
+  .recruitment-screen .card-v2-stat .stat-value,
+  .douyin-demo .recruitment-screen .card-v2-stat .stat-value {
+    font-size: 8px !important;
+  }
+
+  .recruitment-screen .card-v2-action,
+  .douyin-demo .recruitment-screen .card-v2-action {
+    padding: 2px 4px !important;
+  }
+
+  .recruitment-screen .btn-v2-buy,
+  .recruitment-screen .btn-v2-sell,
+  .douyin-demo .recruitment-screen .btn-v2-buy,
+  .douyin-demo .recruitment-screen .btn-v2-sell {
+    min-height: 22px !important;
+    font-size: 9px !important;
   }
 
   .recruitment-screen .recruitment-footer,
@@ -5638,17 +5689,17 @@ button {
     overflow: hidden !important;
   }
 
-  /* Ensure touch drag works: prevent browser scroll interception on draggable items */
-  .lineup-screen .bench-player,
+  /* Ensure touch drag works on pitch slots only (bench uses pointer events) */
   .lineup-screen .pitch-slot {
     touch-action: none !important;
   }
 
-  /* But allow the bench list itself to scroll */
+  /* Bench list must scroll vertically */
   .lineup-screen .bench-list,
   .lineup-screen .player-control-section {
     touch-action: pan-y !important;
     overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
   }
 
   .lineup-screen .lineup-view-toggle {
