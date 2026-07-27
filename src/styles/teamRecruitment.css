@@ -1034,6 +1034,135 @@
   }
 }
 
+/* ===== iPhone landscape (≤500px height): compact recruitment cards ===== */
+@media (orientation: landscape) and (max-height: 500px) {
+  .douyin-demo .recruitment-screen {
+    display: flex !important;
+    flex-direction: column !important;
+    padding: 4px 8px calc(40px + env(safe-area-inset-bottom)) !important;
+  }
+
+  .douyin-demo .recruitment-screen .screen-header {
+    margin-bottom: 2px !important;
+  }
+
+  .douyin-demo .recruitment-screen .screen-header h1 {
+    font-size: 15px !important;
+  }
+
+  .douyin-demo .recruitment-screen .recruitment-hint,
+  .recruitment-hint {
+    margin: 2px 0 3px !important;
+    padding: 3px 8px !important;
+    font-size: 9px !important;
+    line-height: 1.2 !important;
+  }
+
+  .douyin-demo .recruitment-screen .recruitment-stats {
+    padding: 3px 6px !important;
+    margin-bottom: 3px !important;
+    border-width: 2px !important;
+  }
+
+  .douyin-demo .recruitment-screen .stat-label {
+    font-size: 8px !important;
+  }
+
+  .douyin-demo .recruitment-screen .stat-value,
+  .douyin-demo .recruitment-screen .stat-value.budget {
+    font-size: 12px !important;
+  }
+
+  .douyin-demo .recruitment-screen .position-tabs {
+    margin-bottom: 3px !important;
+    gap: 2px !important;
+  }
+
+  .douyin-demo .recruitment-screen .position-tab {
+    height: 22px !important;
+    font-size: 9px !important;
+  }
+
+  .douyin-demo .recruitment-screen .player-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    grid-auto-columns: unset !important;
+    gap: 6px !important;
+    flex: 1 !important;
+    min-height: 0 !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    padding: 0 2px 6px !important;
+    align-content: start !important;
+  }
+
+  .douyin-demo .recruitment-screen .game-card-v2 {
+    aspect-ratio: auto !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    align-self: start !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+  }
+
+  .douyin-demo .recruitment-screen .card-v2-top {
+    height: clamp(60px, 18dvh, 100px) !important;
+    flex: 0 0 auto !important;
+    min-height: 0 !important;
+  }
+
+  .douyin-demo .recruitment-screen .card-v2-avatar {
+    width: 55% !important;
+  }
+
+  .douyin-demo .recruitment-screen .card-v2-name-row {
+    padding: 2px 4px !important;
+  }
+
+  .douyin-demo .recruitment-screen .card-v2-name {
+    font-size: 9px !important;
+  }
+
+  .douyin-demo .recruitment-screen .card-v2-number {
+    font-size: 8px !important;
+  }
+
+  .douyin-demo .recruitment-screen .card-v2-stats {
+    padding: 2px 3px !important;
+    margin: 0 3px !important;
+  }
+
+  .douyin-demo .recruitment-screen .card-v2-stat .stat-label {
+    font-size: 7px !important;
+  }
+
+  .douyin-demo .recruitment-screen .card-v2-stat .stat-value {
+    font-size: 8px !important;
+  }
+
+  .douyin-demo .recruitment-screen .card-v2-action {
+    padding: 2px 4px !important;
+  }
+
+  .douyin-demo .recruitment-screen .btn-v2-buy,
+  .douyin-demo .recruitment-screen .btn-v2-sell {
+    height: 20px !important;
+    min-height: 20px !important;
+    font-size: 9px !important;
+  }
+
+  .douyin-demo .recruitment-screen .recruitment-footer {
+    position: absolute !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    height: calc(38px + env(safe-area-inset-bottom)) !important;
+    padding: 4px 10px max(4px, env(safe-area-inset-bottom)) !important;
+  }
+}
+
 /* Physical iPad Safari may still resolve aspect-ratio/grid intrinsic sizing to
  * a very short row. Give landscape cards a width-derived concrete height and
  * place every row at its content height. This rule intentionally comes last so

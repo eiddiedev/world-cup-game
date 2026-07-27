@@ -365,15 +365,37 @@ export default function LineupScreen({ saveData, updateSaveData, navigateTo, sho
       startX: e.clientX,
       startY: e.clientY,
       moved: false,
+      direction: null, // 'horizontal' | 'vertical' | null
     }
-    e.currentTarget.setPointerCapture?.(e.pointerId)
+    // Don't capture pointer yet — wait until we confirm horizontal drag direction
   }
 
   const handlePlayerPointerMove = (e) => {
     const activeDrag = pointerDragRef.current
     if (!activeDrag || activeDrag.pointerId !== e.pointerId) return
 
-    const distance = Math.hypot(e.clientX - activeDrag.startX, e.clientY - activeDrag.startY)
+    const dx = Math.abs(e.clientX - activeDrag.startX)
+    const dy = Math.abs(e.clientY - activeDrag.startY)
+    const distance = Math.hypot(dx, dy)
+
+    // Determine drag direction on first significant movement
+    if (!activeDrag.direction && distance >= 6) {
+      if (dy > dx * 0.8) {
+        // Vertical movement dominant → cancel drag, let browser scroll
+        activeDrag.direction = 'vertical'
+        pointerDragRef.current = null
+        return
+      }
+      // Horizontal movement → start drag
+      activeDrag.direction = 'horizontal'
+      activeDrag.element?.setPointerCapture?.(activeDrag.pointerId)
+    }
+
+    if (activeDrag.direction === 'vertical') {
+      pointerDragRef.current = null
+      return
+    }
+
     if (!activeDrag.moved && distance >= 6) {
       activeDrag.moved = true
       activeDrag.element?.classList.add('is-pointer-dragging')
@@ -388,7 +410,7 @@ export default function LineupScreen({ saveData, updateSaveData, navigateTo, sho
     const activeDrag = pointerDragRef.current
     if (!activeDrag || activeDrag.pointerId !== e.pointerId) return
 
-    activeDrag.element?.releasePointerCapture?.(e.pointerId)
+    try { activeDrag.element?.releasePointerCapture?.(e.pointerId) } catch { /* not captured */ }
     if (!activeDrag.moved) {
       clearPointerDrag()
       return
