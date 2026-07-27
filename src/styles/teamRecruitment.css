@@ -21,6 +21,8 @@
 
 .team-select-screen {
   padding: 24px;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 
 .team-select-hint,
@@ -1029,5 +1031,33 @@
     height: 25px !important;
     min-height: 25px !important;
     font-size: 10px !important;
+  }
+}
+
+/* Physical iPad Safari may still resolve aspect-ratio/grid intrinsic sizing to
+ * a very short row. Give landscape cards a width-derived concrete height and
+ * place every row at its content height. This rule intentionally comes last so
+ * it wins over the compact Douyin/WebView landscape overrides above. */
+@media (orientation: landscape) and (min-width: 561px) {
+  .team-select-screen .team-list,
+  .douyin-demo .team-select-screen .team-list {
+    grid-template-rows: none !important;
+    grid-auto-rows: auto !important;
+    align-content: start !important;
+    align-items: start !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+  }
+
+  .team-select-screen .team-card,
+  .douyin-demo .team-select-screen .team-card {
+    width: 100% !important;
+    height: clamp(198px, calc(28.125vw - 14px), 266px) !important;
+    min-height: clamp(198px, calc(28.125vw - 14px), 266px) !important;
+    aspect-ratio: auto !important;
+  }
+
+  .team-select-screen .team-card::before {
+    display: none;
   }
 }
