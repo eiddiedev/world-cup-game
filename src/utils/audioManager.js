@@ -265,9 +265,10 @@ export class AudioManager {
     if (typeof window === 'undefined' || typeof window.Audio !== 'function') return
     Object.entries(MATCH_SAMPLE_ASSETS).forEach(([name, url]) => {
       if (this.matchSamples[name]) return
-      const sample = new window.Audio(url)
-      sample.preload = 'auto'
-      this.matchSamples[name] = sample
+      // 移动端 cloneNode 后 play() 不可靠，改用双元素池轮流播放
+      const pool = [new window.Audio(url), new window.Audio(url)]
+      pool.forEach((el) => { el.preload = 'auto'; el.load() })
+      this.matchSamples[name] = { pool, index: 0 }
     })
   }
 
@@ -277,14 +278,17 @@ export class AudioManager {
   }
 
   playMatchSample(name) {
-    const template = this.matchSamples[name]
-    if (!template || !this.userUnlocked) return false
-    const sample = template.cloneNode(true)
+    const entry = this.matchSamples[name]
+    if (!entry || !this.userUnlocked) return false
+    const { pool } = entry
+    const sample = pool[entry.index % pool.length]
+    entry.index += 1
     const volumeScale = name === 'goalCheer' ? 0.78
       : name === 'cardWhistle' ? 0.72
       : name === 'periodWhistle' ? 0.80
       : 0.92
     sample.volume = Math.max(0, Math.min(1, this.soundVolume * volumeScale))
+    try { sample.currentTime = 0 } catch { /* not seekable yet */ }
     const playback = sample.play()
     if (playback?.catch) playback.catch(() => this.playPattern(SOUND_PATTERNS[name]))
     return true

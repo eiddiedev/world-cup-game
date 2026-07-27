@@ -173,7 +173,7 @@
 /* 小屏适配 — 参考主流手游（原神/和平精英）摇杆位于拇指自然落点 */
 @media (max-width: 600px) {
   .player-controls {
-    padding: 0 max(36px, calc(env(safe-area-inset-left) + 24px)) max(32px, calc(env(safe-area-inset-bottom) + 20px));
+    padding: 0 max(40px, calc(env(safe-area-inset-left) + 28px)) max(36px, calc(env(safe-area-inset-bottom) + 24px));
   }
   .pc-joystick-base {
     width: 108px;
@@ -198,9 +198,14 @@
   .pc-btn-right { margin-top: -25px; }
 }
 
-/* 横屏手机（landscape）— 进一步优化拇指热区位置 */
-@media (max-width: 960px) and (orientation: landscape) {
+/* 横屏手机（landscape）— 控件放在双手拇指自然热区，明显离开屏幕边角 */
+@media (max-width: 1100px) and (orientation: landscape) {
   .player-controls {
-    padding: 0 max(48px, calc(env(safe-area-inset-left) + 32px)) max(28px, calc(env(safe-area-inset-bottom) + 16px));
+    padding: 0 max(64px, 9vw) max(28px, 8vh);
   }
+}
+
+/* 抖音互动空间/开发模式手机布局 — 始终使用舒适位置 */
+.douyin-demo .player-controls {
+  padding: 0 max(64px, 9vw) max(28px, 8vh);
 }
