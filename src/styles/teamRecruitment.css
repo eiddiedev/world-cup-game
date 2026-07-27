@@ -1036,13 +1036,13 @@
 
 /* ===== iPhone landscape (≤500px height): zoom entire recruitment screen ===== */
 @media (orientation: landscape) and (max-height: 500px) {
-  /* Parent must not clip the zoomed child — use JS-applied class instead of :has() */
-  .douyin-demo.zoom-page-active {
+  /* Parent must not clip the zoomed child */
+  .zoom-page-active {
     height: auto !important;
     overflow: visible !important;
   }
 
-  .douyin-demo.zoom-page-active .screen.recruitment-screen {
+  .zoom-page-active .recruitment-screen {
     zoom: 0.55 !important;
     width: 100% !important;
     height: calc(100dvh / 0.55) !important;
@@ -1053,58 +1053,59 @@
     position: relative !important;
   }
 
-  /* Compress header area to match logistics screen density */
-  .douyin-demo .recruitment-screen .screen-header {
+  /* Compress header to match logistics screen density */
+  .zoom-page-active .recruitment-screen .screen-header {
+    margin-bottom: 2px !important;
+  }
+
+  .zoom-page-active .recruitment-screen .screen-header h1 {
+    font-size: 18px !important;
+  }
+
+  .zoom-page-active .recruitment-screen .recruitment-hint {
+    margin: 2px 0 4px !important;
+    padding: 4px 10px !important;
+    font-size: 11px !important;
+    line-height: 1.2 !important;
+  }
+
+  .zoom-page-active .recruitment-screen .recruitment-stats {
+    padding: 4px 10px !important;
     margin-bottom: 4px !important;
+    border-width: 2px !important;
+    box-shadow: 2px 2px 0 var(--pixel-shadow) !important;
   }
 
-  .douyin-demo .recruitment-screen .screen-header h1 {
-    font-size: 20px !important;
+  .zoom-page-active .recruitment-screen .stat-label {
+    font-size: 9px !important;
   }
 
-  .douyin-demo .recruitment-screen .recruitment-hint {
-    margin: 4px 0 6px !important;
-    padding: 6px 12px !important;
-    font-size: 12px !important;
-    line-height: 1.3 !important;
+  .zoom-page-active .recruitment-screen .stat-value,
+  .zoom-page-active .recruitment-screen .stat-value.budget {
+    font-size: 14px !important;
   }
 
-  .douyin-demo .recruitment-screen .recruitment-stats {
-    padding: 6px 12px !important;
-    margin-bottom: 6px !important;
-    border-width: 3px !important;
+  .zoom-page-active .recruitment-screen .stat-min-hint {
+    font-size: 9px !important;
   }
 
-  .douyin-demo .recruitment-screen .stat-label {
-    font-size: 10px !important;
+  .zoom-page-active .recruitment-screen .recruitment-stats .coin-icon {
+    width: 16px !important;
+    height: 16px !important;
   }
 
-  .douyin-demo .recruitment-screen .stat-value,
-  .douyin-demo .recruitment-screen .stat-value.budget {
-    font-size: 16px !important;
+  .zoom-page-active .recruitment-screen .position-tabs {
+    margin-bottom: 4px !important;
+    gap: 3px !important;
   }
 
-  .douyin-demo .recruitment-screen .stat-min-hint {
-    font-size: 10px !important;
-  }
-
-  .douyin-demo .recruitment-screen .recruitment-stats .coin-icon {
-    width: 18px !important;
-    height: 18px !important;
-  }
-
-  .douyin-demo .recruitment-screen .position-tabs {
-    margin-bottom: 6px !important;
-    gap: 4px !important;
-  }
-
-  .douyin-demo .recruitment-screen .position-tab {
-    height: 28px !important;
-    font-size: 12px !important;
+  .zoom-page-active .recruitment-screen .position-tab {
+    height: 24px !important;
+    font-size: 11px !important;
   }
 
   /* Footer must be absolute inside zoomed container */
-  .douyin-demo .recruitment-screen .recruitment-footer {
+  .zoom-page-active .recruitment-screen .recruitment-footer {
     position: absolute !important;
     bottom: 0 !important;
     left: 0 !important;
