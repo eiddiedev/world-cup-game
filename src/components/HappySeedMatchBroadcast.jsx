@@ -249,6 +249,7 @@ export function HappySeedMatchBroadcast({ saveData = null, onMatchComplete = nul
   const lastTacticalFatigueMinuteRef = useRef(0)
   const draggingInIdRef = useRef(null)
   const [sfxBus] = useState(() => createMatchSfxBus())
+  const [showExitConfirm, setShowExitConfirm] = useState(false)
 
   useEffect(() => {
     if (!acceptanceMuted) return
@@ -1350,7 +1351,34 @@ export function HappySeedMatchBroadcast({ saveData = null, onMatchComplete = nul
         {!isPlayerMode && <button type="button" className="broadcast-speed-button" disabled={decisionInteractionLocked} onClick={cycleSpeed}>
           <b>{speed}×</b>
         </button>}
+        <button type="button" className="broadcast-exit-button" onClick={() => setShowExitConfirm(true)}>
+          <span aria-hidden="true">✕</span>
+          <b>退出</b>
+        </button>
       </nav>
+
+      {showExitConfirm && (
+        <div className="broadcast-exit-backdrop" onPointerDown={() => setShowExitConfirm(false)}>
+          <div className="broadcast-exit-dialog" onPointerDown={(e) => e.stopPropagation()}>
+            <strong>确认退出比赛？</strong>
+            <p>退出将视为弃权，本场将以 <em>0 : 3</em> 判负。</p>
+            <div className="broadcast-exit-actions">
+              <button type="button" className="broadcast-exit-cancel" onClick={() => setShowExitConfirm(false)}>继续比赛</button>
+              <button type="button" className="broadcast-exit-confirm" onClick={() => {
+                setShowExitConfirm(false)
+                if (!completedReportedRef.current) {
+                  // 立即停止引擎与所有环境音
+                  pauseMatch()
+                  audioManager.stopCrowdAmbient()
+                  audioManager.stopRainAmbient()
+                  commitSession((current) => ({ ...current, score: { red: 0, blue: 3 } }))
+                  finishMatch()
+                }
+              }}>确认退出</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {!isPlayerMode && <button
         type="button"

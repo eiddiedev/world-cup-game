@@ -25,10 +25,12 @@ export function preloadAsset(url) {
 
   const request = (IMAGE_PATTERN.test(url)
     ? preloadImage(url)
-    : fetch(url, { cache: 'force-cache' }).then((response) => {
-      if (!response.ok) throw new Error(`资源加载失败：${url}（${response.status}）`)
-      return response.arrayBuffer()
-    }))
+    : __DOUYIN_BUILD__
+      ? Promise.resolve(url)
+      : fetch(url, { cache: 'force-cache' }).then((response) => {
+        if (!response.ok) throw new Error(`资源加载失败：${url}（${response.status}）`)
+        return response.arrayBuffer()
+      }))
     .catch((error) => {
       assetPromises.delete(url)
       throw error

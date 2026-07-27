@@ -43,7 +43,7 @@ import {
 import { runtimeMatchMinute } from '../utils/matchClock.js'
 import { preloadAssetUrls } from '../utils/visualAssetLoader.js'
 
-const RUNTIME_BASE = '/match-runtime-min'
+const RUNTIME_BASE = __DOUYIN_BUILD__ ? './match-runtime-min' : '/match-runtime-min'
 
 const SCRIPT_PATHS = [
   'shim-early.js',
@@ -166,6 +166,12 @@ function loadScript(path) {
 
 async function preloadDataCaches() {
   if (window.__dataBundleCache && window.__dirlistCache) return
+  if (__DOUYIN_BUILD__) {
+    // In interactive build, data is injected at build time via inline script.
+    // If we reach here the injection is missing; fail gracefully.
+    console.warn('[Runtime] 比赛数据未注入，请检查构建产物')
+    return
+  }
   if (dataCachePromise) return dataCachePromise
 
   dataCachePromise = (async () => {

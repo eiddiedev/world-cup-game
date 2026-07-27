@@ -12,6 +12,7 @@ export const HAPPYSEED_RUNTIME_ACTOR_SCHEMA_VERSION = 'happyseed-runtime-actors-
 export const HAPPYSEED_RUNTIME_ACTOR_COUNT = 22
 export const HAPPYSEED_FORMATION_TRANSITION_MS = 1600
 export const HAPPYSEED_RUNTIME_PLAYER_DISPLAY_SCALE = 0.62
+const PIXEL_PREFIX = __DOUYIN_BUILD__ ? './pixel' : '/pixel'
 
 const SIDE_ORDER = ['red', 'blue']
 const POSITION_ORDER = ['GK', 'DF', 'MF', 'FW']
@@ -133,7 +134,7 @@ function buildVisualAssets(teamId, player, assignedPosition, kitVariant) {
   const kitType = role === 'goalkeeper'
     ? (kitVariant === 'away' ? 'away-goalkeeper' : 'goalkeeper')
     : kitVariant
-  const playerRoot = `/pixel/player/${HAPPYSEED_HUMAN_PART_SET_ID}/${bodyProfileId}`
+  const playerRoot = `${PIXEL_PREFIX}/player/${HAPPYSEED_HUMAN_PART_SET_ID}/${bodyProfileId}`
 
   return {
     bodyProfileId,
@@ -141,8 +142,8 @@ function buildVisualAssets(teamId, player, assignedPosition, kitVariant) {
     kitVariant,
     kitType,
     playerRoot,
-    kitRoot: `/pixel/kits/${teamId}/${kitType}/${HAPPYSEED_HUMAN_PART_SET_ID}`,
-    number: `/pixel/numbers/${HAPPYSEED_HUMAN_PART_SET_ID}/${player.number}.png`,
+    kitRoot: `${PIXEL_PREFIX}/kits/${teamId}/${kitType}/${HAPPYSEED_HUMAN_PART_SET_ID}`,
+    number: `${PIXEL_PREFIX}/numbers/${HAPPYSEED_HUMAN_PART_SET_ID}/${player.number}.png`,
     headFront: `${playerRoot}/head_front.png`,
     headBack: `${playerRoot}/head_back.png`,
   }
@@ -477,10 +478,10 @@ export function validateHappySeedRuntimeActorConfig(config) {
       errors.push(`${actor.runtimeActorId}-number`)
     }
     if (!actor.visualRecipeId) errors.push(`${actor.runtimeActorId}-visualRecipeId`)
-    if (!actor.visual?.playerRoot?.startsWith('/pixel/player/')) {
+    if (!actor.visual?.playerRoot?.startsWith(`${PIXEL_PREFIX}/player/`)) {
       errors.push(`${actor.runtimeActorId}-playerRoot`)
     }
-    if (!actor.visual?.kitRoot?.startsWith('/pixel/kits/')) {
+    if (!actor.visual?.kitRoot?.startsWith(`${PIXEL_PREFIX}/kits/`)) {
       errors.push(`${actor.runtimeActorId}-kitRoot`)
     }
   }

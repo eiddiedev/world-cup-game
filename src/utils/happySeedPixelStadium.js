@@ -1,4 +1,5 @@
 export const HAPPYSEED_PIXEL_STADIUM_ID = 'world-cup-day-v1'
+const PIXEL_PREFIX = __DOUYIN_BUILD__ ? './pixel' : '/pixel'
 
 export const HAPPYSEED_STADIUM_SOURCE_SIZE = Object.freeze({ width: 4096, height: 2048 })
 export const HAPPYSEED_STADIUM_RUNTIME_SIZE = Object.freeze({ width: 5120, height: 2560 })
@@ -38,11 +39,11 @@ export const HAPPYSEED_STADIUM_CAMERA_PRESETS = Object.freeze([
 ])
 
 export const HAPPYSEED_PIXEL_STADIUM_ASSETS = Object.freeze({
-  masterBackground: `/pixel/stadiums/${HAPPYSEED_PIXEL_STADIUM_ID}/stadium-day-master-v1.png`,
-  scene: `/pixel/stadiums/${HAPPYSEED_PIXEL_STADIUM_ID}/scene.json`,
-  ballTexture: '/pixel/runtime-equipment/happyseed-equipment-v6/football-pixel-v6.png',
-  goalAtlas: '/pixel/runtime-equipment/happyseed-equipment-v6/goal-net-pixel-v6.png',
-  equipmentManifest: '/pixel/runtime-equipment/happyseed-equipment-v6/manifest.json',
+  masterBackground: `${PIXEL_PREFIX}/stadiums/${HAPPYSEED_PIXEL_STADIUM_ID}/stadium-day-master-v1.png`,
+  scene: `${PIXEL_PREFIX}/stadiums/${HAPPYSEED_PIXEL_STADIUM_ID}/scene.json`,
+  ballTexture: `${PIXEL_PREFIX}/runtime-equipment/happyseed-equipment-v6/football-pixel-v6.png`,
+  goalAtlas: `${PIXEL_PREFIX}/runtime-equipment/happyseed-equipment-v6/goal-net-pixel-v6.png`,
+  equipmentManifest: `${PIXEL_PREFIX}/runtime-equipment/happyseed-equipment-v6/manifest.json`,
 })
 
 export const HAPPYSEED_STADIUM_COMPOSITION = Object.freeze({

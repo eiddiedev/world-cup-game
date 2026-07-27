@@ -170,30 +170,37 @@
 .pc-btn-left:active, .pc-btn-left.is-pressed { transform: translate(2px, 2px); }
 .pc-btn-right:active, .pc-btn-right.is-pressed { transform: translate(2px, 2px); }
 
-/* 小屏适配 */
+/* 小屏适配 — 参考主流手游（原神/和平精英）摇杆位于拇指自然落点 */
 @media (max-width: 600px) {
   .player-controls {
-    padding: 0 12px 16px;
+    padding: 0 max(36px, calc(env(safe-area-inset-left) + 24px)) max(32px, calc(env(safe-area-inset-bottom) + 20px));
   }
   .pc-joystick-base {
-    width: 100px;
-    height: 100px;
+    width: 108px;
+    height: 108px;
   }
   .pc-joystick-knob {
-    width: 36px;
-    height: 36px;
+    width: 40px;
+    height: 40px;
   }
   .pc-dpad {
-    width: 140px;
-    height: 140px;
+    width: 148px;
+    height: 148px;
   }
   .pc-action {
-    width: 48px;
-    height: 48px;
+    width: 50px;
+    height: 50px;
     font-size: 12px;
   }
-  .pc-btn-top { margin-left: -24px; }
-  .pc-btn-bottom { margin-left: -24px; }
-  .pc-btn-left { margin-top: -24px; }
-  .pc-btn-right { margin-top: -24px; }
+  .pc-btn-top { margin-left: -25px; }
+  .pc-btn-bottom { margin-left: -25px; }
+  .pc-btn-left { margin-top: -25px; }
+  .pc-btn-right { margin-top: -25px; }
+}
+
+/* 横屏手机（landscape）— 进一步优化拇指热区位置 */
+@media (max-width: 960px) and (orientation: landscape) {
+  .player-controls {
+    padding: 0 max(48px, calc(env(safe-area-inset-left) + 32px)) max(28px, calc(env(safe-area-inset-bottom) + 16px));
+  }
 }

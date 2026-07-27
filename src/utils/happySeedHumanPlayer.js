@@ -1,6 +1,7 @@
 import { getTeamKit } from '../data/teamKits.js'
 
 export const HAPPYSEED_HUMAN_PART_SET_ID = 'happyseed-human-v4'
+const PIXEL_PREFIX = __DOUYIN_BUILD__ ? './pixel' : '/pixel'
 
 export const HAPPYSEED_PLAYER_BONES = [
   'root',
@@ -297,9 +298,9 @@ export function validateHappySeedHumanRecipe(recipe) {
   if (recipe?.partSetId !== HAPPYSEED_HUMAN_PART_SET_ID) errors.push('partSetId')
   if (!['outfield', 'goalkeeper'].includes(recipe?.role)) errors.push('role')
   if (!Number.isInteger(recipe?.number) || recipe.number < 1 || recipe.number > 99) errors.push('number')
-  if (!recipe?.assets?.playerRoot?.startsWith('/pixel/player/')) errors.push('assets.playerRoot')
-  if (!recipe?.assets?.kitRoot?.startsWith('/pixel/kits/')) errors.push('assets.kitRoot')
-  if (!recipe?.assets?.number?.startsWith('/pixel/numbers/')) errors.push('assets.number')
+  if (!recipe?.assets?.playerRoot?.startsWith(`${PIXEL_PREFIX}/player/`)) errors.push('assets.playerRoot')
+  if (!recipe?.assets?.kitRoot?.startsWith(`${PIXEL_PREFIX}/kits/`)) errors.push('assets.kitRoot')
+  if (!recipe?.assets?.number?.startsWith(`${PIXEL_PREFIX}/numbers/`)) errors.push('assets.number')
   if (recipe?.compatibility?.anchor !== 'root-footline') errors.push('compatibility.anchor')
   return { valid: errors.length === 0, errors }
 }

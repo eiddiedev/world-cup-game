@@ -5,17 +5,19 @@ const DEFAULT_AUDIO_SETTINGS = {
   stadium: true,
 }
 
+const AUDIO_RUNTIME_BASE = (typeof __DOUYIN_BUILD__ !== 'undefined' && __DOUYIN_BUILD__) ? './match-runtime-min' : '/match-runtime-min'
+
 const MATCH_SAMPLE_ASSETS = Object.freeze({
-  ballTouch: '/match-runtime-min/happyseed/audio/soccer-kick-cc0.mp3',
-  ballShot: '/match-runtime-min/happyseed/audio/soccer-kick-cc0.mp3',
-  goalCheer: '/match-runtime-min/happyseed/audio/crowd-cheer-cc0.mp3',
-  postHit: '/match-runtime-min/happyseed/audio/post-hit.mp3',
-  save: '/match-runtime-min/happyseed/audio/save.m4a',
-  cardWhistle: '/match-runtime-min/happyseed/audio/whistle.mp3',
-  periodWhistle: '/match-runtime-min/happyseed/audio/period-whistle.mp3',
+  ballTouch: `${AUDIO_RUNTIME_BASE}/happyseed/audio/soccer-kick-cc0.mp3`,
+  ballShot: `${AUDIO_RUNTIME_BASE}/happyseed/audio/soccer-kick-cc0.mp3`,
+  goalCheer: `${AUDIO_RUNTIME_BASE}/happyseed/audio/crowd-cheer-cc0.mp3`,
+  postHit: `${AUDIO_RUNTIME_BASE}/happyseed/audio/post-hit.mp3`,
+  save: `${AUDIO_RUNTIME_BASE}/happyseed/audio/save.m4a`,
+  cardWhistle: `${AUDIO_RUNTIME_BASE}/happyseed/audio/whistle.mp3`,
+  periodWhistle: `${AUDIO_RUNTIME_BASE}/happyseed/audio/period-whistle.mp3`,
 })
 
-const CROWD_AMBIENT_ASSET = '/match-runtime-min/happyseed/audio/crowd-ambient.mp3'
+const CROWD_AMBIENT_ASSET = `${AUDIO_RUNTIME_BASE}/happyseed/audio/crowd-ambient.mp3`
 
 const SOUND_PATTERNS = {
   ballTouch: [

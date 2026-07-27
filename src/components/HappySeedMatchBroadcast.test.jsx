@@ -368,7 +368,7 @@ describe('HappySeed formal match broadcast', () => {
     render(<HappySeedMatchBroadcast />)
 
     const controls = screen.getByRole('navigation', { name: '比赛控制' })
-    expect(controls.querySelectorAll('button')).toHaveLength(2)
+    expect(controls.querySelectorAll('button')).toHaveLength(3)
     fireEvent.click(screen.getByRole('button', { name: /暂停/ }))
     fireEvent.click(screen.getByRole('button', { name: '1×' }))
     expect(serviceMocks.pauseMatch).toHaveBeenCalledTimes(1)

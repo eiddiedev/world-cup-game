@@ -13,7 +13,10 @@ export default defineConfig(({ mode }) => {
     plugins: [react()],
     define: isDouyinDemo ? {
       'process.env.NODE_ENV': JSON.stringify('production'),
-    } : undefined,
+      '__DOUYIN_BUILD__': JSON.stringify(true),
+    } : {
+      '__DOUYIN_BUILD__': JSON.stringify(false),
+    },
     build: {
       outDir: isDouyinDemo ? 'dist-douyin' : isLabsBuild ? 'dist-labs' : 'dist',
       emptyOutDir: true,

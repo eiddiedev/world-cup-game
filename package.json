@@ -8,6 +8,7 @@
     "build": "vite build",
     "build:labs": "vite build --mode labs",
     "build:demo": "node scripts/build-douyin-demo.mjs",
+    "build:interactive": "node scripts/build-interactive.mjs",
     "assets:human-slice": "node scripts/generate-human-runtime-slice.mjs && python3 scripts/apply_paper_doll_master.py",
     "assets:runtime-actors": "node scripts/generate-runtime-actor-assets.mjs && python3 scripts/apply_paper_doll_master.py",
     "assets:match-equipment": "python3 scripts/generate_pixel_match_equipment.py",

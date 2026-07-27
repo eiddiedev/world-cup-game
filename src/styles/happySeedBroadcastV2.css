@@ -82,6 +82,7 @@ body { background: #061413 !important; }
 .broadcast-decision-v3,
 .broadcast-event-artwork,
 .broadcast-audio-start,
+.broadcast-exit-backdrop,
 .runtime-world-choices {
   position: fixed;
   z-index: 30;
@@ -382,6 +383,91 @@ body { background: #061413 !important; }
 .broadcast-pause-button span { color: var(--hud-cyan); font: 950 15px/1 monospace; }
 .broadcast-controls button:hover span { color: #061514; }
 .broadcast-speed-button b { font: 950 17px/1 "CupDigits", monospace; }
+.broadcast-exit-button span { color: #ff6b5e; font: 950 14px/1 monospace; }
+.broadcast-controls button:hover.broadcast-exit-button { background: #ff6b5e; }
+.broadcast-controls button:hover.broadcast-exit-button span { color: #061514; }
+
+/* Exit confirmation dialog */
+.broadcast-exit-backdrop {
+  position: fixed;
+  z-index: 70;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(2, 12, 12, .78);
+  pointer-events: auto;
+  animation: backdrop-in 120ms linear both;
+}
+
+.broadcast-exit-dialog {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  width: min(380px, calc(100vw - 40px));
+  padding: 28px 24px 24px;
+  background: #0a2422;
+  border: 3px solid var(--hud-gold, #ffd344);
+  box-shadow: 8px 8px 0 rgba(0, 0, 0, .5);
+  text-align: center;
+}
+
+.broadcast-exit-dialog strong {
+  color: var(--hud-gold, #ffd344);
+  font-size: 18px;
+  font-weight: 900;
+}
+
+.broadcast-exit-dialog p {
+  margin: 0;
+  color: #d8e0d7;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.broadcast-exit-dialog em {
+  color: #ff6b5e;
+  font-style: normal;
+  font-weight: 900;
+  font-size: 16px;
+}
+
+.broadcast-exit-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 6px;
+}
+
+.broadcast-exit-actions button {
+  min-width: 110px;
+  min-height: 44px;
+  padding: 0 16px;
+  border: 3px solid #081514;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.broadcast-exit-cancel {
+  background: #1a4a44;
+  color: #d8e0d7;
+}
+
+.broadcast-exit-cancel:hover {
+  background: var(--hud-cyan);
+  color: #061514;
+}
+
+.broadcast-exit-confirm {
+  background: #8b2020;
+  color: #fff;
+  border-color: #ff6b5e !important;
+}
+
+.broadcast-exit-confirm:hover {
+  background: #ff6b5e;
+  color: #061514;
+}
 
 /* Match artwork */
 .broadcast-event-artwork {
@@ -737,6 +823,12 @@ body { background: #061413 !important; }
   .broadcast-controls button { min-width: 46px; min-height: 36px; gap: 3px; padding: 0 6px; border-width: 2px; box-shadow: 2px 2px 0 rgba(0, 0, 0, .35); font-size: 9px; }
   .broadcast-pause-button span { font-size: 11px; }
   .broadcast-speed-button b { font-size: 13px; }
+  .broadcast-exit-button span { font-size: 10px; }
+
+  .broadcast-exit-dialog { width: min(320px, calc(100vw - 32px)); padding: 22px 18px 18px; gap: 11px; }
+  .broadcast-exit-dialog strong { font-size: 15px; }
+  .broadcast-exit-dialog p { font-size: 12px; }
+  .broadcast-exit-actions button { min-width: 90px; min-height: 40px; font-size: 12px; }
 
   .broadcast-event-artwork { top: 50%; left: 50%; width: min(430px, calc(100vw - 24px)); }
   .broadcast-event-artwork img { width: min(230px, 34vw); height: min(170px, 43vh); }
