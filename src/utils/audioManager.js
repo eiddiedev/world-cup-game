@@ -290,7 +290,8 @@ export class AudioManager {
     sample.volume = Math.max(0, Math.min(1, this.soundVolume * volumeScale))
     try { sample.currentTime = 0 } catch { /* not seekable yet */ }
     const playback = sample.play()
-    if (playback?.catch) playback.catch(() => this.playPattern(SOUND_PATTERNS[name]))
+    // 真实音频播放失败时静默，不回退到废案合成音
+    if (playback?.catch) playback.catch(() => {})
     return true
   }
 
@@ -346,9 +347,12 @@ export class AudioManager {
     if (!this.soundEnabled) return false
     const ctx = this.ensureSfxContext()
     if (ctx?.state === 'suspended') ctx.resume().catch(() => {})
+    // 有真实音频资源的音效：只走音频文件，不回退合成音
+    if (MATCH_SAMPLE_ASSETS[name]) {
+      return this.playMatchSample(name)
+    }
     const sound = this.sounds[name]
     if (!sound) return false
-    if (MATCH_SAMPLE_ASSETS[name] && this.playMatchSample(name)) return true
     sound()
     return true
   }
