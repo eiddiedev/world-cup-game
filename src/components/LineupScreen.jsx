@@ -134,6 +134,11 @@ export default function LineupScreen({ saveData, updateSaveData, navigateTo, sho
   const [showPositionWarning, setShowPositionWarning] = useState(null)
   const [dragSource, setDragSource] = useState(null) // 'bench' or 'pitch'
   const [intelExpanded, setIntelExpanded] = useState(false)
+  // 阵型选择：手机横屏默认收起，桌面/iPad 默认展开
+  const [formationCollapsed, setFormationCollapsed] = useState(() => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return false
+    return window.matchMedia('(orientation: landscape) and (max-height: 500px)').matches
+  })
   const pointerDragRef = useRef(null)
   const suppressPointerClickRef = useRef(false)
 
@@ -680,10 +685,19 @@ export default function LineupScreen({ saveData, updateSaveData, navigateTo, sho
             {viewingOpponent ? '返回我方阵容' : `查看${opponent}阵容`}
           </button>
 
-          <section className="lineup-control-section formation-control-section">
+          <section className={`lineup-control-section formation-control-section${formationCollapsed ? ' is-formation-collapsed' : ''}`}>
             <div className="lineup-section-title">
               <span>{viewingOpponent ? '对手阵型' : '阵型选择'}</span>
               <strong>{viewingOpponent ? opponentSetup.formation : selectedFormation}</strong>
+              {!viewingOpponent && (
+                <button
+                  type="button"
+                  className="intel-toggle-btn formation-toggle-btn"
+                  onClick={() => setFormationCollapsed(v => !v)}
+                >
+                  {formationCollapsed ? '展开' : '收起'}
+                </button>
+              )}
             </div>
             {!viewingOpponent && (
               <div className="formation-selector">
