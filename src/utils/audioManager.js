@@ -262,13 +262,25 @@ export class AudioManager {
   }
 
   preloadMatchSamples() {
-    if (typeof window === 'undefined' || typeof window.Audio !== 'function') return
+    const ctx = this.ensureSfxContext()
+    if (!ctx || typeof fetch !== 'function') return
     Object.entries(MATCH_SAMPLE_ASSETS).forEach(([name, url]) => {
       if (this.matchSamples[name]) return
-      // 移动端 cloneNode 后 play() 不可靠，改用双元素池轮流播放
-      const pool = [new window.Audio(url), new window.Audio(url)]
-      pool.forEach((el) => { el.preload = 'auto'; el.load() })
-      this.matchSamples[name] = { pool, index: 0 }
+      // 占位：表示正在加载
+      this.matchSamples[name] = { buffer: null, loading: true }
+      fetch(url)
+        .then((res) => {
+          if (!res.ok) throw new Error(`HTTP ${res.status}`)
+          return res.arrayBuffer()
+        })
+        .then((raw) => ctx.decodeAudioData(raw))
+        .then((decoded) => {
+          this.matchSamples[name] = { buffer: decoded, loading: false }
+        })
+        .catch(() => {
+          // 加载失败则移除记录，播放时静默
+          this.matchSamples[name] = { buffer: null, loading: false }
+        })
     })
   }
 
@@ -280,18 +292,22 @@ export class AudioManager {
   playMatchSample(name) {
     const entry = this.matchSamples[name]
     if (!entry || !this.userUnlocked) return false
-    const { pool } = entry
-    const sample = pool[entry.index % pool.length]
-    entry.index += 1
+    const ctx = this.ensureSfxContext()
+    if (!ctx) return false
+    // 音频尚未加载完成：静默（不回退废案合成音）
+    if (!entry.buffer) return true
+    if (ctx.state === 'suspended') ctx.resume().catch(() => {})
     const volumeScale = name === 'goalCheer' ? 0.78
       : name === 'cardWhistle' ? 0.72
       : name === 'periodWhistle' ? 0.80
       : 0.92
-    sample.volume = Math.max(0, Math.min(1, this.soundVolume * volumeScale))
-    try { sample.currentTime = 0 } catch { /* not seekable yet */ }
-    const playback = sample.play()
-    // 真实音频播放失败时静默，不回退到废案合成音
-    if (playback?.catch) playback.catch(() => {})
+    const gain = ctx.createGain()
+    gain.gain.value = Math.max(0, Math.min(1, this.soundVolume * volumeScale))
+    gain.connect(ctx.destination)
+    const source = ctx.createBufferSource()
+    source.buffer = entry.buffer
+    source.connect(gain)
+    source.start(0)
     return true
   }
 

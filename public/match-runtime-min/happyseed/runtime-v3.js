@@ -861,6 +861,36 @@
         } catch (tsError) {
           try { pitch.timeScale.value = 1; } catch (tsError2) { /* 忽略 */ }
         }
+        // 根治决策后冻住：如果球无主且不在手中且未出界，强制分配给最近球员。
+        // 引擎 AI 无法处理“无人认领的静止球”，会导致所有球员站着不动。
+        if (!cancelled && !finished.livePhysics && !finished.script.__suppressResumeForPenalty) {
+          try {
+            var ball = pitch.ball;
+            var hasOwner = !!(ball.owner || ball.inHands);
+            var isOut = !!pitch.ballOutOfPlay;
+            if (!hasOwner && !isOut && ball.position) {
+              var allP = window.__matchGame.allPlayers || [];
+              var bestPlayer = null, bestDist = Infinity;
+              for (var pi = 0; pi < allP.length; pi++) {
+                var pp = allP[pi];
+                if (!pp || !pp.position || !pp.team) continue;
+                // 排除门将（除非球在禁区内）
+                var pdx = pp.position.x - ball.position.x;
+                var pdy = pp.position.y - ball.position.y;
+                var pd = Math.sqrt(pdx * pdx + pdy * pdy);
+                if (pd < bestDist) { bestDist = pd; bestPlayer = pp; }
+              }
+              if (bestPlayer) {
+                ball.placeAtPosition(bestPlayer.position.x, bestPlayer.position.y, Math.max(ball.radius || .12, .12));
+                try { bestPlayer.hasBall = !0; } catch {}
+                try { ball.owner = bestPlayer; } catch {}
+                if (ball.velocity) { ball.velocity.x = 0; ball.velocity.y = 0; ball.velocity.z = 0; }
+              }
+            }
+          } catch (ballAssignError) {
+            console.error("[decision-director-v3] post-decision ball assign failed", ballAssignError);
+          }
+        }
         if (frameHandle != null) window.cancelAnimationFrame(frameHandle);
         frameHandle = null;
         active = null;
@@ -1293,6 +1323,9 @@
           } catch (error) {
             console.error("[decision-director-v3] frame failed", error);
           }
+        } else if (!active) {
+          // 导演未激活时确保 timeScale 不为 0（防止 finish() 中 reset 失败的边缘情况）
+          try { if (pitch.timeScale && pitch.timeScale.value === 0) pitch.timeScale.value = 1; } catch {}
         }
         previousFrame(frame);
       };
