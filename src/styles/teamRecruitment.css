@@ -1111,6 +1111,72 @@
     left: 0 !important;
     right: 0 !important;
   }
+
+  /* Reset card constraints from max-width:560px queries — let zoom handle scaling */
+  .zoom-page-active .recruitment-screen .player-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    grid-auto-columns: unset !important;
+    gap: 16px !important;
+    flex: 1 !important;
+    min-height: 0 !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    padding: 0 8px 24px 0 !important;
+    align-content: start !important;
+  }
+
+  .zoom-page-active .recruitment-screen .game-card-v2 {
+    aspect-ratio: 11 / 15 !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    align-self: start !important;
+    clip-path: none !important;
+    border-radius: 0 !important;
+  }
+
+  .zoom-page-active .recruitment-screen .card-v2-top {
+    height: auto !important;
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+  }
+
+  .zoom-page-active .recruitment-screen .card-v2-avatar {
+    left: 0 !important;
+    width: 70% !important;
+  }
+
+  .zoom-page-active .recruitment-screen .card-v2-name-row {
+    padding: 4px 6px !important;
+  }
+
+  .zoom-page-active .recruitment-screen .card-v2-name {
+    font-size: 14px !important;
+  }
+
+  .zoom-page-active .recruitment-screen .card-v2-stats {
+    padding: 4px 6px !important;
+    gap: 2px !important;
+  }
+
+  .zoom-page-active .recruitment-screen .card-v2-stat .stat-label {
+    font-size: 10px !important;
+  }
+
+  .zoom-page-active .recruitment-screen .card-v2-stat .stat-value {
+    font-size: 12px !important;
+  }
+
+  .zoom-page-active .recruitment-screen .card-v2-action {
+    padding: 4px 6px !important;
+  }
+
+  .zoom-page-active .recruitment-screen .btn-v2-buy,
+  .zoom-page-active .recruitment-screen .btn-v2-sell {
+    min-height: 28px !important;
+    font-size: 12px !important;
+  }
 }
 
 /* Physical iPad Safari may still resolve aspect-ratio/grid intrinsic sizing to
