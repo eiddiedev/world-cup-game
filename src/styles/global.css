@@ -5445,7 +5445,8 @@ button {
   }
 
   /* --- Team Select: NO zoom, force 2-col 16:9 cards via !important --- */
-  .team-select-screen {
+  .team-select-screen,
+  .douyin-demo .team-select-screen {
     zoom: 1 !important;
     height: 100dvh !important;
     padding: 6px 10px !important;
@@ -5501,13 +5502,24 @@ button {
   }
 
   /* --- Recruitment: zoom entire screen to preserve desktop card proportions --- */
-  .recruitment-screen {
+  .recruitment-screen,
+  .douyin-demo .recruitment-screen {
     zoom: 0.62 !important;
     width: 100% !important;
-    height: 100dvh !important;
+    height: calc(100dvh / 0.62) !important;
     min-height: 0 !important;
     padding: 12px 16px 60px !important;
     overflow: hidden !important;
+    background: var(--pixel-bg) !important;
+  }
+
+  /* Footer must NOT be position:fixed inside a zoomed container */
+  .recruitment-screen .recruitment-footer,
+  .douyin-demo .recruitment-screen .recruitment-footer {
+    position: absolute !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
   }
 
   /* --- Lineup: compress right pane, formation collapsible on phone --- */
