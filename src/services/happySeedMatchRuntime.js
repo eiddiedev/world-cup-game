@@ -823,6 +823,14 @@ export function bootHappySeedMatch(options = {}) {
 }
 
 /**
+ * 清除 bootPromise，允许下次 mount 时重新执行完整 boot 流程。
+ * 用于比赛组件卸载后（如中途退出教练模式），防止旧 promise 阻塞新一轮启动。
+ */
+export function clearBootPromise() {
+  bootPromise = null
+}
+
+/**
  * 关闭当前比赛运行时，释放引擎状态，允许下次重新 boot。
  * 用于训练基地退出时清理。
  */

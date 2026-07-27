@@ -5400,6 +5400,230 @@ button {
   }
 }
 
+/* ===== iPhone landscape (≤500px height): home / team-select / recruitment / lineup ===== */
+@media (orientation: landscape) and (max-height: 500px) {
+  /* --- Home: shrink logo & padding so codex panel stays visible --- */
+  .home-screen {
+    padding: 8px 16px;
+  }
+
+  .home-stage {
+    grid-template-rows: minmax(0, 32fr) minmax(0, 42fr) minmax(0, 26fr);
+    padding-top: 0;
+  }
+
+  .logo-animation {
+    height: 120px;
+  }
+
+  .logo-frame {
+    height: 110px;
+    top: 10px;
+  }
+
+  .main-menu {
+    gap: 6px;
+  }
+
+  .main-menu .PixelButton {
+    min-height: 44px;
+    font-size: 16px;
+  }
+
+  .codex-panel {
+    padding: 5px 14px;
+    margin-top: 2px;
+  }
+
+  .codex-panel-icon {
+    width: 18px;
+    height: 18px;
+  }
+
+  .codex-panel-label {
+    font-size: 13px;
+  }
+
+  /* --- Team Select: force 2-col with zoom to fit phone landscape --- */
+  .team-select-screen {
+    zoom: 0.72;
+    height: 100dvh;
+    padding: 10px 14px;
+    overflow: hidden;
+  }
+
+  .team-select-screen .team-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    max-width: 960px;
+    gap: 10px;
+    max-height: calc(100dvh / 0.72 - 120px);
+  }
+
+  .team-select-screen .team-card {
+    min-height: 0;
+    aspect-ratio: 16 / 9;
+  }
+
+  .team-select-hint {
+    margin: 4px 0 8px;
+    padding: 6px 10px;
+    font-size: 11px;
+    line-height: 1.3;
+  }
+
+  /* --- Recruitment: compress header & stats for phone landscape --- */
+  .recruitment-screen {
+    padding: 6px 10px calc(48px + env(safe-area-inset-bottom)) !important;
+  }
+
+  .recruitment-screen .screen-header {
+    margin-bottom: 4px !important;
+  }
+
+  .recruitment-screen .screen-header h1 {
+    font-size: 16px !important;
+  }
+
+  .recruitment-hint {
+    margin: 2px 0 4px !important;
+    padding: 4px 8px !important;
+    font-size: 10px !important;
+    line-height: 1.25 !important;
+  }
+
+  .recruitment-screen .recruitment-stats {
+    padding: 4px 8px !important;
+    margin-bottom: 4px !important;
+    border-width: 2px !important;
+    box-shadow: 2px 2px 0 var(--pixel-shadow) !important;
+  }
+
+  .recruitment-screen .stat-label {
+    font-size: 9px !important;
+  }
+
+  .recruitment-screen .stat-value,
+  .recruitment-screen .stat-value.budget {
+    font-size: 13px !important;
+  }
+
+  .recruitment-screen .stat-min-hint {
+    font-size: 9px !important;
+  }
+
+  .recruitment-screen .recruitment-stats .coin-icon {
+    width: 14px !important;
+    height: 14px !important;
+  }
+
+  .recruitment-screen .position-tabs {
+    margin-bottom: 4px !important;
+    gap: 3px !important;
+  }
+
+  .recruitment-screen .position-tab {
+    height: 24px !important;
+    font-size: 10px !important;
+  }
+
+  .recruitment-screen .player-grid {
+    max-height: calc(100dvh - 160px) !important;
+  }
+
+  /* --- Lineup: compress right pane modules for phone landscape --- */
+  .lineup-screen {
+    padding: 4px 8px calc(36px + env(safe-area-inset-bottom)) !important;
+    gap: 3px !important;
+  }
+
+  .lineup-screen .screen-header {
+    min-height: 24px !important;
+  }
+
+  .lineup-screen .screen-header h1 {
+    font-size: 16px !important;
+  }
+
+  .lineup-screen .match-preview {
+    min-height: 28px !important;
+    padding: 2px 8px !important;
+    font-size: 11px !important;
+  }
+
+  .lineup-screen .lineup-workspace {
+    grid-template-columns: minmax(160px, 36fr) minmax(240px, 64fr) !important;
+    gap: 6px !important;
+  }
+
+  .lineup-screen .lineup-control-pane {
+    grid-template-rows: 24px auto auto minmax(0, 1fr) !important;
+    gap: 2px !important;
+  }
+
+  .lineup-screen .lineup-view-toggle {
+    height: 24px !important;
+    border-width: 2px !important;
+    box-shadow: 2px 2px 0 var(--pixel-shadow) !important;
+    font-size: 10px !important;
+  }
+
+  .lineup-screen .lineup-control-section {
+    padding: 3px !important;
+    border-width: 2px !important;
+    box-shadow: 2px 2px 0 var(--pixel-shadow) !important;
+  }
+
+  .lineup-screen .lineup-section-title {
+    margin-bottom: 2px !important;
+    font-size: 9px !important;
+  }
+
+  .lineup-screen .formation-control-section .formation-selector {
+    gap: 2px !important;
+  }
+
+  .lineup-screen .formation-control-section .formation-btn {
+    min-height: 18px !important;
+    font-size: 8px !important;
+    padding: 1px 3px !important;
+  }
+
+  .lineup-screen .formation-description {
+    font-size: 8px !important;
+    line-height: 1.2 !important;
+    max-height: 28px !important;
+    overflow: hidden !important;
+    padding: 2px !important;
+  }
+
+  .lineup-screen .pitch-container {
+    width: auto !important;
+    height: 100% !important;
+    max-width: 100% !important;
+    max-height: 100% !important;
+    aspect-ratio: 2 / 3 !important;
+  }
+
+  .lineup-screen .pitch-slot {
+    width: 26px !important;
+    height: 26px !important;
+  }
+
+  .lineup-screen .slot-number {
+    font-size: 9px !important;
+  }
+
+  .lineup-footer {
+    height: calc(32px + env(safe-area-inset-bottom)) !important;
+    padding: 3px 10px max(3px, env(safe-area-inset-bottom)) !important;
+  }
+
+  .lineup-confirm-button {
+    height: 26px !important;
+    font-size: 10px !important;
+  }
+}
+
 /* Final mobile game-screen layout fixes */
 .lineup-screen {
   grid-template-rows: auto auto auto auto auto auto auto;

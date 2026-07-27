@@ -29,6 +29,7 @@ import {
   subscribeToRuntimeMatchEvents,
   substituteRuntimeActor,
   withDecisionWatchdog,
+  clearBootPromise,
 } from '../services/happySeedMatchRuntime.js'
 import {
   buildBroadcastSubstitutionBoard,
@@ -1123,6 +1124,8 @@ export function HappySeedMatchBroadcast({ saveData = null, onMatchComplete = nul
     // 组件卸载时隐藏引擎 canvas，防止遮挡后续页面
     const gameCanvas = window.__matchGame?.renderer?.view
     if (gameCanvas) gameCanvas.style.display = 'none'
+    // 清除 bootPromise，防止中途退出后再次进入时旧 promise 阻塞新 boot
+    clearBootPromise()
   }, [])
 
   // 球员模式：启用手柄输入轮询，卸载时停止
