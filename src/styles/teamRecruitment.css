@@ -1034,148 +1034,252 @@
   }
 }
 
-/* ===== iPhone landscape (≤500px height): zoom entire recruitment screen ===== */
+/* ===== Phone landscape: scale the desktop recruitment canvas as one unit =====
+ * Chromium already resolves percentage widths against the zoom-adjusted
+ * containing block, so the canvas stays at 100% width. Only the viewport-based
+ * height needs inverse compensation. Keeping six desktop columns here prevents
+ * later phone rules from widening the cards into horizontal strips. */
 @media (orientation: landscape) and (max-height: 500px) {
-  /* Parent must not clip the zoomed child */
   .zoom-page-active {
-    height: auto !important;
-    overflow: visible !important;
+    --recruitment-landscape-scale: 0.54;
+    width: 100% !important;
+    height: 100dvh !important;
+    overflow: hidden !important;
+    background: var(--pixel-bg) !important;
   }
 
   .zoom-page-active .recruitment-screen {
-    zoom: 0.55 !important;
+    zoom: var(--recruitment-landscape-scale) !important;
+    position: relative !important;
+    display: flex !important;
     width: 100% !important;
-    height: calc(100dvh / 0.55) !important;
+    height: 185.1852dvh !important;
     min-height: 0 !important;
-    padding: 10px 20px 72px !important;
+    padding: 20px 20px 72px !important;
+    flex-direction: column !important;
     overflow: hidden !important;
     background: var(--pixel-bg) !important;
-    position: relative !important;
   }
 
-  /* Compress header to match logistics screen density */
+  .zoom-page-active .recruitment-screen .recruitment-top {
+    display: block !important;
+    min-height: 0 !important;
+  }
+
   .zoom-page-active .recruitment-screen .screen-header {
-    margin-bottom: 2px !important;
+    min-height: 0 !important;
+    margin-bottom: 0 !important;
+    padding-left: 80px !important;
   }
 
   .zoom-page-active .recruitment-screen .screen-header h1 {
-    font-size: 18px !important;
+    font-size: 24px !important;
+    line-height: normal !important;
   }
 
   .zoom-page-active .recruitment-screen .recruitment-hint {
-    margin: 2px 0 4px !important;
-    padding: 4px 10px !important;
-    font-size: 11px !important;
-    line-height: 1.2 !important;
+    display: inline-block !important;
+    max-width: none !important;
+    max-height: none !important;
+    margin: 12px 0 16px !important;
+    padding: 12px 16px !important;
+    overflow: visible !important;
+    font-size: 14px !important;
+    line-height: 1.6 !important;
   }
 
   .zoom-page-active .recruitment-screen .recruitment-stats {
-    padding: 4px 10px !important;
-    margin-bottom: 4px !important;
-    border-width: 2px !important;
-    box-shadow: 2px 2px 0 var(--pixel-shadow) !important;
+    display: flex !important;
+    height: auto !important;
+    margin-bottom: 16px !important;
+    padding: 12px 16px !important;
+    justify-content: space-around !important;
+    gap: 0 !important;
+    border-width: 4px !important;
+    box-shadow: 4px 4px 0 var(--pixel-shadow) !important;
+  }
+
+  .zoom-page-active .recruitment-screen .stat-item {
+    gap: 4px !important;
   }
 
   .zoom-page-active .recruitment-screen .stat-label {
-    font-size: 9px !important;
+    font-size: 12px !important;
   }
 
-  .zoom-page-active .recruitment-screen .stat-value,
+  .zoom-page-active .recruitment-screen .stat-value {
+    font-size: 20px !important;
+  }
+
   .zoom-page-active .recruitment-screen .stat-value.budget {
-    font-size: 14px !important;
+    font-size: 24px !important;
   }
 
   .zoom-page-active .recruitment-screen .stat-min-hint {
-    font-size: 9px !important;
+    font-size: 12px !important;
   }
 
   .zoom-page-active .recruitment-screen .recruitment-stats .coin-icon {
-    width: 16px !important;
-    height: 16px !important;
+    width: 28px !important;
+    height: 28px !important;
   }
 
   .zoom-page-active .recruitment-screen .position-tabs {
-    margin-bottom: 4px !important;
-    gap: 3px !important;
+    height: auto !important;
+    margin-bottom: 16px !important;
+    gap: 8px !important;
   }
 
   .zoom-page-active .recruitment-screen .position-tab {
-    height: 24px !important;
-    font-size: 11px !important;
+    height: auto !important;
+    padding: 8px 16px !important;
+    font-size: 14px !important;
   }
 
-  /* Footer must be absolute inside zoomed container */
-  .zoom-page-active .recruitment-screen .recruitment-footer {
-    position: absolute !important;
-    bottom: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-  }
-
-  /* Reset card constraints from max-width:560px queries — let zoom handle scaling */
   .zoom-page-active .recruitment-screen .player-grid {
     display: grid !important;
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+    grid-template-rows: none !important;
+    grid-auto-flow: row !important;
     grid-auto-columns: unset !important;
-    gap: 16px !important;
-    flex: 1 !important;
-    min-height: 0 !important;
-    overflow-y: auto !important;
-    -webkit-overflow-scrolling: touch !important;
-    padding: 0 8px 24px 0 !important;
+    grid-auto-rows: max-content !important;
+    align-items: start !important;
     align-content: start !important;
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    gap: 14px !important;
+    padding: 0 8px 16px 0 !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    scroll-snap-type: none !important;
+    touch-action: pan-y;
+    -webkit-overflow-scrolling: touch;
   }
 
   .zoom-page-active .recruitment-screen .game-card-v2 {
-    aspect-ratio: 11 / 15 !important;
     width: 100% !important;
     height: auto !important;
     min-height: 0 !important;
+    aspect-ratio: auto !important;
     align-self: start !important;
-    clip-path: none !important;
+    clip-path: polygon(0 0, calc(100% - 20px) 0, 100% 20px, 100% 100%, 0 100%) !important;
     border-radius: 0 !important;
+    scroll-snap-align: none !important;
   }
 
   .zoom-page-active .recruitment-screen .card-v2-top {
-    height: auto !important;
-    flex: 1 1 auto !important;
+    flex: 0 0 auto !important;
+    height: 208px !important;
     min-height: 0 !important;
   }
 
   .zoom-page-active .recruitment-screen .card-v2-avatar {
-    left: 0 !important;
-    width: 70% !important;
+    left: -6px !important;
+    width: 88% !important;
+  }
+
+  .zoom-page-active .recruitment-screen .card-v2-price {
+    top: 8px !important;
+    right: 12px !important;
+    gap: 4px !important;
+    font-size: 28px !important;
+  }
+
+  .zoom-page-active .recruitment-screen .card-v2-price .coin-icon {
+    width: 22px !important;
+    height: 22px !important;
+  }
+
+  .zoom-page-active .recruitment-screen .card-v2-rating {
+    top: 42px !important;
+    right: 12px !important;
+    font-size: 24px !important;
   }
 
   .zoom-page-active .recruitment-screen .card-v2-name-row {
-    padding: 4px 6px !important;
+    padding: 4px 10px !important;
   }
 
   .zoom-page-active .recruitment-screen .card-v2-name {
-    font-size: 14px !important;
+    font-size: 20px !important;
+  }
+
+  .zoom-page-active .recruitment-screen .card-v2-number {
+    padding: 2px 6px !important;
+    font-size: 16px !important;
+  }
+
+  .zoom-page-active .recruitment-screen .card-v2-divider {
+    margin: 6px 10px !important;
   }
 
   .zoom-page-active .recruitment-screen .card-v2-stats {
-    padding: 4px 6px !important;
-    gap: 2px !important;
+    grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+    margin: 0 10px !important;
+    padding: 6px 4px !important;
+    gap: 0 !important;
   }
 
   .zoom-page-active .recruitment-screen .card-v2-stat .stat-label {
-    font-size: 10px !important;
+    font-size: 9px !important;
   }
 
   .zoom-page-active .recruitment-screen .card-v2-stat .stat-value {
-    font-size: 12px !important;
+    font-size: 14px !important;
   }
 
   .zoom-page-active .recruitment-screen .card-v2-action {
-    padding: 4px 6px !important;
+    padding: 8px 10px !important;
   }
 
   .zoom-page-active .recruitment-screen .btn-v2-buy,
   .zoom-page-active .recruitment-screen .btn-v2-sell {
-    min-height: 28px !important;
-    font-size: 12px !important;
+    height: 32px !important;
+    min-height: 0 !important;
+    font-size: 13px !important;
+  }
+
+  .zoom-page-active .recruitment-screen .recruitment-footer {
+    position: absolute !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    display: flex !important;
+    height: auto !important;
+    padding: 16px !important;
+    gap: 0 !important;
+  }
+
+  .zoom-page-active .recruitment-screen .recruitment-footer .PixelButton {
+    flex: 0 1 auto !important;
+    width: auto !important;
+    max-width: none !important;
+    height: auto !important;
+    min-height: 72px !important;
+    padding: 0 48px !important;
+    font-size: 24px !important;
+  }
+}
+
+/* Preserve one complete card row on shorter landscape phones as well. */
+@media (orientation: landscape) and (max-height: 360px) {
+  .zoom-page-active {
+    --recruitment-landscape-scale: 0.5;
+  }
+
+  .zoom-page-active .recruitment-screen {
+    height: 200dvh !important;
+  }
+}
+
+@media (orientation: landscape) and (max-height: 330px) {
+  .zoom-page-active {
+    --recruitment-landscape-scale: 0.45;
+  }
+
+  .zoom-page-active .recruitment-screen {
+    height: 222.2223dvh !important;
   }
 }
 

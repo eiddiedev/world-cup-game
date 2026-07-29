@@ -60,6 +60,14 @@
   const bundleUrls = {};
   function bundleMap() {
     if (bundleCache) return bundleCache;
+    if (typeof window.__dataBundleCache === 'string') {
+      try {
+        bundleCache = JSON.parse(window.__dataBundleCache);
+        return bundleCache;
+      } catch (e) {
+        console.warn('[shim] invalid inline data bundle:', e.message);
+      }
+    }
     try {
       const xhr = new XMLHttpRequest();
       xhr.open('GET', MATCH_RUNTIME_BASE + '/__data-bundle.json', false);
@@ -447,6 +455,14 @@
 
     function dirlistMap() {
       if (dirlistCache) return dirlistCache;
+      if (typeof window.__dirlistCache === 'string') {
+        try {
+          dirlistCache = JSON.parse(window.__dirlistCache);
+          return dirlistCache;
+        } catch (e) {
+          console.warn('[shim] invalid inline dirlist:', e.message);
+        }
+      }
       try {
         const xhr = syncGet(MATCH_RUNTIME_BASE + '/__dirlist.json');
         dirlistCache = xhr.status >= 200 && xhr.status < 300 ? JSON.parse(xhr.responseText) : {};

@@ -741,16 +741,63 @@
         };
       }
 
+      function hideRetiredActorVisual(entry) {
+        if (!entry) return;
+        var renderer = entry.renderer,
+          spine = renderer && renderer.spine,
+          sprites = spine && spine.sprites;
+        if (renderer) {
+          renderer.visible = !1;
+          renderer.renderable = !1;
+          renderer.alpha = 0;
+        }
+        if (renderer && renderer.sprite) renderer.sprite.visible = !1;
+        if (spine) spine.visible = !1;
+        if (sprites)
+          Object.keys(sprites).forEach(function (slot) {
+            if (sprites[slot]) sprites[slot].visible = !1;
+          });
+        if (entry.label) {
+          entry.label.visible = !1;
+          entry.label.renderable = !1;
+        }
+        if (entry.eventRing) {
+          entry.eventRing.visible = !1;
+          entry.eventRing.renderable = !1;
+        }
+      }
+
       function removePhysicalActor(entry) {
-        if (!entry || !entry.entity || entry.actor._runtimeRemoved) return;
+        if (!entry || !entry.entity) return;
+        if (entry.actor._runtimeRemoved) {
+          hideRetiredActorVisual(entry);
+          return;
+        }
+        var entity = entry.entity,
+          game = window.__matchGame,
+          team = entity.team;
+        // 先锁死表现层，再尝试修改原生数组。原引擎可能已经先执行过一次
+        // removePlayer；那次调用即使抛 Player not found，也绝不能让动物皮肤漏出。
+        entry.actor._runtimeRemoved = !0;
+        hideRetiredActorVisual(entry);
         try {
-          (window.__matchGame.removePlayer(entry.entity),
-            (entry.actor._runtimeRemoved = !0));
-          if (entry.renderer) entry.renderer.visible = !1;
-          if (entry.label) entry.label.visible = !1;
-          if (entry.eventRing) entry.eventRing.visible = !1;
+          entity.static = !0;
+          if (pitch.ball && pitch.ball.owner === entity) pitch.ball.owner = null;
+          if (pitch.ball && pitch.ball.inHands === entity) pitch.ball.inHands = null;
+          entity.hasBall = !1;
+        } catch {}
+        try {
+          if (team && team.removePlayer && team.players && team.players.indexOf(entity) >= 0)
+            team.removePlayer(entity);
+        } catch (teamRemoveError) {
+          console.error("[runtime-actors] 移出球队阵列失败", teamRemoveError);
+        }
+        try {
+          if (game && game.removePlayer) game.removePlayer(entity);
         } catch (removeError) {
           console.error("[runtime-actors] 移除在场球员失败", removeError);
+        } finally {
+          hideRetiredActorVisual(entry);
         }
       }
 
@@ -805,7 +852,8 @@
               (state.onPitch = !1),
               removePhysicalActor(entry));
           }
-          if (!entry.actor._runtimeRemoved) applyActorTextures(entry);
+          if (entry.actor._runtimeRemoved) hideRetiredActorVisual(entry);
+          else applyActorTextures(entry);
           dispatchActors("ab-runtime-actor-state");
           return !0;
         },
@@ -863,7 +911,149 @@
             dispatchActors("ab-runtime-substitution"));
           return !0;
         },
+        enforceRetiredVisuals: function () {
+          var retiredCount = 0;
+          actorEntries.forEach(function (entry) {
+            if (!entry.actor._runtimeRemoved) return;
+            retiredCount += 1;
+            hideRetiredActorVisual(entry);
+          });
+          return retiredCount;
+        },
         getSnapshot: actorSnapshot,
+      };
+
+      // 点球大战仍使用完整 22 人物理 Runtime，但表现层只保留主罚者与对方门将。
+      // 这样不会破坏正式阵容、换人和赛后数据，离开点球场景时也能原样恢复。
+      var shootoutPresentation = {
+        active: !1,
+        attackingSide: "red",
+        shooterPlayerId: null,
+        savedVisibility: null,
+        savedShadowVisibility: null,
+        savedShadowChildVisibility: null,
+      };
+
+      function shootoutVisibleEntries() {
+        var side = shootoutPresentation.attackingSide === "blue" ? "blue" : "red",
+          shooter = actorEntries.find(function (entry) {
+            return entry.actor.side === side &&
+              entry.actor.playerId === shootoutPresentation.shooterPlayerId &&
+              !entry.actor.isGoalkeeper;
+          }) || actorEntries.find(function (entry) {
+            return entry.actor.side === side && entry.actor.state.onPitch &&
+              !entry.actor.isGoalkeeper;
+          }),
+          keeper = actorEntries.find(function (entry) {
+            return entry.actor.side !== side && entry.actor.state.onPitch &&
+              entry.actor.isGoalkeeper;
+          });
+        return new Set([shooter, keeper].filter(Boolean));
+      }
+
+      function enforceShootoutPresentation() {
+        if (!shootoutPresentation.active) return;
+        var visibleEntries = shootoutVisibleEntries();
+        actorEntries.forEach(function (entry) {
+          var visible = !entry.actor._runtimeRemoved && visibleEntries.has(entry);
+          if (entry.renderer) entry.renderer.visible = visible;
+          if (entry.label) entry.label.visible = visible;
+          if (entry.eventRing) entry.eventRing.visible = !1;
+        });
+        // 原引擎把人物阴影绘制在独立批处理层，隐藏人物不会自动隐藏阴影。
+        // 影子批次由“共用对象 + 每位球员等量影子精灵”组成，因此可精确
+        // 保留足球、主罚者与门将的影子，并隐藏其余 20 人的幽灵影子。
+        // autoShadows 的子项顺序并非稳定的“每位球员连续若干项”。此前按
+        // 索引过滤会漏出幽灵影子；点球阶段直接关闭整层，退出时再精确恢复。
+        if (stadium.shadows) stadium.shadows.visible = !1;
+      }
+
+      function restoreShootoutPresentation() {
+        var saved = shootoutPresentation.savedVisibility;
+        if (saved)
+          actorEntries.forEach(function (entry, index) {
+            var item = saved[index];
+            if (!item) return;
+            if (entry.actor._runtimeRemoved) {
+              hideRetiredActorVisual(entry);
+              return;
+            }
+            if (entry.renderer) entry.renderer.visible = item.renderer;
+            if (entry.label) entry.label.visible = item.label;
+            if (entry.eventRing) entry.eventRing.visible = item.eventRing;
+          });
+        shootoutPresentation.active = !1;
+        shootoutPresentation.shooterPlayerId = null;
+        shootoutPresentation.savedVisibility = null;
+        if (stadium.shadows && shootoutPresentation.savedShadowVisibility != null)
+          stadium.shadows.visible = shootoutPresentation.savedShadowVisibility;
+        var shadowChildren = stadium.shadows && stadium.shadows.autoShadows &&
+          stadium.shadows.autoShadows.children;
+        if (shadowChildren && shootoutPresentation.savedShadowChildVisibility)
+          shadowChildren.forEach(function (shadow, index) {
+            if (shadow && shootoutPresentation.savedShadowChildVisibility[index] != null)
+              shadow.visible = shootoutPresentation.savedShadowChildVisibility[index];
+          });
+        shootoutPresentation.savedShadowVisibility = null;
+        shootoutPresentation.savedShadowChildVisibility = null;
+        window.__happySeedReleaseShootoutActors &&
+          window.__happySeedReleaseShootoutActors();
+      }
+
+      window.__happySeedShootoutPresentation = {
+        configure: function (payload) {
+          payload = payload || {};
+          if (!shootoutPresentation.active)
+            (shootoutPresentation.savedVisibility = actorEntries.map(function (entry) {
+              return {
+                renderer: !entry.renderer || entry.renderer.visible !== !1,
+                label: !entry.label || entry.label.visible !== !1,
+                eventRing: Boolean(entry.eventRing && entry.eventRing.visible !== !1),
+              };
+            }),
+            shootoutPresentation.savedShadowVisibility = stadium.shadows
+              ? stadium.shadows.visible !== !1 : null,
+            shootoutPresentation.savedShadowChildVisibility = stadium.shadows &&
+              stadium.shadows.autoShadows && stadium.shadows.autoShadows.children
+              ? stadium.shadows.autoShadows.children.map(function (shadow) {
+                  return !shadow || shadow.visible !== !1;
+                }) : null);
+          shootoutPresentation.active = !0;
+          shootoutPresentation.attackingSide = payload.attackingSide === "blue"
+            ? "blue" : "red";
+          shootoutPresentation.shooterPlayerId = payload.shooterPlayerId || null;
+          enforceShootoutPresentation();
+          return {
+            active: !0,
+            attackingSide: shootoutPresentation.attackingSide,
+            shooterPlayerId: shootoutPresentation.shooterPlayerId,
+            visibleCount: shootoutVisibleEntries().size,
+            goalSide: "right",
+            cameraMode: window.__happySeedStadiumScene &&
+              window.__happySeedStadiumScene.getSnapshot
+              ? window.__happySeedStadiumScene.getSnapshot().cameraMode
+              : "decision-director",
+          };
+        },
+        clear: function () {
+          if (!shootoutPresentation.active) return !1;
+          restoreShootoutPresentation();
+          return !0;
+        },
+        getSnapshot: function () {
+          return {
+            active: shootoutPresentation.active,
+            attackingSide: shootoutPresentation.attackingSide,
+            shooterPlayerId: shootoutPresentation.shooterPlayerId,
+            visibleCount: shootoutPresentation.active
+              ? shootoutVisibleEntries().size : actorEntries.length,
+            goalSide: "right",
+            cameraMode: window.__happySeedStadiumScene &&
+              window.__happySeedStadiumScene.getSnapshot
+              ? window.__happySeedStadiumScene.getSnapshot().cameraMode
+              : "decision-director",
+          };
+        },
       };
 
       var previousActorFrame = stadium.frame.bind(stadium);
@@ -871,6 +1061,10 @@
         (previousActorFrame(frame),
           actorEntries.forEach(function (entry) {
             entry.actor.state.onPitch && applyActorTextures(entry);
+          }),
+          enforceShootoutPresentation(),
+          actorEntries.forEach(function (entry) {
+            entry.actor._runtimeRemoved && hideRetiredActorVisual(entry);
           }));
       };
       (dispatchActors("ab-runtime-actors-ready"),
@@ -4174,6 +4368,10 @@
       });
     }
     function MatchGame() {
+      var mobileRenderDevice =
+        (window.matchMedia && window.matchMedia("(pointer: coarse)").matches) ||
+        (navigator.maxTouchPoints || 0) > 0 ||
+        /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent || "");
       (GameBase.call(this, {
         width: window.innerWidth,
         height: window.innerHeight,
@@ -4187,7 +4385,12 @@
         (this.onEnter = new Signal()),
         (this.onExit = new Signal()),
         (this._autoResize = !0),
-        (this.resolution = Math.min(window.devicePixelRatio || 1, 2)),
+        // 手机/平板上 DPR=2~3 时，按 2 倍分辨率渲染会把 WebGL 像素数放大到 4 倍。
+        // 本项目是像素美术，粗指针设备限制到 1.25 既保留清晰度，也显著降低填充率和发热。
+        (this.resolution = Math.min(
+          window.devicePixelRatio || 1,
+          mobileRenderDevice ? 1.25 : 2,
+        )),
         (this.viewportWidth = 0),
         (this.viewportHeight = 0),
         (this.pitch = new Pitch({
@@ -4287,7 +4490,8 @@
           streamFrames[sf].blueTeam._grow(squadSize));
       ((this.stadium = null),
         (this.curtain = null),
-        (this.runInBackground = !0));
+        // 页面转入后台时交给 GameBase 暂停循环，避免锁屏/切应用后继续耗电。
+        (this.runInBackground = !1));
     }
     return (
       (MatchGame.prototype = Object.create(GameBase.prototype)),

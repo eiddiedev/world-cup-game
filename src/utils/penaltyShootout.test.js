@@ -3,8 +3,10 @@ import {
   AI_SHOOTER_BASE_MISS_RATE,
   PENALTY_ZONES,
   getShootoutWinner,
+  keeperPerspectiveDirection,
   pickAiKeeperZone,
   pickAiShooterZone,
+  reconcileShootoutResult,
   resolveShootoutAttempt,
 } from './penaltyShootout.js'
 
@@ -20,6 +22,23 @@ function mulberry32(seed) {
 }
 
 describe('6 区点球结算', () => {
+  it('maps goalkeeper left/right from the keeper own perspective', () => {
+    expect(keeperPerspectiveDirection('left')).toBe('right')
+    expect(keeperPerspectiveDirection('center')).toBe('center')
+    expect(keeperPerspectiveDirection('right')).toBe('left')
+  })
+
+  it('lets the physical Runtime result override the sampled rule result', () => {
+    expect(reconcileShootoutResult(
+      { scored: true, saved: false, missed: false },
+      'saved',
+    )).toEqual({ scored: false, saved: true, missed: false })
+    expect(reconcileShootoutResult(
+      { scored: false, saved: true, missed: false },
+      'goal',
+    )).toEqual({ scored: true, saved: false, missed: false })
+  })
+
   it('exports the six goal zones', () => {
     expect(PENALTY_ZONES).toEqual([
       'left-top', 'center-top', 'right-top',

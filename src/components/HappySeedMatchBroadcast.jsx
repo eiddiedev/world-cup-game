@@ -29,7 +29,8 @@ import {
   subscribeToRuntimeMatchEvents,
   substituteRuntimeActor,
   withDecisionWatchdog,
-  clearBootPromise,
+  retainMatchRuntime,
+  scheduleMatchRuntimeShutdown,
 } from '../services/happySeedMatchRuntime.js'
 import {
   buildBroadcastSubstitutionBoard,
@@ -59,6 +60,9 @@ import LockerRoomDecision from './LockerRoomDecision.jsx'
 import GameLoadingScreen from './GameLoadingScreen.jsx'
 import PixelRain from './PixelRain.jsx'
 import PlayerControls from './PlayerControls.jsx'
+import SpotlightTour from './SpotlightTour.jsx'
+import { SPOTLIGHT_TOURS } from '../data/spotlightTours.js'
+import { hasCompletedSpotlightTour } from '../utils/spotlightTourStorage.js'
 import { startGamepadInput, stopGamepadInput } from '../utils/gamepadInput.js'
 import { autoSubstituteRedSide } from '../utils/playerModeSetup.js'
 import {
@@ -71,6 +75,7 @@ import {
   formatMatchClock,
   getStoppageInputs,
 } from '../utils/matchClock.js'
+import { shouldEnableCoachDecisions } from '../utils/coachDecisionMode.js'
 
 const SPEEDS = [1, 2, 3]
 const MAX_SUBSTITUTION_WINDOWS = 3
@@ -144,15 +149,17 @@ function decisionSituationText(decision) {
     : `当前比赛进入“${decision?.label || '关键回合'}”，请立即下达场内指令。`
 }
 
-export function HappySeedMatchBroadcast({ saveData = null, onMatchComplete = null }) {
+export function HappySeedMatchBroadcast({
+  saveData = null,
+  onMatchComplete = null,
+  shootoutActive = false,
+}) {
   const params = useMemo(() => new URLSearchParams(window.location.search), [])
-  const isPlayerMode = saveData?.currentRun?.gameMode === 'player'
+  const gameMode = saveData?.currentRun?.gameMode || 'coach'
+  const isPlayerMode = gameMode === 'player'
   const coachDecisionMode = useMemo(() => (
-    !isPlayerMode
-    && params.get('events') !== 'manual'
-    && params.get('events') !== 'auto'
-    && params.get('decisions') !== 'off'
-  ), [params, isPlayerMode])
+    shouldEnableCoachDecisions(gameMode, params, import.meta.env.DEV)
+  ), [gameMode, params])
   const acceptanceMuted = useMemo(() => (
     params.get('mute') === '1'
     || (import.meta.env.DEV && params.has('time') && Number(params.get('time')) < 1)
@@ -251,6 +258,13 @@ export function HappySeedMatchBroadcast({ saveData = null, onMatchComplete = nul
   const draggingInIdRef = useRef(null)
   const [sfxBus] = useState(() => createMatchSfxBus())
   const [showExitConfirm, setShowExitConfirm] = useState(false)
+  const matchTour = isPlayerMode ? SPOTLIGHT_TOURS['match-player'] : SPOTLIGHT_TOURS['match-coach']
+  const [matchTourFinished, setMatchTourFinished] = useState(() => hasCompletedSpotlightTour(matchTour.id))
+  const [contextTourRequest, setContextTourRequest] = useState({ id: null, serial: 0 })
+  const handleMatchTourFinish = useCallback(() => setMatchTourFinished(true), [])
+  const requestContextTour = (id) => {
+    setContextTourRequest((current) => ({ id, serial: current.serial + 1 }))
+  }
 
   useEffect(() => {
     if (!acceptanceMuted) return
@@ -299,16 +313,21 @@ export function HappySeedMatchBroadcast({ saveData = null, onMatchComplete = nul
   useEffect(() => {
     if (!audioStarted) return undefined
     let crowdTriggered = false
+    let crowdStartTimer = null
     const onKickoffPlayed = () => {
       audioManager.playSound('periodWhistle')
       if (!crowdTriggered) {
         crowdTriggered = true
-        window.setTimeout(() => audioManager.startCrowdAmbient(), 1800)
+        crowdStartTimer = window.setTimeout(() => {
+          crowdStartTimer = null
+          audioManager.startCrowdAmbient()
+        }, 1800)
       }
     }
     window.addEventListener('ab-kickoff-played', onKickoffPlayed)
     return () => {
       window.removeEventListener('ab-kickoff-played', onKickoffPlayed)
+      if (crowdStartTimer) window.clearTimeout(crowdStartTimer)
       audioManager.stopCrowdAmbient()
     }
   }, [audioStarted])
@@ -775,7 +794,7 @@ export function HappySeedMatchBroadcast({ saveData = null, onMatchComplete = nul
       setPrematchGateClear(true)
       return undefined
     }
-    // 球员模式：不开更衣室，直接放行开球
+    // 球员模式不开赛前更衣室，直接放行 Runtime 装配。
     if (isPlayerMode) {
       setPrematchGateClear(true)
       setPrematchPlanned(false)
@@ -954,7 +973,9 @@ export function HappySeedMatchBroadcast({ saveData = null, onMatchComplete = nul
   }
 
   const startCoachDecision = useCallback(async (plan, runtimeMoment) => {
-    if (!plan || !runtimeMoment) return
+    // 点球大战复用同一个 DecisionDirector。常规比赛遗留的待决策计划
+    // 不能在此时再次 prepare，否则它的失败恢复会把点球场景 cancel 掉。
+    if (shootoutActive || !plan || !runtimeMoment) return
     const runId = ++decisionRunIdRef.current
     decisionChoiceLockedRef.current = false
     setDecisionTimedOut(false)
@@ -975,7 +996,9 @@ export function HappySeedMatchBroadcast({ saveData = null, onMatchComplete = nul
         authorityState: sessionRef.current,
       })
       setCoachDecision(decision)
-      await prepareFormalCoachDecision(decision, runtimeMoment, plan.sourceEvent)
+      await withDecisionWatchdog(
+        prepareFormalCoachDecision(decision, runtimeMoment, plan.sourceEvent),
+      )
       if (decisionRunIdRef.current !== runId) return
       setVisualEvents(getMatchVisualEventSnapshot())
       setDecisionCountdown(
@@ -995,7 +1018,7 @@ export function HappySeedMatchBroadcast({ saveData = null, onMatchComplete = nul
       setDecisionPhase('idle')
       setError(decisionError.message || '教练决策铺垫失败')
     }
-  }, [commitSession, params])
+  }, [commitSession, params, shootoutActive])
 
   const handleCoachChoice = useCallback(async (choiceOrId, options = {}) => {
     if (
@@ -1041,28 +1064,26 @@ export function HappySeedMatchBroadcast({ saveData = null, onMatchComplete = nul
     } catch (decisionError) {
       if (decisionRunIdRef.current !== runId) return
       console.error(decisionError)
-      if (decisionError.recovered) {
-        // 播放超时：主动取消导演，解除比赛冻结，而不是停在错误态
-        cancelFormalCoachDecision()
-        commitSession((current) => abortFormalDecisionInSession(current))
-        setCoachDecision(null)
-        setPendingDecisionPlan(null)
-        setDecisionPhase('idle')
-        setError(decisionError.message)
-        return
-      }
-      setDecisionPhase('error')
-      setError(decisionError.message || '教练决策结果播放失败')
+      // 任何异常（不只超时）都必须退出导演并恢复比赛。把 UI 留在 error
+      // 会让 Runtime 的 timeScale=0 与冻结快照永久存活，形成整场卡死。
+      cancelFormalCoachDecision()
+      commitSession((current) => abortFormalDecisionInSession(current))
+      setCoachDecision(null)
+      setPendingDecisionPlan(null)
+      setDecisionPhase('idle')
+      setError(decisionError.message || '教练决策结果播放失败，已恢复比赛')
     }
   }, [coachDecision, commitSession, decisionPhase])
 
   useEffect(() => subscribeToRuntimeDecisionChoices(({ choiceId }) => {
+    if (shootoutActive) return
     if (choiceId) handleCoachChoice(choiceId)
-  }), [handleCoachChoice])
+  }), [handleCoachChoice, shootoutActive])
 
   useEffect(() => {
     if (
       !coachDecisionMode
+      || shootoutActive
       || !pendingDecisionPlan
       || coachDecision
       || decisionPhase !== 'idle'
@@ -1075,6 +1096,7 @@ export function HappySeedMatchBroadcast({ saveData = null, onMatchComplete = nul
     decisionPhase,
     pendingDecisionPlan,
     startCoachDecision,
+    shootoutActive,
     visualEvents.ready,
   ])
 
@@ -1117,15 +1139,16 @@ export function HappySeedMatchBroadcast({ saveData = null, onMatchComplete = nul
     audioManager.playSound('decisionTick')
   }, [decisionCountdown, decisionPhase])
 
-  useEffect(() => () => {
-    decisionRunIdRef.current += 1
-    cancelFormalCoachDecision()
-    if (eventArtworkTimerRef.current) window.clearTimeout(eventArtworkTimerRef.current)
-    // 组件卸载时隐藏引擎 canvas，防止遮挡后续页面
-    const gameCanvas = window.__matchGame?.renderer?.view
-    if (gameCanvas) gameCanvas.style.display = 'none'
-    // 清除 bootPromise，防止中途退出后再次进入时旧 promise 阻塞新 boot
-    clearBootPromise()
+  useEffect(() => {
+    // StrictMode 会在开发环境回放一次 effect。先认领单例 Runtime，并让卸载释放
+    // 延后到当前 React commit 结束；若紧接着重新挂载，释放会被自动取消。
+    retainMatchRuntime()
+    return () => {
+      decisionRunIdRef.current += 1
+      cancelFormalCoachDecision()
+      if (eventArtworkTimerRef.current) window.clearTimeout(eventArtworkTimerRef.current)
+      scheduleMatchRuntimeShutdown()
+    }
   }, [])
 
   // 球员模式：启用手柄输入轮询，卸载时停止
@@ -1256,7 +1279,7 @@ export function HappySeedMatchBroadcast({ saveData = null, onMatchComplete = nul
         </aside>
       )}
 
-      <header className="broadcast-scoreboard" aria-label="比赛比分">
+      <header className="broadcast-scoreboard" aria-label="比赛比分" data-guide="match-scoreboard">
         <div
           className={`broadcast-scoreboard-strip${showStats ? ' is-expanded' : ''}`}
         >
@@ -1296,7 +1319,9 @@ export function HappySeedMatchBroadcast({ saveData = null, onMatchComplete = nul
           <small>
             {broadcast.clock?.inStoppage
               ? `补时 +${broadcast.clock?.addedTotal || broadcast.clock?.addedMinute || 1}`
-              : '小组赛'}
+              : currentRun?.isKnockoutMatch
+                ? ({ r32: '32强', r16: '16强', qf: '8强', sf: '半决赛', final: '决赛' }[currentRun?.knockoutRound] || '淘汰赛')
+                : '小组赛'}
           </small>
         </div>
         {showStats && (
@@ -1346,7 +1371,7 @@ export function HappySeedMatchBroadcast({ saveData = null, onMatchComplete = nul
         </small>
       </div>
 
-      <nav className="broadcast-controls" aria-label="比赛控制">
+      <nav className="broadcast-controls" aria-label="比赛控制" data-guide="match-controls">
         <button type="button" className="broadcast-pause-button" disabled={decisionInteractionLocked} onClick={togglePause}>
           <span aria-hidden="true">{paused ? '▶' : 'Ⅱ'}</span>
           <b>{paused ? '继续' : '暂停'}</b>
@@ -1386,6 +1411,7 @@ export function HappySeedMatchBroadcast({ saveData = null, onMatchComplete = nul
       {!isPlayerMode && <button
         type="button"
         className="broadcast-substitution-trigger broadcast-tactics-trigger"
+        data-guide="match-tactics-trigger"
         disabled={decisionInteractionLocked}
         aria-expanded={showTactics}
         aria-controls="broadcast-tactics-drawer"
@@ -1409,6 +1435,7 @@ export function HappySeedMatchBroadcast({ saveData = null, onMatchComplete = nul
       {!isPlayerMode && <button
         type="button"
         className="broadcast-substitution-trigger"
+        data-guide="match-substitutions-trigger"
         disabled={decisionInteractionLocked || substitutionWindowsLeft <= 0 || substitutionPlayersLeft <= 0}
         aria-expanded={showSubstitutions}
         aria-controls="broadcast-substitution-drawer"
@@ -1442,9 +1469,15 @@ export function HappySeedMatchBroadcast({ saveData = null, onMatchComplete = nul
                 <strong>战术调整</strong>
               </div>
               <span>比分 {matchSession.score.red}:{matchSession.score.blue}</span>
+              <button
+                type="button"
+                className="broadcast-drawer-guide"
+                aria-label="打开战术新手指引"
+                onClick={() => requestContextTour(SPOTLIGHT_TOURS.tactics.id)}
+              >?</button>
               <button type="button" aria-label="关闭战术调整" onClick={() => setShowTactics(false)}>×</button>
             </header>
-            <section className="broadcast-tactics-options">
+            <section className="broadcast-tactics-options" data-guide="tactics-options">
               {TACTICAL_STANCES.map((stance) => (
                 <button
                   key={stance.id}
@@ -1550,10 +1583,16 @@ export function HappySeedMatchBroadcast({ saveData = null, onMatchComplete = nul
                 <strong>阵型换人</strong>
               </div>
               <span>{substitutionWindowsLeft} 次窗口 · {substitutionPlayersLeft} 人名额</span>
+              <button
+                type="button"
+                className="broadcast-drawer-guide"
+                aria-label="打开换人新手指引"
+                onClick={() => requestContextTour(SPOTLIGHT_TOURS.substitutions.id)}
+              >?</button>
               <button type="button" aria-label="关闭换人调整" onClick={closeSubstitutionEditor}>×</button>
             </header>
 
-            <section className="broadcast-formation-pitch" aria-label="场上阵型">
+            <section className="broadcast-formation-pitch" aria-label="场上阵型" data-guide="substitution-pitch">
               <div className="broadcast-pitch-markings" aria-hidden="true">
                 <i className="is-halfway" /><i className="is-circle" /><i className="is-box-top" /><i className="is-box-bottom" />
               </div>
@@ -1584,7 +1623,7 @@ export function HappySeedMatchBroadcast({ saveData = null, onMatchComplete = nul
               })}
             </section>
 
-            <section className="broadcast-bench" aria-label="替补席">
+            <section className="broadcast-bench" aria-label="替补席" data-guide="substitution-bench">
               <div className="broadcast-drawer-label">
                 <span>替补席 · 拖到阵型中的球员位置</span>
                 <small>{availableBench.length} 人可用 · 待换 {pendingSubstitutions.length} 人</small>
@@ -1646,6 +1685,30 @@ export function HappySeedMatchBroadcast({ saveData = null, onMatchComplete = nul
             </footer>
           </aside>
         </div>
+      )}
+      {audioStarted && prematchGateClear && !lockerRoom && (
+        <SpotlightTour
+          tour={matchTour}
+          autoStart
+          onFinish={handleMatchTourFinish}
+          showHelpButton={false}
+        />
+      )}
+      {showTactics && matchTourFinished && (
+        <SpotlightTour
+          tour={SPOTLIGHT_TOURS.tactics}
+          autoStart
+          startRequest={contextTourRequest.id === SPOTLIGHT_TOURS.tactics.id ? contextTourRequest.serial : 0}
+          showHelpButton={false}
+        />
+      )}
+      {showSubstitutions && matchTourFinished && (
+        <SpotlightTour
+          tour={SPOTLIGHT_TOURS.substitutions}
+          autoStart
+          startRequest={contextTourRequest.id === SPOTLIGHT_TOURS.substitutions.id ? contextTourRequest.serial : 0}
+          showHelpButton={false}
+        />
       )}
     </main>
   )

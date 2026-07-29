@@ -48,6 +48,34 @@ export const AI_SHOOTER_BASE_MISS_RATE = 0.08
 const clamp01 = value => Math.min(1, Math.max(0, value))
 
 /**
+ * The goalkeeper faces the penalty taker, so their own left/right is the
+ * inverse of the shooter's view (and of the labels used by shot choices).
+ */
+export function keeperPerspectiveDirection(direction) {
+  if (direction === 'left') return 'right'
+  if (direction === 'right') return 'left'
+  return 'center'
+}
+
+/**
+ * Rules choose the intended branch before the Runtime animation starts, but
+ * the physical ball remains authoritative. A ball caught before the line is
+ * a save even when the sampled branch originally expected a goal.
+ */
+export function reconcileShootoutResult(ruleResult = {}, liveResult) {
+  if (liveResult === 'goal') {
+    return { scored: true, saved: false, missed: false }
+  }
+  if (liveResult === 'saved') {
+    return { scored: false, saved: true, missed: false }
+  }
+  if (liveResult === 'out') {
+    return { scored: false, saved: false, missed: true }
+  }
+  return ruleResult
+}
+
+/**
  * AI shooter picks a target zone. High tec leans toward corners and the
  * top row; low tec plays it safe down the middle. Every AI kick carries
  * a base ~8% chance of being overpowered (flies off target).

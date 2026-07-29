@@ -107,6 +107,9 @@ export class AudioManager {
     this.musicStep = 0
     this.userUnlocked = false
     this.matchSamples = {}
+    this._activeMatchAudioNodes = new Set()
+    this._activeMatchBufferSources = new Set()
+    this._matchSoundTimers = new Set()
     this._rainNode = null
     this._rainRequested = false
     this._crowdNode = null
@@ -262,6 +265,8 @@ export class AudioManager {
   }
 
   preloadMatchSamples() {
+    // 互动空间包完全离线，且比赛音效使用本地合成音；编译时移除通用网络加载分支。
+    if (__DOUYIN_BUILD__) return
     const ctx = this.ensureSfxContext()
     if (!ctx || typeof fetch !== 'function') return
     Object.entries(MATCH_SAMPLE_ASSETS).forEach(([name, url]) => {
@@ -290,8 +295,10 @@ export class AudioManager {
   }
 
   playMatchSample(name) {
+    if (!this.userUnlocked) return false
+    if (__DOUYIN_BUILD__) return this.playPackagedMatchSample(name)
     const entry = this.matchSamples[name]
-    if (!entry || !this.userUnlocked) return false
+    if (!entry) return false
     const ctx = this.ensureSfxContext()
     if (!ctx) return false
     // 音频尚未加载完成：静默（不回退废案合成音）
@@ -307,7 +314,28 @@ export class AudioManager {
     const source = ctx.createBufferSource()
     source.buffer = entry.buffer
     source.connect(gain)
+    this._activeMatchBufferSources.add(source)
+    source.onended = () => this._activeMatchBufferSources.delete(source)
     source.start(0)
+    return true
+  }
+
+  playPackagedMatchSample(name) {
+    const asset = MATCH_SAMPLE_ASSETS[name]
+    if (!asset || typeof window === 'undefined' || typeof window.Audio !== 'function') return false
+    const audio = new window.Audio(asset)
+    const volumeScale = name === 'goalCheer' ? 0.78
+      : name === 'cardWhistle' ? 0.72
+      : name === 'periodWhistle' ? 0.80
+      : 0.92
+    audio.preload = 'auto'
+    audio.volume = Math.max(0, Math.min(1, this.soundVolume * volumeScale))
+    const release = () => this._activeMatchAudioNodes.delete(audio)
+    audio.addEventListener('ended', release, { once: true })
+    audio.addEventListener('error', release, { once: true })
+    this._activeMatchAudioNodes.add(audio)
+    const playback = audio.play()
+    if (playback?.catch) playback.catch(release)
     return true
   }
 
@@ -378,7 +406,11 @@ export class AudioManager {
   playGoal() {
     const net = this.playSound('goalNet')
     if (typeof window !== 'undefined') {
-      window.setTimeout(() => this.playSound('goalCheer'), 180)
+      const timer = window.setTimeout(() => {
+        this._matchSoundTimers.delete(timer)
+        this.playSound('goalCheer')
+      }, 180)
+      this._matchSoundTimers.add(timer)
     }
     return net
   }
@@ -564,6 +596,30 @@ export class AudioManager {
     } catch { /* already stopped */ }
     this._rainNode = null
     return true
+  }
+
+  /** 离开比赛页面时只清理比赛音频，不影响主菜单 BGM 和通用点击音。 */
+  stopMatchAudio() {
+    this.stopCrowdAmbient()
+    this.stopRainAmbient()
+
+    this._matchSoundTimers.forEach((timer) => window.clearTimeout(timer))
+    this._matchSoundTimers.clear()
+
+    this._activeMatchAudioNodes.forEach((audio) => {
+      try {
+        audio.pause()
+        audio.currentTime = 0
+      } catch { /* already stopped */ }
+    })
+    this._activeMatchAudioNodes.clear()
+
+    this._activeMatchBufferSources.forEach((source) => {
+      try {
+        source.stop(0)
+      } catch { /* already stopped */ }
+    })
+    this._activeMatchBufferSources.clear()
   }
 }
 

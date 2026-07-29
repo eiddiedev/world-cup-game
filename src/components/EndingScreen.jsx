@@ -246,7 +246,7 @@ export default function EndingScreen({ saveData, updateSaveData, navigateTo }) {
             ? <img src="/assets/hud/world-cup-trophy.png" alt="大力神杯" style={{ width: 72, height: 'auto', imageRendering: 'pixelated' }} />
             : ending.emoji}
         </div>
-        <h1 className="ending-title">{ending.title}</h1>
+        <h1 className="ending-title" data-guide="ending-result">{ending.title}</h1>
         <p className="ending-team">{team?.name}</p>
         <p className="ending-message">{ending.message}</p>
 
@@ -256,7 +256,7 @@ export default function EndingScreen({ saveData, updateSaveData, navigateTo }) {
           </div>
         )}
 
-        <div className="ending-stats">
+        <div className="ending-stats" data-guide="ending-review">
           <h3>征程回顾</h3>
           <div className="stats-grid">
             <div className="stat-item">
@@ -307,7 +307,7 @@ export default function EndingScreen({ saveData, updateSaveData, navigateTo }) {
           )}
         </div>
 
-        <div className="ending-actions">
+        <div className="ending-actions" data-guide="ending-actions">
           <button className="PixelButton" onClick={handleNewGame}>
             <span className="button-face" aria-hidden="true"></span>
             <span className="button-label">重新挑战</span>

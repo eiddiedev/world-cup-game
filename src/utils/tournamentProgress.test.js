@@ -4,7 +4,7 @@ import { createNewRun } from './saveManager.js'
 import { getNextRunAfterMatch } from './tournamentProgress.js'
 
 describe('世界杯赛事级进度', () => {
-  it('lets every playable team complete group play and all four knockout rounds', () => {
+  it('lets every playable team complete group play and all five knockout rounds', () => {
     expect(teams).toHaveLength(16)
 
     for (const team of teams) {
@@ -25,7 +25,7 @@ describe('世界杯赛事级进度', () => {
       }
       expect(run).toMatchObject({ stage: 'tournament', matchIndex: 3 })
 
-      for (const round of ['r16', 'qf', 'sf', 'final']) {
+      for (const round of ['r32', 'r16', 'qf', 'sf', 'final']) {
         run = getNextRunAfterMatch({
           ...run,
           stage: 'post-match',

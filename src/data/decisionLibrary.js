@@ -37,17 +37,20 @@ const BASE_DECISION_LIBRARY = [
         conversion_miss_outcome: 'saved_near',
       },
       {
-        id: 'chip_shot',
-        label: '挑射门将',
-        desc: '门将出击时轻挑，球从头顶飞过——需要绝对的冷静和技术。',
-        risk: '门将若未出击，球会飞出横梁',
-        reward: '成功则是教科书级别的进球',
+        id: 'far_post_shot',
+        label: '推射远角',
+        desc: '观察门将重心，用脚内侧把球推向远角，避免和出击门将正面碰撞。',
+        risk: '角度控制不足会偏出远门柱',
+        reward: '利用门将横移距离，获得更合理的单刀终结线路',
         weight_formula: [
-          { attr: 'tec', weight: 0.70 },
-          { attr: 'sta', weight: 0.30 },
+          { attr: 'tec', weight: 0.65 },
+          { attr: 'sta', weight: 0.20 },
+          { attr: 'spd', weight: 0.15 },
         ],
-        outcome_deltas: { goal: 0.22, goal_against: 0.0, win_delta: 0.10 },
+        outcome_deltas: { goal: 0.24, goal_against: 0.0, win_delta: 0.11 },
         possible_outcomes: ['goal_chip', 'goal_chip', 'miss_over', 'saved_chip'],
+        goal_conversion: 0.52,
+        conversion_miss_outcome: 'saved_chip',
       },
       {
         id: 'pass_to_teammate',
@@ -198,6 +201,9 @@ const BASE_DECISION_LIBRARY = [
         ],
         outcome_deltas: { goal: 0.20, goal_against: 0.0, win_delta: 0.09 },
         possible_outcomes: ['goal_freekick', 'saved_freekick', 'hit_wall', 'miss_over'],
+        // 即使是高水平主罚者，禁区外直接任意球也不应接近单刀转化率。
+        goal_conversion: 0.12,
+        conversion_miss_outcome: 'hit_wall',
       },
       {
         id: 'freekick_cross',

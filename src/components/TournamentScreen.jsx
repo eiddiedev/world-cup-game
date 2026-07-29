@@ -59,24 +59,8 @@ const TEAM_STRENGTH = {
   south_africa: 66, south_korea: 74, czech: 75,
 }
 
-// 同组对手映射（真实分组）
-const GROUP_OPPONENTS = {
-  france: ['norway', 'iraq', 'senegal'],
-  brazil: ['morocco', 'haiti', 'scotland'],
-  argentina: ['jordan', 'austria', 'algeria'],
-  portugal: ['congo', 'uzbekistan', 'colombia'],
-  germany: ['curacao', 'ivory_coast', 'ecuador'],
-  japan: ['netherlands', 'tunisia', 'sweden'],
-  norway: ['france', 'iraq', 'senegal'],
-  morocco: ['brazil', 'haiti', 'scotland'],
-  curacao: ['germany', 'ecuador', 'ivory_coast'],
-  spain: ['capeverde', 'saudi', 'uruguay'],
-  england: ['croatia', 'panama', 'ghana'],
-  colombia: ['portugal', 'congo', 'uzbekistan'],
-  usa: ['paraguay', 'australia', 'turkey'],
-  mexico: ['south_africa', 'south_korea', 'czech'],
-  canada: ['bosnia', 'qatar', 'switzerland'],
-  capeverde: ['spain', 'saudi', 'uruguay'],
+function getScheduleOpponentId(match) {
+  return getTeamById(match?.opponent)?.id || match?.opponent || 'unknown'
 }
 
 /**
@@ -115,7 +99,7 @@ function simulateMatch(homeStrength, awayStrength, seed) {
 // Exported for deterministic tournament-algorithm verification.
 // eslint-disable-next-line react-refresh/only-export-components
 export function simulateGroupStage(playerTeamId, playerMatchResults) {
-  const opponents = GROUP_OPPONENTS[playerTeamId] || []
+  const opponents = (getTeamSchedule(playerTeamId)?.groupStage || []).map(getScheduleOpponentId)
   if (opponents.length !== 3) return { rank: 1, teams: [] }
 
   // 4支球队
@@ -201,7 +185,7 @@ export function simulateGroupStage(playerTeamId, playerMatchResults) {
     goalDiff: goalsFor[id] - goalsAgainst[id],
     goalsFor: goalsFor[id],
     isPlayer: id === playerTeamId,
-    name: id === playerTeamId ? null : (OPPONENT_ID_TO_NAME[id] || id),
+    name: id === playerTeamId ? null : (getTeamById(id)?.name || OPPONENT_ID_TO_NAME[id] || id),
   }))
 
   // 排序：积分 > 净胜球 > 进球数
@@ -300,6 +284,7 @@ export default function TournamentScreen({ saveData, updateSaveData, navigateTo 
   // 进入排兵布阵
   const handlePrepareMatch = (roundIndex) => {
     const isPlayerMode = saveData.currentRun?.gameMode === 'player'
+    const opponentId = getScheduleOpponentId(groupMatches[roundIndex])
     if (isPlayerMode) {
       // 球员模式：自动刷新首发，跳过布阵页直接比赛
       const refreshed = refreshPlayerLineup(saveData.currentRun)
@@ -310,7 +295,7 @@ export default function TournamentScreen({ saveData, updateSaveData, navigateTo 
           matchIndex: roundIndex,
           stage: 'match',
           isKnockoutMatch: false,
-          currentOpponent: groupMatches[roundIndex]?.opponent || '未知',
+          currentOpponent: opponentId,
         },
       })
       navigateTo('match')
@@ -323,7 +308,7 @@ export default function TournamentScreen({ saveData, updateSaveData, navigateTo 
         matchIndex: roundIndex,
         stage: 'lineup',
         isKnockoutMatch: false,
-        currentOpponent: groupMatches[roundIndex]?.opponent || '未知',
+        currentOpponent: opponentId,
       },
     })
     navigateTo('lineup')
@@ -391,7 +376,7 @@ export default function TournamentScreen({ saveData, updateSaveData, navigateTo 
           : results.length
         const pct = Math.min(100, (completedMatches / totalMatches) * 100)
         return (
-          <div style={{ padding: '8px 16px' }}>
+          <div style={{ padding: '8px 16px' }} data-guide="tournament-progress">
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
               <span style={{ fontFamily: 'Zpix, monospace', fontSize: 12, color: '#F3E3B4' }}>征程进度</span>
               <span style={{ fontFamily: 'Zpix, monospace', fontSize: 12, color: '#C99A2E' }}>{completedMatches}/{totalMatches} 场</span>
@@ -425,6 +410,7 @@ export default function TournamentScreen({ saveData, updateSaveData, navigateTo 
               <div
                 key={index}
                 className={`match-item ${isCurrent ? 'current' : ''} ${isCompleted ? 'completed' : ''}`}
+                data-guide={isCurrent ? 'tournament-current-match' : undefined}
               >
                 <div className="match-info">
                   <span className="match-date">{match.date}</span>
@@ -508,7 +494,11 @@ export default function TournamentScreen({ saveData, updateSaveData, navigateTo 
                   const opponentFlag = (!isFuture && opponentName !== '待定') ? getTeamFlag(opponentName) : null
 
                   return (
-                    <div key={round.id} className={`knockout-round ${isCurrent ? 'current' : ''} ${isCompleted ? 'completed' : ''}`}>
+                    <div
+                      key={round.id}
+                      className={`knockout-round ${isCurrent ? 'current' : ''} ${isCompleted ? 'completed' : ''}`}
+                      data-guide={isCurrent ? 'tournament-current-match' : undefined}
+                    >
                       <span className="round-name">{round.name}</span>
                       <span className="round-opponent">
                         VS {opponentFlag ? <img src={opponentFlag} alt="" className="inline-flag" style={{ width: 16, height: 16, marginRight: 4 }} /> : null}{opponentName}

@@ -5,6 +5,9 @@ import '../styles/appointmentLetter.css'
 
 const APPOINTMENT_CARD_WIDTH = 420
 const APPOINTMENT_CARD_HEIGHT = 560
+const APPOINTMENT_STAGE_WIDTH = 650
+const APPOINTMENT_CARD_OFFSET_X = APPOINTMENT_STAGE_WIDTH - APPOINTMENT_CARD_WIDTH
+const APPOINTMENT_VIEWPORT_WIDTH = APPOINTMENT_CARD_WIDTH + (APPOINTMENT_CARD_OFFSET_X * 2)
 
 function getAppointmentScale() {
   if (typeof window === 'undefined') return 1
@@ -13,7 +16,7 @@ function getAppointmentScale() {
   const height = viewport?.height || window.innerHeight
   return Math.min(
     1,
-    Math.max(0.45, (width - 16) / APPOINTMENT_CARD_WIDTH),
+    Math.max(0.4, (width - 16) / APPOINTMENT_VIEWPORT_WIDTH),
     Math.max(0.45, (height - 16) / APPOINTMENT_CARD_HEIGHT),
   )
 }
@@ -129,9 +132,19 @@ export default function AppointmentLetter({ team, onConfirm, onCancel }) {
       >
         <div
           className="appointment-card-transform"
-          style={{ transform: `scale(${cardScale})` }}
+          style={{ transform: `scale(${cardScale}) translateX(-${APPOINTMENT_CARD_OFFSET_X}px)` }}
         >
-          <div className={`appointment-card ${phase === 'appearing' ? 'is-appearing' : ''}`}>
+          {phase === 'signing' && !hasSigned && (
+            <div className="appointment-sign-hint-external" aria-hidden="true">
+              <strong>在此签名</strong>
+              <span className="appointment-sign-arrow"><i /></span>
+            </div>
+          )}
+
+          <div
+            className={`appointment-card ${phase === 'appearing' ? 'is-appearing' : ''}`}
+            style={{ left: `${APPOINTMENT_CARD_OFFSET_X}px` }}
+          >
         {/* 聘书背景 */}
         <div className="appointment-bg" />
 
@@ -161,11 +174,6 @@ export default function AppointmentLetter({ team, onConfirm, onCancel }) {
           onPointerUp={handlePointerUp}
           onPointerLeave={handlePointerUp}
         />
-
-        {/* 签名提示 — 横线下方 */}
-        {phase === 'signing' && !hasSigned && (
-          <span className="appointment-sign-hint-inline">↑ 请在此签名</span>
-        )}
 
         {/* 印章 */}
         <img

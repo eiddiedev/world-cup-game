@@ -24,8 +24,8 @@ const P = {
   nativeBaseGoals: 0.85,      // 原生（模拟对战）场均进球基准/队
   strengthK: 0.7,             // 攻防差对进球期望的指数系数（公式内除以 10）
   gkSaveBase: 0.0,            // 门将强度对进球期望的额外抑制
-  decisionsBase: 5,           // 每场保底决策窗口数
-  decisionExtraP: 0.4,        // 额外自然决策概率（4 次二项试验）
+  decisionsBase: 9,           // 对齐正式 Runtime：每场约 10 个决策窗口
+  decisionExtraP: 0.25,       // 额外自然决策概率（4 次二项试验，期望合计 10 次）
   attackScenarioShare: 0.72,  // 进攻类场景占比
   defenseScenarioShare: 0.24, // 防守类场景占比
   nativeCorners: 0.75,        // 原生场均角球/队
@@ -499,7 +499,7 @@ if (AS_JSON) {
   console.log(`场均点球        ${num(report.overall.penaltiesPerMatch)}          (目标 ~0.5)`)
   console.log(`场均黄牌        ${num(report.overall.yellowPerMatch)}          (目标 ~3.0)`)
   console.log(`场均红牌        ${num(report.overall.redPerMatch)}          (目标 ~0.2)`)
-  console.log(`场均决策        ${num(report.overall.decisionsPerMatch)}          (目标 ≥5.0)`)
+  console.log(`场均决策        ${num(report.overall.decisionsPerMatch)}          (目标 ~10.0)`)
   console.log(`决策进球/场     ${num(report.overall.decisionGoalsPerMatch)} · 占总进球 ${pct(report.overall.decisionGoalShare)} (目标 25-35%)`)
   console.log('─'.repeat(68))
   console.log('分层胜率 (胜/平/负):')

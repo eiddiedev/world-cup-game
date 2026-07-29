@@ -122,7 +122,7 @@ describe('CoachDecisionEvent phase one', () => {
   })
 
   it('can resolve the same solo-shot choice to success or failure', () => {
-    const choice = getScenarioById('solo_run_penalty').choices.find(item => item.id === 'chip_shot')
+    const choice = getScenarioById('solo_run_penalty').choices.find(item => item.id === 'far_post_shot')
     const player = strongLineup[0]
 
     vi.spyOn(Math, 'random').mockReturnValueOnce(0).mockReturnValueOnce(0).mockReturnValueOnce(0)

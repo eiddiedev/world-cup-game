@@ -6,13 +6,6 @@ const STARTUP_INTERFACE_ASSETS = [
   '/assets/印章.png',
   '/assets/征召点.png',
   '/assets/金币.png',
-  '/assets/锁.png',
-  '/assets/属性/速度.png',
-  '/assets/属性/身体.png',
-  '/assets/属性/技术.png',
-  '/assets/属性/防守.png',
-  '/assets/属性/体能.png',
-  '/assets/属性/状态.png',
 ]
 
 export function getCriticalStartupAssets(teams = []) {
@@ -20,12 +13,6 @@ export function getCriticalStartupAssets(teams = []) {
     ...STARTUP_INTERFACE_ASSETS,
     ...teams.flatMap((team) => [team.logo, team.flag]),
   ].filter(Boolean))]
-}
-
-export function getSecondaryTeamAssets(teams = []) {
-  return [...new Set(teams.flatMap((team) => (
-    (team.groupOpponents || []).map((opponent) => opponent.flag)
-  )).filter(Boolean))]
 }
 
 /**
@@ -37,17 +24,4 @@ export function getSelectedTeamPlayerAssets(team) {
     team.hero,
     ...(team.players || []).map((player) => player.avatar),
   ].filter(Boolean))]
-}
-
-/**
- * 点球大战资源体积较大，只能在核心比赛资源和已选球队资源之后软加载。
- */
-export function getPenaltyShootoutAssets() {
-  return [
-    '/assets/shootout/ball.png',
-    '/assets/shootout/bg1.png',
-    '/assets/shootout/bg2.png',
-    ...Array.from({ length: 7 }, (_, index) => `/assets/shootout/gk${index + 1}.png`),
-    ...Array.from({ length: 8 }, (_, index) => `/assets/shootout/p${index + 1}.png`),
-  ]
 }

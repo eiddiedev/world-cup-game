@@ -139,17 +139,13 @@
 .locker-room-report.is-positive { border-top: 5px solid #67d98f; }
 .locker-room-report.is-negative { border-top: 5px solid #ef7a63; }
 @keyframes locker-room-report-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
-.locker-room-verdict-tag { font-size: 15px; letter-spacing: .1em; }
-.locker-room-report.is-positive .locker-room-verdict-tag { color: #7de8a4; }
-.locker-room-report.is-negative .locker-room-verdict-tag { color: #ff9d8a; }
+.locker-room-verdict-tag { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; font-size: 15px; letter-spacing: .06em; }
+.locker-room-verdict-tag span { color: var(--hud-gold, #ffd344); }
+.locker-room-verdict-tag em { font-style: normal; }
 .locker-room-result { margin: 0; max-width: 42em; font-size: clamp(14px, 1.8vw, 16px); line-height: 1.7; }
-.locker-room-deltas { display: flex; flex-wrap: wrap; justify-content: center; gap: 14px; margin: 0; padding: 0; list-style: none; font-size: 15px; font-weight: 900; }
-.locker-room-deltas small { color: #8ea098; font-size: 10px; font-weight: 400; }
 .is-up { color: #9fe6b5; }
 .is-down { color: #ff9d8a; }
 .is-flat { color: #8ea098; }
-.locker-room-affected { display: grid; gap: 3px; margin: 0; padding: 0; list-style: none; color: #cfd9d2; font-size: 12px; }
-.locker-room-affected em { font-style: normal; font-weight: 800; margin-left: 8px; }
 .locker-room-continue {
   margin-top: 4px;
   padding: 12px 34px;
@@ -243,5 +239,25 @@
   .locker-room-choice span {
     font-size: clamp(9px, 2.45vh, 11px);
     line-height: 1.35;
+  }
+
+  .locker-room-report {
+    gap: 8px;
+    padding: 10px 12px;
+  }
+
+  .locker-room-verdict-tag {
+    font-size: 13px;
+  }
+
+  .locker-room-result {
+    font-size: clamp(11px, 2.8vh, 13px);
+    line-height: 1.45;
+  }
+
+  .locker-room-continue {
+    margin-top: 0;
+    padding: 8px 28px;
+    font-size: 13px;
   }
 }

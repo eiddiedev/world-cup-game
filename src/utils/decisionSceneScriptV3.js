@@ -139,9 +139,15 @@ function buildLiveShotPlan({ path, terminal, intent, shooterRuntimeActorId, keep
   const arrivalSpeed = ['goal-for', 'goal-against'].includes(terminal)
     ? 7.5
     : ['home-goalkeeper', 'away-goalkeeper'].includes(terminal) ? 3.2 : 7
-  const power = elevate >= 0.2
+  const basePower = elevate >= 0.2
     ? Math.sqrt(dist * BALL_GRAVITY / Math.sin(2 * elevate))
     : Math.sqrt(arrivalSpeed * arrivalSpeed + 2 * BALL_GROUND_FRICTION * dist)
+  // 勺子球在 Runtime 中同样受到滚动/空气阻尼；纯抛体公式会让球恰好
+  // 停在门线前。仅对“命中”分支补偿这段损耗，扑救分支仍保持柔和球速。
+  const power = intent === 'penalty-panenka'
+    && ['goal-for', 'goal-against'].includes(terminal)
+    ? basePower * 1.08
+    : basePower
   return {
     shooterRuntimeActorId,
     keeperRuntimeActorId,
@@ -165,10 +171,13 @@ function buildRoles(decision, actorSource, runtimeMoment) {
     ? -attackDirection
     : attackDirection
   const owner = all.find((actor) => actor.runtimeActorId === runtimeMoment.ownerRuntimeActorId)
-  const requested = red.find((actor) => (
+  const requestedHome = red.find((actor) => (
     actor.playerId === decision?.coachDecisionEvent?.keyPlayers?.primary?.id
   ))
-  const primary = requested || nearestActor(red.filter((actor) => !actor.isGoalkeeper), positions, origin) || red[0]
+  const requestedAway = blue.find((actor) => (
+    actor.playerId === decision?.coachDecisionEvent?.keyPlayers?.primary?.id
+  ))
+  const primary = requestedHome || nearestActor(red.filter((actor) => !actor.isGoalkeeper), positions, origin) || red[0]
   // 接应者必须是真正站在接应区域（持球人斜后方、靠近弧顶一侧）的球员，
   // 而不是紧挨持球人的队友，否则"回传弧顶"会把球交给并不在弧顶的人
   const supportZone = [
@@ -178,7 +187,7 @@ function buildRoles(decision, actorSource, runtimeMoment) {
   const support = nearestActor(red.filter((actor) => !actor.isGoalkeeper), positions, supportZone, new Set([primary.runtimeActorId])) || red.filter((actor) => !actor.isGoalkeeper && actor !== primary)[0] || red[1]
   const opponent = owner?.side === 'blue'
     ? owner
-    : nearestActor(blue.filter((actor) => !actor.isGoalkeeper), positions, origin) || blue[1]
+    : requestedAway || nearestActor(blue.filter((actor) => !actor.isGoalkeeper), positions, origin) || blue[1]
   const blocker = nearestActor(blue.filter((actor) => !actor.isGoalkeeper), positions, origin) || opponent
   const homeGoalkeeper = red.find((actor) => actor.isGoalkeeper) || red[0]
   const awayGoalkeeper = blue.find((actor) => actor.isGoalkeeper) || blue[0]
@@ -206,6 +215,16 @@ function buildRoles(decision, actorSource, runtimeMoment) {
     awayAttackGoal,
     new Set([opponent.runtimeActorId]),
   ) || awaySupport
+  const farSideZone = [
+    clamp(origin[0] + homeAttackDirection * 0.035),
+    origin[1] < 0.5 ? 0.86 : 0.14,
+  ]
+  const farSideSupport = nearestActor(
+    red.filter((actor) => !actor.isGoalkeeper),
+    positions,
+    farSideZone,
+    new Set([primary.runtimeActorId]),
+  ) || support
   const setPieceTaker = runtimeMoment.attackingSide === 'blue' ? opponent : primary
   const setPieceTarget = runtimeMoment.attackingSide === 'blue' ? awayAerialTarget : aerialTarget
   const setPieceCandidates = runtimeMoment.attackingSide === 'blue' ? blue : red
@@ -225,7 +244,7 @@ function buildRoles(decision, actorSource, runtimeMoment) {
     },
     raw: {
       primary, support, opponent, blocker, homeGoalkeeper, awayGoalkeeper,
-      aerialTarget, awaySupport, awayAerialTarget, setPieceTaker,
+      aerialTarget, awaySupport, awayAerialTarget, farSideSupport, setPieceTaker,
       setPieceTarget, setPieceShortSupport, setPieceDefender, captain, owner,
     },
     actors: {
@@ -238,6 +257,7 @@ function buildRoles(decision, actorSource, runtimeMoment) {
       aerialTarget: actorReference(aerialTarget, 'aerialTarget'),
       awaySupport: actorReference(awaySupport, 'awaySupport'),
       awayAerialTarget: actorReference(awayAerialTarget, 'awayAerialTarget'),
+      farSideSupport: actorReference(farSideSupport, 'farSideSupport'),
       setPieceTaker: actorReference(setPieceTaker, 'setPieceTaker'),
       setPieceTarget: actorReference(setPieceTarget, 'setPieceTarget'),
       setPieceShortSupport: actorReference(setPieceShortSupport, 'setPieceShortSupport'),
@@ -270,6 +290,16 @@ function geometryContext(runtimeMoment, roles) {
   const awaySupport = actorPoint('awaySupport', [clamp(origin[0] - awayDirection * 0.09), clamp(0.5 + (origin[1] - 0.5) * 0.5)])
   const homeAerial = actorPoint('aerialTarget', [clamp(homeAttackGoalX - homeDirection * 0.07), farY])
   const awayAerial = actorPoint('awayAerialTarget', [clamp(homeDefendGoalX - awayDirection * 0.07), farY])
+  const farSideSupport = actorPoint('farSideSupport', [
+    clamp(origin[0] + homeDirection * 0.035),
+    origin[1] < 0.5 ? 0.86 : 0.14,
+  ])
+  const homeDefenderXs = (roles.groups.homeOutfield || [])
+    .map((actor) => roles.positions.get(actor.runtimeActorId)?.[0])
+    .filter(Number.isFinite)
+    .sort((left, right) => homeDirection > 0 ? left - right : right - left)
+  const homeDefensiveLineX = Number(homeDefenderXs[Math.min(1, homeDefenderXs.length - 1)])
+    || clamp(homeDefendGoalX + homeDirection * 0.18)
   const goalTargetX = runtimeMoment.attackingSide === 'blue' ? homeDefendGoalX : homeAttackGoalX
   const context = {
     origin,
@@ -291,6 +321,8 @@ function geometryContext(runtimeMoment, roles) {
     aerial: runtimeMoment.attackingSide === 'blue' ? awayAerial : homeAerial,
     homeAerial,
     awayAerial,
+    farSideSupport,
+    homeDefensiveLineX,
     homeGoalkeeper: actorPoint('homeGoalkeeper', [homeDefendGoalLineX, 0.5]),
     awayGoalkeeper: actorPoint('awayGoalkeeper', [homeAttackGoalLineX, 0.5]),
     primary: actorPoint('primary', origin),
@@ -435,7 +467,7 @@ const RUN_INTENTS = Object.freeze({
   'show-touchline': 'touchline',
   'carry-to-corner': 'opponent-touchline',
   'keeper-rush': 'origin',
-  'press-carrier': 'opponent',
+  'press-carrier': 'origin',
   'recovery-run': 'opponent-inside',
   'support-run': 'aerialLead',
   'keeper-claim': 'origin',
@@ -446,6 +478,8 @@ const RUN_INTENTS = Object.freeze({
   'rebound-run': 'origin',
   'shadow-pass-lane': 'support',
   'keeper-to-box': 'aerial',
+  'solo-square-run': 'solo-square',
+  'offside-run': 'offside-forward',
 })
 
 function runTarget(key, context) {
@@ -468,6 +502,18 @@ function runTarget(key, context) {
   if (key === 'goal-shift') return [context.ownGoal[0], context.origin[1] < 0.5 ? 0.46 : 0.54, 0]
   if (key === 'support') return context.support
   if (key === 'aerial') return context.aerial
+  if (key === 'solo-square') return [
+    clamp(context.origin[0] + context.direction * 0.035),
+    context.origin[1] < 0.5
+      ? clamp(context.origin[1] + 0.18, 0.38, 0.68)
+      : clamp(context.origin[1] - 0.18, 0.32, 0.62),
+    0,
+  ]
+  if (key === 'offside-forward') return [
+    clamp(context.homeDefensiveLineX - context.homeDirection * 0.035),
+    context.awaySupport[1],
+    0,
+  ]
   return context.origin
 }
 
@@ -494,6 +540,7 @@ const ZONE_CENTER_BY_INTENT = Object.freeze({
   'block-angle': 'opponent',
   'goal-line-block': 'ownGoal',
   'sideline-trap': 'opponent',
+  'sideline-ball-trap': 'origin',
   'rebound-cutback': 'support',
 })
 
@@ -502,7 +549,10 @@ function formationPoints(intent, context) {
   const x = clamp(context.origin[0] - d * 0.06)
   const lines = {
     'mid-block': [[x, 0.22, 0], [x, 0.5, 0], [x, 0.78, 0]],
-    'step-offside-line': [[clamp(context.opponent[0] - d * 0.03), 0.18, 0], [clamp(context.opponent[0] - d * 0.03), 0.82, 0]],
+    'step-offside-line': [
+      [clamp(context.homeDefensiveLineX + context.homeDirection * 0.035), 0.18, 0],
+      [clamp(context.homeDefensiveLineX + context.homeDirection * 0.035), 0.82, 0],
+    ],
     'all-out-attack': [[clamp(x + d * 0.16), 0.2, 0], [clamp(x + d * 0.22), 0.5, 0], [clamp(x + d * 0.16), 0.8, 0]],
     'structured-pressure': [[clamp(x + d * 0.1), 0.24, 0], [clamp(x + d * 0.14), 0.5, 0], [clamp(x + d * 0.1), 0.76, 0]],
     'hold-shape': [[x, 0.2, 0], [x, 0.5, 0], [x, 0.8, 0]],
@@ -599,7 +649,7 @@ function resolveAffordance(definition, context, roles) {
       ...definition,
       role,
       runtimeActorId: roles.actors[role].runtimeActorId,
-      center: point3(context[role] || context.primary),
+      center: point3(context[definition.centerKey] || context[role] || context.primary),
       radius: [0.035, 0.06],
     }
   }
@@ -663,8 +713,18 @@ function outcomeTarget(terminal, context, ballSide, affordances) {
       : (receiverY < 0.5 ? 0.455 : 0.545)
     return [goal[0], aimY, aerial ? 0.3 : 0.12]
   }
-  if (terminal === 'away-goalkeeper') return context.awayGoalkeeper
-  if (terminal === 'home-goalkeeper') return coordinatedClaim || context.homeGoalkeeper
+  if (terminal === 'away-goalkeeper' || terminal === 'home-goalkeeper') {
+    const finalBallAction = affordances.filter((affordance) => affordance.kind === 'ball-path').at(-1)
+    if (terminal === 'home-goalkeeper' && coordinatedClaim) return coordinatedClaim
+    // 扑救结果也必须沿着该选择的真实瞄点飞行；门将随后扑向球路。
+    // 直接把终点改成门将初始位置，会把远角射门表现成主动回传门将。
+    if (finalBallAction?.runtimeEventType === 'shot') {
+      return point3(finalBallAction.points.at(-1))
+    }
+    return terminal === 'away-goalkeeper'
+      ? context.awayGoalkeeper
+      : coordinatedClaim || context.homeGoalkeeper
+  }
   if (terminal === 'blocker') return ballSide === 'away' ? context.primary : context.blocker
   if (terminal === 'support') return ballSide === 'away' ? context.awaySupport : context.homeSupport
   if (terminal === 'opponent-transition') return ballSide === 'away' ? context.primary : context.opponent
@@ -838,7 +898,13 @@ function stageLayout(contract, runtimeMoment, roles, context) {
     origin[0] = attackingRight ? 0.885 : 0.115
     origin[1] = 0.5
     set('setPieceTaker', [origin[0] - context.direction * 0.025, 0.5], towardGoal)
-    set(runtimeMoment.attackingSide === 'blue' ? 'homeGoalkeeper' : 'awayGoalkeeper', [context.goal[0], 0.5], awayFromGoal)
+    // context.goal 是球网内部的目标点；门将应站在门线前，而不是站进
+    // 球门后再把“扑住的球”瞬移到线内。
+    set(
+      runtimeMoment.attackingSide === 'blue' ? 'homeGoalkeeper' : 'awayGoalkeeper',
+      [clamp(context.goal[0] - context.direction * 0.015, 0.02, 0.98), 0.5],
+      awayFromGoal,
+    )
     set(runtimeMoment.attackingSide === 'blue' ? 'awaySupport' : 'support', [origin[0] - context.direction * 0.16, 0.36], towardGoal)
     set('setPieceDefender', [origin[0] - context.direction * 0.16, 0.64], awayFromGoal)
   } else if (trigger.includes('corner')) {
@@ -899,26 +965,31 @@ export function buildFormalDecisionSceneScriptV3(decision, actorSource, runtimeM
   if (!runtimeMoment?.ownerRuntimeActorId || (runtimeMoment.actorPositions?.length || 0) < 18) {
     throw new Error(`${scenarioId} 必须来自连续比赛中的真实 Runtime 瞬间`)
   }
-  const stagedSideChanges = contract.attackingSide
+  const reusesMatchPenaltyForShootout = scenarioId === 'match_penalty'
+    && decision.runtimeContext === 'shootout'
+  const contractAttackingSide = reusesMatchPenaltyForShootout
+    ? runtimeMoment.attackingSide
+    : contract.attackingSide
+  const stagedSideChanges = contractAttackingSide
     && contract.mode === 'blackout-stage'
-    && contract.attackingSide !== runtimeMoment.attackingSide
+    && contractAttackingSide !== runtimeMoment.attackingSide
   // blackout-stage 场景强制 attackingSide 时，必须根据球的实际位置推算 attackDirection，
   // 否则 runtime 缓存的方向可能与球位不同步，导致球路射向己方球门。
   // 角球/界外球/点球/点球大战除外：它们的球会被重新摆位，方向由 runtime 或合同提供。
   const isEdgeSetPiece = contract.triggerId?.includes('corner') || contract.triggerId?.includes('throw-in')
   const isPenaltySetPiece = contract.triggerId?.includes('penalty') || contract.triggerId === 'shootout-round'
-  const forcedDirection = contract.attackingSide && contract.mode === 'blackout-stage'
+  const forcedDirection = contractAttackingSide && contract.mode === 'blackout-stage'
     && !isEdgeSetPiece && !isPenaltySetPiece
     ? (Number(runtimeMoment.ball?.normalized?.[0] || 0.5) < 0.5 ? -1 : 1)
     : null
-  const sceneMoment = contract.attackingSide && contract.mode === 'blackout-stage'
+  const sceneMoment = contractAttackingSide && contract.mode === 'blackout-stage'
     ? {
       ...runtimeMoment,
-      attackingSide: contract.attackingSide,
+      attackingSide: contractAttackingSide,
       attackDirection: forcedDirection
         || (stagedSideChanges
           ? -Number(runtimeMoment.attackDirection || 1)
-          : Number(runtimeMoment.attackDirection || (contract.attackingSide === 'blue' ? -1 : 1))),
+          : Number(runtimeMoment.attackDirection || (contractAttackingSide === 'blue' ? -1 : 1))),
     }
     : runtimeMoment
   let roles = buildRoles(decision, actorSource, sceneMoment)
@@ -939,8 +1010,14 @@ export function buildFormalDecisionSceneScriptV3(decision, actorSource, runtimeM
   const choices = decision.choices.map((choice) => {
     const definitions = contract.choices[choice.id]
     if (!definitions?.length) throw new Error(`${scenarioId}/${choice.id} 缺少显式 V3 affordance`)
+    const runtimeDefinitions = (scenarioId === 'penalty_shootout_round' || reusesMatchPenaltyForShootout)
+      && context.attackingSide === 'blue'
+      ? definitions.map((definition) => (
+        definition.kind === 'ball-path' ? { ...definition, side: 'away' } : definition
+      ))
+      : definitions
     const affordances = coordinateChoiceAffordances(
-      definitions.map((definition) => resolveAffordance(definition, context, roles)),
+      runtimeDefinitions.map((definition) => resolveAffordance(definition, context, roles)),
       context,
     )
     // 如果最后一个 ball-path 的 targetRole 同时有 run-lane，球路终点应跟随跑位终点，
@@ -966,9 +1043,9 @@ export function buildFormalDecisionSceneScriptV3(decision, actorSource, runtimeM
     const ballAffordance = ballAffordances[0]
     const runAffordances = affordances.filter((affordance) => affordance.kind === 'run-lane')
     const isShotChoice = ballAffordance?.runtimeEventType === 'shot'
-    const carryAffordance = !ballAffordance
-      ? runAffordances.find((affordance) => affordance.carriesBall) || null
-      : null
+    // “带球跑位 + 射门”是组合动作，不能因为存在 shot ball-path 就丢掉带球段。
+    // 反击持球直冲、边锋内切等场景必须先沿 run-lane 推进，再从跑位终点起脚。
+    const carryAffordance = runAffordances.find((affordance) => affordance.carriesBall) || null
     const ballSide = ballAffordance?.side
       || (carryAffordance && roles.actors[carryAffordance.role].side === 'blue' ? 'away' : 'home')
     const choiceSourceRole = ballAffordance?.role || carryAffordance?.role || 'primary'
@@ -1156,8 +1233,13 @@ export function buildFormalDecisionSceneScriptV3(decision, actorSource, runtimeM
       if (carryThenShot) {
         // 收尾射门动作必须落在带球者身上：runAffordance 优先取非带球跑位，
         // 双跑位场景（如逼入底线）会把射门动作错挂到防守人身上
-        actions.push({ atMs: shotAtMs, role: carryAffordance.role || 'primary', animation: 'shoot' })
-        actions.sort((left, right) => left.atMs - right.atMs)
+        const carrierRole = carryAffordance.role || 'primary'
+        const retained = actions.filter((action) => !(
+          action.atMs === 0 && action.role === carrierRole && action.animation === 'shoot'
+        ))
+        retained.push({ atMs: 0, role: carrierRole, animation: 'dribble' })
+        retained.push({ atMs: shotAtMs, role: carrierRole, animation: 'shoot' })
+        actions.splice(0, actions.length, ...retained.sort((left, right) => left.atMs - right.atMs))
       }
       if (passThenShot) {
         for (let index = 1; index < sequenceBallAffordances.length; index += 1) {
@@ -1191,7 +1273,7 @@ export function buildFormalDecisionSceneScriptV3(decision, actorSource, runtimeM
         actions.sort((left, right) => left.atMs - right.atMs)
       }
       const actorMotions = runAffordances.filter((affordance) => (
-        (!isShotChoice || affordance.role !== ballAffordance?.role)
+        (!isShotChoice || affordance.carriesBall || affordance.role !== ballAffordance?.role)
         && !(ballOnlyOutcome && !carryThenShot
           && roles.actors[affordance.role].runtimeActorId === choiceSourceRuntimeActorId)
       )).map((affordance) => ({
@@ -1248,7 +1330,7 @@ export function buildFormalDecisionSceneScriptV3(decision, actorSource, runtimeM
       }
       // semantic-action 决策生成真实跑位：formation/zone/actor/duel 不再原地晃动
       const isSemanticAction = !ballOnlyOutcome && !carryAffordance && !passThenShot
-      if (isSemanticAction && actorMotions.length === 0) {
+      if (isSemanticAction) {
         const formationAffordance = affordances.find((a) => a.kind === 'formation')
         const zoneAffordance = affordances.find((a) => a.kind === 'zone')
         const actorAffordance = affordances.find((a) => a.kind === 'actor')
@@ -1282,7 +1364,7 @@ export function buildFormalDecisionSceneScriptV3(decision, actorSource, runtimeM
             if (motions.length >= 5) break
           }
           actorMotions.push(...motions)
-        } else if (zoneAffordance) {
+        } else if (actorMotions.length === 0 && zoneAffordance) {
           // 防守区域：主角 + 最近 2 名队友向区域中心收拢
           const zoneRole = zoneAffordance.intent === 'keeper-line' ? 'homeGoalkeeper' : 'primary'
           const zoneActor = roles.actors[zoneRole]
@@ -1323,7 +1405,7 @@ export function buildFormalDecisionSceneScriptV3(decision, actorSource, runtimeM
               carriesBall: false,
             })
           }
-        } else if (actorAffordance) {
+        } else if (actorMotions.length === 0 && actorAffordance) {
           // 主角向球/裁判方向前移 2-4% 归一化距离
           const actorRole = actorAffordance.role || 'primary'
           const actorRef = roles.actors[actorRole]
@@ -1342,7 +1424,7 @@ export function buildFormalDecisionSceneScriptV3(decision, actorSource, runtimeM
             ),
             carriesBall: false,
           })
-        } else if (duelAffordance && !tackleAffordance) {
+        } else if (actorMotions.length === 0 && duelAffordance && !tackleAffordance) {
           // 非铲球对抗：防守者逼近持球人
           const duelRole = duelAffordance.role || 'primary'
           const duelActor = roles.actors[duelRole]
@@ -1393,7 +1475,13 @@ export function buildFormalDecisionSceneScriptV3(decision, actorSource, runtimeM
         && outcomePathFinal
         && !liveShotsDisabled
         ? buildLiveShotPlan({
-          path: outcomePathFinal,
+          // 点球大战的扑救分支仍需保留玩家选择的左/右瞄点；通用的
+          // goalkeeper terminal 会把 outcome path 收到门将当前位置（中路），
+          // 只能用于结算，不能覆盖真实射门方向。
+          path: reusesMatchPenaltyForShootout
+            && ['home-goalkeeper', 'away-goalkeeper'].includes(terminal)
+            ? executionBallAffordance.points
+            : outcomePathFinal,
           terminal,
           intent: executionBallAffordance.intent,
           shooterRuntimeActorId: outcomeSourceRuntimeActorId,
@@ -1483,7 +1571,9 @@ export function buildFormalDecisionSceneScriptV3(decision, actorSource, runtimeM
       ballSide,
       runtimeBallEventType: ballAffordance?.runtimeEventType || null,
       runtimeEffect: contract.choiceEffects?.[choice.id] || null,
-      executionMode: isShotChoice ? 'ball-only-shot' : carryAffordance ? 'ball-carry' : 'semantic-action',
+      executionMode: carryAffordance
+        ? (isShotChoice ? 'carry-then-shot' : 'ball-carry')
+        : isShotChoice ? 'ball-only-shot' : 'semantic-action',
       labelAnchor: labelAnchor(affordances, context),
       outcomes,
     }
@@ -1492,6 +1582,7 @@ export function buildFormalDecisionSceneScriptV3(decision, actorSource, runtimeM
     schemaVersion: DECISION_SCENE_SCRIPT_V3_SCHEMA,
     id: `decision-scene-v3.${scenarioId}.${decision.id}`,
     scenarioId,
+    runtimeContext: decision.runtimeContext || 'match',
     minute: decision.coachDecisionEvent.minute,
     side: 'red',
     mode: contract.mode,
@@ -1513,6 +1604,15 @@ export function buildFormalDecisionSceneScriptV3(decision, actorSource, runtimeM
     ball: {
       sourceRuntimeActorId,
       normalized: staging?.ball || point3(runtimeMoment.ball.normalized),
+      // 单刀冻结时只对渲染帧把球放到持球人前脚，避免足球和人物身体重合；
+      // 物理坐标和后续出球起点仍保持真实 Runtime 瞬间。
+      displayNormalized: scenarioId === 'solo_run_penalty' && !staging
+        ? point3([
+          clamp(runtimeMoment.ball.normalized[0] + context.homeDirection * 0.014),
+          runtimeMoment.ball.normalized[1],
+          0.12,
+        ])
+        : null,
       anchor: 'runtime-current-ball',
     },
     fieldAnchors: {
@@ -1538,7 +1638,10 @@ export function buildFormalDecisionSceneScriptV3(decision, actorSource, runtimeM
       capturedAtMatchTime: runtimeMoment.capturedAtMatchTime,
       source: 'continuous-match',
     },
-    timeline: { selectionFeedbackMs: 150, settledHoldMs: 800 },
+    timeline: {
+      selectionFeedbackMs: reusesMatchPenaltyForShootout ? 100 : 150,
+      settledHoldMs: reusesMatchPenaltyForShootout ? 180 : 800,
+    },
     safeChoiceId: contract.safeChoiceId,
     choices,
     invariants: {
@@ -1558,6 +1661,8 @@ export function buildFormalDecisionSceneScriptV3(decision, actorSource, runtimeM
 export function validateDecisionSceneScriptV3(script, decision = null) {
   const errors = []
   const contract = FORMAL_DECISION_SCENE_CATALOG_V3[script?.scenarioId]
+  const shootoutMatchPenalty = script?.scenarioId === 'match_penalty'
+    && script?.runtimeContext === 'shootout'
   if (script?.schemaVersion !== DECISION_SCENE_SCRIPT_V3_SCHEMA) errors.push('schemaVersion')
   if (!contract) errors.push('scenarioId')
   if (script?.mode !== contract?.mode) errors.push('mode')
@@ -1569,8 +1674,12 @@ export function validateDecisionSceneScriptV3(script, decision = null) {
   if (![-1, 1].includes(script?.fieldAnchors?.homeAttackDirection)) errors.push('fieldAnchors.homeAttackDirection')
   if (script?.fieldAnchors?.homeAttackGoal?.length !== 3) errors.push('fieldAnchors.homeAttackGoal')
   if (script?.fieldAnchors?.homeDefendGoal?.length !== 3) errors.push('fieldAnchors.homeDefendGoal')
-  if (script?.timeline?.selectionFeedbackMs !== 150) errors.push('timeline.selectionFeedbackMs')
-  if (Number(script?.timeline?.settledHoldMs) < 800) errors.push('timeline.settledHoldMs')
+  if (script?.timeline?.selectionFeedbackMs !== (shootoutMatchPenalty ? 100 : 150)) {
+    errors.push('timeline.selectionFeedbackMs')
+  }
+  if (Number(script?.timeline?.settledHoldMs) < (shootoutMatchPenalty ? 180 : 800)) {
+    errors.push('timeline.settledHoldMs')
+  }
   if (contract?.mode === 'blackout-stage' && !script?.stagedActorPositions?.length) errors.push('stagedActorPositions')
   if (contract?.mode !== 'blackout-stage' && script?.stagedActorPositions?.length) errors.push('liveActorRelocation')
   if (!script?.choices?.length) errors.push('choices')

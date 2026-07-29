@@ -89,16 +89,17 @@ export default function LogisticsScreen({ saveData, updateSaveData, navigateTo, 
   }
 
   const handleConfirm = () => {
+    const nextStage = 'tournament'
     updateSaveData({
       ...saveData,
       currentRun: {
         ...currentRun,
         logisticsLevels: levels,
         logisticsBudget: budget,
-        stage: 'tournament',
+        stage: nextStage,
       },
     })
-    navigateTo('tournament')
+    navigateTo(nextStage)
   }
 
   return (
@@ -115,7 +116,7 @@ export default function LogisticsScreen({ saveData, updateSaveData, navigateTo, 
           升级后勤部门提升球队实力。未花完的预算将保留到下一届，赛事奖金也会累积。
         </p>
 
-        <div className="logistics-budget-bar">
+        <div className="logistics-budget-bar" data-guide="logistics-budget">
           <span className="budget-label">后勤预算</span>
           <span className="budget-value">
             {budget}
@@ -125,7 +126,7 @@ export default function LogisticsScreen({ saveData, updateSaveData, navigateTo, 
       </div>
 
       <div className="logistics-grid">
-        {LOGISTICS_DEPARTMENTS.map((dept) => {
+        {LOGISTICS_DEPARTMENTS.map((dept, deptIndex) => {
           const currentLevel = levels[dept.id] || 0
           const maxLevel = getMaxLevel(dept.id)
           const isMaxed = currentLevel >= maxLevel
@@ -135,7 +136,11 @@ export default function LogisticsScreen({ saveData, updateSaveData, navigateTo, 
           const nextLevelData = !isMaxed ? dept.levels[currentLevel + 1] : null
 
           return (
-            <div key={dept.id} className={`logistics-card ${isMaxed ? 'maxed' : ''}`}>
+            <div
+              key={dept.id}
+              className={`logistics-card ${isMaxed ? 'maxed' : ''}`}
+              data-guide={deptIndex === 0 ? 'logistics-card' : undefined}
+            >
               {/* 图标 */}
               <div className="card-icon-wrap">
                 <img src={dept.icon} alt={dept.name} />
@@ -200,11 +205,11 @@ export default function LogisticsScreen({ saveData, updateSaveData, navigateTo, 
       </div>
 
       <div className="logistics-footer">
-        <button className="PixelButton secondary-button" onClick={handleAutoUpgrade}>
+        <button className="PixelButton secondary-button" onClick={handleAutoUpgrade} data-guide="logistics-auto">
           <span className="button-face" aria-hidden="true"></span>
           <span className="button-label">一键升级</span>
         </button>
-        <button className="PixelButton" onClick={handleConfirm}>
+        <button className="PixelButton" onClick={handleConfirm} data-guide="logistics-confirm">
           <span className="button-face" aria-hidden="true"></span>
           <span className="button-label">确认配置，进入赛程</span>
         </button>

@@ -31,8 +31,11 @@ const scene = (mode, triggerId, safeChoiceId, choices, extra = {}) => Object.fre
 export const FORMAL_DECISION_SCENE_CATALOG_V3 = Object.freeze({
   solo_run_penalty: scene('freeze-live', 'solo-breakaway', 'pass_to_teammate', {
     shoot_near_post: [B('shoot-near-post', 'home', 'primary')],
-    chip_shot: [B('chip-goalkeeper', 'home', 'primary')],
-    pass_to_teammate: [B('pass-support', 'home', 'primary', { targetRole: 'support' })],
+    far_post_shot: [B('shoot-far-post', 'home', 'primary')],
+    pass_to_teammate: [
+      B('pass-support', 'home', 'primary', { targetRole: 'support' }),
+      R('solo-square-run', 'support'),
+    ],
   }),
   penalty_area_cross: scene('freeze-live', 'wide-cross-window', 'cutback', {
     low_cross: [B('cross-low', 'home', 'primary', { targetRole: 'support' })],
@@ -127,7 +130,11 @@ export const FORMAL_DECISION_SCENE_CATALOG_V3 = Object.freeze({
     zone_defense_corner: [A('zone', 'six-yard-zone'), B('opponent-cross', 'away', 'setPieceTaker', { targetRole: 'setPieceTarget' })],
   }, { sourceEventTypes: ['corner'], sourceEventSide: 'blue', attackingSide: 'blue' }),
   offside_trap: scene('freeze-live', 'offside-line-window', 'track_runner', {
-    offside_trap_spring: [A('formation', 'step-offside-line')],
+    offside_trap_spring: [
+      A('formation', 'step-offside-line'),
+      B('opponent-through', 'away', 'opponent', { targetRole: 'awaySupport' }),
+      R('offside-run', 'awaySupport'),
+    ],
     track_runner: [R('track-runner')],
   }),
   stamina_collapse_sub: scene('freeze-incident', 'stamina-dead-ball', 'sub_now', {
@@ -243,7 +250,7 @@ export const FORMAL_DECISION_SCENE_CATALOG_V3 = Object.freeze({
     shoot_left: [B('penalty-left', 'home', 'setPieceTaker')],
     shoot_right: [B('penalty-right', 'home', 'setPieceTaker')],
     shoot_center: [B('penalty-center', 'home', 'setPieceTaker')],
-  }, { matchPhases: ['shootout'], attackingSide: 'red' }),
+  }, { matchPhases: ['shootout'] }),
   wing_overlap_cross: scene('freeze-live', 'wing-overlap', 'release_overlap', {
     release_overlap: [B('pass-overlap', 'home', 'primary', { targetRole: 'support' }), R('wide-overlap', 'support')],
     cut_inside_wing: [R('cut-inside'), B('shoot-far-post', 'home', 'primary')],
@@ -264,11 +271,11 @@ export const FORMAL_DECISION_SCENE_CATALOG_V3 = Object.freeze({
     outcomeEffects: { carry_counter_ball: { corner_won: 'queue-corner-red' } },
   }),
   high_press_trap: scene('freeze-live', 'high-press-window', 'shadow_press', {
-    press_trap_sideline: [R('press-carrier'), A('zone', 'sideline-trap')],
+    press_trap_sideline: [R('press-carrier'), A('zone', 'sideline-ball-trap')],
     shadow_press: [R('shadow-pass-lane')],
   }),
   midfield_switch_play: scene('freeze-live', 'switch-play-window', 'keep_short_triangle', {
-    switch_far_side: [B('switch-wide', 'home', 'primary', { targetRole: 'support' })],
+    switch_far_side: [B('switch-wide', 'home', 'primary', { targetRole: 'farSideSupport' })],
     keep_short_triangle: [A('formation', 'short-triangle')],
   }),
   fullback_recovery_run: scene('freeze-live', 'fullback-recovery', 'sprint_inside_lane', {
@@ -291,8 +298,8 @@ export const FORMAL_DECISION_SCENE_CATALOG_V3 = Object.freeze({
     block_line_anyway: [A('zone', 'goal-line-block')],
   }, { sourceEventTypes: ['shot', 'handball-review'], requiresPenaltyArea: true }),
   handball_penalty_claim: scene('freeze-incident', 'attacking-handball-claim', 'calm_handball_claim', {
-    calm_handball_claim: [A('actor', 'captain-referee')],
-    crowd_ref_handball: [A('actor', 'team-appeal')],
+    calm_handball_claim: [A('actor', 'captain-referee', { centerKey: 'origin' })],
+    crowd_ref_handball: [A('actor', 'team-appeal', { centerKey: 'origin' })],
   }, { sourceEventTypes: ['shot', 'handball-review'], requiresPenaltyArea: true }),
   second_ball_corner_attack: scene('freeze-live', 'corner-second-ball', 'chip_back_post', {
     volley_second_ball: [B('volley-goal', 'home', 'primary')],
@@ -393,7 +400,7 @@ export const FORMAL_OUTCOME_TERMINALS_V3 = Object.freeze({
   'foul': 'hold',
   'foul_not_called': 'hold',
   'freekick_against': 'hold',
-  'gk_claim': 'home-goalkeeper',
+  'gk_claim': 'away-goalkeeper',
   'gk_claim_ball': 'home-goalkeeper',
   'gk_claims': 'away-goalkeeper',
   'gk_punches': 'home-goalkeeper',

@@ -55,7 +55,7 @@ describe('LockerRoomDecision overlay', () => {
     expect(choices.querySelectorAll('.locker-room-choice')).toHaveLength(2)
   })
 
-  it('reveals the verdict color first, then the full report with an auto-continue hint', () => {
+  it('reveals the verdict color first, then shows only the overall team report', () => {
     const onChoose = vi.fn()
     const onContinue = vi.fn()
     const { rerender } = render(
@@ -78,7 +78,8 @@ describe('LockerRoomDecision overlay', () => {
 
     act(() => { vi.advanceTimersByTime(1200) })
     expect(screen.getByText(/球员身体热开了/)).toBeInTheDocument()
-    expect(screen.getByText(/#5 边路悍将/)).toBeInTheDocument()
+    expect(screen.getByLabelText('全队整体状态：士气+3 · 状态+4 · 体能+0')).toBeInTheDocument()
+    expect(screen.queryByText(/#5 边路悍将/)).not.toBeInTheDocument()
     expect(screen.queryByText('即将继续比赛…')).not.toBeInTheDocument()
     const nextButton = screen.getByRole('button', { name: '下一个' })
     fireEvent.click(nextButton)
@@ -100,6 +101,6 @@ describe('LockerRoomDecision overlay', () => {
     )
     expect(screen.getByRole('button', { name: /冷着就冷着/ })).toHaveClass('is-negative')
     act(() => { vi.advanceTimersByTime(1200) })
-    expect(screen.getByText(/士气\+2 · 状态-4 · 体能\+0/)).toBeInTheDocument()
+    expect(screen.getByLabelText('全队整体状态：士气+2 · 状态-4 · 体能+0')).toBeInTheDocument()
   })
 })

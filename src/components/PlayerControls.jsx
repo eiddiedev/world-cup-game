@@ -22,14 +22,14 @@ const SPRINT_THRESHOLD = 0.85
 function useHasBall() {
   const [hasBall, setHasBall] = useState(false)
   useEffect(() => {
-    let raf = null
     const tick = () => {
+      if (document.hidden) return
       const hb = gamepadVisualState.active ? gamepadVisualState.hasBall : getPlayerHasBall()
-      setHasBall(hb)
-      raf = requestAnimationFrame(tick)
+      setHasBall((current) => (current === hb ? current : hb))
     }
-    raf = requestAnimationFrame(tick)
-    return () => cancelAnimationFrame(raf)
+    tick()
+    const timer = window.setInterval(tick, 100)
+    return () => window.clearInterval(timer)
   }, [])
   return hasBall
 }
@@ -42,22 +42,23 @@ function Joystick() {
   const touchActiveRef = useRef(false)
 
   useEffect(() => {
-    let raf = null
     const tick = () => {
-      if (!touchActiveRef.current && gamepadVisualState.active) {
-        const max = JOYSTICK_RADIUS
-        const vx = gamepadVisualState.vx
-        const vy = gamepadVisualState.vy
-        setKnob({
-          x: Math.max(-max, Math.min(max, vx * max)),
-          y: Math.max(-max, Math.min(max, vy * max)),
-        })
-        setSprinting(Math.hypot(vx, vy) >= SPRINT_THRESHOLD)
+      if (document.hidden || touchActiveRef.current || !gamepadVisualState.active) return
+      const max = JOYSTICK_RADIUS
+      const vx = gamepadVisualState.vx
+      const vy = gamepadVisualState.vy
+      const nextKnob = {
+        x: Math.max(-max, Math.min(max, vx * max)),
+        y: Math.max(-max, Math.min(max, vy * max)),
       }
-      raf = requestAnimationFrame(tick)
+      setKnob((current) => (
+        current.x === nextKnob.x && current.y === nextKnob.y ? current : nextKnob
+      ))
+      const nextSprinting = Math.hypot(vx, vy) >= SPRINT_THRESHOLD
+      setSprinting((current) => (current === nextSprinting ? current : nextSprinting))
     }
-    raf = requestAnimationFrame(tick)
-    return () => cancelAnimationFrame(raf)
+    const timer = window.setInterval(tick, 50)
+    return () => window.clearInterval(timer)
   }, [])
 
   const applyVector = (clientX, clientY) => {
@@ -140,15 +141,15 @@ function ActionButton({ labelWithBall, labelNoBall, className, withBallAction, n
 
   // 桌面端手柄高亮
   useEffect(() => {
-    let raf = null
     const tick = () => {
-      if (gamepadVisualState.active) {
-        setPressed(Boolean(gamepadVisualState[action]))
-      }
-      raf = requestAnimationFrame(tick)
+      if (document.hidden) return
+      const nextPressed = gamepadVisualState.active
+        ? Boolean(gamepadVisualState[action])
+        : false
+      setPressed((current) => (current === nextPressed ? current : nextPressed))
     }
-    raf = requestAnimationFrame(tick)
-    return () => cancelAnimationFrame(raf)
+    const timer = window.setInterval(tick, 50)
+    return () => window.clearInterval(timer)
   }, [action])
 
   const press = (event) => {
@@ -181,7 +182,7 @@ export default function PlayerControls() {
   const hasBall = useHasBall()
 
   return (
-    <div className="player-controls" aria-label="球员操作区">
+    <div className="player-controls" aria-label="球员操作区" data-guide="match-player-controls">
       <div className="pc-left">
         <Joystick />
       </div>

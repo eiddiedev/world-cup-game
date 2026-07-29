@@ -33,7 +33,7 @@ function withTacticalProfile(team) {
  * 球队配置数据
  * 16支国家队，各有不同的难度、预算、特色技能
  */
-const allTeams = [
+export const allTeams = [
   {
     id: 'france',
     name: '法国',
@@ -201,16 +201,16 @@ const allTeams = [
     id: 'norway',
     name: '挪威',
     nameEn: 'Norway',
-    difficulty: 1,
+    difficulty: 3,
     budget: 2200,
     skill: '北欧巨人',
     flag: '/assets/国旗/挪威.png',
-    hero: '/assets/挪威/北欧魔人.png',
+    hero: '/assets/挪威/魔人布欧.png',
     logo: '/assets/队徽/挪威.png',
     jerseyColor: '#c8313d',
-    description: '有世界最好的前锋，却从未踢进世界杯。',
-    mission: '维京传奇',
-    faMessage: '历史性一步已迈出，让维京战歌响彻世界。',
+    description: '本届世界杯最大黑马。',
+    mission: '黑马之路',
+    faMessage: '本届世界杯最大黑马，让维京战歌响彻世界。',
     faExpectation: '★★★☆☆ 更进一步',
     worldCupTarget: '16强',
     group: 'I 组',
@@ -220,7 +220,7 @@ const allTeams = [
       { name: '伊拉克', flag: '/assets/国旗/伊拉克.png' },
     ],
     skillEffect: '队内身体值最高球员每个关键节点+15%成功率',
-    goldenStar: '北欧魔人',
+    goldenStar: '魔人布欧',
     goldenStarPosition: 'FW',
     players: prepareTeamPlayers(allPlayers.norway || [], 'norway', 1700)
   },
@@ -288,9 +288,9 @@ const allTeams = [
     flag: '/assets/国旗/西班牙.png',
     logo: '/assets/队徽/西班牙.png',
     jerseyColor: '#c60b1e',
-    description: '传控王朝，冠军之师。',
+    description: '重走冠军之路。',
     mission: '捍卫冠军荣耀',
-    faMessage: '冠军不是终点，请带西班牙再登世界之巅。',
+    faMessage: '重走冠军之路，再一次把大力神杯带回西班牙。',
     faExpectation: '★★★★★ 冠军势在必得',
     worldCupTarget: '夺冠',
     group: 'H 组',
@@ -306,15 +306,15 @@ const allTeams = [
     id: 'england',
     name: '英格兰',
     nameEn: 'England',
-    difficulty: 3,
+    difficulty: 2,
     budget: 2310,
     skill: '三狮之心',
     flag: '/assets/国旗/英格兰.png',
     logo: '/assets/队徽/英格兰.png',
     jerseyColor: '#263B78',
-    description: '足球故乡，距离梦想总差一步。',
+    description: '最遗憾，让足球回家。',
     mission: '让足球回家',
-    faMessage: '一次次接近梦想，这次让足球真的回家。',
+    faMessage: '最遗憾的那一步，这次让足球真的回家。',
     faExpectation: '★★★★☆ 至少闯入决赛',
     worldCupTarget: '夺冠',
     group: 'L 组',
@@ -427,15 +427,15 @@ const allTeams = [
     id: 'capeverde',
     name: '佛得角',
     nameEn: 'Cape Verde',
-    difficulty: 3,
+    difficulty: 4,
     budget: 1660,
     skill: '群岛韧性',
     flag: '/assets/国旗/佛得角.png',
     logo: '/assets/队徽/佛得角.png',
     jerseyColor: '#003893',
-    description: '大西洋群岛来的世界杯新军。',
+    description: '延续奇迹。',
     mission: '群岛奇迹',
-    faMessage: '没人再敢轻视佛得角，继续书写群岛传奇。',
+    faMessage: '延续奇迹，让大西洋群岛的故事走得更远。',
     faExpectation: '★★☆☆☆ 再创奇迹',
     worldCupTarget: '小组出线',
     group: 'H 组',
@@ -539,7 +539,7 @@ export function getTeamFlag(teamName) {
  * 比赛渲染、对手解析都用它，能命中对手国家队。
  */
 export function getTeamById(teamIdOrName) {
-  return teams.find((t) => t.id === teamIdOrName || t.name === teamIdOrName)
+  return allTeams.find((t) => t.id === teamIdOrName || t.name === teamIdOrName)
     || opponentTeams.find((t) => t.id === teamIdOrName || t.name === teamIdOrName)
     || null
 }

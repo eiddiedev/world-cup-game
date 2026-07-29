@@ -24,7 +24,8 @@ import {
   validateTeamCatalog,
   validateTeamRecord,
 } from './data/teamDataSchema.js'
-import { teams } from './data/teams.js'
+import { allTeams, teams } from './data/teams.js'
+import { getTeamSchedule } from './data/schedules.js'
 import { FORMATION_TACTICS } from './data/formationTactics.js'
 import { AudioManager, audioManager } from './utils/audioManager.js'
 import {
@@ -88,7 +89,7 @@ describe('home screen', () => {
     fireEvent.pointerDown(coachButton)
     fireEvent.click(coachButton)
 
-    const newSaveButton = await screen.findByRole('button', { name: '新开存档' })
+    const newSaveButton = await screen.findByRole('button', { name: '新的挑战' })
     fireEvent.click(newSaveButton)
 
     expect(clickSpy).toHaveBeenCalled()
@@ -118,7 +119,7 @@ describe('home screen', () => {
     })
   })
 
-  it('shows only the four player-facing menu entries', () => {
+  it('shows only the two primary modes and settings on the home screen', () => {
     const navigateTo = vi.fn()
     render(
       <HomeScreen
@@ -130,11 +131,13 @@ describe('home screen', () => {
 
     expect(screen.getByRole('button', { name: '教练模式' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: '球员模式' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: '点球大战' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: '设置' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: '点球测试' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: '小人样板' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'AI与赞助' })).not.toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /图鉴/ })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /图鉴/ })).not.toBeInTheDocument()
+    expect(screen.queryByText('四队迷你世界杯')).not.toBeInTheDocument()
+    expect(screen.queryByText('两场夺冠 · 约 5–7 分钟')).not.toBeInTheDocument()
   })
 
   it('stores the selected mode when starting a player-mode save', () => {
@@ -149,9 +152,9 @@ describe('home screen', () => {
 
     fireEvent.click(screen.getByRole('button', { name: '球员模式' }))
     expect(screen.getByRole('dialog', { name: '球员模式' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: '继续游戏' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: '继续征程' })).toBeDisabled()
 
-    fireEvent.click(screen.getByRole('button', { name: '新开存档' }))
+    fireEvent.click(screen.getByRole('button', { name: '新的挑战' }))
     expect(navigateTo).toHaveBeenCalledWith('team-select', { gameMode: 'player' })
   })
 })
@@ -422,18 +425,49 @@ describe('settings and audio', () => {
     expect(starts).toHaveLength(2)
     manager.stopRainAmbient()
   })
+
+  it('stops match-only audio without disabling menu music or future sound effects', () => {
+    const pause = vi.fn()
+    const stoppedSource = { stop: vi.fn() }
+    const manager = new AudioManager()
+    manager.musicPlaying = true
+    manager._crowdRequested = true
+    manager._crowdNode = { pause, currentTime: 12 }
+    manager._activeMatchAudioNodes.add({ pause, currentTime: 4 })
+    manager._activeMatchBufferSources.add(stoppedSource)
+
+    manager.stopMatchAudio()
+
+    expect(manager._crowdRequested).toBe(false)
+    expect(manager._crowdNode).toBeNull()
+    expect(manager._activeMatchAudioNodes.size).toBe(0)
+    expect(manager._activeMatchBufferSources.size).toBe(0)
+    expect(stoppedSource.stop).toHaveBeenCalledWith(0)
+    expect(manager.musicPlaying).toBe(true)
+    expect(manager.soundEnabled).toBe(true)
+  })
 })
 
 describe('team and player data', () => {
-  it('limits the Douyin demo to France and Curacao with an isolated save', () => {
+  it('limits the Douyin demo to the requested representative teams', () => {
     const sourceTeams = [
+      { id: 'spain' },
       { id: 'france' },
+      { id: 'argentina' },
+      { id: 'england' },
+      { id: 'norway' },
+      { id: 'capeverde' },
       { id: 'brazil' },
       { id: 'curacao' },
     ]
 
     expect(selectPlayableTeams(sourceTeams, false).map(team => team.id)).toEqual([
+      'spain',
       'france',
+      'argentina',
+      'england',
+      'norway',
+      'capeverde',
       'brazil',
       'curacao',
     ])

@@ -100,34 +100,18 @@ export default function LockerRoomDecision({ scenario, report, onChoose, onConti
 
           {report && !revealing && (
             <div className={`locker-room-report is-${sentiment}`} aria-live="polite">
-              <strong className="locker-room-verdict-tag">
-                {averageSummary(report)}
-              </strong>
-              <p className="locker-room-result">{report.resultText}</p>
-              <ul className="locker-room-deltas">
+              <strong className="locker-room-verdict-tag" aria-label={`全队整体状态：${averageSummary(report)}`}>
+                <span>全队状态</span>
                 {Object.entries(FIELD_LABELS).map(([field, label]) => {
                   const value = report.average[field]
                   return (
-                    <li key={field} className={value > 0 ? 'is-up' : value < 0 ? 'is-down' : 'is-flat'}>
-                      {label} {deltaText(value)}<small>（场均）</small>
-                    </li>
+                    <em key={field} className={value > 0 ? 'is-up' : value < 0 ? 'is-down' : 'is-flat'}>
+                      {label}{deltaText(value)}
+                    </em>
                   )
                 })}
-              </ul>
-              {report.affected.length > 0 && (
-                <ul className="locker-room-affected">
-                  {report.affected.map((entry) => (
-                    <li key={entry.runtimeActorId}>
-                      #{entry.number} {entry.name}
-                      {Object.entries(FIELD_LABELS).map(([field, label]) => (
-                        entry.deltas[field]
-                          ? <em key={field} className={entry.deltas[field] > 0 ? 'is-up' : 'is-down'}> {label}{deltaText(entry.deltas[field])}</em>
-                          : null
-                      ))}
-                    </li>
-                  ))}
-                </ul>
-              )}
+              </strong>
+              <p className="locker-room-result">{report.resultText}</p>
               <button type="button" className="locker-room-continue" onClick={onContinue}>
                 {queueIndex + 1 < queueTotal
                   ? '下一个'

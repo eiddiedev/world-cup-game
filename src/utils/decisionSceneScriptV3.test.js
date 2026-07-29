@@ -179,6 +179,57 @@ describe('DecisionSceneScriptV3', () => {
     }
   })
 
+  it('reuses the formal match penalty scene for a blue-side shootout kick', () => {
+    const blueShooter = actorSource.actors.find((actor) => (
+      actor.side === 'blue' && !actor.isGoalkeeper
+    ))
+    const decision = {
+      ...buildFormalCoachDecision({
+        actorSource,
+        scenarioId: 'match_penalty',
+        side: 'blue',
+        teamId: 'brazil',
+        opponentTeamId: 'france',
+        preferredPlayerId: blueShooter.playerId,
+      }),
+      runtimeContext: 'shootout',
+    }
+    const script = buildFormalDecisionSceneScriptV3(decision, actorSource, {
+      ...runtimeMoment,
+      attackingSide: 'blue',
+      attackDirection: 1,
+      ownerRuntimeActorId: blueShooter.runtimeActorId,
+    }, { id: 'shootout.blue.penalty', type: 'penalty', side: 'red' })
+
+    expect(script.scenarioId).toBe('match_penalty')
+    expect(script.runtimeContext).toBe('shootout')
+    expect(script.timeline).toEqual({ selectionFeedbackMs: 100, settledHoldMs: 180 })
+    expect(script.actors.setPieceTaker.side).toBe('blue')
+    expect(script.actors.homeGoalkeeper.side).toBe('red')
+    expect(script.choices.map((choice) => choice.id)).toEqual([
+      'penalty_left',
+      'penalty_right',
+      'penalty_center',
+    ])
+    for (const choice of script.choices) {
+      expect(choice.ballSide).toBe('away')
+      const liveOutcomes = Object.values(choice.outcomes).filter((outcome) => outcome.liveShot)
+      expect(liveOutcomes.length).toBeGreaterThan(0)
+      liveOutcomes.forEach((outcome) => {
+        expect(outcome.liveShot.shooterRuntimeActorId).toBe(script.actors.setPieceTaker.runtimeActorId)
+        expect(outcome.liveShot.keeperRuntimeActorId).toBe(script.actors.homeGoalkeeper.runtimeActorId)
+      })
+    }
+    const panenka = script.choices.find((choice) => choice.id === 'penalty_center')
+    expect(panenka.outcomes.goal_panenka.liveShot.power)
+      .toBeGreaterThan(panenka.outcomes.saved_panenka.liveShot.power)
+    const stagedKeeper = script.stagedActorPositions.find((entry) => (
+      entry.runtimeActorId === script.actors.homeGoalkeeper.runtimeActorId
+    ))
+    expect(stagedKeeper.normalized[0]).toBeLessThan(0.985)
+    expect(stagedKeeper.normalized[0]).toBeGreaterThan(0.96)
+  })
+
   it('computes near post from the current ball and mirrors with attack direction', () => {
     const decision = buildFormalCoachDecision({ actorSource, scenarioId: 'solo_run_penalty' })
     const right = buildFormalDecisionSceneScriptV3(decision, actorSource, {
@@ -386,7 +437,9 @@ describe('DecisionSceneScriptV3', () => {
         runtimeMoment,
         sourceEvent,
       )
-      for (const choice of script.choices.filter((item) => item.runtimeBallEventType === 'shot')) {
+      for (const choice of script.choices.filter((item) => (
+        item.runtimeBallEventType === 'shot' && item.executionMode === 'ball-only-shot'
+      ))) {
         expect(choice.executionMode, `${scenario.id}/${choice.id}`).toBe('ball-only-shot')
         Object.values(choice.outcomes).forEach((outcome) => {
           if (outcome.terminal !== 'hold') {
@@ -714,5 +767,148 @@ describe('DecisionSceneScriptV3', () => {
       expect(outcome.commentaryText).toContain('控制住皮球')
     }
     expect(rush.outcomes.goal_chip_over.path.at(-1)).toEqual(script.fieldAnchors.homeDefendGoal)
+  })
+
+  it('keeps the solo breakaway readable: ball at the foot, far-post finish and square pass', () => {
+    const owner = actorSource.actors.find((actor) => actor.side === 'red' && !actor.isGoalkeeper)
+    const decision = buildFormalCoachDecision({ actorSource, scenarioId: 'solo_run_penalty' })
+    const origin = [0.78, 0.31, 0]
+    const script = buildFormalDecisionSceneScriptV3(decision, actorSource, {
+      ...runtimeMoment,
+      attackingSide: 'red',
+      attackDirection: 1,
+      ownerRuntimeActorId: owner.runtimeActorId,
+      ball: { normalized: origin },
+    }, { id: 'runtime.solo-readable', type: 'touch' })
+    const farPost = script.choices.find((choice) => choice.id === 'far_post_shot')
+    const squarePass = script.choices.find((choice) => choice.id === 'pass_to_teammate')
+    const passPath = squarePass.affordances.find((item) => item.kind === 'ball-path').points
+
+    expect(script.ball.displayNormalized[0]).toBeGreaterThan(origin[0])
+    expect(script.ball.displayNormalized[0] - origin[0]).toBeLessThan(0.02)
+    expect(farPost.affordances[0]).toMatchObject({ intent: 'shoot-far-post' })
+    expect(farPost.affordances[0].points.at(-1)[1]).toBeGreaterThan(0.5)
+    expect(passPath.at(-1)[0]).toBeGreaterThanOrEqual(origin[0])
+    expect(Math.abs(passPath.at(-1)[1] - origin[1])).toBeGreaterThan(0.12)
+  })
+
+  it('executes 3v2 carry as dribble then far-post shot instead of an instant keeper pass', () => {
+    const owner = actorSource.actors.find((actor) => actor.side === 'red' && !actor.isGoalkeeper)
+    const decision = buildFormalCoachDecision({ actorSource, scenarioId: 'counter_attack_3v2' })
+    const script = buildFormalDecisionSceneScriptV3(decision, actorSource, {
+      ...runtimeMoment,
+      attackingSide: 'red',
+      attackDirection: 1,
+      ownerRuntimeActorId: owner.runtimeActorId,
+      ball: { normalized: [0.55, 0.38, 0] },
+    }, { id: 'runtime.counter-3v2', type: 'touch' })
+    const carry = script.choices.find((choice) => choice.id === 'sprint_shoot')
+    const saved = carry.outcomes.saved_rush
+
+    expect(carry.executionMode).toBe('carry-then-shot')
+    expect(saved.executionMode).toBe('carry-then-shot')
+    expect(saved.carryPath).toHaveLength(4)
+    expect(saved.path[0]).toEqual(saved.carryPath.at(-1))
+    expect(saved.path.at(-1)[1]).not.toBe(0.5)
+    expect(saved.actions).toEqual(expect.arrayContaining([
+      expect.objectContaining({ atMs: 0, animation: 'dribble' }),
+      expect.objectContaining({ atMs: saved.shotAtMs, animation: 'shoot' }),
+    ]))
+  })
+
+  it('aims half-space goalkeeper claims at the opponent goalkeeper', () => {
+    const decision = buildFormalCoachDecision({ actorSource, scenarioId: 'half_space_through_run' })
+    const script = buildFormalDecisionSceneScriptV3(
+      decision,
+      actorSource,
+      runtimeMoment,
+      { id: 'runtime.half-space', type: 'touch' },
+    )
+    const claim = script.choices.find((choice) => choice.id === 'thread_half_space').outcomes.gk_claim
+    expect(claim.terminal).toBe('away-goalkeeper')
+    expect(claim.continuation).toMatchObject({
+      role: 'awayGoalkeeper',
+      runtimeActorId: script.actors.awayGoalkeeper.runtimeActorId,
+    })
+    expect(claim.path.at(-1)).toEqual(
+      script.actorPositions.find((entry) => (
+        entry.runtimeActorId === script.actors.awayGoalkeeper.runtimeActorId
+      )).normalized.concat(0).slice(0, 3),
+    )
+  })
+
+  it('presses the football, switches to the far side and anchors the handball marker at the incident', () => {
+    const origin = [0.51, 0.2, 0]
+    const moment = { ...runtimeMoment, ball: { normalized: origin } }
+    const build = (scenarioId, event = { id: `runtime.${scenarioId}`, type: 'touch' }) => (
+      buildFormalDecisionSceneScriptV3(
+        buildFormalCoachDecision({ actorSource, scenarioId }),
+        actorSource,
+        moment,
+        event,
+      )
+    )
+    const press = build('high_press_trap')
+    const pressRun = press.choices.find((choice) => choice.id === 'press_trap_sideline')
+      .affordances.find((item) => item.kind === 'run-lane')
+    expect(pressRun.points.at(-1)).toEqual(origin)
+
+    const switched = build('midfield_switch_play')
+    const switchPath = switched.choices.find((choice) => choice.id === 'switch_far_side')
+      .affordances.find((item) => item.kind === 'ball-path').points
+    expect(Math.abs(switchPath.at(-1)[1] - origin[1])).toBeGreaterThan(0.35)
+    expect(Math.hypot(
+      switchPath.at(-1)[0] - origin[0],
+      switchPath.at(-1)[1] - origin[1],
+    )).toBeGreaterThan(0.35)
+
+    const handball = build('handball_penalty_claim', {
+      id: 'runtime.handball.inside',
+      type: 'handball-review',
+      detail: { inPenaltyArea: true },
+    })
+    handball.choices.forEach((choice) => {
+      expect(choice.affordances[0].center).toEqual(origin)
+    })
+  })
+
+  it('shows the through ball crossing the real defensive line before offside settles', () => {
+    const decision = buildFormalCoachDecision({ actorSource, scenarioId: 'offside_trap' })
+    const script = buildFormalDecisionSceneScriptV3(
+      decision,
+      actorSource,
+      runtimeMoment,
+      { id: 'runtime.offside-pass', type: 'pass' },
+    )
+    const trap = script.choices.find((choice) => choice.id === 'offside_trap_spring')
+    const line = trap.affordances.find((item) => item.kind === 'formation')
+    const pass = trap.affordances.find((item) => item.kind === 'ball-path')
+    const runner = trap.affordances.find((item) => item.kind === 'run-lane')
+    const outcome = trap.outcomes.offside_success
+    const positionById = new Map(script.actorPositions.map((entry) => [entry.runtimeActorId, entry.normalized]))
+    const defenderXs = actorSource.actors
+      .filter((actor) => actor.side === 'red' && !actor.isGoalkeeper)
+      .map((actor) => positionById.get(actor.runtimeActorId)?.[0])
+      .filter(Number.isFinite)
+      .sort((left, right) => left - right)
+    const expectedLineX = Math.min(1, defenderXs[1] + 0.035)
+
+    expect(line.points[0][0]).toBeCloseTo(expectedLineX, 6)
+    expect(line.points[1][0]).toBeCloseTo(expectedLineX, 6)
+    expect(runner.points.at(-1)[0]).toBeLessThan(line.points[0][0])
+    expect(pass.runtimeEventType).toBe('pass')
+    expect(outcome.path.at(-1)).toEqual(runner.points.at(-1))
+    expect(outcome.releaseBallAtMs).toBe(0)
+    expect(outcome.durationMs).toBeGreaterThan(700)
+  })
+
+  it('caps direct free-kick conversion well below a one-on-one chance', () => {
+    const freeKick = DECISION_LIBRARY.find((scenario) => scenario.id === 'freekick_dangerous')
+      .choices.find((choice) => choice.id === 'direct_freekick')
+    const solo = DECISION_LIBRARY.find((scenario) => scenario.id === 'solo_run_penalty')
+      .choices.find((choice) => choice.id === 'shoot_near_post')
+    expect(freeKick.goal_conversion).toBe(0.12)
+    expect(freeKick.goal_conversion).toBeLessThan(solo.goal_conversion / 4)
+    expect(freeKick.conversion_miss_outcome).toBe('hit_wall')
   })
 })

@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { hasContinueGame, getCodexProgress } from '../utils/saveManager'
+import { hasContinueGame } from '../utils/saveManager'
 
 const PRIMARY_MODES = [
   { id: 'coach', label: '教练模式' },
@@ -9,6 +9,7 @@ const PRIMARY_MODES = [
 const CONTINUE_STAGES = new Set([
   'team-select',
   'recruitment',
+  'logistics',
   'tournament',
   'lineup',
   'match',
@@ -17,12 +18,10 @@ const CONTINUE_STAGES = new Set([
 ])
 
 /**
- * 首页只呈现玩家真正需要选择的四个入口。
- * 开发实验、AI 和商业化能力保留在项目内部，不占用主菜单层级。
+ * 首页呈现双模式与设置入口。
  */
 export default function HomeScreen({ saveData, updateSaveData, navigateTo, showToast }) {
   const [selectedMode, setSelectedMode] = useState(null)
-  const codexProgress = getCodexProgress(saveData)
   const hasSave = hasContinueGame(saveData)
   const savedMode = saveData.currentRun?.gameMode || 'coach'
   // 球员模式独立存档判断
@@ -93,27 +92,14 @@ export default function HomeScreen({ saveData, updateSaveData, navigateTo, showT
           <button
             type="button"
             className="PixelButton menu-button"
-            onClick={() => navigateTo('penalty-mode')}
-          >
-            <span className="button-face" aria-hidden="true" />
-            <span className="button-label">点球大战</span>
-          </button>
-
-          <button
-            type="button"
-            className="PixelButton menu-button"
             onClick={() => navigateTo('settings')}
           >
             <span className="button-face" aria-hidden="true" />
             <span className="button-label">设置</span>
           </button>
+
         </nav>
 
-        <aside className="PixelPanel codex-panel" onClick={() => navigateTo('codex')} role="button" tabIndex={0} aria-label="图鉴">
-          <img src="/assets/图鉴.png" alt="" className="codex-panel-icon" />
-          <span className="codex-panel-label">图鉴</span>
-          <span className="codex-panel-progress">{codexProgress.done}/{codexProgress.total}</span>
-        </aside>
       </section>
 
       {selectedMode && (
@@ -142,7 +128,7 @@ export default function HomeScreen({ saveData, updateSaveData, navigateTo, showT
             <div className="mode-save-actions">
               <button type="button" className="PixelButton" onClick={startNewGame}>
                 <span className="button-face" aria-hidden="true" />
-                <span className="button-label">新开存档</span>
+                <span className="button-label">新的挑战</span>
               </button>
               <button
                 type="button"
@@ -151,7 +137,7 @@ export default function HomeScreen({ saveData, updateSaveData, navigateTo, showT
                 disabled={!canContinueMode}
               >
                 <span className="button-face" aria-hidden="true" />
-                <span className="button-label">继续游戏</span>
+                <span className="button-label">继续征程</span>
               </button>
             </div>
 

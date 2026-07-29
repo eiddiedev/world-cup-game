@@ -1,9 +1,9 @@
 import React, { useState } from 'react'
 import { teams, getDifficultyStars } from '../data/teams'
-import { createNewRun } from '../utils/saveManager'
 import { getAvailableLogisticsBudget } from '../data/prizeMoney'
-import { autoSetupPlayerRun } from '../utils/playerModeSetup'
 import { IS_DOUYIN_DEMO } from '../config/runtime'
+import { createNewRun } from '../utils/saveManager.js'
+import { autoSetupPlayerRun } from '../utils/playerModeSetup.js'
 import AppointmentLetter from './AppointmentLetter'
 
 /**
@@ -19,12 +19,10 @@ export default function TeamSelectScreen({ saveData, updateSaveData, navigateTo,
 
   const handleSelectTeam = (team) => {
     if (gameMode === 'player') {
-      // 球员模式：跳过聘书，直接建队
-      let newRun = createNewRun(team.id, gameMode, saveData)
-      newRun = autoSetupPlayerRun(newRun, saveData)
+      const newRun = autoSetupPlayerRun(createNewRun(team.id, gameMode, saveData), saveData)
       updateSaveData({ ...saveData, currentRun: newRun })
-      // 首次进入训练基地（已完成训练则直接到赛程）
-      navigateTo(newRun.trainingCompleted ? 'tournament' : 'training')
+      showToast(`${team.name}世界杯征程已开始！`)
+      navigateTo('tournament')
       return
     }
     setAppointmentTeam(team)
@@ -33,22 +31,12 @@ export default function TeamSelectScreen({ saveData, updateSaveData, navigateTo,
   const handleAppointmentConfirm = () => {
     const team = appointmentTeam
     setAppointmentTeam(null)
-    let newRun = createNewRun(team.id, gameMode, saveData)
-    if (gameMode === 'player') {
-      // 球员模式：自动建队（名单+首发+后勤），直达赛程
-      newRun = autoSetupPlayerRun(newRun, saveData)
-      updateSaveData({
-        ...saveData,
-        currentRun: newRun,
-      })
-      navigateTo('tournament')
-      return
-    }
+    const newRun = createNewRun(team.id, gameMode, saveData)
     updateSaveData({
       ...saveData,
       currentRun: newRun,
     })
-    showToast(`${team.name}征程已开始！`)
+    showToast(`${team.name}世界杯征程已开始！`)
     navigateTo('recruitment', { skipRecruitmentGuard: true })
   }
 
@@ -63,11 +51,11 @@ export default function TeamSelectScreen({ saveData, updateSaveData, navigateTo,
 
       <div style={{ textAlign: 'center' }}>
         <p className="team-select-hint">
-          预算越高，阵容越豪华，难度星越多，挑战越大～留意小组对手和球队技能，选一支你想带上冠军之路的队伍吧！
+          四档难度，完整世界杯征程。从三场小组赛一路打到决赛，选择你的意难平，改写结局。
         </p>
       </div>
 
-      <div className={`team-list${IS_DOUYIN_DEMO ? ' is-demo-team-list' : ''}`}>
+      <div className={`team-list${IS_DOUYIN_DEMO ? ' is-demo-team-list' : ''}`} data-guide="team-list">
         {unlockedTeams.map((team) => (
           <div
             key={team.id}
@@ -78,12 +66,12 @@ export default function TeamSelectScreen({ saveData, updateSaveData, navigateTo,
             <div className="team-card-left">
               <div className="team-card-hover-info">
                 <div className="hover-info-block">
-                  <span className="hover-info-label">{team.group} 小组赛对手</span>
+                  <span className="hover-info-label">小组赛对手</span>
                   <div className="hover-info-opponents">
-                    {team.groupOpponents?.map((opp) => (
-                      <span key={opp.name} className="hover-opponent">
-                        <img src={opp.flag} alt={opp.name} className="hover-opponent-flag" />
-                        {opp.name}
+                    {(team.groupOpponents || []).map((opponent) => (
+                      <span className="hover-opponent" key={opponent.name}>
+                        <img src={opponent.flag} alt="" className="hover-opponent-flag" />
+                        {opponent.name}
                       </span>
                     ))}
                   </div>

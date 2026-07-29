@@ -239,6 +239,7 @@ export default function MatchScreen({
       <HappySeedMatchBroadcast
         saveData={saveData}
         onMatchComplete={handleMatchComplete}
+        shootoutActive={Boolean(pendingShootout)}
       />
       {pendingShootout && (
         <PenaltyShootout
@@ -251,6 +252,7 @@ export default function MatchScreen({
           homeFormation={saveData.currentRun?.formation || '4-3-3'}
           awayFormation={pendingShootout.actorSnapshot?.sides?.blue?.formation || '4-3-3'}
           stabilityBonus={getLogisticsModifiers(saveData.currentRun?.logisticsLevels).penaltyStabilityBonus}
+          gameMode={saveData.currentRun?.gameMode || 'coach'}
           onComplete={(winner, shootoutResult) => {
             const completion = pendingShootout
             setPendingShootout(null)

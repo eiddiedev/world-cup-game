@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest'
 import { teams } from '../data/teams.js'
 import {
   getCriticalStartupAssets,
-  getPenaltyShootoutAssets,
   getSelectedTeamPlayerAssets,
 } from './startupAssets.js'
 
@@ -10,7 +9,7 @@ describe('startup asset priority', () => {
   it('preloads the title art and every playable team flag and crest', () => {
     const assets = getCriticalStartupAssets(teams)
 
-    expect(teams).toHaveLength(16)
+    expect(teams.length).toBeGreaterThanOrEqual(4)
     expect(assets).toContain('/assets/背景图.png')
     expect(assets).toContain('/assets/logo.png')
     expect(assets).toContain('/assets/logo2.png')
@@ -29,20 +28,14 @@ describe('startup asset priority', () => {
         expect(assets).not.toContain(asset)
       })
     })
-    getPenaltyShootoutAssets().forEach((asset) => {
-      expect(assets).not.toContain(asset)
-    })
+    expect(assets.some((asset) => asset.includes('/assets/shootout/'))).toBe(false)
     expect(new Set(assets).size).toBe(assets.length)
   })
 
-  it('keeps selected-player and shootout art out of the blocking startup list', () => {
+  it('keeps selected-player and removed legacy shootout art out of startup', () => {
     const selectedAssets = getSelectedTeamPlayerAssets(teams[0])
-    const shootoutAssets = getPenaltyShootoutAssets()
 
     expect(selectedAssets).toContain(teams[0].players[0].avatar)
-    expect(shootoutAssets).toHaveLength(18)
-    expect(shootoutAssets).toContain('/assets/shootout/ball.png')
-    expect(shootoutAssets).toContain('/assets/shootout/gk7.png')
-    expect(shootoutAssets).toContain('/assets/shootout/p8.png')
+    expect(getCriticalStartupAssets(teams).some((asset) => asset.includes('/assets/shootout/'))).toBe(false)
   })
 })

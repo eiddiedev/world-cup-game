@@ -179,6 +179,7 @@ export default function LineupScreen({ saveData, updateSaveData, navigateTo, sho
   const opponent = saveData.currentRun?.currentOpponent || '未知对手'
   const currentTeam = getTeamById(saveData.currentRun?.teamId)
   const opponentTeam = getTeamById(opponent)
+  const opponentLabel = opponentTeam?.name || opponent
   const opponentStrength = resolveOpponentStrength(
     saveData.currentRun?.teamId,
     opponent,
@@ -545,6 +546,10 @@ export default function LineupScreen({ saveData, updateSaveData, navigateTo, sho
         matchDefenseRating: getDefenseRating(),
         lineupAssessment,
         stage: 'match',
+        isKnockoutMatch: Boolean(saveData.currentRun?.miniCup) || saveData.currentRun?.isKnockoutMatch,
+        miniCup: saveData.currentRun?.miniCup
+          ? { ...saveData.currentRun.miniCup, status: 'playing' }
+          : saveData.currentRun?.miniCup,
       },
     })
     navigateTo('match')
@@ -664,7 +669,7 @@ export default function LineupScreen({ saveData, updateSaveData, navigateTo, sho
   return (
     <div className="screen lineup-screen">
       <div className="screen-header">
-        <button className="back-button" onClick={() => navigateTo('tournament')}>←</button>
+        <button className="back-button" onClick={() => navigateTo(saveData.currentRun?.miniCup ? 'logistics' : 'tournament')}>←</button>
         <h1>排兵布阵</h1>
       </div>
 
@@ -681,14 +686,14 @@ export default function LineupScreen({ saveData, updateSaveData, navigateTo, sho
         <span className="vs-text">VS</span>
         <span className="preview-team">
           {getOpponentFlag(opponent)}
-          <span>{opponent}</span>
+          <span>{opponentLabel}</span>
         </span>
       </div>
 
       <div className="lineup-workspace">
-        <section className="lineup-pitch-pane">
+        <section className="lineup-pitch-pane" data-guide="lineup-pitch">
           <div className="pitch-view-title">
-            <span>{viewingOpponent ? `${opponent}首发阵容` : `${currentTeam?.name || '我方'}战术板`}</span>
+            <span>{viewingOpponent ? `${opponentLabel}首发阵容` : `${currentTeam?.name || '我方'}战术板`}</span>
             <strong>{viewingOpponent ? opponentSetup.formation : selectedFormation}</strong>
           </div>
           <div className="demo-lineup-left">
@@ -704,10 +709,10 @@ export default function LineupScreen({ saveData, updateSaveData, navigateTo, sho
             className={`lineup-view-toggle ${viewingOpponent ? 'active' : ''}`}
             onClick={() => setViewingOpponent(value => !value)}
           >
-            {viewingOpponent ? '返回我方阵容' : `查看${opponent}阵容`}
+            {viewingOpponent ? '返回我方阵容' : `查看${opponentLabel}阵容`}
           </button>
 
-          <section className={`lineup-control-section formation-control-section${formationCollapsed ? ' is-formation-collapsed' : ''}`}>
+          <section data-guide="lineup-formation" className={`lineup-control-section formation-control-section${formationCollapsed ? ' is-formation-collapsed' : ''}`}>
             <div className="lineup-section-title">
               <span>{viewingOpponent ? '对手阵型' : '阵型选择'}</span>
               <strong>{viewingOpponent ? opponentSetup.formation : selectedFormation}</strong>
@@ -749,6 +754,7 @@ export default function LineupScreen({ saveData, updateSaveData, navigateTo, sho
                 <span>赛前情报</span>
                 <button
                   className="intel-toggle-btn"
+                  data-guide="lineup-intel"
                   onClick={() => setIntelExpanded(v => !v)}
                 >
                   {intelExpanded ? '收起' : '展开'}
@@ -931,6 +937,7 @@ export default function LineupScreen({ saveData, updateSaveData, navigateTo, sho
             )}
 
             <div
+              data-guide="lineup-bench"
               className={`bench-section ${viewingOpponent ? 'opponent-roster-section' : ''}`}
               onDrop={viewingOpponent ? undefined : handleBenchDrop}
               onDragOver={viewingOpponent ? undefined : handleDragOver}
@@ -968,6 +975,7 @@ export default function LineupScreen({ saveData, updateSaveData, navigateTo, sho
       <div className="lineup-footer">
         <button
           className="lineup-confirm-button"
+          data-guide="lineup-confirm"
           onClick={handleConfirmLineup}
           disabled={startingLineup.length < 11}
         >

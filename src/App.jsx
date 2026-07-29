@@ -2,11 +2,9 @@ import React, { useState, useEffect } from 'react'
 import { loadSaveData, persistSaveData, createNewRun } from './utils/saveManager'
 import { teams, getTeamById } from './data/teams'
 import { initAudio, audioManager } from './utils/audioManager'
-import { preloadAssetUrls, preloadAssetUrlsSoftly } from './utils/visualAssetLoader'
+import { preloadAssetUrls } from './utils/visualAssetLoader'
 import {
   getCriticalStartupAssets,
-  getPenaltyShootoutAssets,
-  getSecondaryTeamAssets,
   getSelectedTeamPlayerAssets,
 } from './utils/startupAssets'
 import {
@@ -17,18 +15,15 @@ import HomeScreen from './components/HomeScreen'
 import TeamSelectScreen from './components/TeamSelectScreen'
 import RecruitmentScreen from './components/RecruitmentScreen'
 import LineupScreen from './components/LineupScreen'
+import LogisticsScreen from './components/LogisticsScreen'
 import TournamentScreen from './components/TournamentScreen'
 import MatchScreen from './components/MatchScreen'
 import PostMatchScreen from './components/PostMatchScreen'
 import EndingScreen from './components/EndingScreen'
 import SettingsScreen from './components/SettingsScreen'
-import PixelPlayerLab from './components/PixelPlayerLab'
-import EnhancementHubScreen from './components/EnhancementHubScreen'
-import PenaltyModeScreen from './components/PenaltyModeScreen'
-import CodexScreen from './components/CodexScreen'
-import LogisticsScreen from './components/LogisticsScreen'
-import TrainingGround from './components/TrainingGround'
 import GameLoadingScreen from './components/GameLoadingScreen'
+import SpotlightTour from './components/SpotlightTour.jsx'
+import { getScreenSpotlightTour } from './data/spotlightTours.js'
 import { IS_DOUYIN_DEMO } from './config/runtime'
 
 const IS_TEST_RUNTIME = import.meta.env.MODE === 'test'
@@ -99,9 +94,9 @@ export default function App() {
         setStartup({
           ready: false,
           progress: percent,
-          detail: completed < 14
+          detail: completed < 7
             ? `正在准备主标题与基础图标 · ${completed}/${total}`
-            : `正在加载 16 支国家队选择卡片 · ${completed}/${total}`,
+            : `正在加载 4 支国家队选择卡片 · ${completed}/${total}`,
         })
       },
     }).then(({ failures }) => {
@@ -114,20 +109,14 @@ export default function App() {
 
   useEffect(() => {
     if (IS_TEST_RUNTIME || !startup.ready) return undefined
-    let cancelled = false
     const cancelTask = scheduleSoftTask(() => {
       preloadHappySeedRuntimeCore()
-        .then(() => {
-          if (cancelled) return
-          return preloadAssetUrls(getSecondaryTeamAssets(teams), { concurrency: 2 })
-        })
         .catch((error) => {
           console.warn('[Match preload] 比赛引擎将在进入比赛时重试', error)
         })
     })
 
     return () => {
-      cancelled = true
       cancelTask()
     }
   }, [startup.ready])
@@ -139,12 +128,15 @@ export default function App() {
   }, [saveData?.settings])
 
   useEffect(() => {
+    if (currentScreen !== 'match') audioManager.stopMatchAudio()
+  }, [currentScreen])
+
+  useEffect(() => {
     const run = saveData?.currentRun
     if (!startup.ready || !run?.teamId) return
     const selectedTeam = getTeamById(run.teamId)
     const opponent = getTeamById(run.currentOpponent)
     let cancelled = false
-    let penaltyTimer = null
     const cancelTask = scheduleSoftTask(async () => {
       const selectedPlayerAssets = preloadAssetUrls(getSelectedTeamPlayerAssets(selectedTeam), {
         concurrency: 4,
@@ -170,14 +162,6 @@ export default function App() {
           ],
         }, { assetConcurrency: 3 })
         if (cancelled || !shouldSoftLoadHeavyAssets()) return
-
-        penaltyTimer = window.setTimeout(() => {
-          preloadAssetUrlsSoftly(getPenaltyShootoutAssets(), {
-            batchSize: 1,
-            pauseMs: 900,
-            shouldContinue: () => !cancelled,
-          }).catch(() => {})
-        }, 3000)
       } catch (error) {
         console.warn('[Match preload] 本场资源将在开赛时重试', error)
       }
@@ -186,7 +170,6 @@ export default function App() {
     return () => {
       cancelled = true
       cancelTask()
-      if (penaltyTimer != null) window.clearTimeout(penaltyTimer)
     }
   }, [
     saveData?.currentRun?.teamId,
@@ -296,18 +279,17 @@ export default function App() {
     if (gameMode === 'coach' || gameMode === 'player') {
       setActiveGameMode(gameMode)
     }
-    // 防止在比赛进行中返回招募页面（但允许返回首页）
     if (screen === 'recruitment' && !skipRecruitmentGuard) {
-      // Use latest save data to check stage (avoids stale closure issue)
       const latestData = loadSaveData()
       const stage = latestData?.currentRun?.stage
-      const isRecruitmentDone = stage && ['logistics', 'tournament', 'lineup', 'match', 'post-match', 'knockout', 'ending'].includes(stage)
+      const isRecruitmentDone = stage && [
+        'logistics', 'tournament', 'lineup', 'match', 'post-match', 'ending',
+      ].includes(stage)
       if (isRecruitmentDone) {
         showToast('阵容已确认，无法返回招募页面')
         return
       }
     }
-
     setCurrentScreen(screen)
   }
 
@@ -327,6 +309,7 @@ export default function App() {
     showToast,
     gameMode: activeGameMode,
   }
+  const screenSpotlightTour = getScreenSpotlightTour(currentScreen, activeGameMode)
 
   const renderScreen = () => {
     switch (currentScreen) {
@@ -336,9 +319,12 @@ export default function App() {
         return <TeamSelectScreen {...screenProps} />
       case 'recruitment':
         return <RecruitmentScreen {...screenProps} />
+      case 'logistics':
+        return <LogisticsScreen {...screenProps} />
       case 'lineup':
         return <LineupScreen {...screenProps} />
       case 'tournament':
+      case 'mini-cup-prep':
         return <TournamentScreen {...screenProps} />
       case 'match':
         return <MatchScreen {...screenProps} />
@@ -348,18 +334,6 @@ export default function App() {
         return <EndingScreen {...screenProps} />
       case 'settings':
         return <SettingsScreen {...screenProps} />
-      case 'penalty-mode':
-        return <PenaltyModeScreen {...screenProps} />
-      case 'codex':
-        return <CodexScreen {...screenProps} />
-      case 'logistics':
-        return <LogisticsScreen {...screenProps} />
-      case 'training':
-        return <TrainingGround {...screenProps} />
-      case 'enhancement-hub':
-        return <EnhancementHubScreen {...screenProps} />
-      case 'pixel-player-lab':
-        return <PixelPlayerLab {...screenProps} />
       default:
         return <HomeScreen {...screenProps} />
     }
@@ -368,6 +342,7 @@ export default function App() {
   return (
     <div className={`app${useDouyinLayout ? ' douyin-demo' : ''}${currentScreen === 'recruitment' ? ' zoom-page-active' : ''}`}>
       {renderScreen()}
+      <SpotlightTour tour={screenSpotlightTour} autoStart />
       {toast && <div className="toast">{toast}</div>}
     </div>
   )

@@ -17,6 +17,7 @@ import {
   FORMAL_MATCH_DECISION_TARGET_MINUTES,
   FORMAL_MATCH_REALTIME_MINUTES,
   FORMAL_MATCH_ROUTINE_COMMENTARY_BUDGET,
+  FORMAL_MATCH_TARGET_DECISIONS,
   advanceFormalMatchSession,
   buildFormalMatchSessionReport,
   createFormalMatchSession,
@@ -75,6 +76,11 @@ function seededRandom(seed) {
 }
 
 describe('FormalMatchSession 正式比赛权威链', () => {
+  it('keeps the shared full and Douyin builds on ten scheduled decision windows', () => {
+    expect(FORMAL_MATCH_TARGET_DECISIONS).toBe(10)
+    expect(FORMAL_MATCH_DECISION_TARGET_MINUTES).toHaveLength(FORMAL_MATCH_TARGET_DECISIONS)
+  })
+
   const actorSource = buildHappySeedRuntimeActorConfig()
   const moment = runtimeMoment(actorSource)
 

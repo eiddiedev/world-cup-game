@@ -52,8 +52,8 @@ const SCRIPT_PATHS = [
   'shim.js',
   'scripts/match.rebuilt.js',
   'happyseed/runtime-v2.js?v=11',
-  'happyseed/runtime-v3.js?v=5',
-  'standalone-match.js?v=29',
+  'happyseed/runtime-v3.js?v=11',
+  'standalone-match.js?v=37',
 ]
 
 const MATCH_EVENTS = [
@@ -87,6 +87,7 @@ const MATCH_EVENTS = [
 let bootPromise = null
 let dataCachePromise = null
 let runtimeCorePromise = null
+let runtimeShutdownEpoch = 0
 let speed = 1
 let matchDurationMinutes = 3
 let selectedTeams = { red: 'france', blue: 'brazil' }
@@ -309,12 +310,13 @@ function distanceBetween(left, right) {
   )
 }
 
-export function captureFormalMatchRuntimeMoment() {
+export function captureFormalMatchRuntimeMoment({ allowPaused = false } = {}) {
   const game = getGame()
   const pitch = getPitch()
   if (
     !game?.allPlayers?.length
-    || !pitch?.matchStarted
+    || !pitch
+    || (!allowPaused && !pitch.matchStarted)
     || !runtimeActorConfig?.actors?.length
   ) return null
 
@@ -719,6 +721,11 @@ export function applyRuntimeVarResult(event) {
 }
 
 export function bootHappySeedMatch(options = {}) {
+  // A previous React tree may have scheduled singleton cleanup during a route
+  // transition (or StrictMode's development-only effect replay). Claim the
+  // renderer before consulting bootPromise so a healthy in-flight Runtime can
+  // never be left running behind a hidden canvas.
+  retainMatchRuntime()
   if (bootPromise) return bootPromise
 
   bootPromise = (async () => {
@@ -830,11 +837,55 @@ export function clearBootPromise() {
   bootPromise = null
 }
 
+function restoreMatchRuntimeCanvas() {
+  const game = window.__matchGame
+  const canvas = game?.renderer?.view
+  if (!canvas) return false
+
+  if (!canvas.isConnected) document.body.insertBefore(canvas, document.body.firstChild)
+  canvas.style.removeProperty('display')
+  canvas.style.removeProperty('opacity')
+  canvas.removeAttribute('aria-hidden')
+  return true
+}
+
+/**
+ * Keep the singleton renderer alive for the current match screen.
+ *
+ * React StrictMode replays effects as mount -> cleanup -> mount in development.
+ * The epoch makes the cleanup from that synthetic unmount cancellable, while
+ * also covering an immediate real route transition into another Runtime view.
+ */
+export function retainMatchRuntime() {
+  const epoch = ++runtimeShutdownEpoch
+  restoreMatchRuntimeCanvas()
+
+  window.requestAnimationFrame?.(() => {
+    if (epoch !== runtimeShutdownEpoch) return
+    restoreMatchRuntimeCanvas()
+    try { window.__matchGame?.resize?.() } catch { /* Renderer may still be loading. */ }
+  })
+  return epoch
+}
+
+/**
+ * Release after the current React commit. A same-commit remount can retain the
+ * Runtime first, cancelling this release before the WebGL canvas is hidden.
+ */
+export function scheduleMatchRuntimeShutdown() {
+  const epoch = ++runtimeShutdownEpoch
+  queueMicrotask(() => {
+    if (epoch === runtimeShutdownEpoch) shutdownMatchRuntime()
+  })
+  return epoch
+}
+
 /**
  * 关闭当前比赛运行时，释放引擎状态，允许下次重新 boot。
  * 用于训练基地退出时清理。
  */
 export function shutdownMatchRuntime() {
+  runtimeShutdownEpoch += 1
   bootPromise = null
   const game = window.__matchGame
   if (game) {
@@ -967,6 +1018,155 @@ export function setStadiumCrowdMotion(enabled) {
   return Boolean(window.__happySeedStadiumScene?.setCrowdMotion?.(enabled))
 }
 
+function installLegacyShootoutPresentation() {
+  const stadium = window.__matchGame?.stadium
+  const entries = stadium?._happySeedActorEntries
+  if (!stadium || !Array.isArray(entries) || entries.length === 0) return null
+  if (stadium._happySeedLegacyShootoutPresentation) {
+    return stadium._happySeedLegacyShootoutPresentation
+  }
+
+  const state = {
+    active: false,
+    attackingSide: 'red',
+    shooterPlayerId: null,
+    shadowVisibility: null,
+    shadowChildVisibility: null,
+  }
+
+  const visibleEntries = () => {
+    const shooter = entries.find((entry) => (
+      entry?.actor?.side === state.attackingSide
+      && String(entry.actor.playerId) === String(state.shooterPlayerId)
+      && !entry.actor.isGoalkeeper
+      && entry.actor.state?.onPitch !== false
+    )) || entries.find((entry) => (
+      entry?.actor?.side === state.attackingSide
+      && !entry.actor.isGoalkeeper
+      && entry.actor.state?.onPitch !== false
+    ))
+    const keeper = entries.find((entry) => (
+      entry?.actor?.side !== state.attackingSide
+      && entry.actor.isGoalkeeper
+      && entry.actor.state?.onPitch !== false
+    ))
+    return new Set([shooter, keeper].filter(Boolean))
+  }
+
+  const enforce = () => {
+    if (!state.active) return null
+    const allowedEntries = visibleEntries()
+    const allowedRenderers = new Set(
+      [...allowedEntries].map((entry) => entry.renderer).filter(Boolean),
+    )
+
+    entries.forEach((entry) => {
+      const visible = allowedEntries.has(entry)
+      if (entry.renderer) entry.renderer.visible = visible
+      if (entry.label) entry.label.visible = visible
+      if (entry.eventRing) entry.eventRing.visible = false
+    })
+    // Some older Runtime builds keep a second list of player containers.
+    // Applying the same allow-list there prevents a stale goalkeeper renderer.
+    if (Array.isArray(stadium.players)) {
+      stadium.players.forEach((renderer) => {
+        if (renderer) renderer.visible = allowedRenderers.has(renderer)
+      })
+    }
+    // Legacy Runtime renders every player's shadow into a separate batch,
+    // so hiding the player container alone leaves 20 ghost shadows behind.
+    // Runtime 的 autoShadows 并不保证按球员连续分组，按索引过滤会留下
+    // 幽灵影子。点球大战只显示两名角色，直接关闭整个人物影子层最可靠。
+    if (stadium.shadows) stadium.shadows.visible = false
+
+    return {
+      active: true,
+      attackingSide: state.attackingSide,
+      shooterPlayerId: state.shooterPlayerId,
+      visibleCount: allowedEntries.size,
+      goalSide: 'right',
+      cameraMode: window.__happySeedStadiumScene?.getSnapshot?.().cameraMode || 'decision-director',
+    }
+  }
+
+  const restore = () => {
+    entries.forEach((entry) => {
+      const visible = entry?.actor?.state?.onPitch !== false
+      if (entry.renderer) entry.renderer.visible = visible
+      if (entry.label) entry.label.visible = visible
+      if (entry.eventRing) entry.eventRing.visible = false
+    })
+    if (stadium.shadows && state.shadowVisibility != null) {
+      stadium.shadows.visible = state.shadowVisibility
+    }
+    const shadowChildren = stadium.shadows?.autoShadows?.children
+    if (Array.isArray(shadowChildren) && state.shadowChildVisibility) {
+      shadowChildren.forEach((shadow, index) => {
+        if (shadow && state.shadowChildVisibility[index] != null) {
+          shadow.visible = state.shadowChildVisibility[index]
+        }
+      })
+    }
+    state.active = false
+    state.shooterPlayerId = null
+    state.shadowVisibility = null
+    state.shadowChildVisibility = null
+    window.__happySeedReleaseShootoutActors?.()
+    return true
+  }
+
+  const previousFrame = typeof stadium.frame === 'function' ? stadium.frame.bind(stadium) : null
+  if (previousFrame) {
+    stadium.frame = (frame) => {
+      previousFrame(frame)
+      enforce()
+    }
+  }
+
+  const controller = {
+    configure(payload = {}) {
+      if (!state.active) {
+        state.shadowVisibility = stadium.shadows ? stadium.shadows.visible !== false : null
+        state.shadowChildVisibility = stadium.shadows?.autoShadows?.children
+          ?.map((shadow) => shadow?.visible !== false) || null
+      }
+      state.active = true
+      state.attackingSide = payload.attackingSide === 'blue' ? 'blue' : 'red'
+      state.shooterPlayerId = payload.shooterPlayerId ?? null
+      return enforce()
+    },
+    clear() {
+      if (!state.active) return false
+      return restore()
+    },
+    enforce,
+  }
+  stadium._happySeedLegacyShootoutPresentation = controller
+  return controller
+}
+
+export function configureShootoutPresentation(payload) {
+  const currentController = window.__happySeedShootoutPresentation
+  // The plain Runtime script is not replaced by Vite HMR. Always attach the
+  // compatibility controller as well so an already-open tab receives shadow
+  // and actor cleanup without requiring a hard refresh. Camera, staging and
+  // animation remain owned by the reused match_penalty DecisionDirector scene.
+  const compatibilitySnapshot = installLegacyShootoutPresentation()?.configure(payload) || null
+  // Configure native second: both controllers then save the original shadow
+  // state in a deterministic order, and clear() can restore it correctly.
+  const nativeSnapshot = currentController?.configure?.(payload) || null
+  return nativeSnapshot || compatibilitySnapshot
+}
+
+export function clearShootoutPresentation() {
+  const currentController = window.__happySeedShootoutPresentation
+  const nativeCleared = Boolean(currentController?.clear?.())
+  const compatibilityCleared = Boolean(
+    window.__matchGame?.stadium?._happySeedLegacyShootoutPresentation?.clear?.(),
+  )
+  return nativeCleared || compatibilityCleared
+}
+
 export function selectRuntimeActor(runtimeActorId) {
   return Boolean(window.__happySeedRuntimeActors?.selectActor?.(runtimeActorId))
 }
@@ -1072,19 +1272,24 @@ export function createFormalCoachDecision(sequenceIndex, options = {}) {
     ? FORMAL_COACH_DECISION_CATALOG
     : FORMAL_COACH_RUNTIME_V2_SEQUENCE
   coachDecisionPlanLength = schedule.length
-  return buildFormalCoachDecision({
+  const side = options.side === 'blue' ? 'blue' : 'red'
+  const decision = buildFormalCoachDecision({
     actorSource: runtimeActorConfig,
     sequenceIndex,
     schedule,
-    side: 'red',
-    teamId: selectedTeams.red,
-    opponentTeamId: selectedTeams.blue,
+    side,
+    teamId: selectedTeams[side],
+    opponentTeamId: selectedTeams[side === 'red' ? 'blue' : 'red'],
     scenarioId: options.scenarioId,
     minute: options.minute,
     label: options.label,
     preferredPlayerId: options.preferredPlayerId,
     authorityState: options.authorityState,
   })
+  return decision && {
+    ...decision,
+    runtimeContext: options.runtimeContext || 'match',
+  }
 }
 
 export function getConservativeFormalCoachChoice(decision) {
@@ -1332,7 +1537,16 @@ export async function prepareFormalCoachDecision(decision, runtimeMoment, source
   formalPreparedDecisionScript = script
   const event = upsertFormalDecisionEvent(createFormalDecisionBroadcastEvent(decision))
   formalActiveEventId = event.id
-  await director.prepare(script)
+  const prepared = await director.prepare(script)
+  if (prepared?.cancelled) {
+    formalActiveEventId = null
+    formalDecisionStatus = 'cancelled'
+    formalPreparedDecisionScript = null
+    throw Object.assign(
+      new Error('决策准备被中断，已恢复比赛'),
+      { recovered: true },
+    )
+  }
   formalDecisionStatus = 'choosing'
   return { decision, script, snapshot: getDecisionDirectorSnapshot() }
 }
@@ -1374,8 +1588,11 @@ export function withDecisionWatchdog(promise) {
 export function executeFormalCoachDecisionChoice(decision, choiceId, options = {}) {
   const director = window.__happySeedDecisionDirectorV3
   if (!director?.execute) throw new Error('DecisionDirectorV3 Runtime 尚未就绪')
-  const outcomeOverride = import.meta.env.DEV && options.outcomeOverride
-    ? options.outcomeOverride
+  const requestedOutcome = options.outcomeOverride
+  const outcomeOverride = requestedOutcome
+    && decision?.choices?.find((choice) => choice.id === choiceId)
+      ?.possible_outcomes?.includes(requestedOutcome)
+    ? requestedOutcome
     : getDevelopmentOutcomeOverride(decision, choiceId)
   const ruleResolution = resolveFormalCoachDecisionRule(decision, choiceId, {
     outcomeOverride,
@@ -1402,6 +1619,12 @@ export function executeFormalCoachDecisionChoice(decision, choiceId, options = {
   })
 
   const settled = execution.settled.then((runtimeResult) => {
+    if (runtimeResult?.cancelled) {
+      throw Object.assign(
+        new Error('决策播放被中断，已恢复比赛'),
+        { recovered: true },
+      )
+    }
     const runtimeEffect = applyFormalDecisionRuntimeEffect(
       scriptedOutcome?.runtimeEffect,
       formalPreparedDecisionScript,
@@ -1434,7 +1657,11 @@ export function executeFormalCoachDecisionChoice(decision, choiceId, options = {
     }
     formalActiveEventId = null
     formalDecisionStatus = 'settled'
-    if (resolution.requiresRuntimeGoal && typeof execution.commitGoal === 'function') {
+    if (
+      options.commitRuntimeGoal !== false
+      && resolution.requiresRuntimeGoal
+      && typeof execution.commitGoal === 'function'
+    ) {
       window.setTimeout(() => {
         const committed = execution.commitGoal()
         if (!committed) {
@@ -1455,13 +1682,15 @@ export function executeFormalCoachDecisionChoice(decision, choiceId, options = {
 }
 
 export function cancelFormalCoachDecision() {
-  const cancelled = Boolean(window.__happySeedDecisionDirectorV3?.cancel?.())
-  if (cancelled) {
+  const director = window.__happySeedDecisionDirectorV3
+  const cancelled = Boolean(director?.cancel?.())
+  const recovered = cancelled ? true : Boolean(director?.recover?.())
+  if (cancelled || recovered) {
     formalActiveEventId = null
     formalDecisionStatus = 'cancelled'
     formalPreparedDecisionScript = null
   }
-  return cancelled
+  return cancelled || recovered
 }
 
 export async function playFormalCoachDecisionPrelude(decision) {

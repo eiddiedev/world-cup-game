@@ -42,10 +42,11 @@ const serviceMocks = vi.hoisted(() => ({
   setRuntimeGoalPresentationHold: vi.fn(() => true),
   setStadiumCrowdMotion: vi.fn(),
   setZoom: vi.fn(() => true),
+  retainMatchRuntime: vi.fn(),
+  scheduleMatchRuntimeShutdown: vi.fn(),
   subscribeToMatchEvents: vi.fn(() => () => {}),
   subscribeToRuntimeDecisionChoices: vi.fn(() => () => {}),
   withDecisionWatchdog: vi.fn((promise) => promise),
-  clearBootPromise: vi.fn(),
   subscribeToRuntimeMatchEvents: vi.fn((listener) => {
     listener({
       schemaVersion: 'match-runtime-event-v1',
@@ -196,6 +197,29 @@ describe('HappySeed formal match broadcast', () => {
       }),
       completed: Promise.resolve({ completed: true }),
     })
+  })
+
+  it('claims the singleton Runtime and schedules safe cleanup on unmount', () => {
+    const { unmount } = render(<HappySeedMatchBroadcast />)
+
+    expect(serviceMocks.retainMatchRuntime).toHaveBeenCalledOnce()
+    unmount()
+
+    expect(serviceMocks.scheduleMatchRuntimeShutdown).toHaveBeenCalledOnce()
+  })
+
+  it('reclaims the Runtime after StrictMode replays the mount effect', () => {
+    const lifecycle = []
+    serviceMocks.retainMatchRuntime.mockImplementation(() => lifecycle.push('retain'))
+    serviceMocks.scheduleMatchRuntimeShutdown.mockImplementation(() => lifecycle.push('release'))
+
+    render(
+      <React.StrictMode>
+        <HappySeedMatchBroadcast />
+      </React.StrictMode>,
+    )
+
+    expect(lifecycle.slice(0, 3)).toEqual(['retain', 'release', 'retain'])
   })
 
   it('renders the full-screen broadcast score and same-event commentary', async () => {

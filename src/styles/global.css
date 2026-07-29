@@ -982,9 +982,9 @@ button {
 /* Main menu */
 .main-menu {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr);
   gap: 16px;
-  width: min(704px, 88vw);
+  width: min(352px, 88vw);
 }
 
 .main-menu .menu-button.is-primary-mode .button-face {
@@ -7193,7 +7193,7 @@ button {
   .douyin-demo .main-menu {
     align-self: center;
     gap: 4px;
-    width: min(520px, 58vw);
+    width: min(360px, 42vw);
   }
 
   .douyin-demo .main-menu .PixelButton {

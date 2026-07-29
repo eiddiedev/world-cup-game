@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
+import { runInNewContext } from 'node:vm'
 import { describe, expect, it } from 'vitest'
 
 const projectRoot = path.resolve(import.meta.dirname, '../..')
@@ -13,6 +14,14 @@ const decisionDirector = readFileSync(
 )
 const runtimeStadium = readFileSync(
   path.join(projectRoot, 'public/match-runtime-min/happyseed/runtime-v2.js'),
+  'utf8',
+)
+const runtimeService = readFileSync(
+  path.join(projectRoot, 'src/services/happySeedMatchRuntime.js'),
+  'utf8',
+)
+const matchBroadcast = readFileSync(
+  path.join(projectRoot, 'src/components/HappySeedMatchBroadcast.jsx'),
   'utf8',
 )
 
@@ -89,13 +98,83 @@ describe('Match Runtime integration contracts', () => {
 
   it('physically removes a red-carded actor from the native match', () => {
     expect(standaloneRuntime).toContain('function removePhysicalActor(entry)')
-    expect(standaloneRuntime).toContain('window.__matchGame.removePlayer(entry.entity)')
+    expect(standaloneRuntime).toContain('function hideRetiredActorVisual(entry)')
+    expect(standaloneRuntime).toContain('renderer.renderable = !1')
+    expect(standaloneRuntime).toContain('entry.actor._runtimeRemoved = !0')
+    expect(standaloneRuntime).toMatch(
+      /entry\.actor\._runtimeRemoved = !0;[\s\S]*hideRetiredActorVisual\(entry\);[\s\S]*game\.removePlayer\(entity\)/,
+    )
+    expect(standaloneRuntime).toMatch(
+      /finally \{[\s\S]*hideRetiredActorVisual\(entry\);[\s\S]*\}/,
+    )
+    expect(standaloneRuntime).toMatch(
+      /previousActorFrame\(frame\)[\s\S]*entry\.actor\._runtimeRemoved && hideRetiredActorVisual\(entry\)/,
+    )
+    expect(standaloneRuntime).toContain('enforceRetiredVisuals: function ()')
     expect(standaloneRuntime).toMatch(
       /patch\.redCard === !0[\s\S]*state\.onPitch = !1[\s\S]*removePhysicalActor\(entry\)/,
     )
     expect(standaloneRuntime).toMatch(
       /state\.yellowCards >= 2[\s\S]*state\.redCard = !0[\s\S]*removePhysicalActor\(entry\)/,
     )
+  })
+
+  it('keeps a dismissed actor visually sealed even when native removal throws or visuals reopen', () => {
+    const helpersStart = standaloneRuntime.indexOf('function hideRetiredActorVisual(entry)')
+    const helpersEnd = standaloneRuntime.indexOf('window.__happySeedRuntimeActors = {', helpersStart)
+    const helperSource = standaloneRuntime.slice(helpersStart, helpersEnd)
+    const entity = { static: false, hasBall: true }
+    const renderer = {
+      visible: true,
+      renderable: true,
+      alpha: 1,
+      sprite: { visible: true },
+      spine: {
+        visible: true,
+        sprites: {
+          eyes: { visible: true },
+          head: { visible: true },
+        },
+      },
+    }
+    const entry = {
+      actor: { _runtimeRemoved: false },
+      entity,
+      renderer,
+      label: { visible: true, renderable: true },
+      eventRing: { visible: true, renderable: true },
+    }
+    entity.team = {
+      players: [entity],
+      removePlayer() { throw new Error('already removed from team') },
+    }
+    const context = {
+      console: { error() {} },
+      pitch: { ball: { owner: entity, inHands: entity } },
+      window: {
+        __matchGame: {
+          removePlayer() { throw new Error('Player not found') },
+        },
+      },
+    }
+    runInNewContext(`${helperSource}; retirementApi = { removePhysicalActor };`, context)
+
+    context.retirementApi.removePhysicalActor(entry)
+
+    expect(entry.actor._runtimeRemoved).toBe(true)
+    expect(entity).toMatchObject({ static: true, hasBall: false })
+    expect(context.pitch.ball).toMatchObject({ owner: null, inHands: null })
+    expect(renderer).toMatchObject({ visible: false, renderable: false, alpha: 0 })
+    expect(renderer.spine.visible).toBe(false)
+    expect(Object.values(renderer.spine.sprites).every((slot) => slot.visible === false)).toBe(true)
+    expect(entry.label).toMatchObject({ visible: false, renderable: false })
+    expect(entry.eventRing).toMatchObject({ visible: false, renderable: false })
+
+    renderer.visible = true
+    renderer.spine.sprites.eyes.visible = true
+    context.retirementApi.removePhysicalActor(entry)
+    expect(renderer.visible).toBe(false)
+    expect(renderer.spine.sprites.eyes.visible).toBe(false)
   })
 
   it('returns temporary manual camera movement to continuous ball follow', () => {
@@ -108,6 +187,25 @@ describe('Match Runtime integration contracts', () => {
     )
     expect(decisionDirector).toMatch(
       /function restoreCamera\(\)[\s\S]*__happySeedStadiumScene\.followBall\(\)/,
+    )
+  })
+
+  it('recovers every coach-decision failure path instead of leaving timeScale frozen', () => {
+    expect(runtimeService).toContain("'happyseed/runtime-v3.js?v=11'")
+    expect(matchBroadcast).toMatch(
+      /withDecisionWatchdog\(\s*prepareFormalCoachDecision\(/,
+    )
+    expect(matchBroadcast).toMatch(
+      /catch \(decisionError\)[\s\S]*cancelFormalCoachDecision\(\)[\s\S]*setDecisionPhase\('idle'\)/,
+    )
+    expect(decisionDirector).toContain('function ensureContinuousMatchRecovery(finished)')
+    expect(decisionDirector).toContain('director lifetime timeout; forcing recovery')
+    expect(decisionDirector).toContain('}, 25000)')
+    expect(decisionDirector).toMatch(
+      /function emergencyDecisionCleanup\(finished\)[\s\S]*ensureContinuousMatchRecovery\(finished\)/,
+    )
+    expect(decisionDirector).toMatch(
+      /displayNormalized[\s\S]*frame\.ball\.position\.x = displayBall\.x/,
     )
   })
 

@@ -208,7 +208,7 @@ export default function RecruitmentScreen({ saveData, updateSaveData, navigateTo
         </div>
 
         <div className="recruitment-stats">
-          <div className="stat-item">
+          <div className="stat-item" data-guide="recruitment-budget">
             <span className="stat-label">征召点</span>
             <span className="stat-value budget">{remainingBudget}<img src="/assets/征召点.png" alt="征召点" className="coin-icon" /></span>
           </div>
@@ -224,7 +224,7 @@ export default function RecruitmentScreen({ saveData, updateSaveData, navigateTo
           ))}
         </div>
 
-        <div className="position-tabs">
+        <div className="position-tabs" data-guide="recruitment-positions">
           {positionOrder.map(pos => (
             <button
               key={pos}
@@ -243,12 +243,13 @@ export default function RecruitmentScreen({ saveData, updateSaveData, navigateTo
             <p>暂无球员数据</p>
           </div>
         ) : (
-          sortedPlayers.map((player) => {
+          sortedPlayers.map((player, playerIndex) => {
             const isPurchased = purchasedPlayers.some((p) => p.id === player.id)
             const ratingColor = player.rating >= 85 ? 'green' : player.rating >= 75 ? 'yellow' : 'red'
             return (
               <div
                 key={player.id}
+                data-guide={playerIndex === 0 ? 'recruitment-player-card' : undefined}
                 className={`game-card-v2 ${player.isGolden ? 'golden' : ''} ${player.cardTier === '银' ? 'silver' : ''} ${isPurchased ? 'purchased' : ''}`}
                 onClick={() => setSelectedPlayer(player)}
               >
@@ -355,11 +356,11 @@ export default function RecruitmentScreen({ saveData, updateSaveData, navigateTo
       )}
 
       <div className="recruitment-footer">
-        <button className="PixelButton secondary-button" onClick={handleAutoRecruit}>
+        <button className="PixelButton secondary-button" data-guide="recruitment-auto" onClick={handleAutoRecruit}>
           <span className="button-face" aria-hidden="true"></span>
           <span className="button-label">一键推荐</span>
         </button>
-        <button className="PixelButton" onClick={handleConfirmRoster}>
+        <button className="PixelButton" data-guide="recruitment-confirm" onClick={handleConfirmRoster}>
           <span className="button-face" aria-hidden="true"></span>
           <span className="button-label">确认征召</span>
         </button>

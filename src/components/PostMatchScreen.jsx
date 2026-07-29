@@ -18,6 +18,9 @@ export default function PostMatchScreen({ saveData, updateSaveData, navigateTo }
 
   // 判断是否真正打完所有比赛
   const isKnockoutDone = Boolean(saveData.currentRun?.isKnockoutMatch && knockoutRound === 'final' && result?.result)
+  const isKnockoutElimination = Boolean(
+    saveData.currentRun?.isKnockoutMatch && result?.result === 'loss',
+  )
 
   const rulePlayerStates = saveData.currentRun?.lastMatchRuleReport?.playerStates || {}
 
@@ -41,7 +44,7 @@ export default function PostMatchScreen({ saveData, updateSaveData, navigateTo }
     return (
       <div className="screen empty-state-screen">
         <p>无比赛数据</p>
-        <button className="PixelButton compact-button" onClick={() => navigateTo('tournament')}>
+        <button className="PixelButton compact-button" onClick={() => navigateTo('lineup')}>
           <span className="button-face" aria-hidden="true"></span>
           <span className="button-label">返回赛程</span>
         </button>
@@ -67,11 +70,11 @@ export default function PostMatchScreen({ saveData, updateSaveData, navigateTo }
         ...saveData,
         currentRun: nextRun,
       })
-      navigateTo(nextRun.stage === 'ending' ? 'ending' : 'tournament')
+      navigateTo(nextRun.stage)
     } catch (e) {
       console.error('handleNextMatch error:', e)
       // Fallback: 直接跳转，不更新状态
-      navigateTo('tournament')
+      navigateTo('lineup')
     }
   }
 
@@ -97,7 +100,7 @@ export default function PostMatchScreen({ saveData, updateSaveData, navigateTo }
   return (
     <div className="screen post-match-compact">
       {/* 结果头部 */}
-      <div className="post-result-header">
+      <div className="post-result-header" data-guide="post-result">
         <div className="post-result-emoji">{resultEmoji}</div>
         <h1>{resultText}</h1>
         <div className="post-score-row">
@@ -107,7 +110,7 @@ export default function PostMatchScreen({ saveData, updateSaveData, navigateTo }
         </div>
       </div>
 
-      <div className="post-match-content">
+      <div className="post-match-content" data-guide="post-analysis">
         <div className="post-match-column">
           {mvp && (
             <div className="PixelPanel post-mini-panel post-mvp-panel">
@@ -220,8 +223,8 @@ export default function PostMatchScreen({ saveData, updateSaveData, navigateTo }
       </div>
 
       {/* 操作按钮 - 固定在底部 */}
-      <div className="post-actions">
-        {isKnockoutDone ? (
+      <div className="post-actions" data-guide="post-next">
+        {isKnockoutDone || isKnockoutElimination ? (
           <button className="PixelButton compact-button post-action-button" onClick={handleViewEnding}>
             <span className="button-face" aria-hidden="true"></span>
             <span className="button-label">查看最终结局</span>
