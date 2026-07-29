@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react'
 import { teams } from '../data/teams.js'
-import PenaltyShootout from './PenaltyShootout.jsx'
+import LegacyPenaltyShootout from './LegacyPenaltyShootout.jsx'
 
 function buildShootoutLineup(team) {
   const players = team?.players || []
@@ -22,7 +22,7 @@ export default function PenaltyModeScreen({ navigateTo, showToast }) {
   const awayLineup = useMemo(() => buildShootoutLineup(awayTeam), [awayTeam])
 
   return (
-    <PenaltyShootout
+    <LegacyPenaltyShootout
       homeTeam={homeTeam.name}
       awayTeam={awayTeam.name}
       homeTeamId={homeTeam.id}
