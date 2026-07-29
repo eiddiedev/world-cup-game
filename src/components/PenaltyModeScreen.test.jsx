@@ -4,7 +4,7 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import '@testing-library/jest-dom/vitest'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-vi.mock('./LegacyPenaltyShootout.jsx', () => ({
+vi.mock('./PenaltyShootout.jsx', () => ({
   default: ({ homeTeam, awayTeam, onExit }) => (
     <div role="dialog" aria-label="逐帧像素点球大战">
       <span>{homeTeam} 对 {awayTeam}</span>
@@ -18,7 +18,7 @@ import PenaltyModeScreen from './PenaltyModeScreen.jsx'
 afterEach(cleanup)
 
 describe('independent penalty mode', () => {
-  it('keeps the original frame-by-frame pixel shootout separate from the match runtime', () => {
+  it('uses the shared frame-by-frame pixel shootout', () => {
     const navigateTo = vi.fn()
     render(<PenaltyModeScreen navigateTo={navigateTo} showToast={vi.fn()} />)
 
