@@ -119,7 +119,7 @@ describe('home screen', () => {
     })
   })
 
-  it('shows only the two primary modes and settings on the home screen', () => {
+  it('shows all four player-facing menu entries', () => {
     const navigateTo = vi.fn()
     render(
       <HomeScreen
@@ -131,11 +131,12 @@ describe('home screen', () => {
 
     expect(screen.getByRole('button', { name: '教练模式' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: '球员模式' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '点球大战' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: '设置' })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: '点球测试' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: '小人样板' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'AI与赞助' })).not.toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: /图鉴/ })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /图鉴/ })).toBeInTheDocument()
     expect(screen.queryByText('四队迷你世界杯')).not.toBeInTheDocument()
     expect(screen.queryByText('两场夺冠 · 约 5–7 分钟')).not.toBeInTheDocument()
   })

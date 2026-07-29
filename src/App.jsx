@@ -2,9 +2,11 @@ import React, { useState, useEffect } from 'react'
 import { loadSaveData, persistSaveData, createNewRun } from './utils/saveManager'
 import { teams, getTeamById } from './data/teams'
 import { initAudio, audioManager } from './utils/audioManager'
-import { preloadAssetUrls } from './utils/visualAssetLoader'
+import { preloadAssetUrls, preloadAssetUrlsSoftly } from './utils/visualAssetLoader'
 import {
   getCriticalStartupAssets,
+  getPenaltyShootoutAssets,
+  getSecondaryTeamAssets,
   getSelectedTeamPlayerAssets,
 } from './utils/startupAssets'
 import {
@@ -21,6 +23,11 @@ import MatchScreen from './components/MatchScreen'
 import PostMatchScreen from './components/PostMatchScreen'
 import EndingScreen from './components/EndingScreen'
 import SettingsScreen from './components/SettingsScreen'
+import PixelPlayerLab from './components/PixelPlayerLab'
+import EnhancementHubScreen from './components/EnhancementHubScreen'
+import PenaltyModeScreen from './components/PenaltyModeScreen'
+import CodexScreen from './components/CodexScreen'
+import TrainingGround from './components/TrainingGround'
 import GameLoadingScreen from './components/GameLoadingScreen'
 import SpotlightTour from './components/SpotlightTour.jsx'
 import { getScreenSpotlightTour } from './data/spotlightTours.js'
@@ -94,9 +101,9 @@ export default function App() {
         setStartup({
           ready: false,
           progress: percent,
-          detail: completed < 7
+          detail: completed < 14
             ? `正在准备主标题与基础图标 · ${completed}/${total}`
-            : `正在加载 4 支国家队选择卡片 · ${completed}/${total}`,
+            : `正在加载 ${teams.length} 支国家队选择卡片 · ${completed}/${total}`,
         })
       },
     }).then(({ failures }) => {
@@ -109,14 +116,20 @@ export default function App() {
 
   useEffect(() => {
     if (IS_TEST_RUNTIME || !startup.ready) return undefined
+    let cancelled = false
     const cancelTask = scheduleSoftTask(() => {
       preloadHappySeedRuntimeCore()
+        .then(() => {
+          if (cancelled) return
+          return preloadAssetUrls(getSecondaryTeamAssets(teams), { concurrency: 2 })
+        })
         .catch((error) => {
           console.warn('[Match preload] 比赛引擎将在进入比赛时重试', error)
         })
     })
 
     return () => {
+      cancelled = true
       cancelTask()
     }
   }, [startup.ready])
@@ -137,6 +150,7 @@ export default function App() {
     const selectedTeam = getTeamById(run.teamId)
     const opponent = getTeamById(run.currentOpponent)
     let cancelled = false
+    let penaltyTimer = null
     const cancelTask = scheduleSoftTask(async () => {
       const selectedPlayerAssets = preloadAssetUrls(getSelectedTeamPlayerAssets(selectedTeam), {
         concurrency: 4,
@@ -162,6 +176,14 @@ export default function App() {
           ],
         }, { assetConcurrency: 3 })
         if (cancelled || !shouldSoftLoadHeavyAssets()) return
+
+        penaltyTimer = window.setTimeout(() => {
+          preloadAssetUrlsSoftly(getPenaltyShootoutAssets(), {
+            batchSize: 1,
+            pauseMs: 900,
+            shouldContinue: () => !cancelled,
+          }).catch(() => {})
+        }, 3000)
       } catch (error) {
         console.warn('[Match preload] 本场资源将在开赛时重试', error)
       }
@@ -170,6 +192,7 @@ export default function App() {
     return () => {
       cancelled = true
       cancelTask()
+      if (penaltyTimer != null) window.clearTimeout(penaltyTimer)
     }
   }, [
     saveData?.currentRun?.teamId,
@@ -334,6 +357,16 @@ export default function App() {
         return <EndingScreen {...screenProps} />
       case 'settings':
         return <SettingsScreen {...screenProps} />
+      case 'penalty-mode':
+        return <PenaltyModeScreen {...screenProps} />
+      case 'codex':
+        return <CodexScreen {...screenProps} />
+      case 'training':
+        return <TrainingGround {...screenProps} />
+      case 'enhancement-hub':
+        return <EnhancementHubScreen {...screenProps} />
+      case 'pixel-player-lab':
+        return <PixelPlayerLab {...screenProps} />
       default:
         return <HomeScreen {...screenProps} />
     }
