@@ -7,6 +7,7 @@ import {
   configureShootoutPresentation,
   retainMatchRuntime,
   scheduleMatchRuntimeShutdown,
+  shutdownMatchRuntime,
 } from './happySeedMatchRuntime.js'
 
 describe('formal decision recovery', () => {
@@ -99,6 +100,7 @@ describe('match Runtime canvas lifecycle', () => {
   afterEach(() => {
     retainMatchRuntime()
     delete window.__matchGame
+    delete window.__happySeedResetMatchLifecycle
     document.querySelectorAll('body > canvas').forEach((canvas) => canvas.remove())
   })
 
@@ -119,7 +121,7 @@ describe('match Runtime canvas lifecycle', () => {
     expect(pause).not.toHaveBeenCalled()
   })
 
-  it('hides and pauses the renderer after a real release', async () => {
+  it('hides and pauses the renderer after a real release while keeping the loaded engine reusable', async () => {
     const canvas = document.createElement('canvas')
     const pause = vi.fn()
     window.__matchGame = {
@@ -133,6 +135,26 @@ describe('match Runtime canvas lifecycle', () => {
     scheduleMatchRuntimeShutdown()
     await Promise.resolve()
 
+    expect(pause).toHaveBeenCalledOnce()
+    expect(canvas.style.display).toBe('none')
+    expect(window.__matchGame).toBeTruthy()
+  })
+
+  it('clears shared decision and goal holds before hiding a reusable renderer', () => {
+    const canvas = document.createElement('canvas')
+    const lifecycleReset = vi.fn(() => ({ timeScale: 1, directorPhase: 'idle' }))
+    const pause = vi.fn()
+    window.__happySeedResetMatchLifecycle = lifecycleReset
+    window.__matchGame = {
+      renderer: { view: canvas },
+      pause,
+      pitch: {},
+      stadium: { players: [] },
+    }
+
+    shutdownMatchRuntime()
+
+    expect(lifecycleReset).toHaveBeenCalledWith('react-shutdown')
     expect(pause).toHaveBeenCalledOnce()
     expect(canvas.style.display).toBe('none')
   })

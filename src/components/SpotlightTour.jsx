@@ -27,6 +27,13 @@ function paddedRect(rect) {
   }
 }
 
+function isMostlyVisible(rect) {
+  const visibleWidth = Math.max(0, Math.min(window.innerWidth, rect.right) - Math.max(0, rect.left))
+  const visibleHeight = Math.max(0, Math.min(window.innerHeight, rect.bottom) - Math.max(0, rect.top))
+  return visibleWidth >= Math.min(40, rect.width * 0.5)
+    && visibleHeight >= Math.min(32, rect.height * 0.5)
+}
+
 function choosePlacement(preferred, rect) {
   const spaces = {
     top: rect.top,
@@ -97,7 +104,10 @@ export default function SpotlightTour({
   const nextStep = useCallback(() => {
     if (!tour) return
     if (stepIndex >= tour.steps.length - 1) finishTour()
-    else setStepIndex((current) => current + 1)
+    else {
+      setTargetRect(null)
+      setStepIndex((current) => current + 1)
+    }
   }, [finishTour, stepIndex, tour])
 
   useEffect(() => {
@@ -127,12 +137,21 @@ export default function SpotlightTour({
       }
 
       targetRef.current = target
-      target.scrollIntoView?.({ behavior: 'smooth', block: 'center', inline: 'center' })
       const updateRect = () => {
-        if (!cancelled && target.isConnected) setTargetRect(paddedRect(target.getBoundingClientRect()))
+        if (cancelled || !target.isConnected) return
+        const rect = target.getBoundingClientRect()
+        if (rect.width > 0 && rect.height > 0) setTargetRect(paddedRect(rect))
+      }
+      const initialRect = target.getBoundingClientRect()
+      if (!isMostlyVisible(initialRect)) {
+        // WebKit can stall when smooth scroll and CSS-scaled scroll containers
+        // are combined. An immediate nearest-edge scroll is deterministic and
+        // keeps the tour's next step responsive.
+        target.scrollIntoView?.({ behavior: 'auto', block: 'nearest', inline: 'nearest' })
       }
       updateRect()
-      retryTimerRef.current = window.setTimeout(updateRect, 260)
+      window.requestAnimationFrame?.(() => window.requestAnimationFrame?.(updateRect))
+      retryTimerRef.current = window.setTimeout(updateRect, 180)
 
       const resizeObserver = typeof ResizeObserver === 'function'
         ? new ResizeObserver(updateRect)
@@ -140,6 +159,8 @@ export default function SpotlightTour({
       resizeObserver?.observe(target)
       window.addEventListener('resize', updateRect)
       window.addEventListener('scroll', updateRect, true)
+      window.visualViewport?.addEventListener?.('resize', updateRect)
+      window.visualViewport?.addEventListener?.('scroll', updateRect)
 
       const handleTargetClick = () => {
         if (!step.advanceOnTarget) return
@@ -152,6 +173,8 @@ export default function SpotlightTour({
         resizeObserver?.disconnect()
         window.removeEventListener('resize', updateRect)
         window.removeEventListener('scroll', updateRect, true)
+        window.visualViewport?.removeEventListener?.('resize', updateRect)
+        window.visualViewport?.removeEventListener?.('scroll', updateRect)
         target.removeEventListener('click', handleTargetClick, true)
       }
     }

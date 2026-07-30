@@ -162,7 +162,7 @@ describe('Match Runtime integration contracts', () => {
     context.retirementApi.removePhysicalActor(entry)
 
     expect(entry.actor._runtimeRemoved).toBe(true)
-    expect(entity).toMatchObject({ static: true, hasBall: false })
+    expect(entity).toMatchObject({ static: true })
     expect(context.pitch.ball).toMatchObject({ owner: null, inHands: null })
     expect(renderer).toMatchObject({ visible: false, renderable: false, alpha: 0 })
     expect(renderer.spine.visible).toBe(false)
@@ -190,23 +190,295 @@ describe('Match Runtime integration contracts', () => {
     )
   })
 
-  it('recovers every coach-decision failure path instead of leaving timeScale frozen', () => {
-    expect(runtimeService).toContain("'happyseed/runtime-v3.js?v=11'")
+  it('uses one bounded recovery path without expiring while the coach is still reading', () => {
+    expect(runtimeService).toContain("'happyseed/runtime-v2.js?v=13'")
+    expect(runtimeService).toContain("'happyseed/runtime-v3.js?v=14'")
+    expect(runtimeService).toContain("'standalone-match.js?v=42'")
     expect(matchBroadcast).toMatch(
       /withDecisionWatchdog\(\s*prepareFormalCoachDecision\(/,
     )
     expect(matchBroadcast).toMatch(
       /catch \(decisionError\)[\s\S]*cancelFormalCoachDecision\(\)[\s\S]*setDecisionPhase\('idle'\)/,
     )
+    expect(decisionDirector).toContain('function resumeFrozenMatchPlayers(finished)')
+    expect(decisionDirector).toContain('function emergencyDecisionCleanup(finished)')
     expect(decisionDirector).toContain('function ensureContinuousMatchRecovery(finished)')
-    expect(decisionDirector).toContain('director lifetime timeout; forcing recovery')
-    expect(decisionDirector).toContain('}, 25000)')
+    expect(decisionDirector).not.toMatch(/\.hasBall\s*=/)
     expect(decisionDirector).toMatch(
-      /function emergencyDecisionCleanup\(finished\)[\s\S]*ensureContinuousMatchRecovery\(finished\)/,
+      /finally \{[\s\S]*emergencyDecisionCleanup\(finished\)[\s\S]*publishRecoveryDiagnostics/,
     )
+    expect(decisionDirector).toContain('recover: function () { return emergencyDecisionCleanup(active); }')
+    expect(decisionDirector).toContain('current.constructor && current.constructor.name')
+    expect(decisionDirector).toContain('finished.liveResult === "saved"')
+    expect(decisionDirector).toContain('pitch.timeScale.clear()')
+    expect(decisionDirector).toContain('loose-ball recovery failed')
     expect(decisionDirector).toMatch(
-      /displayNormalized[\s\S]*frame\.ball\.position\.x = displayBall\.x/,
+      /participants\[shot\.shooterRuntimeActorId\][\s\S]*participants\[shot\.keeperRuntimeActorId\][\s\S]*participants\[entry\.actor\.runtimeActorId\]\) return/,
     )
+    expect(decisionDirector).not.toContain('director lifetime timeout')
+    expect(decisionDirector).not.toContain('}, 25000)')
+    expect(decisionDirector).not.toContain('pitch.timeScale.value')
+  })
+
+  it('clears every cross-match freeze token before reusing the loaded engine', () => {
+    expect(standaloneRuntime).toContain('function resetReusableMatchLifecycle(game, reason)')
+    expect(standaloneRuntime).toContain('window.__happySeedResetMatchLifecycle = function (reason)')
+    expect(standaloneRuntime).toContain('pitch.timeScale.clear()')
+    expect(standaloneRuntime).toContain('game.__happySeedDeferredGoalKickoff = null')
+    expect(standaloneRuntime).toContain('game.__happySeedDeferredDecisionGoalRestart = null')
+    expect(standaloneRuntime).toContain('game.__happySeedPendingVarInvalidGoal = null')
+    expect(standaloneRuntime).toContain('game._firstKickoffDone = !1')
+    expect(standaloneRuntime).toContain('game._kickoffForced = !1')
+    expect(standaloneRuntime).toContain('game._introKickoffHeld = !1')
+    expect(standaloneRuntime).toContain('game._kickoffSnapped = !1')
+    expect(standaloneRuntime).toContain('pitch.ball.lastTouch = null')
+    expect(standaloneRuntime).toContain('resetReusableMatchLifecycle(mode.game, "setup-match")')
+    expect(standaloneRuntime).toContain('window.__happySeedResetMatchLifecycle("standalone-restart")')
+    expect(runtimeService).toContain("window.__happySeedResetMatchLifecycle?.('react-shutdown')")
+    expect(runtimeService).toContain("window.__happySeedResetMatchLifecycle?.('react-boot')")
+  })
+
+  it('rejects stale goalkeeper possession before every kickoff', () => {
+    expect(standaloneRuntime).toContain('function clearInvalidKickoffPossession(game)')
+    expect(standaloneRuntime).toMatch(
+      /"signal:pitch\.Pitch\.states\.Kickoff\.onEnter": function \(game\) \{\s*resetKickoffParticipants\(game, "enter"\)/,
+    )
+    expect(standaloneRuntime).toContain('carrier.isGoalkeeper')
+    expect(standaloneRuntime).toContain('startingTeam && carrier.team !== startingTeam')
+    expect(standaloneRuntime).toContain('function resetKickoffParticipants(game, reason)')
+    expect(standaloneRuntime).toContain('function recoverStalledKickoff(game)')
+    expect(standaloneRuntime).toContain('player.states.change(playerStates.ReturnHome)')
+    expect(standaloneRuntime).toContain('resetKickoffParticipants(game, "enter")')
+    expect(standaloneRuntime).toContain('game.__happySeedKickoffRecovery = null')
+    expect(standaloneRuntime).toContain('ball.owner = null')
+    expect(standaloneRuntime).toContain('ball.inHands = null')
+    expect(standaloneRuntime).toContain('ball.lastTouch === carrier')
+    expect(standaloneRuntime).not.toMatch(/\.hasBall\s*=/)
+    expect(standaloneRuntime).toContain('ball.placeAtPosition(centerX, centerY')
+    expect(standaloneRuntime).toMatch(
+      /runtimeStateName\(mode\.game\) === "Kickoff"[\s\S]*recoverStalledKickoff\(mode\.game\)/,
+    )
+  })
+
+  it('keeps mobile pinch-to-zoom in the shared stadium runtime', () => {
+    expect(runtimeStadium).toContain('document.addEventListener("touchstart"')
+    expect(runtimeStadium).toContain('document.addEventListener("touchmove"')
+    expect(runtimeStadium).toContain('document.addEventListener("pointerdown"')
+    expect(runtimeStadium).toContain('document.addEventListener("pointermove"')
+    expect(runtimeStadium).toContain('if (window.__acPlay || event.touches.length !== 2) return')
+    expect(runtimeStadium).toContain('pinchStartZoom * nextDistance / pinchStartDistance')
+  })
+
+  it('refreshes custom stadium and player renderers after every native loadMatch', () => {
+    expect(runtimeStadium).toContain('function refreshMatchVisuals()')
+    expect(runtimeStadium).toContain('refreshMatch: refreshMatchVisuals')
+    expect(runtimeStadium).toContain('state.matchVisualToken')
+    expect(runtimeStadium).toContain('blankLegacyBaseUntilReady()')
+    expect(standaloneRuntime).toContain('function bindEntryRenderer(entry, actor)')
+    expect(standaloneRuntime).toContain('needsRebind: function ()')
+    expect(standaloneRuntime).toContain('window.__happySeedStadiumScene.refreshMatch()')
+    expect(standaloneRuntime).toContain('window.__happySeedRuntimeActors.reconfigure(')
+    expect(standaloneRuntime).toContain('"prop_anchor"')
+    expect(standaloneRuntime).toContain('"hand_right_accessory"')
+  })
+
+  it('forces a coach-mode goalkeeper to distribute a held save instead of freezing', () => {
+    expect(standaloneRuntime).toContain('function recoverStalledGoalkeeperDistribution(game, goalkeeper)')
+    expect(standaloneRuntime).toContain('now - watch.startedAt < 2800')
+    expect(standaloneRuntime).toContain('playerStates.AIGoalkeeperPutBallBackInPlay')
+    expect(standaloneRuntime).toContain('playerStates.AIGoalkeeperReturnHome')
+    expect(standaloneRuntime).toContain('game.__happySeedGoalkeeperHoldWatch = null')
+    expect(standaloneRuntime).toContain('if (!window.__acPlay)')
+    expect(standaloneRuntime).toContain('recoverStalledGoalkeeperDistribution(game, goalkeeper)')
+  })
+
+  it('wakes the whole match when goalkeeper possession remains held past the watchdog', () => {
+    const helperStart = standaloneRuntime.indexOf(
+      'function recoverStalledGoalkeeperDistribution(game, goalkeeper)',
+    )
+    const helperEnd = standaloneRuntime.indexOf(
+      'function enforceGoalkeeperControlledBallSafety(game)',
+      helperStart,
+    )
+    const helperSource = standaloneRuntime.slice(helperStart, helperEnd)
+    const stateChanges = []
+    const keeper = {
+      isGoalkeeper: true,
+      static: true,
+      passing: true,
+      team: { inControl: true },
+      states: { change(next) { stateChanges.push(`keeper:${next}`) } },
+    }
+    const teammate = {
+      isGoalkeeper: false,
+      static: true,
+      passing: true,
+      team: { inControl: true },
+      states: { change(next) { stateChanges.push(`teammate:${next}`) } },
+    }
+    let now = 100
+    const timeScale = {
+      valueOf: () => 1,
+      clear() { stateChanges.push('timeScale:clear') },
+    }
+    const game = {
+      pitch: {
+        ball: { inHands: keeper, owner: keeper },
+        ballOutOfPlay: false,
+        players: [keeper, teammate],
+        states: { change(next) { stateChanges.push(`pitch:${next}`) } },
+        timeScale,
+      },
+    }
+    const context = {
+      game,
+      goalkeeper: keeper,
+      performance: { now: () => now },
+      document: { body: { dataset: {} } },
+      window: {
+        __happySeedDecisionDirectorV3: {
+          getSnapshot: () => ({ phase: 'idle' }),
+        },
+      },
+      runtimeStateName: () => 'Match',
+      runtime(name) {
+        if (name === 'pitch') return { Pitch: { states: { Match: 'Match' } } }
+        if (name === 'players/global') return { forceAI() {} }
+        return {
+          AIGoalkeeperPutBallBackInPlay: 'AIGoalkeeperPutBallBackInPlay',
+          AIGoalkeeperReturnHome: 'AIGoalkeeperReturnHome',
+          AIAttack: 'AIAttack',
+          AIDefend: 'AIDefend',
+        }
+      },
+      console: { error() {} },
+    }
+    runInNewContext(
+      `${helperSource}; recoveryApi = { recoverStalledGoalkeeperDistribution };`,
+      context,
+    )
+
+    expect(context.recoveryApi.recoverStalledGoalkeeperDistribution(game, keeper)).toBe(false)
+    now = 3001
+    expect(context.recoveryApi.recoverStalledGoalkeeperDistribution(game, keeper)).toBe(true)
+    expect(stateChanges).toEqual([
+      'keeper:AIGoalkeeperPutBallBackInPlay',
+      'teammate:AIAttack',
+    ])
+    expect(keeper).toMatchObject({ static: false, passing: false })
+    expect(teammate).toMatchObject({ static: false, passing: false })
+    expect(context.document.body.dataset.goalkeeperDistributionRecovery).toBe('1')
+  })
+
+  it('restores frozen live-shot players from Idle to explicit AI states', () => {
+    const stateNameStart = decisionDirector.indexOf('function pitchStateName()')
+    const stateNameEnd = decisionDirector.indexOf('function entryFor(', stateNameStart)
+    const helperStart = decisionDirector.indexOf('function resumeFrozenMatchPlayers(finished)')
+    const helperEnd = decisionDirector.indexOf('function resetDirectorState()', helperStart)
+    const helperSource = [
+      decisionDirector.slice(stateNameStart, stateNameEnd),
+      decisionDirector.slice(helperStart, helperEnd),
+    ].join('\n')
+    const changedStates = []
+    const createPlayer = (name, { goalkeeper = false, inControl = false } = {}) => ({
+      name,
+      isGoalkeeper: goalkeeper,
+      static: true,
+      team: { inControl },
+      states: {
+        current: 'Frozen',
+        change(next) {
+          this.current = next
+          changedStates.push([name, next])
+        },
+      },
+    })
+    const keeper = createPlayer('keeper', { goalkeeper: true })
+    const attacker = createPlayer('attacker', { inControl: true })
+    const defender = createPlayer('defender')
+    const finished = { liveFrozen: [keeper, attacker, defender] }
+    const context = {
+      pitch: {
+        ball: { inHands: keeper, owner: keeper },
+        ballOutOfPlay: false,
+        states: { current: { name: 'Match' }, change() {} },
+      },
+      runtime() {
+        return { Pitch: { states: { Match: 'Match' } } }
+      },
+      playerGlobals: {
+        forceAI(player) {
+          player.states.current = 'Idle'
+        },
+      },
+      playerStates: {
+        AIGoalkeeperPutBallBackInPlay: 'AIGoalkeeperPutBallBackInPlay',
+        AIGoalkeeperReturnHome: 'AIGoalkeeperReturnHome',
+        AIDribble: 'AIDribble',
+        AIAttack: 'AIAttack',
+        AIDefend: 'AIDefend',
+        ReturnHome: 'ReturnHome',
+      },
+      finished,
+    }
+    runInNewContext(`${helperSource}; recoveryApi = { resumeFrozenMatchPlayers };`, context)
+
+    expect(context.recoveryApi.resumeFrozenMatchPlayers(finished)).toBe(3)
+    expect(changedStates).toEqual([
+      ['keeper', 'AIGoalkeeperPutBallBackInPlay'],
+      ['attacker', 'AIAttack'],
+      ['defender', 'AIDefend'],
+    ])
+    expect([keeper, attacker, defender].every((player) => player.static === false)).toBe(true)
+    expect(finished.liveFrozen).toEqual([])
+  })
+
+  it('returns a saved decision shot from BallOutOfPlay to Match before waking actors', () => {
+    const stateNameStart = decisionDirector.indexOf('function pitchStateName()')
+    const stateNameEnd = decisionDirector.indexOf('function entryFor(', stateNameStart)
+    const helperStart = decisionDirector.indexOf('function resumeFrozenMatchPlayers(finished)')
+    const helperEnd = decisionDirector.indexOf('function resetDirectorState()', helperStart)
+    const helperSource = [
+      decisionDirector.slice(stateNameStart, stateNameEnd),
+      decisionDirector.slice(helperStart, helperEnd),
+    ].join('\n')
+    const stateChanges = []
+    const keeper = {
+      isGoalkeeper: true,
+      static: true,
+      team: { inControl: true },
+      states: { change(next) { stateChanges.push(`keeper:${next}`) } },
+    }
+    const context = {
+      pitch: {
+        ball: { inHands: keeper, owner: keeper },
+        ballOutOfPlay: true,
+        states: {
+          current: { name: 'BallOutOfPlay' },
+          change(next) { stateChanges.push(next) },
+        },
+      },
+      runtime() {
+        return { Pitch: { states: { Match: 'Match' } } }
+      },
+      playerGlobals: { forceAI() {} },
+      playerStates: {
+        AIGoalkeeperPutBallBackInPlay: 'AIGoalkeeperPutBallBackInPlay',
+        AIGoalkeeperReturnHome: 'AIGoalkeeperReturnHome',
+        AIDribble: 'AIDribble',
+        AIAttack: 'AIAttack',
+        AIDefend: 'AIDefend',
+        ReturnHome: 'ReturnHome',
+      },
+      finished: { liveResult: 'saved', liveFrozen: [keeper] },
+      console: { error() {} },
+    }
+    runInNewContext(`${helperSource}; recoveryApi = { resumeFrozenMatchPlayers };`, context)
+
+    context.recoveryApi.resumeFrozenMatchPlayers(context.finished)
+
+    expect(context.pitch.ballOutOfPlay).toBe(false)
+    expect(stateChanges).toEqual(['Match', 'keeper:AIGoalkeeperPutBallBackInPlay'])
   })
 
   it('applies a disallowed VAR goal before choosing the correct restart', () => {

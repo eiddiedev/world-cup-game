@@ -7,6 +7,7 @@ import {
   resolveShootoutAttempt,
 } from '../utils/penaltyShootout.js'
 import { getKeeperTendency } from '../data/keeperTendencies.js'
+import { getTeamFlag } from '../data/teams.js'
 import '../styles/happySeedBroadcastV2.css'
 
 // —— 画布与场景（背景图原生分辨率 1672×941，cover 铺满全屏）——
@@ -783,14 +784,14 @@ export default function PenaltyShootout({
       )}
 
       <div className="penalty-corner penalty-corner--home">
-        <img src={`/assets/国旗/${homeTeam}.png`} alt="" onError={(e) => { e.currentTarget.style.display = 'none' }} />
+        <img src={getTeamFlag(homeTeam) || ''} alt="" onError={(e) => { e.currentTarget.style.display = 'none' }} />
         <strong className="penalty-corner-score">{homeScore}</strong>
         <div className="penalty-dots">{markerDots('home')}</div>
       </div>
       <div className="penalty-corner penalty-corner--away">
         <div className="penalty-dots">{markerDots('away')}</div>
         <strong className="penalty-corner-score">{awayScore}</strong>
-        <img src={`/assets/国旗/${awayTeam}.png`} alt="" onError={(e) => { e.currentTarget.style.display = 'none' }} />
+        <img src={getTeamFlag(awayTeam) || ''} alt="" onError={(e) => { e.currentTarget.style.display = 'none' }} />
       </div>
     </div>
   )

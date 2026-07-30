@@ -1139,7 +1139,8 @@ describe('post-match review', () => {
     }, '法国')
 
     expect(insights.decisionItems).toHaveLength(5)
-    expect(insights.decisionItems.every((item) => item.includes('事件:runtime.choice.'))).toBe(true)
+    expect(insights.decisionItems.every((item) => item.includes('选择“'))).toBe(true)
+    expect(insights.decisionItems.every((item) => !item.includes('事件:runtime.choice.'))).toBe(true)
     expect(insights.advice.join('')).toContain('停赛')
     expect(insights.advice.join('')).toContain('伤停')
   })

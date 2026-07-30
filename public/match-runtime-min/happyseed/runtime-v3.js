@@ -45,15 +45,6 @@
       overlay.addChild(affordanceLayer);
       stadium.bottomLayer.addChild(overlay);
 
-      window.__happySeedReleaseShootoutActors = function () {
-        var frozen = window.__happySeedShootoutFrozenPlayers || [];
-        frozen.forEach(function (player) {
-          try { playerGlobals.forceAI(player, null); } catch {}
-        });
-        window.__happySeedShootoutFrozenPlayers = [];
-        return frozen.length;
-      };
-
       var blackout = document.querySelector(".decision-blackout-v3");
       if (!blackout) {
         blackout = document.createElement("div");
@@ -102,7 +93,6 @@
           },
           continuationReady: state.continuationReady,
           livePhysics: Boolean(active && active.livePhysics),
-          liveResult: active && active.liveResult || null,
           visibleChoiceIds: active ? active.script.choices.map(function (choice) { return choice.id; }) : [],
           choiceKinds: active ? Object.fromEntries(active.script.choices.map(function (choice) {
             return [choice.id, choice.affordances.map(function (affordance) { return affordance.kind; })];
@@ -129,6 +119,15 @@
       function setPhase(phase) {
         state.phase = phase;
         emit("ab-decision-director-phase", { phase: phase, version: 3 });
+      }
+
+      function pitchStateName() {
+        var current = pitch.states && pitch.states.current;
+        return current && (
+          current.name
+          || current.constructor && current.constructor.name
+          || String(current)
+        ) || "";
       }
 
       function entryFor(runtimeActorId) {
@@ -362,7 +361,6 @@
           .filter(Boolean)
           .forEach(function (player) {
             if (player !== owner && (!sourceEntry || sourceEntry.entity !== player)) return;
-            try { player.hasBall = !1; } catch {}
             try { player.passing = !1; } catch {}
           });
       }
@@ -664,7 +662,6 @@
           (active.ballOnlyLocks || []).forEach(function (position) {
             var entry = entryFor(position.runtimeActorId);
             if (entry && entry.entity) {
-              try { entry.entity.hasBall = !1; } catch {}
               try { entry.entity.passing = !1; } catch {}
             }
           });
@@ -693,16 +690,9 @@
         try {
           if (pitch.ball.owner) {
             try { pitch.ball.owner.release && pitch.ball.owner.release(); } catch {}
-            try { pitch.ball.owner.hasBall = !1; } catch {}
             try { pitch.ball.owner.passing = !1; } catch {}
             pitch.ball.owner = null;
           }
-        } catch {}
-        // 遍历所有球员清除残留 hasBall 标记（防止引擎物理把球判给附近的人）
-        try {
-          (window.__matchGame.allPlayers || []).forEach(function (p) {
-            if (p !== entry.entity) { try { p.hasBall = !1; } catch {} }
-          });
         } catch {}
         // 原生扑救模式：门将已经把球抱在怀里（inHands），不再重放 trap
         if (pitch.ball.inHands !== entry.entity) {
@@ -718,7 +708,6 @@
         }
         if (!pitch.ball.owner && !entry.entity.hasBall && pitch.ball.inHands !== entry.entity) {
           try { pitch.ball.owner = entry.entity; } catch {}
-          try { entry.entity.hasBall = !0; } catch {}
         }
         if (entry.actor && entry.actor.isGoalkeeper
           && window.__happySeedEnforceGoalkeeperSafety)
@@ -770,19 +759,8 @@
         active.script.stagedActorPositions.forEach(setEntityPosition);
         applyBall(worldPoint(active.script.ball.normalized));
         try {
-          if (active.script.runtimeContext === "shootout") {
-            // 点球首幕在黑场内直接切到右侧禁区，不先露出全场远景。
-            window.__matchZoomMul = 1;
-            window.__matchZoom.set(window.innerWidth <= 900 || window.innerHeight <= 500 ? .72 : .82);
-            window.__happySeedStadiumScene.focusAt(
-              pitch.width * .925,
-              pitch.height * .5,
-              "shootout",
-            );
-          } else {
-            window.__happySeedStadiumScene.followBall();
-            window.__matchZoom.set(window.innerWidth <= 900 || window.innerHeight <= 500 ? .36 : .46);
-          }
+          window.__happySeedStadiumScene.followBall();
+          window.__matchZoom.set(window.innerWidth <= 900 || window.innerHeight <= 500 ? .36 : .46);
         } catch {}
       }
 
@@ -794,12 +772,18 @@
 
       function restoreCancelledSnapshot(finished) {
         var saved = finished.savedBall;
+        var currentCarrier = pitch.ball.inHands || pitch.ball.owner;
+        if (currentCarrier && currentCarrier !== saved.inHands && currentCarrier !== saved.owner) {
+          try { currentCarrier.passing = !1; } catch {}
+        }
         pitch.ball.placeAtPosition(saved.position.x, saved.position.y, saved.position.z);
         if (pitch.ball.velocity) {
           pitch.ball.velocity.x = saved.velocity.x;
           pitch.ball.velocity.y = saved.velocity.y;
           pitch.ball.velocity.z = saved.velocity.z;
         }
+        try { pitch.ball.owner = saved.owner || null; } catch {}
+        try { pitch.ball.inHands = saved.inHands || null; } catch {}
         finished.savedActors.forEach(function (position) {
           var entry = entryFor(position.runtimeActorId);
           if (!entry || !entry.entity || !entry.entity.position) return;
@@ -809,26 +793,20 @@
         });
       }
 
-      // forceIdle 会同时清空球员 global state 与当前 state。只调用 forceAI(player, null)
-      // 虽然恢复了 AI global，却仍会把球员留在 Idle；比赛时钟继续、22 人却不会再行动。
-      // 所有 live-physics 决策统一从这里恢复到可运行的 AI 状态。
-      function wakeFrozenMatchPlayers(finished) {
-        var isShootout = finished && finished.script
-          && finished.script.runtimeContext === "shootout",
-          frozen = finished && finished.liveFrozen && finished.liveFrozen.length
-            ? finished.liveFrozen
-            : window.__happySeedShootoutFrozenPlayers || [];
-        if (isShootout) return 0;
-        window.__happySeedShootoutFrozenPlayers = [];
-        var ball = pitch.ball,
-          carrier = ball && (ball.inHands || ball.owner),
-          saved = Boolean(finished && finished.liveResult === "saved");
-        if (saved) {
+      function resumeFrozenMatchPlayers(finished) {
+        var frozen = finished && finished.liveFrozen || [],
+          carrier = pitch.ball && (pitch.ball.inHands || pitch.ball.owner);
+        // A saved live shot often leaves the native pitch in BallOutOfPlay while
+        // the goalkeeper already owns the ball. Waking the actors alone is not
+        // enough: their AI states never tick outside Match, so the whole pitch
+        // appears frozen forever.
+        if (finished && finished.liveResult === "saved") {
           try {
+            var SavedPitch = runtime("pitch").Pitch,
+              savedStateName = pitchStateName();
             pitch.ballOutOfPlay = !1;
-            var Pitch = runtime("pitch").Pitch,
-              stateName = pitch.states.current && pitch.states.current.name;
-            if (stateName !== "Match") pitch.states.change(Pitch.states.Match);
+            if (savedStateName !== "Match")
+              pitch.states.change(SavedPitch.states.Match);
           } catch (savedStateError) {
             console.error("[decision-director-v3] saved-shot state recovery failed", savedStateError);
           }
@@ -857,6 +835,70 @@
         return frozen.length;
       }
 
+      function ensureContinuousMatchRecovery(finished) {
+        if (!finished || !finished.script
+          || finished.script.runtimeContext === "shootout"
+          || finished.script.__suppressResumeForPenalty) return;
+        try {
+          var stateName = pitchStateName(),
+            Pitch = runtime("pitch").Pitch;
+          // Live shots keep their native Goal/Kickoff/out-of-play flow. Kinematic
+          // decisions, however, must return to Match after their staged frame.
+          if (!finished.livePhysics
+            && stateName
+            && ["Match", "Goal", "GoalCelebration", "Kickoff"].indexOf(stateName) < 0) {
+            pitch.ballOutOfPlay = !1;
+            pitch.states.change(Pitch.states.Match);
+          }
+        } catch (stateError) {
+          console.error("[decision-director-v3] continuous state recovery failed", stateError);
+        }
+        try {
+          var ball = pitch.ball,
+            hasOwner = Boolean(ball && (ball.owner || ball.inHands)),
+            shouldRecoverLooseBall = !finished.livePhysics
+              && ball
+              && ball.position
+              && !hasOwner
+              && !pitch.ballOutOfPlay;
+          if (!shouldRecoverLooseBall) return;
+          var bestEntry = null,
+            bestDistance = Infinity;
+          actorEntries.forEach(function (entry) {
+            if (!entry || !entry.actor || entry.actor._runtimeRemoved
+              || entry.actor.state && entry.actor.state.onPitch === !1
+              || !entry.entity || !entry.entity.position || !entry.entity.team) return;
+            var dx = entry.entity.position.x - ball.position.x,
+              dy = entry.entity.position.y - ball.position.y,
+              distance = Math.sqrt(dx * dx + dy * dy);
+            if (distance < bestDistance) {
+              bestDistance = distance;
+              bestEntry = entry;
+            }
+          });
+          if (!bestEntry) return;
+          ball.placeAtPosition(
+            bestEntry.entity.position.x,
+            bestEntry.entity.position.y,
+            Math.max(ball.radius || .12, .12),
+          );
+          if (ball.velocity) {
+            ball.velocity.x = 0;
+            ball.velocity.y = 0;
+            ball.velocity.z = 0;
+          }
+          try { ball.owner = bestEntry.entity; } catch {}
+          try {
+            bestEntry.entity.static = !1;
+            bestEntry.entity.states.change(bestEntry.entity.isGoalkeeper
+              ? playerStates.AIGoalkeeperPutBallBackInPlay
+              : playerStates.AIDribble);
+          } catch {}
+        } catch (ballError) {
+          console.error("[decision-director-v3] loose-ball recovery failed", ballError);
+        }
+      }
+
       function resetDirectorState() {
         active = null;
         state.phase = "idle";
@@ -871,97 +913,37 @@
         state.continuationReady = !1;
       }
 
-      function ensureContinuousMatchRecovery(finished) {
-        if (!finished || !finished.script
-          || finished.script.runtimeContext === "shootout"
-          || finished.script.__suppressResumeForPenalty) return;
-        try {
-          if (pitch.timeScale && pitch.timeScale.value === 0) pitch.timeScale.value = 1;
-        } catch {}
-        try {
-          var Pitch = runtime("pitch").Pitch,
-            stateName = pitch.states.current && pitch.states.current.name;
-          if (stateName && stateName !== "Match" && stateName !== "GoalCelebration"
-            && stateName !== "Kickoff" && stateName !== "Goal") {
-            pitch.ballOutOfPlay = !1;
-            pitch.states.change(Pitch.states.Match);
-          }
-        } catch (stateError) {
-          console.error("[decision-director-v3] emergency Match recovery failed", stateError);
-        }
-        try {
-          var ball = pitch.ball,
-            hasOwner = Boolean(ball.owner || ball.inHands),
-            isOut = Boolean(pitch.ballOutOfPlay);
-          if (!hasOwner && !isOut && ball.position) {
-            var bestEntry = null, bestDistance = Infinity;
-            actorEntries.forEach(function (entry) {
-              if (!entry || entry._runtimeRemoved || !entry.entity
-                || !entry.entity.position || !entry.entity.team) return;
-              var dx = entry.entity.position.x - ball.position.x,
-                dy = entry.entity.position.y - ball.position.y,
-                distance = Math.sqrt(dx * dx + dy * dy);
-              if (distance < bestDistance) {
-                bestDistance = distance;
-                bestEntry = entry;
-              }
-            });
-            if (bestEntry) {
-              ball.placeAtPosition(
-                bestEntry.entity.position.x,
-                bestEntry.entity.position.y,
-                Math.max(ball.radius || .12, .12)
-              );
-              ball.owner = bestEntry.entity;
-              bestEntry.entity.hasBall = !0;
-              bestEntry.entity.static = !1;
-              if (ball.velocity) {
-                ball.velocity.x = 0;
-                ball.velocity.y = 0;
-                ball.velocity.z = 0;
-              }
-              try {
-                bestEntry.entity.states.change(bestEntry.entity.isGoalkeeper
-                  ? playerStates.AIGoalkeeperPutBallBackInPlay
-                  : playerStates.AIDribble);
-              } catch {}
-            }
-          }
-        } catch (ballError) {
-          console.error("[decision-director-v3] emergency ball recovery failed", ballError);
-        }
-      }
-
-      // 幂等终态清理：正常完成、脚本异常、看门狗取消都必须经过这里。
+      // One idempotent terminal path is shared by successful completion,
+      // watchdog cancellation, React unmount and the next-match reset.
       function emergencyDecisionCleanup(finished) {
         var wasStuck = Boolean(
           finished
+          || active
           || state.phase !== "idle"
-          || window.__happySeedShootoutFrozenPlayers && window.__happySeedShootoutFrozenPlayers.length
-          || pitch.timeScale && pitch.timeScale.value === 0
+          || Number(pitch.timeScale) === 0
         );
         try {
           if (finished && finished.timeScaleToken != null) {
             pitch.timeScale.reset(finished.timeScaleToken);
             finished.timeScaleToken = null;
-          } else if (pitch.timeScale && pitch.timeScale.value === 0) {
-            pitch.timeScale.value = 1;
+          } else if (
+            Number(pitch.timeScale) === 0
+            && !(window.__matchGame && window.__matchGame.__happySeedGoalPresentationHoldToken != null)
+          ) {
+            pitch.timeScale.clear();
           }
-        } catch {
-          try { pitch.timeScale.value = 1; } catch {}
+        } catch (timeScaleError) {
+          console.error("[decision-director-v3] emergency timeScale recovery failed", timeScaleError);
+          try { pitch.timeScale.clear(); } catch {}
         }
-        try { wakeFrozenMatchPlayers(finished); } catch (wakeError) {
-          console.error("[decision-director-v3] player recovery failed", wakeError);
+        try { resumeFrozenMatchPlayers(finished); } catch (wakeError) {
+          console.error("[decision-director-v3] emergency player recovery failed", wakeError);
         }
         try { ensureContinuousMatchRecovery(finished); } catch {}
-        try {
-          if (finished && finished.watchdogHandle != null)
-            window.clearTimeout(finished.watchdogHandle);
-        } catch {}
         try { setBlackout(!1); } catch {}
         try { affordanceLayer.removeChildren(); } catch {}
         try {
-          if (finished && finished.script.runtimeContext !== "shootout") restoreCamera();
+          if (finished && finished.savedCamera) restoreCamera();
         } catch {}
         if (frameHandle != null) window.cancelAnimationFrame(frameHandle);
         frameHandle = null;
@@ -969,137 +951,109 @@
         return wasStuck;
       }
 
+      function publishRecoveryDiagnostics(stage, finished) {
+        try {
+          var players = actorEntries
+              .map(function (entry) { return entry && entry.entity; })
+              .filter(Boolean),
+            idlePlayers = players.filter(function (player) {
+              return !player.states || !player.states.current;
+            }).length;
+          document.body.dataset.decisionRecoveryStage = stage;
+          document.body.dataset.decisionRecoveryScenario =
+            finished && finished.script && finished.script.scenarioId || "";
+          document.body.dataset.decisionRecoveryTimeScale = String(Number(pitch.timeScale));
+          document.body.dataset.decisionRecoveryPitchState =
+            pitchStateName();
+          document.body.dataset.decisionRecoveryMatchStarted = String(Boolean(pitch.matchStarted));
+          document.body.dataset.decisionRecoveryIdlePlayers = String(idlePlayers);
+          document.body.dataset.decisionRecoveryFrozenPlayers = String(
+            finished && finished.liveFrozen && finished.liveFrozen.length || 0
+          );
+          document.body.dataset.decisionRecoveryBallCarrier = pitch.ball && pitch.ball.inHands
+            ? "goalkeeper"
+            : pitch.ball && pitch.ball.owner
+              ? "owner"
+              : "none";
+        } catch {}
+      }
+
       function finish(cancelled) {
         var finished = active;
-        if (!finished || finished.finishing) return;
+        if (!finished || finished.finishing) return !1;
         finished.finishing = !0;
-        var notified = !1;
+        var notified = !1,
+          finishError = null;
         try {
-        var isShootout = finished.script.runtimeContext === "shootout";
-        if (isShootout) {
-          window.__happySeedShootoutFrozenPlayers = finished.liveFrozen || [];
-        } else {
-          (finished.liveFrozen || []).forEach(function (player) {
-            try { playerGlobals.forceAI(player, null); } catch {}
-          });
-        }
-        setBlackout(!1);
-        affordanceLayer.removeChildren();
-        if (cancelled) restoreCancelledSnapshot(finished);
-        // blackout-stage 正常完成时，将被摆位的球员（人墙、定位球主罚者等）恢复到决策前的位置，
-        // 否则人墙球员会卡在墙位不动（AI 来不及重新调度）
-        if (!cancelled && !isShootout && finished.script.mode === "blackout-stage" && finished.savedActors) {
-          var stagedIds = {};
-          (finished.script.stagedActorPositions || []).forEach(function (p) { stagedIds[p.runtimeActorId] = !0; });
-          finished.savedActors.forEach(function (position) {
-            if (!stagedIds[position.runtimeActorId]) return;
-            var entry = entryFor(position.runtimeActorId);
-            if (!entry || !entry.entity || !entry.entity.position) return;
-            entry.entity.position.x = position.x;
-            entry.entity.position.y = position.y;
-            entry.entity.position.z = position.z;
-            if (entry.entity.velocity) {
-              entry.entity.velocity.x = 0;
-              entry.entity.velocity.y = 0;
-            }
-          });
-        }
-        if (!isShootout) restoreCamera();
-        // freeze-incident 判罚点球后：不恢复比赛，将球放到中圈防止冻结瞬间的射门继续入网
-        if (!cancelled && finished.script.__suppressResumeForPenalty) {
-          try {
-            pitch.ball.placeAtPosition(pitch.width * 0.5, pitch.height * 0.5, 0.12);
-            if (pitch.ball.velocity) {
-              pitch.ball.velocity.x = 0;
-              pitch.ball.velocity.y = 0;
-              pitch.ball.velocity.z = 0;
-            }
-            try { pitch.ball.owner = null; } catch {}
-            try { pitch.ball.inHands = null; } catch {}
-          } catch (ballResetError) {
-            console.error("[decision-director-v3] penalty ball reset failed", ballResetError);
-          }
-        } else if (!cancelled && !isShootout && window.__happySeedResumeAfterDecision) {
-          try {
-            window.__happySeedResumeAfterDecision({
-              goalCommitted: Boolean(finished.goalCommitted),
-              scoringSide: finished.execution && finished.execution.scoringSide,
-              consumeRestart: finished.script.mode === "blackout-stage",
+          setBlackout(!1);
+          affordanceLayer.removeChildren();
+          if (cancelled) restoreCancelledSnapshot(finished);
+          // blackout-stage 正常完成时，将被摆位的球员恢复到决策前的位置。
+          if (!cancelled && finished.script.mode === "blackout-stage" && finished.savedActors) {
+            var stagedIds = {};
+            (finished.script.stagedActorPositions || []).forEach(function (p) {
+              stagedIds[p.runtimeActorId] = !0;
             });
-          } catch (resumeError) {
-            console.error("[decision-director-v3] resume failed", resumeError);
-          }
-        }
-        // 安全网：如果引擎在决策结束后卡在非 Match 状态（如死球/门将持球等），
-        // 强制恢复到 Match 状态，避免球员静止不动
-        if (!cancelled && !finished.livePhysics) {
-          try {
-            var Pitch = runtime("pitch").Pitch;
-            var stateName = pitch.states.current && pitch.states.current.name;
-            if (stateName && stateName !== "Match" && stateName !== "GoalCelebration"
-              && stateName !== "Kickoff" && stateName !== "Goal") {
-              pitch.ballOutOfPlay = !1;
-              pitch.states.change(Pitch.states.Match);
-            }
-          } catch (stateError) {
-            console.error("[decision-director-v3] force Match state failed", stateError);
-          }
-        }
-        try {
-          if (finished.timeScaleToken != null) pitch.timeScale.reset(finished.timeScaleToken);
-          else pitch.timeScale.value = 1;
-        } catch (tsError) {
-          try { pitch.timeScale.value = 1; } catch (tsError2) { /* 忽略 */ }
-        }
-        // 根治决策后冻住：如果球无主且不在手中且未出界，强制分配给最近球员。
-        // 引擎 AI 无法处理“无人认领的静止球”，会导致所有球员站着不动。
-        if (!cancelled && !finished.livePhysics && !finished.script.__suppressResumeForPenalty) {
-          try {
-            var ball = pitch.ball;
-            var hasOwner = !!(ball.owner || ball.inHands);
-            var isOut = !!pitch.ballOutOfPlay;
-            if (!hasOwner && !isOut && ball.position) {
-              var allP = window.__matchGame.allPlayers || [];
-              var bestPlayer = null, bestDist = Infinity;
-              for (var pi = 0; pi < allP.length; pi++) {
-                var pp = allP[pi];
-                if (!pp || !pp.position || !pp.team) continue;
-                // 排除门将（除非球在禁区内）
-                var pdx = pp.position.x - ball.position.x;
-                var pdy = pp.position.y - ball.position.y;
-                var pd = Math.sqrt(pdx * pdx + pdy * pdy);
-                if (pd < bestDist) { bestDist = pd; bestPlayer = pp; }
+            finished.savedActors.forEach(function (position) {
+              if (!stagedIds[position.runtimeActorId]) return;
+              var entry = entryFor(position.runtimeActorId);
+              if (!entry || !entry.entity || !entry.entity.position) return;
+              entry.entity.position.x = position.x;
+              entry.entity.position.y = position.y;
+              entry.entity.position.z = position.z;
+              if (entry.entity.velocity) {
+                entry.entity.velocity.x = 0;
+                entry.entity.velocity.y = 0;
               }
-              if (bestPlayer) {
-                ball.placeAtPosition(bestPlayer.position.x, bestPlayer.position.y, Math.max(ball.radius || .12, .12));
-                try { bestPlayer.hasBall = !0; } catch {}
-                try { ball.owner = bestPlayer; } catch {}
-                if (ball.velocity) { ball.velocity.x = 0; ball.velocity.y = 0; ball.velocity.z = 0; }
-              }
-            }
-          } catch (ballAssignError) {
-            console.error("[decision-director-v3] post-decision ball assign failed", ballAssignError);
+            });
           }
+          restoreCamera();
+          // freeze-incident 判罚点球后只清理原射门，后续点球场景由 MatchSession 接管。
+          if (!cancelled && finished.script.__suppressResumeForPenalty) {
+            try {
+              pitch.ball.placeAtPosition(pitch.width * 0.5, pitch.height * 0.5, 0.12);
+              if (pitch.ball.velocity) {
+                pitch.ball.velocity.x = 0;
+                pitch.ball.velocity.y = 0;
+                pitch.ball.velocity.z = 0;
+              }
+              try { pitch.ball.owner = null; } catch {}
+              try { pitch.ball.inHands = null; } catch {}
+            } catch (ballResetError) {
+              console.error("[decision-director-v3] penalty ball reset failed", ballResetError);
+            }
+          } else if (!cancelled && window.__happySeedResumeAfterDecision) {
+            try {
+              window.__happySeedResumeAfterDecision({
+                goalCommitted: Boolean(finished.goalCommitted),
+                scoringSide: finished.execution && finished.execution.scoringSide,
+                consumeRestart: finished.script.mode === "blackout-stage",
+              });
+            } catch (resumeError) {
+              console.error("[decision-director-v3] resume failed", resumeError);
+            }
+          }
+        } catch (error) {
+          cancelled = !0;
+          finishError = error;
+          console.error("[decision-director-v3] finish failed; restoring snapshot", error);
+          try {
+            restoreCancelledSnapshot(finished);
+          } catch {}
+        } finally {
+          emergencyDecisionCleanup(finished);
+          publishRecoveryDiagnostics(cancelled ? "cancelled" : "completed", finished);
         }
-        if (frameHandle != null) window.cancelAnimationFrame(frameHandle);
-        frameHandle = null;
-        active = null;
-        state.phase = "idle";
-        state.scenarioId = null;
-        state.selectedChoiceId = null;
-        state.hoveredChoiceId = null;
-        state.outcome = null;
-        state.choiceLocked = !1;
-        state.performedActions = {};
-        state.transitionMode = null;
-        state.ballPosition = null;
-        state.continuationReady = !1;
         if (cancelled) {
           notified = !0;
           finished.prepareResolve && finished.prepareResolve({ cancelled: !0, snapshot: snapshot() });
           finished.settledResolve && finished.settledResolve({ cancelled: !0, snapshot: snapshot() });
           finished.completedResolve && finished.completedResolve({ cancelled: !0, snapshot: snapshot() });
-          emit("ab-decision-director-cancelled", { scenarioId: finished.script.scenarioId, version: 3 });
+          emit("ab-decision-director-cancelled", {
+            scenarioId: finished.script.scenarioId,
+            error: finishError && finishError.message || null,
+            version: 3,
+          });
         } else {
           notified = !0;
           finished.completedResolve({ completed: !0, snapshot: snapshot() });
@@ -1110,53 +1064,22 @@
             version: 3,
           });
         }
-        } catch (finishError) {
-          cancelled = !0;
-          console.error("[decision-director-v3] finish failed; forcing recovery", finishError);
-        } finally {
-          emergencyDecisionCleanup(finished);
-        }
-        if (!notified) {
-          finished.prepareResolve && finished.prepareResolve({ cancelled: !0, recovered: !0, snapshot: snapshot() });
-          finished.settledResolve && finished.settledResolve({ cancelled: !0, recovered: !0, snapshot: snapshot() });
-          finished.completedResolve && finished.completedResolve({ cancelled: !0, recovered: !0, snapshot: snapshot() });
-          emit("ab-decision-director-cancelled", {
-            scenarioId: finished.script.scenarioId,
-            recovered: !0,
-            version: 3,
-          });
-        }
+        return notified;
       }
 
-      // —— 原生踢球（live physics）：足球使用引擎真实弹道；点球大战中
-      // 人物位置由导演锁定，避免普通比赛 AI 把主罚者重新跑回阵型位置。 ——
+      // —— 原生踢球（live physics）：直接射门用引擎真实弹道，门将由原生 AI 反应 ——
       function setupLiveShot(shot) {
+        var participants = {};
+        participants[shot.shooterRuntimeActorId] = !0;
+        participants[shot.keeperRuntimeActorId] = !0;
         active.liveFrozen = [];
         actorEntries.forEach(function (entry) {
-          if (!entry || !entry.entity) return;
+          if (!entry || !entry.entity || participants[entry.actor.runtimeActorId]) return;
           try {
             playerGlobals.forceIdle(entry.entity);
             active.liveFrozen.push(entry.entity);
           } catch {}
         });
-        window.__happySeedShootoutFrozenPlayers = active.liveFrozen;
-        var keeperEntry = entryFor(shot.keeperRuntimeActorId),
-          savedTerminal = shot.terminal === "away-goalkeeper" ||
-            shot.terminal === "home-goalkeeper",
-          aimY = pitch.height * shot.aim[1],
-          wrongWayNormalized = Math.abs(shot.aim[1] - .5) < .025
-            ? (String(active.choice && active.choice.id).length % 2 ? .42 : .58)
-            : clamp(.5 + (.5 - shot.aim[1]) * .9, .42, .58),
-          wrongWayY = pitch.height * wrongWayNormalized;
-        active.liveKeeper = keeperEntry && keeperEntry.entity ? {
-          entry: keeperEntry,
-          startX: keeperEntry.entity.position.x,
-          startY: keeperEntry.entity.position.y,
-          targetX: keeperEntry.entity.position.x + (shot.aim[0] > .5 ? -.18 : .18),
-          targetY: savedTerminal ? aimY : wrongWayY,
-          savedTerminal: savedTerminal,
-          caught: !1,
-        } : null;
         playEntryAnimation(entryFor(shot.shooterRuntimeActorId), "shoot", 1000, "liveshot:windup");
         try {
           if (active.timeScaleToken != null) {
@@ -1167,55 +1090,6 @@
         active.livePhysics = !0;
         active.liveKicked = !1;
         active.liveKickAt = active.executionStartedAt + 220;
-      }
-
-      function updateLiveKeeper(now, frame) {
-        if (!active || !active.liveKeeper || !active.liveKicked) return;
-        var keeper = active.liveKeeper,
-          elapsed = Math.max(0, now - active.liveKickAt),
-          progress = clamp(elapsed / 430),
-          eased = 1 - Math.pow(1 - progress, 3),
-          x = keeper.startX + (keeper.targetX - keeper.startX) * eased,
-          y = keeper.startY + (keeper.targetY - keeper.startY) * eased,
-          entity = keeper.entry.entity;
-        entity.position.x = x;
-        entity.position.y = y;
-        if (entity.velocity) {
-          entity.velocity.x = 0;
-          entity.velocity.y = 0;
-        }
-        if (frame) setFramePosition(frame, {
-          runtimeActorId: keeper.entry.actor.runtimeActorId,
-          normalized: [x / pitch.width, y / pitch.height],
-        });
-      }
-
-      function completeLiveSave(now) {
-        var keeper = active && active.liveKeeper,
-          ball = pitch.ball;
-        if (!keeper || keeper.caught) return !1;
-        keeper.caught = !0;
-        updateLiveKeeper(now, null);
-        try {
-          ball.placeAtPosition(
-            keeper.entry.entity.position.x,
-            keeper.entry.entity.position.y,
-            Math.max(ball.radius || .12, .12),
-          );
-          if (ball.velocity) {
-            ball.velocity.x = 0;
-            ball.velocity.y = 0;
-            ball.velocity.z = 0;
-          }
-          ball.owner = keeper.entry.entity;
-          ball.inHands = keeper.entry.entity;
-          keeper.entry.entity.hasBall = !0;
-        } catch {}
-        playEntryAnimation(keeper.entry, "hands_in_front", 850, "liveshot:keeper-catch");
-        active.liveResult = "saved";
-        state.continuationReady = !0;
-        settle(now);
-        return !0;
       }
 
       function doLiveKick() {
@@ -1229,9 +1103,6 @@
           cos = Math.cos(shot.elevate),
           sin = Math.sin(shot.elevate);
         releaseBall();
-        if (active.liveKeeper) {
-          playEntryAnimation(active.liveKeeper.entry, "jump", 850, "liveshot:keeper-dive");
-        }
         try { ball.lastTouch = (shooterEntry && shooterEntry.entity) || ball.lastTouch; } catch {}
         try {
           ball.kick({ x: dx / dist * cos, y: dy / dist * cos, z: sin }, shot.power);
@@ -1258,33 +1129,8 @@
 
       function watchLiveTerminal(now) {
         if (!active || active.settled) return;
-        var stateName = pitch.states.current && pitch.states.current.name,
-          ball = pitch.ball,
-          shot = active.execution.liveShot,
-          direction = shot.aim[0] >= active.script.ball.normalized[0] ? 1 : -1,
-          goalPlaneX = pitch.width * (direction > 0 ? .985 : .015),
-          crossedGoalPlane = direction > 0
-            ? ball.position.x >= goalPlaneX
-            : ball.position.x <= goalPlaneX,
-          goalHalfWidth = Math.max(.8, Number(pitch.goalWidth || 0) * .5),
-          insideGoalMouth = Math.abs(ball.position.y - pitch.height * .5) <= goalHalfWidth,
-          keeperDistance = active.liveKeeper ? Math.hypot(
-            ball.position.x - active.liveKeeper.entry.entity.position.x,
-            ball.position.y - active.liveKeeper.entry.entity.position.y,
-          ) : Infinity;
-        updateLiveKeeper(now, null);
-        if (crossedGoalPlane) {
-          active.liveResult = insideGoalMouth ? "goal" : "out";
-          settle(now);
-          return;
-        }
-        if (active.liveKeeper && now - active.liveKickAt >= 180) {
-          var catchDistance = active.liveKeeper.savedTerminal ? .82 : .56;
-          if (keeperDistance <= catchDistance) {
-            completeLiveSave(now);
-            return;
-          }
-        }
+        var stateName = pitchStateName(),
+          ball = pitch.ball;
         if (stateName === "Goal" || stateName === "GoalCelebration") {
           active.liveResult = "goal";
           settle(now);
@@ -1317,7 +1163,6 @@
             if (contEntry && contEntry.entity && contEntry.entity.position) {
               try {
                 pitch.ball.owner = contEntry.entity;
-                contEntry.entity.hasBall = !0;
                 pitch.ball.placeAtPosition(
                   contEntry.entity.position.x,
                   contEntry.entity.position.y,
@@ -1396,17 +1241,7 @@
             if (!active.settled && active.liveKicked
               && now - active.liveKickAt >= active.execution.liveShot.maxFlightMs) {
               console.warn("[decision-director-v3] 原生踢球超时未达终结，按当前物理状态结算", active.script.scenarioId, active.outcome);
-              var timeoutKeeper = active.liveKeeper,
-                timeoutDistance = timeoutKeeper ? Math.hypot(
-                  pitch.ball.position.x - timeoutKeeper.entry.entity.position.x,
-                  pitch.ball.position.y - timeoutKeeper.entry.entity.position.y,
-                ) : Infinity;
-              if (active.script.runtimeContext === "shootout" && timeoutDistance <= 1.05) {
-                completeLiveSave(now);
-              } else {
-                active.liveResult = "out";
-                settle(now);
-              }
+              settle(now);
             }
           } else {
           // ball-carry 模式一开始就释放引擎球权，球位置完全由导演运动学控制
@@ -1531,6 +1366,8 @@
                 y: pitch.ball.velocity && pitch.ball.velocity.y || 0,
                 z: pitch.ball.velocity && pitch.ball.velocity.z || 0,
               },
+              owner: pitch.ball.owner || null,
+              inHands: pitch.ball.inHands || null,
             },
             savedActors: saveActorPositions(),
             ballOnlyLocks: [],
@@ -1538,14 +1375,7 @@
             goalCommitted: !1,
             runtimeBallEventId: null,
             saveRuntimeEventId: null,
-            watchdogHandle: null,
           };
-          var preparedRun = active;
-          active.watchdogHandle = window.setTimeout(function () {
-            if (active !== preparedRun) return;
-            console.warn("[decision-director-v3] director lifetime timeout; forcing recovery", script.scenarioId);
-            finish(!0);
-          }, 25000);
           state.scenarioId = script.scenarioId;
           state.selectedChoiceId = null;
           state.hoveredChoiceId = null;
@@ -1581,6 +1411,7 @@
           active.outcome = payload.outcome;
           active.execution = execution;
           captureBallOnlyShotLocks();
+          captureAmbientMotions();
           active.executionStartedAt = performance.now() + active.script.timeline.selectionFeedbackMs;
           if (execution.liveShot) setupLiveShot(execution.liveShot);
           else captureAmbientMotions();
@@ -1608,78 +1439,16 @@
 
       var previousFrame = stadium.frame.bind(stadium);
       stadium.frame = function (frame) {
-        // Runtime 的连续比赛帧仍会尝试把相机带回中圈。点球导演激活时，
-        // 同时锁住物理相机与渲染帧相机，确保首幕和等待操作期间都固定
-        // 在右侧禁区，而不是几秒后又弹回全场镜头。
-        if (active && active.script.runtimeContext === "shootout") {
-          var shootoutCameraX = pitch.width * .925,
-            shootoutCameraY = pitch.height * .5,
-            shootoutZoom = window.__matchZoom && window.__matchZoom.get
-              ? window.__matchZoom.get() : .82;
-          try {
-            pitch.camera.free();
-            pitch.camera.position.x = shootoutCameraX;
-            pitch.camera.position.y = shootoutCameraY;
-            if (pitch.camera.velocity) {
-              pitch.camera.velocity.x = 0;
-              pitch.camera.velocity.y = 0;
-            }
-            pitch.camera.instantZoom(shootoutZoom);
-          } catch {}
-          if (frame && frame.camera && frame.camera.position) {
-            frame.camera.position.x = shootoutCameraX;
-            frame.camera.position.y = shootoutCameraY;
-            frame.camera.zoom = shootoutZoom;
-          }
-        }
         if (active && !active.livePhysics) {
           try {
-            var awaitingChoice = state.phase === "staging" || state.phase === "choosing";
-            if (awaitingChoice || state.phase === "executing")
+            if (state.phase === "staging" || state.phase === "choosing" || state.phase === "executing")
               active.script.stagedActorPositions.forEach(function (position) {
                 setFramePosition(frame, position);
               });
-            // blackout-stage 会暂停底层比赛帧。只调用 pitch.ball.placeAtPosition
-            // 不足以改变这个被冻结的渲染帧，下一次 stadium.frame 会把球和镜头
-            // 覆盖回决策前位置。正式定位球导演在待选阶段必须把摆位后的球同步
-            // 写回 frame；点球、角球和任意球因此共用同一套正确镜头与站位。
-            if (awaitingChoice && active.script.mode === "blackout-stage") {
-              var stagedBall = worldPoint(active.script.ball.normalized);
-              state.ballPosition = stagedBall;
-              if (frame && frame.ball && frame.ball.position) {
-                frame.ball.position.x = stagedBall.x;
-                frame.ball.position.y = stagedBall.y;
-                frame.ball.position.z = stagedBall.z;
-                frame.ball.inHands = -1;
-                if (frame.ball.velocity) {
-                  frame.ball.velocity.x = 0;
-                  frame.ball.velocity.y = 0;
-                  frame.ball.velocity.z = 0;
-                }
-              }
-              if (frame && frame.camera && frame.camera.position) {
-                frame.camera.position.x = active.script.runtimeContext === "shootout"
-                  ? pitch.width * .925 : stagedBall.x;
-                frame.camera.position.y = active.script.runtimeContext === "shootout"
-                  ? pitch.height * .5 : stagedBall.y;
-                frame.camera.zoom = window.__matchZoom && window.__matchZoom.get
-                  ? window.__matchZoom.get() : frame.camera.zoom;
-              }
-            }
-            // freeze-live 单刀的物理球仍保持原位，仅在待选择帧把球画到持球人前脚，
-            // 避免足球与球员身体完全重合。
-            if (awaitingChoice && active.script.mode === "freeze-live"
-              && active.script.ball.displayNormalized && frame && frame.ball && frame.ball.position) {
-              var displayBall = worldPoint(active.script.ball.displayNormalized);
-              frame.ball.position.x = displayBall.x;
-              frame.ball.position.y = displayBall.y;
-              frame.ball.position.z = displayBall.z;
-            }
             // blackout-stage 在 settled/restoring 阶段：将被摆位的球员恢复到决策前位置，
             // 避免人墙球员卡死在墙位（物理引擎内部状态也需更新）
             if ((state.phase === "settled" || state.phase === "restoring")
-              && active.script.mode === "blackout-stage"
-              && active.script.runtimeContext !== "shootout" && active.savedActors) {
+              && active.script.mode === "blackout-stage" && active.savedActors) {
               var stagedIds = {};
               (active.script.stagedActorPositions || []).forEach(function (p) { stagedIds[p.runtimeActorId] = !0; });
               active.savedActors.forEach(function (pos) {
@@ -1705,13 +1474,6 @@
           } catch (error) {
             console.error("[decision-director-v3] frame failed", error);
           }
-        } else if (active && active.livePhysics) {
-          try { updateLiveKeeper(performance.now(), frame); } catch (keeperFrameError) {
-            console.error("[decision-director-v3] keeper frame failed", keeperFrameError);
-          }
-        } else if (!active) {
-          // 导演未激活时确保 timeScale 不为 0（防止 finish() 中 reset 失败的边缘情况）
-          try { if (pitch.timeScale && pitch.timeScale.value === 0) pitch.timeScale.value = 1; } catch {}
         }
         previousFrame(frame);
       };

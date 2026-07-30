@@ -45,15 +45,15 @@ import { preloadAssetUrls } from '../utils/visualAssetLoader.js'
 
 const RUNTIME_BASE = __DOUYIN_BUILD__ ? './match-runtime-min' : '/match-runtime-min'
 
-const SCRIPT_PATHS = [
+const SCRIPT_PATHS = __DOUYIN_BUILD__ ? [] : [
   'shim-early.js',
   'vendor/pixi.min.js',
   'vendor/swig.min.js',
   'shim.js',
   'scripts/match.rebuilt.js',
-  'happyseed/runtime-v2.js?v=11',
-  'happyseed/runtime-v3.js?v=11',
-  'standalone-match.js?v=37',
+  'happyseed/runtime-v2.js?v=13',
+  'happyseed/runtime-v3.js?v=14',
+  'standalone-match.js?v=42',
 ]
 
 const MATCH_EVENTS = [
@@ -167,13 +167,20 @@ function loadScript(path) {
 
 async function preloadDataCaches() {
   if (window.__dataBundleCache && window.__dirlistCache) return
-  if (__DOUYIN_BUILD__) {
-    // In interactive build, data is injected at build time via inline script.
-    // If we reach here the injection is missing; fail gracefully.
-    console.warn('[Runtime] 比赛数据未注入，请检查构建产物')
-    return
-  }
   if (dataCachePromise) return dataCachePromise
+  if (__DOUYIN_BUILD__) {
+    // 互动空间不再进入模式后动态追加脚本。构建产物会把数据与引擎
+    // 合并成一个 defer 脚本，在首轮静态加载时按固定顺序完成注入。
+    dataCachePromise = Promise.resolve().then(() => {
+      if (!window.__dataBundleCache || !window.__dirlistCache) {
+        throw new Error('互动空间比赛引擎静态包未完成注入')
+      }
+    }).catch((error) => {
+      dataCachePromise = null
+      throw error
+    })
+    return dataCachePromise
+  }
 
   dataCachePromise = (async () => {
     const [bundleResponse, dirlistResponse] = await Promise.all([
@@ -731,6 +738,9 @@ export function bootHappySeedMatch(options = {}) {
   bootPromise = (async () => {
     const restartingExistingRuntime = Boolean(window.__matchGame)
     if (restartingExistingRuntime) {
+      try { window.__happySeedResetMatchLifecycle?.('react-boot') } catch {
+        /* The standalone Runtime also repeats this reset before state.change. */
+      }
       window.__matchGame.__happySeedTrainingActive = false
       window.__matchGame.__happySeedTrainingPlayerIndex = null
       window.__matchGame.__happySeedTrainingDefenderIndex = null
@@ -889,6 +899,9 @@ export function shutdownMatchRuntime() {
   bootPromise = null
   const game = window.__matchGame
   if (game) {
+    try { window.__happySeedResetMatchLifecycle?.('react-shutdown') } catch {
+      /* Continue hiding the renderer even when defensive cleanup reports an error. */
+    }
     game.__happySeedTrainingActive = false
     game.__happySeedTrainingPlayerIndex = null
     game.__happySeedTrainingDefenderIndex = null
@@ -910,9 +923,10 @@ export function shutdownMatchRuntime() {
     const canvas = game.renderer?.view
     if (canvas) canvas.style.display = 'none'
   }
-  // 注意：不置空 window.__matchGame，保留引擎实例
-  // 这样下次 bootHappySeedMatch 能找到 canvas 并恢复显示
-  // __startStandaloneMatch 内部会复用已有 game 实例并重新加载比赛
+  // 保留已经加载完成的引擎、纹理和数据缓存；下一局由
+  // __startStandaloneMatch 直接切入一个全新的 StandaloneMatch 状态。
+  // 不要再次调用单例 PIXI loader：它在 complete 后不会再次触发回调，
+  // 旧实现因此永远停在退出时的最后一帧。
   if (window.__touchInput) {
     Object.assign(window.__touchInput, {
       active: false,

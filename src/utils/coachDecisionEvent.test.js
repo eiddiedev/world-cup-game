@@ -150,7 +150,7 @@ describe('CoachDecisionEvent phase one', () => {
     })
   })
 
-  it('emits result animation and commentary labels and keeps the review tag', () => {
+  it('emits result animation and player-facing post-match copy without debug tags', () => {
     const decision = executeDecision(getScenarioById('freekick_dangerous'), strongLineup, gameState)
     const event = decision.coachDecisionEvent
     const animation = getCoachDecisionAnimationResult(event, 'goal_freekick')
@@ -180,6 +180,8 @@ describe('CoachDecisionEvent phase one', () => {
         sourceEventId: 'runtime.freekick.61',
       }],
     }, '法国')
-    expect(insights.decisionItems[0]).toContain('复盘:危险任意球')
+    expect(insights.decisionItems[0]).toContain('选择“直接射门”')
+    expect(insights.decisionItems[0]).not.toContain('复盘:')
+    expect(insights.decisionItems[0]).not.toContain('事件:')
   })
 })

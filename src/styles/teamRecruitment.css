@@ -1042,6 +1042,7 @@
 @media (orientation: landscape) and (max-height: 500px) {
   .zoom-page-active {
     --recruitment-landscape-scale: 0.54;
+    --recruitment-landscape-inverse: 185.1852;
     width: 100% !important;
     height: 100dvh !important;
     overflow: hidden !important;
@@ -1049,10 +1050,13 @@
   }
 
   .zoom-page-active .recruitment-screen {
-    zoom: var(--recruitment-landscape-scale) !important;
+    zoom: 1 !important;
+    transform: scale(var(--recruitment-landscape-scale));
+    transform-origin: top left;
     position: relative !important;
     display: flex !important;
-    width: 100% !important;
+    width: 185.1852vw !important;
+    height: 185.1852vh !important;
     height: 185.1852dvh !important;
     min-height: 0 !important;
     padding: 20px 20px 72px !important;
@@ -1266,9 +1270,12 @@
 @media (orientation: landscape) and (max-height: 360px) {
   .zoom-page-active {
     --recruitment-landscape-scale: 0.5;
+    --recruitment-landscape-inverse: 200;
   }
 
   .zoom-page-active .recruitment-screen {
+    width: 200vw !important;
+    height: 200vh !important;
     height: 200dvh !important;
   }
 }
@@ -1276,9 +1283,12 @@
 @media (orientation: landscape) and (max-height: 330px) {
   .zoom-page-active {
     --recruitment-landscape-scale: 0.45;
+    --recruitment-landscape-inverse: 222.2223;
   }
 
   .zoom-page-active .recruitment-screen {
+    width: 222.2223vw !important;
+    height: 222.2223vh !important;
     height: 222.2223dvh !important;
   }
 }

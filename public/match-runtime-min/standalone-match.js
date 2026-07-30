@@ -517,6 +517,8 @@
           "face_accessory_1",
           "face_accessory_2",
           "face_accessory_3",
+          "prop_anchor",
+          "hand_right_accessory",
         ],
         bodyPartMap = {
           arm_left: "arm_left.png",
@@ -557,6 +559,26 @@
           prefix = state.redCard ? "🟥 " : state.yellowCards ? "🟨 " : "",
           suffix = state.injured ? " +" : "";
         return prefix + "#" + actor.number + " " + actor.name + suffix;
+      }
+
+      function sharedKitTint(value, fallback) {
+        if (!value) return fallback;
+        var normalized = String(value).replace("#", ""),
+          parsed = parseInt(normalized, 16);
+        return isFinite(parsed) ? parsed : fallback;
+      }
+
+      function kitSlotTint(visual, slot) {
+        if (!visual.sharedKit || !visual.palette) return 16777215;
+        if (slot === "pelvis_shorts" ||
+          slot === "leg_left_shorts" ||
+          slot === "leg_right_shorts")
+          return sharedKitTint(visual.palette.shorts, 16777215);
+        if (slot === "leg_left_sock" || slot === "leg_right_sock")
+          return sharedKitTint(visual.palette.socks, 16777215);
+        if (slot === "leg_left_shoe" || slot === "leg_right_shoe")
+          return sharedKitTint(visual.palette.boots, 16777215);
+        return sharedKitTint(visual.palette.shirt, 16777215);
       }
 
       function applyActorTextures(entry) {
@@ -600,7 +622,7 @@
             ((sprites[kitSlot].texture = pixelTexture(
               visual.kitRoot + "/" + kitPartMap[kitSlot],
             )),
-            (sprites[kitSlot].tint = 16777215),
+            (sprites[kitSlot].tint = kitSlotTint(visual, kitSlot)),
             (sprites[kitSlot].visible = !0));
         sprites.chest_shirt &&
           ((sprites.chest_shirt.texture = pixelTexture(
@@ -609,7 +631,7 @@
                 ? "/shirt_front.png"
                 : "/shirt_back.png"),
           )),
-          (sprites.chest_shirt.tint = 16777215),
+          (sprites.chest_shirt.tint = kitSlotTint(visual, "chest_shirt")),
           (sprites.chest_shirt.visible = !0));
         sprites.head &&
           ((sprites.head.texture = pixelTexture(
@@ -626,13 +648,17 @@
             ((sprites.hand_left_glove.texture = pixelTexture(
               visual.kitRoot + "/hand_left.png",
             )),
-            (sprites.hand_left_glove.tint = 16777215),
+            (sprites.hand_left_glove.tint = visual.sharedKit
+              ? sharedKitTint(visual.palette && visual.palette.gloves, 16777215)
+              : 16777215),
             (sprites.hand_left_glove.visible = !0));
           sprites.hand_right_glove &&
             ((sprites.hand_right_glove.texture = pixelTexture(
               visual.kitRoot + "/hand_right.png",
             )),
-            (sprites.hand_right_glove.tint = 16777215),
+            (sprites.hand_right_glove.tint = visual.sharedKit
+              ? sharedKitTint(visual.palette && visual.palette.gloves, 16777215)
+              : 16777215),
             (sprites.hand_right_glove.visible = !0));
         } else {
           (sprites.hand_left_glove && (sprites.hand_left_glove.visible = !1),
@@ -646,18 +672,50 @@
         }
       }
 
+      function createActorLabel(actor) {
+        var label = new Pixi.Text(actorLabel(actor), {
+          font: '800 16px "Zpix", "Arial Narrow", sans-serif',
+          fill: actor.side === "red" ? "#ffe66d" : "#f2f6ff",
+          align: "center",
+          stroke: "#071119",
+          strokeThickness: 4,
+        });
+        label.anchor.set(.5, 1);
+        label.position.y = -92;
+        return label;
+      }
+
+      function bindEntryRenderer(entry, actor) {
+        var renderer = stadium.players && stadium.players[actor.runtimeIndex],
+          previousRenderer = entry && entry.renderer;
+        if (!entry || !renderer) return !1;
+        if (previousRenderer !== renderer) {
+          try {
+            if (entry.label && entry.label.parent)
+              entry.label.parent.removeChild(entry.label);
+          } catch {}
+          try {
+            if (entry.eventRing && entry.eventRing.parent)
+              entry.eventRing.parent.removeChild(entry.eventRing);
+          } catch {}
+          entry.renderer = renderer;
+          entry.entity = renderer.entity;
+          renderer.addChild(entry.label || (entry.label = createActorLabel(actor)));
+          if (entry.eventRing) renderer.addChild(entry.eventRing);
+        } else {
+          entry.entity = renderer.entity;
+        }
+        entry.actor = actor;
+        actor.runtimeEntityId = entry.entity && entry.entity.id;
+        renderer._happySeedActor = actor;
+        return !0;
+      }
+
       for (var actorIndex = 0; actorIndex < config.actors.length; actorIndex += 1) {
         var actor = config.actors[actorIndex],
           renderer = stadium.players[actor.runtimeIndex],
-          label = new Pixi.Text(actorLabel(actor), {
-            font: '800 16px "Zpix", "Arial Narrow", sans-serif',
-            fill: actor.side === "red" ? "#ffe66d" : "#f2f6ff",
-            align: "center",
-            stroke: "#071119",
-            strokeThickness: 4,
-          });
-        (label.anchor.set(.5, 1),
-          (label.position.y = -92),
+          label = createActorLabel(actor);
+        (
           renderer.addChild(label));
         var entry = {
           actor: actor,
@@ -668,7 +726,10 @@
         ((actor.runtimeEntityId = renderer.entity && renderer.entity.id),
           (renderer._happySeedActor = actor),
           actorEntries.push(entry),
-          applyActorTextures(entry));
+          applyActorTextures(entry),
+          (renderer.visible = actor.state.onPitch !== !1),
+          (renderer.renderable = actor.state.onPitch !== !1),
+          (renderer.alpha = actor.state.onPitch !== !1 ? 1 : 0));
       }
       stadium._happySeedActorEntries = actorEntries;
 
@@ -784,7 +845,6 @@
           entity.static = !0;
           if (pitch.ball && pitch.ball.owner === entity) pitch.ball.owner = null;
           if (pitch.ball && pitch.ball.inHands === entity) pitch.ball.inHands = null;
-          entity.hasBall = !1;
         } catch {}
         try {
           if (team && team.removePlayer && team.players && team.players.indexOf(entity) >= 0)
@@ -802,6 +862,38 @@
       }
 
       window.__happySeedRuntimeActors = {
+        reconfigure: function (nextConfig) {
+          if (!nextConfig || !nextConfig.actors || nextConfig.actors.length !== 22)
+            return !1;
+          config = nextConfig;
+          selectedRuntimeActorId = config.actors[0].runtimeActorId;
+          actorEntries.forEach(function (entry, index) {
+            var actor = config.actors[index];
+            if (!entry || !actor) return;
+            if (!bindEntryRenderer(entry, actor)) return;
+            applyActorTextures(entry);
+            if (entry.renderer) {
+              entry.renderer.visible = actor.state.onPitch !== !1;
+              entry.renderer.renderable = actor.state.onPitch !== !1;
+              entry.renderer.alpha = actor.state.onPitch !== !1 ? 1 : 0;
+            }
+            if (entry.label) {
+              entry.label.visible = actor.state.onPitch !== !1;
+              entry.label.renderable = actor.state.onPitch !== !1;
+              entry.label.alpha = actor.state.onPitch !== !1 ? 1 : 0;
+            }
+          });
+          stadium._runtimeActorSliceConfig = config;
+          dispatchActors("ab-runtime-actors-ready");
+          return !0;
+        },
+        needsRebind: function () {
+          return actorEntries.some(function (entry, index) {
+            var actor = config.actors[index];
+            return !entry || !actor || !stadium.players
+              || stadium.players[actor.runtimeIndex] !== entry.renderer;
+          });
+        },
         selectActor: function (runtimeActorId) {
           var exists = actorEntries.some(function (entry) {
             return entry.actor.runtimeActorId === runtimeActorId;
@@ -1057,9 +1149,12 @@
       };
 
       var previousActorFrame = stadium.frame.bind(stadium);
+      stadium._runtimeActorSliceConfig = config;
       stadium.frame = function (frame) {
         (previousActorFrame(frame),
           actorEntries.forEach(function (entry) {
+            if (!entry || !entry.actor) return;
+            bindEntryRenderer(entry, entry.actor);
             entry.actor.state.onPitch && applyActorTextures(entry);
           }),
           enforceShootoutPresentation(),
@@ -1844,6 +1939,24 @@
     var playerStates = runtime("players/states"),
       playerGlobals = runtime("players/global"),
       pitch = mode.game.pitch;
+    resetReusableMatchLifecycle(mode.game, "setup-match");
+    try {
+      window.__happySeedStadiumScene &&
+        window.__happySeedStadiumScene.refreshMatch &&
+        window.__happySeedStadiumScene.refreshMatch();
+    } catch (visualRefreshError) {
+      console.error("[standalone-match] per-match stadium refresh failed", visualRefreshError);
+    }
+    try {
+      window.__happySeedRuntimeActors &&
+        window.__happySeedRuntimeActors.reconfigure &&
+        window.__happySeedRuntimeActorConfig &&
+        window.__happySeedRuntimeActors.reconfigure(
+          window.__happySeedRuntimeActorConfig,
+        );
+    } catch (actorRebindError) {
+      console.error("[standalone-match] per-match actor rebind failed", actorRebindError);
+    }
     mode.game.__happySeedTrainingActive = !1;
     mode.game.__happySeedTrainingPlayerIndex = null;
     mode.game.__happySeedTrainingDefenderIndex = null;
@@ -1928,6 +2041,90 @@
       delete document.body.dataset.trainingPlayerPosition;
     } catch {}
   }
+
+  function resetReusableMatchLifecycle(game, reason) {
+    var pitch = game && game.pitch;
+    if (!game || !pitch) return null;
+    try {
+      var director = window.__happySeedDecisionDirectorV3;
+      if (director && director.cancel) director.cancel();
+      if (director && director.recover) director.recover();
+    } catch (directorError) {
+      console.error("[standalone-match] decision reset failed", directorError);
+    }
+    try {
+      var holdToken = game.__happySeedGoalPresentationHoldToken;
+      game.__happySeedGoalPresentationHoldToken = null;
+      if (holdToken != null && pitch.timeScale && pitch.timeScale.reset)
+        pitch.timeScale.reset(holdToken);
+      // Tokens from an interrupted decision, goal presentation or aiming state
+      // must never cross the match boundary.
+      if (pitch.timeScale && pitch.timeScale.clear) pitch.timeScale.clear();
+    } catch (timeScaleError) {
+      console.error("[standalone-match] timeScale reset failed", timeScaleError);
+    }
+    game.__happySeedDeferGoalRestart = !1;
+    game.__happySeedDeferredGoalKickoff = null;
+    game.__happySeedDeferredDecisionGoalRestart = null;
+    game.__happySeedPendingGoalRestartHold = !1;
+    game.__happySeedPendingVarInvalidGoal = null;
+    game.__happySeedDecisionGoalTokens = {};
+    game.__happySeedVarResultTokens = {};
+    game.__happySeedLastShotEventId = null;
+    game.__happySeedLastShooterId = null;
+    game.__happySeedAcceptedGoalAt = 0;
+    game.__happySeedAcceptedGoalShotEventId = null;
+    game.__happySeedAcceptedGoalScoreRed = 0;
+    game.__happySeedAcceptedGoalScoreBlue = 0;
+    game.__happySeedLastSaveShotEventId = null;
+    game.__happySeedGoalkeeperParryCandidate = null;
+    game.__happySeedGoalkeeperHoldWatch = null;
+    game.__happySeedTrainingActive = !1;
+    game.__happySeedTrainingPlayerIndex = null;
+    game.__happySeedTrainingDefenderIndex = null;
+    // These flags belong to one StandaloneMatch, not to the reusable engine.
+    // Keeping them after React unmount skips the next match's first-kickoff
+    // placement and can leave the new match forever at time 0.
+    game._firstKickoffDone = !1;
+    game._kickoffForced = !1;
+    game._introKickoffHeld = !1;
+    game._kickoffSnapped = !1;
+    game._kickoffPlayedEmitted = !1;
+    game.__happySeedKickoffRecovery = null;
+    if (game._celebrations) game._celebrations.length = 0;
+    try {
+      var carrier = pitch.ball && (pitch.ball.inHands || pitch.ball.owner);
+      if (carrier) {
+        try { carrier.dropBall && carrier.dropBall(); } catch {}
+        carrier.passing = !1;
+      }
+      if (pitch.ball) {
+        pitch.ball.owner = null;
+        pitch.ball.inHands = null;
+        pitch.ball.lastTouch = null;
+        pitch.ball.owningTime = 0;
+        pitch.ball.untrappable = 0;
+      }
+    } catch {}
+    try {
+      var blackout = document.querySelector(".decision-blackout-v3");
+      if (blackout) blackout.classList.remove("is-visible");
+      delete document.body.dataset.decisionRecoveryStage;
+      delete document.body.dataset.decisionRecoveryScenario;
+    } catch {}
+    return {
+      reason: reason || "reset",
+      timeScale: Number(pitch.timeScale),
+      directorPhase: window.__happySeedDecisionDirectorV3
+        && window.__happySeedDecisionDirectorV3.getSnapshot
+        ? window.__happySeedDecisionDirectorV3.getSnapshot().phase
+        : "unavailable",
+    };
+  }
+
+  window.__happySeedResetMatchLifecycle = function (reason) {
+    return resetReusableMatchLifecycle(window.__matchGame, reason);
+  };
 
   function stoppageHalf(game) {
     var engine = game && game.pitch && game.pitch.secondHalf ? 2 : 1,
@@ -2236,6 +2433,8 @@
                     (this._aimSlow = null)),
                   (this._aiming = !1)));
           }
+          if (runtimeStateName(mode.game) === "Kickoff")
+            recoverStalledKickoff(mode.game);
           var frame = this.stream.beginWrite(),
             directorSnapshot =
               window.__happySeedDecisionDirectorV3 &&
@@ -2251,6 +2450,8 @@
             enforceGoalkeeperControlledBallSafety(mode.game);
             pitch.update(elapsed);
             enforceGoalkeeperControlledBallSafety(mode.game);
+            if (runtimeStateName(mode.game) === "Kickoff")
+              recoverStalledKickoff(mode.game);
           }
           if (introActive()) {
             pitch.camera.position.x = pitch.center.x;
@@ -2279,6 +2480,17 @@
               installRuntimeActorSlice(
                 stadR,
                 pitch,
+                window.__happySeedRuntimeActorConfig,
+              );
+            stadR._runtimeActorSliceInit &&
+              (stadR._runtimeActorSliceConfig !==
+                window.__happySeedRuntimeActorConfig ||
+                window.__happySeedRuntimeActors &&
+                window.__happySeedRuntimeActors.needsRebind &&
+                window.__happySeedRuntimeActors.needsRebind()) &&
+              window.__happySeedRuntimeActors &&
+              window.__happySeedRuntimeActors.reconfigure &&
+              window.__happySeedRuntimeActors.reconfigure(
                 window.__happySeedRuntimeActorConfig,
               );
             !stadR._decisionDirectorV3Init &&
@@ -2970,8 +3182,130 @@
       Number(position.z || 0),
     ];
   }
+  function stateObjectName(state) {
+    return state && (
+      state.name
+      || state.constructor && state.constructor.name
+      || String(state)
+    ) || "";
+  }
   function runtimeStateName(game) {
-    return (game.pitch.states.current && game.pitch.states.current.name) || "Match";
+    return stateObjectName(game.pitch.states.current) || "Match";
+  }
+  function clearInvalidKickoffPossession(game) {
+    var pitch = game && game.pitch,
+      ball = pitch && pitch.ball,
+      kickoffState = pitch && pitch.states && pitch.states.current,
+      startingTeam = kickoffState && kickoffState.startingTeam
+        || pitch && pitch.matchStartingTeam,
+      carrier = ball && (ball.inHands || ball.owner);
+    if (!pitch || !ball) return !1;
+    var centerX = pitch.center && pitch.center.x || pitch.width * .5,
+      centerY = pitch.center && pitch.center.y || pitch.height * .5,
+      farFromCenter = Math.hypot(
+        Number(ball.position && ball.position.x || 0) - centerX,
+        Number(ball.position && ball.position.y || 0) - centerY,
+      ) > 1.5,
+      carrierTooFarFromBall = Boolean(
+        carrier
+        && carrier.position
+        && ball.position
+        && Math.hypot(
+          carrier.position.x - ball.position.x,
+          carrier.position.y - ball.position.y,
+        ) > 1.5
+      ),
+      invalidCarrier = Boolean(
+        carrier
+        && (
+          carrier.isGoalkeeper
+          || startingTeam && carrier.team !== startingTeam
+          || carrierTooFarFromBall
+        )
+      );
+    if (!carrier && !farFromCenter || carrier && !invalidCarrier && !farFromCenter)
+      return !1;
+    try { carrier && carrier.dropBall && carrier.dropBall(); } catch {}
+    try {
+      if (carrier) {
+        carrier.passing = !1;
+      }
+      ball.owner = null;
+      ball.inHands = null;
+      if (invalidCarrier && ball.lastTouch === carrier)
+        ball.lastTouch = null;
+      ball.owningTime = 0;
+      ball.untrappable = 0;
+    } catch {}
+    ball.placeAtPosition(centerX, centerY, Math.max(ball.radius || .12, .12));
+    if (ball.velocity) {
+      ball.velocity.x = 0;
+      ball.velocity.y = 0;
+      ball.velocity.z = 0;
+    }
+    if (pitch.prevStepBallPosition) {
+      pitch.prevStepBallPosition.x = ball.position.x;
+      pitch.prevStepBallPosition.y = ball.position.y;
+      pitch.prevStepBallPosition.z = ball.position.z;
+    }
+    return !0;
+  }
+  function resetKickoffParticipants(game, reason) {
+    var pitch = game && game.pitch,
+      kickoffState = pitch && pitch.states && pitch.states.current,
+      playerStates = runtime("players/states"),
+      playerGlobals = runtime("players/global");
+    if (!pitch || stateObjectName(kickoffState) !== "Kickoff") return !1;
+    clearInvalidKickoffPossession(game);
+    try {
+      (pitch.players || []).forEach(function (player) {
+        if (!player || !player.states) return;
+        player.static = !1;
+        player.passing = !1;
+        if (!acPlay())
+          try { playerGlobals.forceAI(player, null); } catch {}
+        try { player.states.change(playerStates.ReturnHome); } catch {}
+      });
+      // Decision staging can leave actors in AIReceiveBall/Ready. Kickoff's
+      // WaitForPlayers parent then waits forever. Re-run native prepare only
+      // after returning every participant to a restart-safe state.
+      kickoffState.prepared = !1;
+      kickoffState.readyTime = 0;
+      game.__happySeedKickoffRecovery = {
+        state: kickoffState,
+        startedAt: Date.now(),
+        retried: reason === "watchdog",
+      };
+      return !0;
+    } catch (error) {
+      console.warn("[standalone-match] kickoff participant reset failed", error);
+      return !1;
+    }
+  }
+  function recoverStalledKickoff(game) {
+    var pitch = game && game.pitch,
+      kickoffState = pitch && pitch.states && pitch.states.current,
+      recovery = game && game.__happySeedKickoffRecovery;
+    if (!pitch || stateObjectName(kickoffState) !== "Kickoff") {
+      if (game) game.__happySeedKickoffRecovery = null;
+      return !1;
+    }
+    clearInvalidKickoffPossession(game);
+    if (!recovery || recovery.state !== kickoffState) {
+      game.__happySeedKickoffRecovery = {
+        state: kickoffState,
+        startedAt: Date.now(),
+        retried: !1,
+      };
+      return !1;
+    }
+    if (
+      recovery.retried
+      || Date.now() - recovery.startedAt < 2500
+      || Number(kickoffState.readyTime || 0) > 0
+    ) return !1;
+    recovery.retried = !0;
+    return resetKickoffParticipants(game, "watchdog");
   }
   function isRuntimeGoalkeeper(entity) {
     var runtimeActorId = runtimeActorIdForEntity(entity),
@@ -2980,6 +3314,68 @@
         return candidate.runtimeActorId === runtimeActorId;
       });
     return Boolean(actor && actor.isGoalkeeper);
+  }
+  function recoverStalledGoalkeeperDistribution(game, goalkeeper) {
+    var pitch = game && game.pitch,
+      ball = pitch && pitch.ball,
+      carrier = ball && (ball.inHands || ball.owner),
+      stateName = game && runtimeStateName(game),
+      director = window.__happySeedDecisionDirectorV3 &&
+        window.__happySeedDecisionDirectorV3.getSnapshot &&
+        window.__happySeedDecisionDirectorV3.getSnapshot(),
+      now = performance.now();
+    if (!game || !pitch || !goalkeeper || carrier !== goalkeeper
+      || ["Match", "BallOutOfPlay"].indexOf(stateName) < 0
+      || director && director.phase && director.phase !== "idle") {
+      if (game) game.__happySeedGoalkeeperHoldWatch = null;
+      return !1;
+    }
+    var watch = game.__happySeedGoalkeeperHoldWatch;
+    if (!watch || watch.goalkeeper !== goalkeeper) {
+      game.__happySeedGoalkeeperHoldWatch = {
+        goalkeeper: goalkeeper,
+        startedAt: now,
+        recoveredAt: 0,
+      };
+      return !1;
+    }
+    if (now - watch.startedAt < 2800 || now - watch.recoveredAt < 1800)
+      return !1;
+    watch.recoveredAt = now;
+    var playerStates = runtime("players/states"),
+      playerGlobals = runtime("players/global"),
+      Pitch = runtime("pitch").Pitch;
+    try {
+      if (Number(pitch.timeScale) === 0
+        && game.__happySeedGoalPresentationHoldToken == null)
+        pitch.timeScale.clear();
+      pitch.ballOutOfPlay = !1;
+      if (stateName !== "Match") pitch.states.change(Pitch.states.Match);
+      (pitch.players || game.allPlayers || []).forEach(function (player) {
+        if (!player || !player.states) return;
+        player.static = !1;
+        player.passing = !1;
+        try { playerGlobals.forceAI(player, null); } catch {}
+        try {
+          if (player === goalkeeper)
+            player.states.change(playerStates.AIGoalkeeperPutBallBackInPlay);
+          else if (player.isGoalkeeper)
+            player.states.change(playerStates.AIGoalkeeperReturnHome);
+          else
+            player.states.change(player.team && player.team.inControl
+              ? playerStates.AIAttack
+              : playerStates.AIDefend);
+        } catch {}
+      });
+      game.__happySeedGoalkeeperDistributionRecoveries =
+        Number(game.__happySeedGoalkeeperDistributionRecoveries || 0) + 1;
+      document.body.dataset.goalkeeperDistributionRecovery =
+        String(game.__happySeedGoalkeeperDistributionRecoveries);
+      return !0;
+    } catch (error) {
+      console.error("[standalone-match] goalkeeper distribution recovery failed", error);
+      return !1;
+    }
   }
   function enforceGoalkeeperControlledBallSafety(game) {
     if (!game || !game.pitch || !game.pitch.ball) return !1;
@@ -3015,6 +3411,8 @@
       !isRuntimeGoalkeeper(goalkeeper)
     )
       return !1;
+    if (!window.__acPlay)
+      recoverStalledGoalkeeperDistribution(game, goalkeeper);
     // 球员模式：玩家控制门将且有方向输入时，跳过安全限制，允许门将移动
     if (window.__acPlay) {
       var ti = window.__touchInput;
@@ -3509,7 +3907,7 @@
       pitch.states.change(Pitch.states.Kickoff, restartingTeam);
       return !0;
     }
-    var stateName = pitch.states.current && pitch.states.current.name;
+    var stateName = stateObjectName(pitch.states.current);
     if (payload.consumeRestart && ["Corner", "ThrowIn", "GoalKick"].indexOf(stateName) >= 0) {
       pitch.ballOutOfPlay = !1;
       pitch.states.change(Pitch.states.Match);
@@ -3672,7 +4070,7 @@
       defenderIndex: defenderIndex,
       visibleIndices: Array.from(new Set(visibleIndices)),
       pitchPlayerCount: pitch.players.length,
-      state: pitch.states.current && pitch.states.current.name || "",
+      state: stateObjectName(pitch.states.current),
       playerControlled: !!(user && user.enabled && user.team === controlled.team
         && user.player === controlled),
     };
@@ -4049,8 +4447,8 @@
         // 等 React 层调用 setGoalPresentationHold(true) 时才定格并放行转换
         game.__happySeedDeferGoalRestart = !0;
         game.__happySeedDeferredGoalKickoff = null;
-        if (!game.__happySeedGoalStatePatchApplied) {
-          game.__happySeedGoalStatePatchApplied = !0;
+        if (game.__happySeedGoalPatchedStateMachine !== game.pitch.states) {
+          game.__happySeedGoalPatchedStateMachine = game.pitch.states;
           var _origStatesChange = game.pitch.states.change.bind(game.pitch.states);
           var _PitchRef = runtime("pitch").Pitch;
           game.pitch.states.change = function (state) {
@@ -4122,6 +4520,7 @@
           ));
       },
       "signal:pitch.Pitch.states.Kickoff.onEnter": function (game) {
+        resetKickoffParticipants(game, "enter");
         emitRuntimeMatchEvent(game, "kickoff", null, {
           side: game.pitch.matchStartingTeam === game.pitch.blueTeam ? "blue" : "red",
           detail: { firstKickoff: !game._firstKickoffDone },
@@ -4234,6 +4633,7 @@
         }
       },
       "signal:pitch.Pitch.states.Kickoff.onExit": function (game) {
+        game.__happySeedKickoffRecovery = null;
         // 兜底：若提前轮询未触发，则在开球状态结束时发出 ab-kickoff-played。
         // 球员模式由 StandalonePlayPhase 的活球检测触发，避免重复。
         if (!acPlay() && !game._kickoffPlayedEmitted) {
@@ -4358,6 +4758,90 @@
       assets = runtime("assets"),
       fans = runtime("fans"),
       messages = runtime("messages");
+
+    function hydrateBundledAtlas(pixi, jsonPath, imagePath) {
+      var loader = pixi && pixi.loader,
+        resources = loader && loader.resources,
+        jsonKey = String(jsonPath).replace(/^\/+/, ""),
+        imageKey = String(imagePath).replace(/^\/+/, ""),
+        imageResource =
+          resources &&
+          (resources[imageKey] || resources[jsonKey + "_image"]),
+        sourceTexture =
+          (imageResource &&
+            (imageResource.texture ||
+              (imageResource.data &&
+                pixi.Texture.fromImage(imageKey)))) ||
+          (pixi.utils &&
+            pixi.utils.TextureCache &&
+            pixi.utils.TextureCache[imageKey]) ||
+          (window.__bundleDataUrl &&
+            pixi.Texture.fromImage(
+              window.__bundleDataUrl(imageKey),
+            )),
+        baseTexture = sourceTexture && sourceTexture.baseTexture,
+        atlasText =
+          window.__bundleReadText &&
+          window.__bundleReadText(jsonPath);
+      if (!baseTexture || !atlasText) {
+        return {
+          jsonPath: jsonPath,
+          imagePath: imagePath,
+          ready: !1,
+          hasBaseTexture: !!baseTexture,
+          hasAtlasText: !!atlasText,
+          imageResourceKey:
+            resources &&
+            resources[jsonKey + "_image"]
+              ? jsonKey + "_image"
+              : resources && resources[imageKey]
+                ? imageKey
+                : null,
+          framesAdded: 0,
+        };
+      }
+      var atlas = JSON.parse(atlasText),
+        frames = atlas.frames || {},
+        framesAdded = 0;
+      if (
+        window.__happySeedForceMissingAtlasFrames &&
+        pixi.utils &&
+        pixi.utils.TextureCache
+      ) {
+        Object.keys(frames).forEach(function (frameId) {
+          delete pixi.utils.TextureCache[frameId];
+        });
+      }
+      Object.keys(frames).forEach(function (frameId) {
+        var cached =
+            pixi.utils &&
+            pixi.utils.TextureCache &&
+            pixi.utils.TextureCache[frameId],
+          frameData = frames[frameId] && frames[frameId].frame;
+        if (cached || !frameData) return;
+        var texture = new pixi.Texture(
+          baseTexture,
+          new pixi.Rectangle(
+            frameData.x,
+            frameData.y,
+            frameData.w,
+            frameData.h,
+          ),
+        );
+        pixi.Texture.addToCache(texture, frameId);
+        framesAdded += 1;
+      });
+      return {
+        jsonPath: jsonPath,
+        imagePath: imagePath,
+        ready: !0,
+        hasBaseTexture: !0,
+        hasAtlasText: !0,
+        framesAdded: framesAdded,
+        frameCount: Object.keys(frames).length,
+      };
+    }
+
     if (!window.__happySeedGoalCollisionSignalsInstalled) {
       window.__happySeedGoalCollisionSignalsInstalled = !0;
       Goal.onPostHit.connect(function () {
@@ -4575,14 +5059,129 @@
         }
       }),
       (MatchGame.prototype._onLoad = function () {
-        (window.__bootTrace("_onLoad: StadiumRenderer"),
-          (this.stadium = new StadiumRenderer({
+        window.__bootTrace("_onLoad: StadiumRenderer");
+        var pixiRuntime = runtime("pixi"),
+          atlasDiagnostics = [
+            hydrateBundledAtlas(
+              pixiRuntime,
+              "/images/indicators.json",
+              "images/indicators.png",
+            ),
+            hydrateBundledAtlas(
+              pixiRuntime,
+              "/images/particles/grass.json",
+              "images/particles/grass_multiple.png",
+            ),
+          ],
+          playerResource =
+            pixiRuntime &&
+            pixiRuntime.loader &&
+            pixiRuntime.loader.resources &&
+            pixiRuntime.loader.resources["data/player.json"],
+          playerData = playerResource && playerResource.data;
+        if (window.__happySeedForceNullPlayerData && playerResource) {
+          playerResource.data = null;
+          playerResource.type = 0;
+          playerData = null;
+        }
+        // apph5game:// may report JSON as loaded while PIXI leaves data=null.
+        // The package already injected the exact file in memory, so hydrate it
+        // synchronously without relying on the custom URL protocol.
+        var playerHydratedFromMemory = !1;
+        if (!playerData && window.__bundleReadText) {
+          try {
+            var bundledPlayerJson =
+              window.__bundleReadText("/data/player.json");
+            if (bundledPlayerJson) {
+              playerData = JSON.parse(bundledPlayerJson);
+              playerResource.data = playerData;
+              playerResource.type = 1;
+              playerHydratedFromMemory = !0;
+            }
+          } catch (playerHydrationError) {
+            window.__bootTrace(
+              "player.json memory hydration failed: " +
+                playerHydrationError.message,
+            );
+          }
+        }
+        var
+          engineDiagnostic = {
+            phase: "before-stadium-renderer",
+            resourceExists: !!playerResource,
+            resourceUrl: playerResource && playerResource.url,
+            resourceType: playerResource && playerResource.type,
+            resourceExtension: playerResource && playerResource.extension,
+            dataType: Object.prototype.toString.call(playerData),
+            dataKeys:
+              playerData && typeof playerData === "object"
+                ? Object.keys(playerData).slice(0, 16)
+                : [],
+            bonesIsArray: !!(
+              playerData &&
+              Array.isArray(playerData.bones)
+            ),
+            bonesLength:
+              playerData && playerData.bones && playerData.bones.length,
+            hydratedFromMemory: playerHydratedFromMemory,
+            firstBone:
+              playerData &&
+              playerData.bones &&
+              playerData.bones[0] &&
+              {
+                name: playerData.bones[0].name,
+                parent: playerData.bones[0].parent,
+              },
+            atlases: atlasDiagnostics,
+          };
+        window.__happySeedAtlasDiagnostic = atlasDiagnostics;
+        window.__happySeedEngineDiagnostic = engineDiagnostic;
+        try {
+          window.dispatchEvent(
+            new CustomEvent("ab-engine-diagnostic", {
+              detail: engineDiagnostic,
+            }),
+          );
+        } catch {}
+        try {
+          this.stadium = new StadiumRenderer({
             game: this,
             pitch: this.pitch,
             players: this.pitch.redTeam.allPlayers.concat(
               this.pitch.blueTeam.allPlayers,
             ),
-          })),
+          });
+          if (
+            window.__happySeedRuntimeActorConfig &&
+            this.stadium &&
+            this.stadium.players
+          ) {
+            this.stadium.players.forEach(function (renderer) {
+              renderer.visible = !1;
+              renderer.renderable = !1;
+              renderer.alpha = 0;
+            });
+          }
+        } catch (stadiumError) {
+          engineDiagnostic.phase = "stadium-renderer-failed";
+          engineDiagnostic.errorName =
+            stadiumError && stadiumError.name;
+          engineDiagnostic.errorMessage =
+            stadiumError && stadiumError.message;
+          engineDiagnostic.errorString = String(stadiumError);
+          engineDiagnostic.errorStack =
+            stadiumError && stadiumError.stack;
+          window.__happySeedEngineDiagnostic = engineDiagnostic;
+          try {
+            window.dispatchEvent(
+              new CustomEvent("ab-engine-error", {
+                detail: engineDiagnostic,
+              }),
+            );
+          } catch {}
+          throw stadiumError;
+        }
+        (
           this.stage.addChild(this.stadium),
           this.repositionUI(),
           window.__bootTrace("_onLoad: fans.init"),
@@ -4660,6 +5259,17 @@
             window.visualViewport.addEventListener("resize", doResize),
           blog("game started + resized"));
       }
+      if (window.__matchGame.__happySeedStandaloneLoaded) {
+        (blog("reuse loaded game → reset + states.change(StandaloneMatch)"),
+          window.__happySeedResetMatchLifecycle &&
+            window.__happySeedResetMatchLifecycle("standalone-restart"),
+          window.__matchGame.resume(),
+          window.__matchGame.states.change(
+            createStandaloneMatchState(options),
+          ),
+          blog("reused states.change returned"));
+        return;
+      }
       (blog("fans.load"),
         fans.load(settings("DEFAULTS_ROOT"), function () {
           blog("fans.load done \u2192 game.load");
@@ -4677,7 +5287,8 @@
               });
           } catch {}
           window.__matchGame.load(function () {
-            (blog("game.load done \u2192 states.change(StandaloneMatch)"),
+            ((window.__matchGame.__happySeedStandaloneLoaded = !0),
+              blog("game.load done \u2192 states.change(StandaloneMatch)"),
               window.__matchGame.states.change(
                 createStandaloneMatchState(options),
               ),

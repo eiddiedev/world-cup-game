@@ -9257,3 +9257,28 @@ button {
     font-size: 12px !important;
   }
 }
+
+/* Keep every top-left page return action clear of rounded phone corners and
+ * Interactive Space's creator chrome. These rules intentionally live at the
+ * end of the cascade so compact per-screen shorthands cannot reset the inset. */
+@media (max-width: 700px) {
+  #root .app .screen-header,
+  #root .app .enhancement-header,
+  #root .app .codex-header,
+  #root .app .mini-cup-header {
+    padding-inline-start: max(18px, calc(env(safe-area-inset-left) + 14px)) !important;
+  }
+}
+
+@media (orientation: landscape) and (max-height: 600px) {
+  #root .app .screen-header,
+  #root .app .enhancement-header,
+  #root .app .codex-header,
+  #root .app .mini-cup-header {
+    padding-inline-start: max(80px, calc(env(safe-area-inset-left) + 56px)) !important;
+  }
+
+  #root .app .penalty-exit-button {
+    left: max(80px, calc(env(safe-area-inset-left) + 56px)) !important;
+  }
+}

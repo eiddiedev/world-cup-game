@@ -50,7 +50,7 @@ import {
   startFormalExtraTime,
   startFormalMatchSession,
 } from '../utils/formalMatchSession.js'
-import { getTeamById } from '../data/teams.js'
+import { getTeamById, getTeamFlag } from '../data/teams.js'
 import { getLogisticsModifiers } from '../utils/logisticsEffects.js'
 import { decisionReadingSeconds } from '../utils/matchRuntimeEvent.js'
 import { createMatchSfxBus } from '../utils/matchSfxBus.js'
@@ -122,7 +122,7 @@ function playerPosition(player) {
 
 function teamFlagUrl(team) {
   const name = String(team?.name || '').replace(/国家队$/, '')
-  return name ? `/assets/国旗/${name}.png` : ''
+  return name ? (getTeamFlag(name) || '') : ''
 }
 
 function formationPlayerLayouts(players = []) {

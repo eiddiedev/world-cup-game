@@ -21,8 +21,8 @@ export default function TeamSelectScreen({ saveData, updateSaveData, navigateTo,
     if (gameMode === 'player') {
       const newRun = autoSetupPlayerRun(createNewRun(team.id, gameMode, saveData), saveData)
       updateSaveData({ ...saveData, currentRun: newRun })
-      showToast(`${team.name}世界杯征程已开始！`)
-      navigateTo('tournament')
+      // 首次进入训练基地（已完成训练则直接到赛程）
+      navigateTo(newRun.trainingCompleted ? 'tournament' : 'training')
       return
     }
     setAppointmentTeam(team)

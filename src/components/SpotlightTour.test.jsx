@@ -65,4 +65,37 @@ describe('SpotlightTour', () => {
     fireEvent.click(screen.getByRole('button', { name: '打开测试指引' }))
     expect(await screen.findByRole('dialog', { name: '测试指引 1/1' })).toHaveTextContent('第一步')
   })
+
+  it('切换步骤时清除旧高亮，并在目标已经可见时不触发滚动', async () => {
+    let firstScrolls = 0
+    let secondScrolls = 0
+    render(
+      <>
+        <button
+          data-guide="first"
+          ref={(node) => {
+            if (!node) return
+            node.getBoundingClientRect = () => ({ top: 40, left: 40, right: 180, bottom: 90, width: 140, height: 50 })
+            node.scrollIntoView = () => { firstScrolls += 1 }
+          }}
+        >第一个目标</button>
+        <button
+          data-guide="second"
+          ref={(node) => {
+            if (!node) return
+            node.getBoundingClientRect = () => ({ top: 130, left: 40, right: 220, bottom: 190, width: 180, height: 60 })
+            node.scrollIntoView = () => { secondScrolls += 1 }
+          }}
+        >第二个目标</button>
+        <SpotlightTour tour={TEST_TOUR} startRequest={1} />
+      </>,
+    )
+
+    expect(await screen.findByRole('dialog', { name: '测试指引 1/2' })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: '下一步' }))
+    expect(screen.queryByRole('dialog', { name: '测试指引 1/2' })).not.toBeInTheDocument()
+    expect(await screen.findByRole('dialog', { name: '测试指引 2/2' })).toBeInTheDocument()
+    expect(firstScrolls).toBe(0)
+    expect(secondScrolls).toBe(0)
+  })
 })

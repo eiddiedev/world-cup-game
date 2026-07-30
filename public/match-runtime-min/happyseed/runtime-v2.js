@@ -54,6 +54,7 @@
           pixelDynamicNetDepthMode: "aggregate-front-edge",
           baseRefreshesRemaining: 6,
           lastBaseRefreshAt: 0,
+          matchVisualToken: stadium._stadium || null,
         },
         pixelNetDepthUpdaters = [];
 
@@ -274,7 +275,15 @@
             screenTo = Point2.create(),
             graphics = new Pixi.Graphics(),
             firstTriangle = triangles[0];
-          if (!firstTriangle || !net || firstTriangle._happySeedPixelNet) return 0;
+          if (!firstTriangle || !net) return 0;
+          if (firstTriangle._happySeedPixelNet) {
+            if (firstTriangle._happySeedRefreshPixelNetDepth)
+              pixelNetDepthUpdaters.push(
+                firstTriangle._happySeedRefreshPixelNetDepth,
+              );
+            triangleCount += triangles.length;
+            return triangles.length;
+          }
           strandCount += appendGridSegments(
             segments,
             net.sidePoints,
@@ -400,10 +409,45 @@
         }
       }
 
+      function blankLegacyBaseUntilReady() {
+        try {
+          if (masterTexture.baseTexture && masterTexture.baseTexture.hasLoaded)
+            return !1;
+          stadium.baseTexture.clear && stadium.baseTexture.clear();
+          preserveOriginalGoalsOnly();
+          hideLegacyAnimalCrowd();
+          return !0;
+        } catch {
+          return !1;
+        }
+      }
+
+      function refreshMatchVisuals() {
+        var nextToken = stadium._stadium || null;
+        if (nextToken !== state.matchVisualToken) {
+          state.matchVisualToken = nextToken;
+          state.goalVisualAlignmentApplied = !1;
+          state.pixelGoalAtlasApplied = !1;
+          state.pixelGoalAtlasLoading = !1;
+          state.pixelDynamicNetApplied = !1;
+          state.baseRefreshesRemaining = 12;
+          state.lastBaseRefreshAt = 0;
+          pixelNetDepthUpdaters.length = 0;
+          installPixelDynamicNets();
+        }
+        preserveOriginalGoalsOnly();
+        hideLegacyAnimalCrowd();
+        if (renderBase()) return !0;
+        blankLegacyBaseUntilReady();
+        return !1;
+      }
+
       if (masterTexture.baseTexture && masterTexture.baseTexture.hasLoaded)
         renderBase();
-      else if (masterTexture.baseTexture)
+      else if (masterTexture.baseTexture) {
+        blankLegacyBaseUntilReady();
         masterTexture.baseTexture.once("loaded", renderBase);
+      }
 
       for (var presetIndex = 0;
         presetIndex < config.cameraPresets.length;
@@ -537,6 +581,7 @@
           dispatchScene("ab-stadium-camera");
           return !0;
         },
+        refreshMatch: refreshMatchVisuals,
         getSnapshot: snapshot,
       };
 
@@ -546,6 +591,8 @@
         previousFrame(frame);
         try {
           var now = performance.now();
+          if ((stadium._stadium || null) !== state.matchVisualToken)
+            refreshMatchVisuals();
           for (var depthIndex = 0; depthIndex < pixelNetDepthUpdaters.length; depthIndex += 1)
             pixelNetDepthUpdaters[depthIndex]();
           preserveOriginalGoalsOnly();
@@ -570,7 +617,7 @@
       try {
         var cameraView = window.__matchGame && window.__matchGame.renderer.view;
         if (cameraView) {
-          // 只保留滚轮缩放和双击重置，禁止拖拽平移
+          // 桌面端滚轮、移动端双指均只调整球场镜头，不接管单指球员操作。
           cameraView.addEventListener("wheel", function (event) {
             event.preventDefault();
             window.__matchZoom.step(event.deltaY > 0 ? .9 : 1.1);
@@ -578,6 +625,74 @@
           }, { passive: !1 });
           cameraView.addEventListener("dblclick", function () {
             window.__happySeedStadiumScene.resetCamera();
+          });
+          var pinchStartDistance = 0,
+            pinchStartZoom = 1,
+            pointerTouches = {},
+            pinchDistance = function (touches) {
+              if (!touches || touches.length < 2) return 0;
+              var dx = touches[0].clientX - touches[1].clientX,
+                dy = touches[0].clientY - touches[1].clientY;
+              return Math.sqrt(dx * dx + dy * dy);
+            },
+            pointerDistance = function () {
+              var ids = Object.keys(pointerTouches);
+              if (ids.length < 2) return 0;
+              var first = pointerTouches[ids[0]],
+                second = pointerTouches[ids[1]],
+                dx = first.x - second.x,
+                dy = first.y - second.y;
+              return Math.sqrt(dx * dx + dy * dy);
+            },
+            applyPinchDistance = function (nextDistance, event) {
+              if (nextDistance <= 0 || pinchStartDistance <= 0) return !1;
+              event && event.preventDefault && event.preventDefault();
+              window.__matchZoom.set(
+                Math.max(.34, Math.min(6, pinchStartZoom * nextDistance / pinchStartDistance)),
+              );
+              dispatchScene("ab-stadium-camera");
+              return !0;
+            };
+          // 互动空间的教练模式没有原生球员触控控制器，部分 WebView 会把
+          // canvas 上的双指事件提前吃掉。捕获阶段绑定到 document，并补一套
+          // PointerEvent 路径；球员模式继续使用原来的控制器，不受这里接管。
+          document.addEventListener("touchstart", function (event) {
+            if (window.__acPlay || event.touches.length !== 2) return;
+            pinchStartDistance = pinchDistance(event.touches);
+            pinchStartZoom = window.__matchZoom.get();
+            if (pinchStartDistance > 0) event.preventDefault();
+          }, { passive: !1, capture: !0 });
+          document.addEventListener("touchmove", function (event) {
+            if (window.__acPlay || event.touches.length !== 2) return;
+            applyPinchDistance(pinchDistance(event.touches), event);
+          }, { passive: !1, capture: !0 });
+          document.addEventListener("touchend", function (event) {
+            if (event.touches.length < 2) pinchStartDistance = 0;
+          }, { passive: !0, capture: !0 });
+          document.addEventListener("touchcancel", function () {
+            pinchStartDistance = 0;
+          }, { passive: !0, capture: !0 });
+          document.addEventListener("pointerdown", function (event) {
+            if (window.__acPlay || event.pointerType !== "touch") return;
+            pointerTouches[event.pointerId] = { x: event.clientX, y: event.clientY };
+            if (Object.keys(pointerTouches).length === 2) {
+              pinchStartDistance = pointerDistance();
+              pinchStartZoom = window.__matchZoom.get();
+              if (pinchStartDistance > 0) event.preventDefault();
+            }
+          }, { passive: !1, capture: !0 });
+          document.addEventListener("pointermove", function (event) {
+            if (window.__acPlay || event.pointerType !== "touch"
+              || !pointerTouches[event.pointerId]) return;
+            pointerTouches[event.pointerId] = { x: event.clientX, y: event.clientY };
+            if (Object.keys(pointerTouches).length === 2)
+              applyPinchDistance(pointerDistance(), event);
+          }, { passive: !1, capture: !0 });
+          ["pointerup", "pointercancel"].forEach(function (eventName) {
+            document.addEventListener(eventName, function (event) {
+              delete pointerTouches[event.pointerId];
+              if (Object.keys(pointerTouches).length < 2) pinchStartDistance = 0;
+            }, { passive: !0, capture: !0 });
           });
         }
       } catch (error) {
