@@ -11,11 +11,11 @@ describe('startup asset priority', () => {
     const assets = getCriticalStartupAssets(teams)
 
     expect(teams).toHaveLength(16)
-    expect(assets).toContain('/assets/背景图.png')
+    expect(assets).toContain('/assets/branding/home-background.png')
     expect(assets).toContain('/assets/branding/title-frame-1.png')
     expect(assets).toContain('/assets/branding/title-frame-2.png')
     expect(assets).toContain('/assets/聘书.png?v=2')
-    expect(assets).toContain('/assets/印章.png')
+    expect(assets).toContain('/assets/branding/appointment-stamp.png')
     expect(assets).toContain('/assets/金币.png')
     expect(assets).toContain('/assets/征召点.png')
     teams.forEach((team) => {

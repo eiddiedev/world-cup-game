@@ -72,9 +72,12 @@ const CREST_SLUGS = Object.freeze({
 })
 
 export const BRANDING_ASSETS = Object.freeze({
+  homeBackground: '/assets/branding/home-background.png',
   titleFrame1: '/assets/branding/title-frame-1.png',
   titleFrame2: '/assets/branding/title-frame-2.png',
   trophy: '/assets/branding/trophy.png',
+  appointmentStamp: '/assets/branding/appointment-stamp.png',
+  lockerRoom: '/assets/branding/locker-room.jpg',
 })
 
 export function flagAsset(teamName) {

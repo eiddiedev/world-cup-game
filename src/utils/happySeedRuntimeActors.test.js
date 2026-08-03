@@ -11,12 +11,14 @@ import {
 } from './happySeedRuntimeActors.js'
 
 describe('HappySeed Runtime 业务球员映射', () => {
-  it('keeps four selectable kits and shares one tinted kit for other Douyin opponents', () => {
+  it('keeps exact kits for all 16 selectable teams and shares one tinted kit for schedule-only opponents', () => {
     expect(resolveHappySeedRuntimeKitTeamId('spain', true)).toBe('spain')
     expect(resolveHappySeedRuntimeKitTeamId('england', true)).toBe('england')
     expect(resolveHappySeedRuntimeKitTeamId('norway', true)).toBe('norway')
     expect(resolveHappySeedRuntimeKitTeamId('capeverde', true)).toBe('capeverde')
-    expect(resolveHappySeedRuntimeKitTeamId('france', true)).toBe('shared')
+    expect(resolveHappySeedRuntimeKitTeamId('france', true)).toBe('france')
+    expect(resolveHappySeedRuntimeKitTeamId('usa', true)).toBe('usa')
+    expect(resolveHappySeedRuntimeKitTeamId('algeria', true)).toBe('shared')
     expect(resolveHappySeedRuntimeKitTeamId('france', false)).toBe('france')
   })
 

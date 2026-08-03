@@ -23,12 +23,14 @@ vi.mock('../utils/audioManager.js', () => ({
   audioManager: {
     stadiumEnabled: true,
     soundEnabled: false,
+    playSound: vi.fn(),
     stopCrowdAmbient: vi.fn(),
     startCrowdAmbient: vi.fn(),
   },
 }))
 
 import TrainingGround from './TrainingGround.jsx'
+import { audioManager } from '../utils/audioManager.js'
 
 function makeGame() {
   const sprites = Array.from({ length: 22 }, () => ({ visible: true, alpha: 1 }))
@@ -120,6 +122,22 @@ describe('TrainingGround 自由训练模式', () => {
       resetBall: true,
     })
     expect(screen.getByRole('status')).toHaveTextContent('足球出界，已回到脚下')
+  })
+
+  it('plays the goal-frame sound immediately when training hits a post or crossbar', () => {
+    render(<TrainingGround
+      saveData={{ currentRun: { teamId: 'france', gameMode: 'player' } }}
+      navigateTo={vi.fn()}
+      updateSaveData={vi.fn()}
+    />)
+
+    act(() => {
+      window.dispatchEvent(new CustomEvent('ab-training-goal-frame-hit', {
+        detail: { id: 'training-post-1', type: 'post-hit' },
+      }))
+    })
+
+    expect(audioManager.playSound).toHaveBeenCalledWith('postHit')
   })
 
   it('shuts down training before navigating through the tournament schedule', () => {

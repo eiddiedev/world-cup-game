@@ -18,10 +18,7 @@ export const ALL_PLAYABLE_TEAM_IDS = Object.freeze([
 ])
 
 export const INTERACTIVE_PLAYABLE_TEAM_IDS = Object.freeze([
-  'spain',
-  'england',
-  'norway',
-  'capeverde',
+  ...ALL_PLAYABLE_TEAM_IDS,
 ])
 
 const FULL_FEATURES = Object.freeze({
@@ -46,41 +43,44 @@ export const VARIANTS = Object.freeze({
     label: '展示完整版',
     platform: 'web',
     artPack: 'showcase',
+    brandingProfile: 'showcase',
     playableTeamIds: ALL_PLAYABLE_TEAM_IDS,
     features: FULL_FEATURES,
     storageKey: 'targeting-2026-save',
     formalMatchRealtimeMinutes: 3,
     package: Object.freeze({ enabled: false, archiveName: null, maxZipBytes: null, compressionProfile: 'lossless' }),
-    matchView: Object.freeze({ coachDefaultZoom: 1, coachMinZoom: 0.72 }),
+    matchView: Object.freeze({ coachDefaultZoom: 1, coachMinZoom: 0.72, playerDefaultZoom: 1 }),
   }),
   'compliant-full': Object.freeze({
     id: 'compliant-full',
     label: '合规完整版',
     platform: 'web',
     artPack: 'compliant',
+    brandingProfile: 'compliant',
     playableTeamIds: ALL_PLAYABLE_TEAM_IDS,
     features: FULL_FEATURES,
     storageKey: 'targeting-2026-compliant-full-save',
     formalMatchRealtimeMinutes: 3,
     package: Object.freeze({ enabled: false, archiveName: null, maxZipBytes: null, compressionProfile: 'lossless' }),
-    matchView: Object.freeze({ coachDefaultZoom: 1, coachMinZoom: 0.72 }),
+    matchView: Object.freeze({ coachDefaultZoom: 1, coachMinZoom: 0.72, playerDefaultZoom: 1 }),
   }),
   'compliant-interactive': Object.freeze({
     id: 'compliant-interactive',
     label: '互动空间合规版',
     platform: 'interactive-space',
     artPack: 'compliant',
+    brandingProfile: 'compliant',
     playableTeamIds: INTERACTIVE_PLAYABLE_TEAM_IDS,
     features: INTERACTIVE_FEATURES,
-    storageKey: 'targeting-2026-world-cup-save',
+    storageKey: 'targeting-2026-compliant-interactive-save',
     formalMatchRealtimeMinutes: 2,
     package: Object.freeze({
       enabled: true,
       archiveName: 'targeting-2026-compliant-interactive.zip',
-      maxZipBytes: 8 * 1024 * 1024,
-      compressionProfile: 'platform-safe',
+      maxZipBytes: 15 * 1024 * 1024,
+      compressionProfile: 'match-quality',
     }),
-    matchView: Object.freeze({ coachDefaultZoom: 0.68, coachMinZoom: 0.48 }),
+    matchView: Object.freeze({ coachDefaultZoom: 0.68, coachMinZoom: 0.48, playerDefaultZoom: 1.16 }),
   }),
 })
 

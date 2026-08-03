@@ -44,7 +44,11 @@ export const FORMAL_DECISION_SCENE_CATALOG_V3 = Object.freeze({
   }),
   counter_attack_3v2: scene('freeze-live', 'counter-overload', 'one_two_pass', {
     sprint_shoot: [R('carry-goal'), B('shoot-far-post', 'home', 'primary')],
-    one_two_pass: [B('one-two', 'home', 'primary', { targetRole: 'support' }), R('support-overlap', 'support')],
+    one_two_pass: [
+      B('one-two', 'home', 'primary', { targetRole: 'support' }),
+      B('one-two-return', 'home', 'support', { startRole: 'support', targetRole: 'primary' }),
+      R('counter-return-run', 'primary'),
+    ],
     wide_spread: [
       B('switch-wide', 'home', 'primary', { targetRole: 'support' }),
       B('cross-high', 'home', 'support', { startRole: 'support', targetRole: 'aerialTarget' }),
@@ -245,6 +249,22 @@ export const FORMAL_DECISION_SCENE_CATALOG_V3 = Object.freeze({
       clear_first_time: { corner_against: 'queue-corner-blue' },
       body_on_line: { deflected_corner: 'queue-corner-blue' },
     },
+    outcomeBallResponses: {
+      clear_first_time: {
+        terminals: ['goal-against'],
+        affordance: B('opponent-through', 'away', 'opponent', {
+          startRole: 'opponent',
+          targetRole: 'awayAerialTarget',
+        }),
+      },
+      launch_counter: {
+        terminals: ['goal-against'],
+        affordance: B('opponent-through', 'away', 'opponent', {
+          startRole: 'opponent',
+          targetRole: 'awayAerialTarget',
+        }),
+      },
+    },
   }),
   penalty_shootout_round: scene('blackout-stage', 'shootout-round', 'shoot_center', {
     shoot_left: [B('penalty-left', 'home', 'setPieceTaker')],
@@ -347,7 +367,20 @@ export const FORMAL_DECISION_SCENE_CATALOG_V3 = Object.freeze({
   late_keeper_up_corner: scene('blackout-stage', 'late-attacking-corner', 'normal_corner_late', {
     send_keeper_up: [R('keeper-to-box', 'homeGoalkeeper'), B('corner-far', 'home', 'setPieceTaker', { targetRole: 'homeGoalkeeper' })],
     normal_corner_late: [B('corner-near', 'home', 'setPieceTaker', { targetRole: 'support' })],
-  }, { sourceEventTypes: ['corner'], sourceEventSide: 'red', attackingSide: 'red' }),
+  }, {
+    sourceEventTypes: ['corner'],
+    sourceEventSide: 'red',
+    attackingSide: 'red',
+    outcomeBallResponses: {
+      send_keeper_up: {
+        terminals: ['goal-against'],
+        affordance: B('counter-release', 'away', 'opponent', {
+          startRole: 'opponent',
+          targetRole: 'awayAerialTarget',
+        }),
+      },
+    },
+  }),
   weather_slippery_tackle: scene('freeze-live', 'wet-pitch-tackle', 'stay_feet_slippery', {
     stay_feet_slippery: [A('zone', 'contain-channel')],
     slide_in_rain: [A('duel-vector', 'slide-contact')],

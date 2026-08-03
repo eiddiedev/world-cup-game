@@ -111,8 +111,10 @@
   var AUTO_ZOOM = { current: 1, from: 1, target: 1, t0: 0, dur: 0, nextAt: 0 };
   window.__autoZoom = AUTO_ZOOM;
   function defaultZoomMultiplier() {
-    var configured = window.__targetingMatchView && window.__targetingMatchView.coachDefaultZoom;
-    return window.__happySeedInteractiveSpace && !window.__acPlay ? (configured || 0.68) : 1;
+    var matchView = window.__targetingMatchView || {};
+    if (!window.__happySeedInteractiveSpace) return 1;
+    if (window.__acPlay) return matchView.playerDefaultZoom || 1.16;
+    return matchView.coachDefaultZoom || 0.68;
   }
   function minimumEffectiveZoom() {
     var configured = window.__targetingMatchView && window.__targetingMatchView.coachMinZoom;
@@ -204,7 +206,9 @@
           cameraTarget: { x: pitch.center.x, y: pitch.center.y },
           draggable: !0,
           crowdMotion: !0,
-          baseRefreshesRemaining: 6,
+          // 互动包的 5120×2560 球场底图在装载后只补绘一次，避免开场阶段
+          // 连续重绘大纹理造成短时掉帧；完整版保留原来的兼容性补绘次数。
+          baseRefreshesRemaining: window.__happySeedInteractiveSpace ? 1 : 6,
           lastBaseRefreshAt: 0,
           lastManualCameraAt: 0,
           manualReturnDelayMs: 2600,
@@ -367,7 +371,9 @@
 
       function followBall() {
         ((window.__happySeedManualCamera = !1),
-          pitch.camera.followBall(),
+          pitch.camera.auto
+            ? pitch.camera.auto()
+            : ((pitch.camera.isFree = !1), pitch.camera.followBall()),
           (sceneState.cameraMode = "ball"),
           (sceneState.activeCamera = "normal"));
         return !0;
@@ -550,8 +556,26 @@
           leg_right_shoe: "shoes.png",
         },
         actorEntries = [],
+        pixelTextureCache = {},
         humanDisplayScale = .62,
         selectedRuntimeActorId = config.actors[0].runtimeActorId;
+
+      function pixelTexture(path) {
+        var cached = pixelTextureCache[path];
+        if (cached) return cached;
+        var texture = Texture.fromImage(path);
+        texture && texture.baseTexture && Pixi.SCALE_MODES &&
+          (texture.baseTexture.scaleMode = Pixi.SCALE_MODES.NEAREST);
+        pixelTextureCache[path] = texture;
+        return texture;
+      }
+
+      function applyTexture(sprite, texture, tint) {
+        if (!sprite) return;
+        if (sprite.texture !== texture) sprite.texture = texture;
+        if (sprite.tint !== tint) sprite.tint = tint;
+        if (!sprite.visible) sprite.visible = !0;
+      }
 
       function dispatchActors(name) {
         try {
@@ -607,12 +631,6 @@
         if (renderer.overheadIndicator)
           renderer.overheadIndicator.position.y =
             (renderer.sprite && renderer.sprite.position.y || 0) - 118;
-        function pixelTexture(path) {
-          var texture = Texture.fromImage(path);
-          texture && texture.baseTexture && Pixi.SCALE_MODES &&
-            (texture.baseTexture.scaleMode = Pixi.SCALE_MODES.NEAREST);
-          return texture;
-        }
         for (var hiddenIndex = 0;
           hiddenIndex < hiddenAnimalSlots.length;
           hiddenIndex += 1) {
@@ -620,64 +638,66 @@
           hiddenSprite && (hiddenSprite.visible = !1);
         }
         for (var bodySlot in bodyPartMap)
-          sprites[bodySlot] &&
-            ((sprites[bodySlot].texture = pixelTexture(
-              visual.playerRoot + "/" + bodyPartMap[bodySlot],
-            )),
-            (sprites[bodySlot].tint = 16777215),
-            (sprites[bodySlot].visible = !0));
+          sprites[bodySlot] && applyTexture(
+            sprites[bodySlot],
+            pixelTexture(visual.playerRoot + "/" + bodyPartMap[bodySlot]),
+            16777215,
+          );
         for (var kitSlot in kitPartMap)
-          sprites[kitSlot] &&
-            ((sprites[kitSlot].texture = pixelTexture(
-              visual.kitRoot + "/" + kitPartMap[kitSlot],
-            )),
-            (sprites[kitSlot].tint = kitSlotTint(visual, kitSlot)),
-            (sprites[kitSlot].visible = !0));
+          sprites[kitSlot] && applyTexture(
+            sprites[kitSlot],
+            pixelTexture(visual.kitRoot + "/" + kitPartMap[kitSlot]),
+            kitSlotTint(visual, kitSlot),
+          );
         sprites.chest_shirt &&
-          ((sprites.chest_shirt.texture = pixelTexture(
-            visual.kitRoot +
-              (renderer.spine.facingCamera
-                ? "/shirt_front.png"
-                : "/shirt_back.png"),
-          )),
-          (sprites.chest_shirt.tint = kitSlotTint(visual, "chest_shirt")),
-          (sprites.chest_shirt.visible = !0));
+          applyTexture(
+            sprites.chest_shirt,
+            pixelTexture(
+              visual.kitRoot +
+                (renderer.spine.facingCamera
+                  ? "/shirt_front.png"
+                  : "/shirt_back.png"),
+            ),
+            kitSlotTint(visual, "chest_shirt"),
+          );
         sprites.head &&
-          ((sprites.head.texture = pixelTexture(
-            renderer.spine.facingCamera ? visual.headFront : visual.headBack,
-          )),
-          (sprites.head.tint = 16777215),
-          (sprites.head.visible = !0));
+          applyTexture(
+            sprites.head,
+            pixelTexture(
+              renderer.spine.facingCamera ? visual.headFront : visual.headBack,
+            ),
+            16777215,
+          );
         sprites.number &&
-          ((sprites.number.texture = pixelTexture(visual.number)),
-          (sprites.number.tint = 16777215),
-          (sprites.number.visible = !0));
+          applyTexture(sprites.number, pixelTexture(visual.number), 16777215);
         if (actor.isGoalkeeper) {
           sprites.hand_left_glove &&
-            ((sprites.hand_left_glove.texture = pixelTexture(
-              visual.kitRoot + "/hand_left.png",
-            )),
-            (sprites.hand_left_glove.tint = visual.sharedKit
-              ? sharedKitTint(visual.palette && visual.palette.gloves, 16777215)
-              : 16777215),
-            (sprites.hand_left_glove.visible = !0));
+            applyTexture(
+              sprites.hand_left_glove,
+              pixelTexture(visual.kitRoot + "/hand_left.png"),
+              visual.sharedKit
+                ? sharedKitTint(visual.palette && visual.palette.gloves, 16777215)
+                : 16777215,
+            );
           sprites.hand_right_glove &&
-            ((sprites.hand_right_glove.texture = pixelTexture(
-              visual.kitRoot + "/hand_right.png",
-            )),
-            (sprites.hand_right_glove.tint = visual.sharedKit
-              ? sharedKitTint(visual.palette && visual.palette.gloves, 16777215)
-              : 16777215),
-            (sprites.hand_right_glove.visible = !0));
+            applyTexture(
+              sprites.hand_right_glove,
+              pixelTexture(visual.kitRoot + "/hand_right.png"),
+              visual.sharedKit
+                ? sharedKitTint(visual.palette && visual.palette.gloves, 16777215)
+                : 16777215,
+            );
         } else {
           (sprites.hand_left_glove && (sprites.hand_left_glove.visible = !1),
             sprites.hand_right_glove &&
               (sprites.hand_right_glove.visible = !1));
         }
         if (entry.label) {
-          (entry.label.text = actorLabel(actor),
-            (entry.label.position.y = -92),
-            (entry.label.style.fill = actor.side === "red" ? "#ffe66d" : "#f2f6ff"));
+          var nextLabel = actorLabel(actor),
+            nextFill = actor.side === "red" ? "#ffe66d" : "#f2f6ff";
+          if (entry.label.text !== nextLabel) entry.label.text = nextLabel;
+          if (entry.label.position.y !== -92) entry.label.position.y = -92;
+          if (entry.label.style.fill !== nextFill) entry.label.style.fill = nextFill;
         }
       }
 
@@ -2041,7 +2061,10 @@
             sp.velocity && ((sp.velocity.x = 0), (sp.velocity.y = 0)));
         }
     } catch {}
-    (pitch.camera.followBall(), pitch.camera.instantZoom(effZoom()));
+    (pitch.camera.auto
+      ? pitch.camera.auto()
+      : ((pitch.camera.isFree = !1), pitch.camera.followBall()),
+      pitch.camera.instantZoom(effZoom()));
     try {
       delete document.body.dataset.trainingRuntime;
       delete document.body.dataset.trainingPitchPlayers;
@@ -2454,6 +2477,14 @@
               directorSnapshot.phase !== "idle" &&
               !directorSnapshot.continuationReady &&
               !directorSnapshot.livePhysics;
+          if (directorSnapshot && directorSnapshot.phase !== "idle"
+            && window.__happySeedDecisionDirectorV3.recoverIfStalled) {
+            window.__happySeedDecisionDirectorV3.recoverIfStalled(performance.now());
+            directorSnapshot = window.__happySeedDecisionDirectorV3.getSnapshot();
+            freezeSimulationForDirector = directorSnapshot.phase !== "idle"
+              && !directorSnapshot.continuationReady
+              && !directorSnapshot.livePhysics;
+          }
           pitch.setFrame(frame);
           if (!freezeSimulationForDirector) {
             enforceGoalkeeperControlledBallSafety(mode.game);
@@ -3029,6 +3060,15 @@
           mode.game._introBowPending && !introActive())
         ) {
           mode.game._introBowPending = !1;
+          // 完整版片头在中心机位播放；片头结束后必须退出自由镜头，
+          // 否则开赛虽快但镜头会停在中圈而不再跟球。
+          try {
+            if (pitch.camera.auto) pitch.camera.auto();
+            else {
+              pitch.camera.isFree = !1;
+              pitch.camera.followBall();
+            }
+          } catch {}
           try {
             var bows = [];
             (function walkAll(n, depth) {
@@ -3332,8 +3372,19 @@
       director = window.__happySeedDecisionDirectorV3 &&
         window.__happySeedDecisionDirectorV3.getSnapshot &&
         window.__happySeedDecisionDirectorV3.getSnapshot(),
-      now = performance.now();
-    if (!game || !pitch || !goalkeeper || carrier !== goalkeeper
+      now = performance.now(),
+      recentSave = Boolean(
+        game && game.__happySeedGkSaveEntity === goalkeeper
+        && now - Number(game.__happySeedGkSaveAt || 0) < 6500
+      ),
+      ballNearGoalkeeper = Boolean(
+        recentSave && ball && ball.position && goalkeeper && goalkeeper.position
+        && Math.hypot(
+          ball.position.x - goalkeeper.position.x,
+          ball.position.y - goalkeeper.position.y
+        ) < pitch.width * .065
+      );
+    if (!game || !pitch || !goalkeeper || (carrier !== goalkeeper && !ballNearGoalkeeper)
       || ["Match", "BallOutOfPlay"].indexOf(stateName) < 0
       || director && director.phase && director.phase !== "idle") {
       if (game) game.__happySeedGoalkeeperHoldWatch = null;
@@ -3348,7 +3399,10 @@
       };
       return !1;
     }
-    if (now - watch.startedAt < 2800 || now - watch.recoveredAt < 1800)
+    // 球员模式仍要给玩家一次主动出球窗口，但不能因此永久禁用脱困。
+    // 教练模式 2.8 秒、球员模式 4.2 秒后仍未出球才接管一次分配。
+    var holdLimit = window.__acPlay ? 4200 : 2800;
+    if (now - watch.startedAt < holdLimit || now - watch.recoveredAt < 1800)
       return !1;
     watch.recoveredAt = now;
     var playerStates = runtime("players/states"),
@@ -3360,6 +3414,24 @@
         pitch.timeScale.clear();
       pitch.ballOutOfPlay = !1;
       if (stateName !== "Match") pitch.states.change(Pitch.states.Match);
+      if (carrier !== goalkeeper) {
+        try {
+          if (ball.inHands && ball.inHands !== goalkeeper && ball.inHands.dropBall)
+            ball.inHands.dropBall();
+        } catch {}
+        try { ball.inHands = null; } catch {}
+        try { ball.owner = goalkeeper; } catch {}
+        ball.placeAtPosition(
+          goalkeeper.position.x,
+          goalkeeper.position.y,
+          Math.max(Number(ball.radius || .12), .12)
+        );
+        if (ball.velocity) {
+          ball.velocity.x = 0;
+          ball.velocity.y = 0;
+          ball.velocity.z = 0;
+        }
+      }
       (pitch.players || game.allPlayers || []).forEach(function (player) {
         if (!player || !player.states) return;
         player.static = !1;
@@ -3378,6 +3450,8 @@
       });
       game.__happySeedGoalkeeperDistributionRecoveries =
         Number(game.__happySeedGoalkeeperDistributionRecoveries || 0) + 1;
+      game.__happySeedGkSaveAt = 0;
+      game.__happySeedGkSaveEntity = null;
       document.body.dataset.goalkeeperDistributionRecovery =
         String(game.__happySeedGoalkeeperDistributionRecoveries);
       return !0;
@@ -3420,8 +3494,7 @@
       !isRuntimeGoalkeeper(goalkeeper)
     )
       return !1;
-    if (!window.__acPlay)
-      recoverStalledGoalkeeperDistribution(game, goalkeeper);
+    recoverStalledGoalkeeperDistribution(game, goalkeeper);
     // 球员模式：玩家控制门将且有方向输入时，跳过安全限制，允许门将移动
     if (window.__acPlay) {
       var ti = window.__touchInput;
@@ -3607,10 +3680,20 @@
     ) return null;
     game.__happySeedLastGoalCollisionType = type;
     game.__happySeedLastGoalCollisionAt = now;
-    return emitRuntimeMatchEvent(game, type, null, {
+    var collisionEventId = emitRuntimeMatchEvent(game, type, null, {
       side: null,
       detail: { shotEventId: game.__happySeedLastShotEventId || null },
     });
+    if (
+      collisionEventId
+      && document.body
+      && document.body.classList.contains("training-mode")
+    ) {
+      window.dispatchEvent(new CustomEvent("ab-training-goal-frame-hit", {
+        detail: { id: collisionEventId, type: type },
+      }));
+    }
+    return collisionEventId;
   }
   function emitGoalkeeperSaveEvent(game, goalkeeper, saveKind, explicitShotEventId) {
     var shotEventId = explicitShotEventId || game && game.__happySeedLastShotEventId || null;
@@ -4254,10 +4337,36 @@
                 rdr.height / 2560,
               )));
           } catch {}
+          try {
+            var revealPitch = self.game && self.game.pitch;
+            if (revealPitch && revealPitch.camera && revealPitch.center) {
+              revealPitch.camera.free();
+              revealPitch.camera.lookAt(revealPitch.center);
+              revealPitch.camera.position.x = revealPitch.center.x;
+              revealPitch.camera.position.y = revealPitch.center.y;
+              if (revealPitch.camera.velocity) {
+                revealPitch.camera.velocity.x = 0;
+                revealPitch.camera.velocity.y = 0;
+              }
+              revealPitch.camera.instantZoom(effZoom());
+            }
+            self.game && self.game.resize && self.game.resize();
+            if (
+              window.__happySeedInteractiveSpace &&
+              revealPitch &&
+              revealPitch.camera
+            ) {
+              if (revealPitch.camera.auto) revealPitch.camera.auto();
+              else {
+                revealPitch.camera.isFree = !1;
+                revealPitch.camera.followBall();
+              }
+            }
+          } catch {}
           (snapPlayersHome(self.game),
             (window.__introArmedAt = performance.now()),
-            (window.__introStart = -1),
-            (self.game._introBowPending = !0),
+            (window.__introStart = window.__happySeedInteractiveSpace ? 0 : -1),
+            (self.game._introBowPending = !window.__happySeedInteractiveSpace),
             document.body.classList.add("loaded"),
             document.body.classList.remove("loading"),
             window.dispatchEvent(
@@ -4275,9 +4384,15 @@
           (window.__bootTrace("onMatchLoaded: phase.change"),
             self.phase.change(self.playPhase),
             (self.ready = !0));
-          var frames = 0;
+          var frames = 0,
+            // reveal() 会再次把 22 人吸附到开球阵型，因此三个版本都不必
+            // 为旧 Runtime 的可选 _kickoffSnapped 标记空等约 15 秒。
+            kickoffWaitFrames = 8;
           (function holdForKickoff() {
-            if ((self.game && self.game._kickoffSnapped) || frames++ > 900) {
+            if (
+              (self.game && self.game._kickoffSnapped) ||
+              frames++ > kickoffWaitFrames
+            ) {
               reveal();
               return;
             }
@@ -4864,11 +4979,31 @@
       var mobileRenderDevice =
         (window.matchMedia && window.matchMedia("(pointer: coarse)").matches) ||
         (navigator.maxTouchPoints || 0) > 0 ||
-        /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent || "");
+        /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent || ""),
+        interactiveRender = !!window.__happySeedInteractiveSpace,
+        renderPixelBudget = 4000000,
+        budgetResolution = Math.sqrt(
+          renderPixelBudget /
+            Math.max(1, window.innerWidth * window.innerHeight),
+        ),
+        mobileResolutionCap = interactiveRender
+          ? Math.max(1.2, Math.min(1.5, budgetResolution))
+          : 1.25,
+        PixiRuntime = runtime("pixi"),
+        rendererOptions = Object.assign(
+          {},
+          settings("RENDERER_OPTIONS", {}),
+        );
+      if (interactiveRender) {
+        rendererOptions.antialias = !1;
+        rendererOptions.roundPixels = !0;
+        if (PixiRuntime.settings && PixiRuntime.SCALE_MODES)
+          PixiRuntime.settings.SCALE_MODE = PixiRuntime.SCALE_MODES.NEAREST;
+      }
       (GameBase.call(this, {
         width: window.innerWidth,
         height: window.innerHeight,
-        rendererOptions: settings("RENDERER_OPTIONS", {}),
+        rendererOptions: rendererOptions,
         assets: assets.all,
       }),
         document.body.insertBefore(
@@ -4878,12 +5013,15 @@
         (this.onEnter = new Signal()),
         (this.onExit = new Signal()),
         (this._autoResize = !0),
-        // 手机/平板上 DPR=2~3 时，按 2 倍分辨率渲染会把 WebGL 像素数放大到 4 倍。
-        // 本项目是像素美术，粗指针设备限制到 1.25 既保留清晰度，也显著降低填充率和发热。
+        // 互动空间在约 400 万物理像素预算内匹配 DPR，最高 1.5 倍；
+        // 最近邻像素素材继续保持锐利，同时显著降低移动端填充率和发热。
         (this.resolution = Math.min(
           window.devicePixelRatio || 1,
-          mobileRenderDevice ? 1.25 : 2,
+          interactiveRender
+            ? mobileResolutionCap
+            : mobileRenderDevice ? 1.25 : 2,
         )),
+        interactiveRender && (this.renderer.roundPixels = !0),
         (this.viewportWidth = 0),
         (this.viewportHeight = 0),
         (this.pitch = new Pitch({

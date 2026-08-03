@@ -183,6 +183,7 @@ export function HappySeedMatchBroadcast({
   const [runtimeLoading, setRuntimeLoading] = useState(false)
   const [runtimeProgress, setRuntimeProgress] = useState(0)
   const [runtimeLoadingDetail, setRuntimeLoadingDetail] = useState('正在读取比赛资源')
+  const runtimeProgressTargetRef = useRef(0)
   const [paused, setPaused] = useState(false)
   const [speed, setSelectedSpeed] = useState(1)
   const [showStats, setShowStats] = useState(false)
@@ -311,6 +312,20 @@ export function HappySeedMatchBroadcast({
 
   // 开球哨声 + 观众背景音：监听引擎真正开球时刻（ab-kickoff-played），自动适应球员落位快慢
   useEffect(() => {
+    if (!runtimeLoading) return undefined
+    const timer = window.setInterval(() => {
+      if (runtimeProgressTargetRef.current < 95 || runtimeProgressTargetRef.current >= 99) return
+      const next = Math.min(99, runtimeProgressTargetRef.current + 1)
+      runtimeProgressTargetRef.current = next
+      setRuntimeProgress((current) => Math.max(current, next))
+      if (next >= 99) setRuntimeLoadingDetail('正在同步开球阵型')
+      else if (next >= 97) setRuntimeLoadingDetail('正在装配球场与球衣')
+      else setRuntimeLoadingDetail('正在创建比赛现场')
+    }, 1800)
+    return () => window.clearInterval(timer)
+  }, [runtimeLoading])
+
+  useEffect(() => {
     if (!audioStarted) return undefined
     let crowdTriggered = false
     let crowdStartTimer = null
@@ -339,6 +354,7 @@ export function HappySeedMatchBroadcast({
     bootedRef.current = true
     setRuntimeLoading(true)
     setRuntimeProgress(4)
+    runtimeProgressTargetRef.current = 4
     setRuntimeLoadingDetail('正在读取比赛资源')
     // 天气已在 useState 初始化时确定，此处同步给引擎
     setWeather(window.__happySeedWeather || 'clear')
@@ -360,7 +376,10 @@ export function HappySeedMatchBroadcast({
       matchStartStaminaBonus: _logisticsMods.matchStartStaminaBonus,
       moraleDecayReduction: _logisticsMods.moraleDecayReduction,
       onProgress: (progress, detail) => {
-        setRuntimeProgress(progress)
+        runtimeProgressTargetRef.current = Math.max(runtimeProgressTargetRef.current, progress)
+        setRuntimeProgress((current) => (
+          progress < 95 ? Math.max(current, progress) : Math.max(current, 95)
+        ))
         if (detail) setRuntimeLoadingDetail(detail)
       },
     }).then(() => {
@@ -387,6 +406,7 @@ export function HappySeedMatchBroadcast({
       setRuntimeActors(getRuntimeActorSnapshot())
       setStadiumScene(getStadiumSceneSnapshot())
       setRuntimeProgress(100)
+      runtimeProgressTargetRef.current = 100
       setRuntimeLoadingDetail('比赛现场准备完成')
       requestAnimationFrame(() => requestAnimationFrame(() => setRuntimeLoading(false)))
       commitSession((current) => startFormalMatchSession(current))
@@ -505,8 +525,12 @@ export function HappySeedMatchBroadcast({
       const presentedEvent = applyRuntimeDisciplinaryCard(event)
       runtimeEventQueueRef.current.push(presentedEvent)
       runtimeEventQueueRef.current = runtimeEventQueueRef.current.slice(-160)
+      const trainingOwnsGoalFrameSfx = document.body.classList.contains('training-mode')
+        && (presentedEvent.type === 'post-hit' || presentedEvent.type === 'crossbar-hit')
       // 哨声/进球音效与播报图片保持同步：图片延迟出现时，音效也同步延迟
-      if (options.artworkDelayMs > 0) {
+      if (trainingOwnsGoalFrameSfx) {
+        // 训练基地由 ab-training-goal-frame-hit 在碰撞当帧直接播放，避免重复。
+      } else if (options.artworkDelayMs > 0) {
         scheduleRuntimeIncident(() => sfxBus.consume(presentedEvent), options.artworkDelayMs)
       } else {
         sfxBus.consume(presentedEvent)

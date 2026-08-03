@@ -5,6 +5,7 @@ import { IS_INTERACTIVE_SPACE } from '../config/runtime'
 import { createNewRun } from '../utils/saveManager.js'
 import { autoSetupPlayerRun } from '../utils/playerModeSetup.js'
 import AppointmentLetter from './AppointmentLetter'
+import { COMPETITION_BRAND } from '@competition-brand'
 
 /**
  * 国家队选择页面
@@ -36,7 +37,7 @@ export default function TeamSelectScreen({ saveData, updateSaveData, navigateTo,
       ...saveData,
       currentRun: newRun,
     })
-    showToast(`${team.name}世界杯征程已开始！`)
+    showToast(COMPETITION_BRAND.teamJourneyStarted(team.name))
     navigateTo('recruitment', { skipRecruitmentGuard: true })
   }
 
@@ -51,7 +52,7 @@ export default function TeamSelectScreen({ saveData, updateSaveData, navigateTo,
 
       <div style={{ textAlign: 'center' }}>
         <p className="team-select-hint">
-          四档难度，完整世界杯征程。从三场小组赛一路打到决赛，选择你的意难平，改写结局。
+          {COMPETITION_BRAND.teamSelectHint}
         </p>
       </div>
 
@@ -102,8 +103,8 @@ export default function TeamSelectScreen({ saveData, updateSaveData, navigateTo,
                   <span className="stat-stars">{getDifficultyStars(team.difficulty)}</span>
                 </div>
                 <div className="team-stat-row">
-                  <span className="stat-label">世界杯目标</span>
-                  <span className="stat-target">{team.worldCupTarget}</span>
+                  <span className="stat-label">{COMPETITION_BRAND.targetLabel}</span>
+                  <span className="stat-target">{team.tournamentTarget}</span>
                 </div>
                 {gameMode === 'coach' && (
                   <>

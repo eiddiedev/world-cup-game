@@ -7,6 +7,7 @@ export default defineConfig(({ mode }) => {
   const variantId = process.env.VITE_VARIANT_ID
     || (mode === 'compliant' ? 'compliant-full' : mode === 'interactive' ? 'compliant-interactive' : 'showcase-full')
   const isInteractive = variantId === 'compliant-interactive'
+  const isCompliant = variantId === 'compliant-full' || isInteractive
   const isLabsBuild = mode === 'labs'
   const configuredPublicDir = process.env.TARGETING_PUBLIC_DIR
   const publicDir = isInteractive && process.env.TARGETING_SKIP_PUBLIC_STAGE === '1'
@@ -22,6 +23,16 @@ export default defineConfig(({ mode }) => {
     base: './',
     publicDir,
     plugins: [react()],
+    resolve: {
+      alias: {
+        '@competition-brand': fileURLToPath(new URL(
+          isCompliant
+            ? './src/config/competitionBrand.compliant.js'
+            : './src/config/competitionBrand.showcase.js',
+          import.meta.url,
+        )),
+      },
+    },
     define: {
       '__DOUYIN_BUILD__': JSON.stringify(isInteractive),
       ...(isInteractive ? { 'process.env.NODE_ENV': JSON.stringify('production') } : {}),

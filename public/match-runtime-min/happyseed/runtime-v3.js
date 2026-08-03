@@ -41,6 +41,7 @@
           transitionMode: null,
           ballPosition: null,
           continuationReady: !1,
+          phaseSince: performance.now(),
         };
       overlay.addChild(affordanceLayer);
       stadium.bottomLayer.addChild(overlay);
@@ -93,6 +94,7 @@
           },
           continuationReady: state.continuationReady,
           livePhysics: Boolean(active && active.livePhysics),
+          phaseSince: state.phaseSince,
           visibleChoiceIds: active ? active.script.choices.map(function (choice) { return choice.id; }) : [],
           choiceKinds: active ? Object.fromEntries(active.script.choices.map(function (choice) {
             return [choice.id, choice.affordances.map(function (affordance) { return affordance.kind; })];
@@ -118,6 +120,7 @@
 
       function setPhase(phase) {
         state.phase = phase;
+        state.phaseSince = performance.now();
         emit("ab-decision-director-phase", { phase: phase, version: 3 });
       }
 
@@ -911,6 +914,36 @@
         state.transitionMode = null;
         state.ballPosition = null;
         state.continuationReady = !1;
+        state.phaseSince = performance.now();
+      }
+
+      function wakeDecisionParticipants(finished) {
+        if (!finished || !finished.script
+          || finished.script.runtimeContext === "shootout"
+          || ["Match", "BallOutOfPlay"].indexOf(pitchStateName()) < 0) return 0;
+        var carrier = pitch.ball && (pitch.ball.inHands || pitch.ball.owner), woke = 0;
+        actorEntries.forEach(function (entry) {
+          var player = entry && entry.entity;
+          if (!player || !player.states || !player.team) return;
+          try {
+            player.static = !1;
+            player.passing = !1;
+            playerGlobals.forceAI(player, null);
+            if (player === carrier) {
+              player.states.change(player.isGoalkeeper
+                ? playerStates.AIGoalkeeperPutBallBackInPlay
+                : playerStates.AIDribble);
+            } else if (player.isGoalkeeper) {
+              player.states.change(playerStates.AIGoalkeeperReturnHome);
+            } else {
+              player.states.change(player.team.inControl
+                ? playerStates.AIAttack
+                : playerStates.AIDefend);
+            }
+            woke += 1;
+          } catch {}
+        });
+        return woke;
       }
 
       // One idempotent terminal path is shared by successful completion,
@@ -940,6 +973,7 @@
           console.error("[decision-director-v3] emergency player recovery failed", wakeError);
         }
         try { ensureContinuousMatchRecovery(finished); } catch {}
+        try { wakeDecisionParticipants(finished); } catch {}
         try { setBlackout(!1); } catch {}
         try { affordanceLayer.removeChildren(); } catch {}
         try {
@@ -1293,6 +1327,26 @@
         if (frameHandle == null) frameHandle = window.requestAnimationFrame(tick);
       }
 
+      function recoverIfStalled(now) {
+        if (!active || state.phase === "idle" || state.phase === "choosing") return !1;
+        now = Number(now) || performance.now();
+        var deadline = 0;
+        if (state.phase === "staging") deadline = active.choicesReadyAt + 1800;
+        else if (state.phase === "executing") {
+          var executionStart = active.executionStartedAt || state.phaseSince,
+            expected = active.livePhysics
+              ? Number(active.execution && active.execution.liveShot && active.execution.liveShot.maxFlightMs || 3200) + 2600
+              : Number(active.execution && active.execution.durationMs || 1600) + 2200;
+          deadline = executionStart + Math.min(10000, Math.max(3200, expected));
+        } else if (state.phase === "settled") deadline = Number(active.restoreAt || state.phaseSince) + 1800;
+        else if (state.phase === "restoring") deadline = Number(active.finishAt || state.phaseSince) + 1200;
+        if (!deadline || now <= deadline) return !1;
+        console.warn("[decision-director-v3] 状态阶段超时，统一恢复比赛", state.phase,
+          active.script && active.script.scenarioId);
+        finish(!0);
+        return !0;
+      }
+
       // 决策冻结瞬间，原生 AI 可能正让球员铲球、倒地或射门；
       // 选择阶段必须把这类一次性动作重置为站姿，否则玩家是在事后做决定
       var ACTION_POSE_PREFIXES = [
@@ -1434,6 +1488,7 @@
           return emergencyDecisionCleanup(null);
         },
         recover: function () { return emergencyDecisionCleanup(active); },
+        recoverIfStalled: recoverIfStalled,
         getSnapshot: snapshot,
       };
 

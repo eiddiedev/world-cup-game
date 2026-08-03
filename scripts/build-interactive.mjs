@@ -1,6 +1,6 @@
 /**
- * 抖音互动空间四档难度世界杯构建脚本。
- * 四队保留完整球员美术与球衣；其他赛程对手共用可着色球衣白模。
+ * 抖音互动空间 16 队国际足球冠军赛构建脚本。
+ * 16 支可选队保留完整球员美术与球衣；其他赛程对手共用可着色球衣白模。
  */
 import { execFileSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
@@ -18,10 +18,7 @@ import {
 import { dirname, extname, join, relative, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { zipSync } from 'fflate'
-import { spainPlayers } from '../src/data/players/spain.js'
-import { englandPlayers } from '../src/data/players/england.js'
-import { norwayPlayers } from '../src/data/players/norway.js'
-import { capeverdePlayers } from '../src/data/players/capeverde.js'
+import { allPlayers } from '../src/data/players/index.js'
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const publicRoot = process.env.TARGETING_PUBLIC_ROOT
@@ -38,29 +35,35 @@ const zipPath = join(deliverablesRoot, 'targeting-2026-interactive.zip')
 const maxZipBytes = Number(process.env.TARGETING_RAW_MAX_ZIP_BYTES || 30 * 1024 * 1024)
 const rawOnly = process.env.TARGETING_RAW_ONLY === '1'
 
-const teamIds = Object.freeze(['spain', 'england', 'norway', 'capeverde'])
-const teamNames = Object.freeze(['西班牙', '英格兰', '挪威', '佛得角'])
-const teamPlayerPools = Object.freeze({
-  spain: spainPlayers,
-  england: englandPlayers,
-  norway: norwayPlayers,
-  capeverde: capeverdePlayers,
-})
-const removedTeamNames = Object.freeze([
-  '阿根廷', '法国', '巴西', '葡萄牙', '德国', '日本',
-  '摩洛哥', '哥伦比亚', '美国', '加拿大', '墨西哥', '库拉索',
+const selectableTeams = Object.freeze([
+  ['spain', '西班牙'],
+  ['argentina', '阿根廷'],
+  ['france', '法国'],
+  ['england', '英格兰'],
+  ['brazil', '巴西'],
+  ['portugal', '葡萄牙'],
+  ['germany', '德国'],
+  ['japan', '日本'],
+  ['morocco', '摩洛哥'],
+  ['norway', '挪威'],
+  ['colombia', '哥伦比亚'],
+  ['usa', '美国'],
+  ['canada', '加拿大'],
+  ['mexico', '墨西哥'],
+  ['capeverde', '佛得角'],
+  ['curacao', '库拉索'],
 ])
-const formerSelectableTeams = Object.freeze([
-  { id: 'france', name: '法国' },
-  { id: 'argentina', name: '阿根廷' },
-])
+const teamIds = Object.freeze(selectableTeams.map(([id]) => id))
+const teamNames = Object.freeze(selectableTeams.map(([, name]) => name))
+const teamPlayerPools = Object.freeze(Object.fromEntries(
+  teamIds.map((teamId) => [teamId, allPlayers[teamId]]),
+))
 
 const assetWhitelist = Object.freeze([
-  '背景图.png',
+  'branding/home-background.png',
   'branding/title-frame-1.png',
   'branding/title-frame-2.png',
   '聘书.png',
-  '印章.png',
   '征召点.png',
   '金币.png',
   '足球场.png',
@@ -68,7 +71,7 @@ const assetWhitelist = Object.freeze([
   'player-placeholder.png',
   'fonts/zpix.ttf',
   'branding/trophy.png',
-  'hud/locker-room.jpg',
+  'branding/locker-room.jpg',
   '属性',
   '后勤',
   '比赛事件',
@@ -87,7 +90,7 @@ const pixelWhitelist = Object.freeze([
     'head-dark-black',
   ].map((id) => `player/happyseed-human-v4/${id}`),
   'runtime-equipment/happyseed-equipment-v6',
-  'stadiums/world-cup-day-v1',
+  'stadiums/international-championship-day-v1',
 ])
 
 function walkFiles(root) {
@@ -205,6 +208,25 @@ function pngDimensions(base64) {
   }
 }
 
+function fitApprovedFlagBase64(sourcePath, width, height) {
+  const script = [
+    'from PIL import Image',
+    'import sys',
+    'source = Image.open(sys.argv[1]).convert("RGBA")',
+    'bbox = source.getchannel("A").getbbox()',
+    'source = source.crop(bbox) if bbox else source',
+    'width, height = int(sys.argv[2]), int(sys.argv[3])',
+    'scale = min(width/source.width, height/source.height)',
+    'source = source.resize((max(1, round(source.width*scale)), max(1, round(source.height*scale))), Image.Resampling.NEAREST)',
+    'canvas = Image.new("RGBA", (width, height), (0, 0, 0, 0))',
+    'canvas.alpha_composite(source, ((width-source.width)//2, (height-source.height)//2))',
+    'canvas.save(sys.stdout.buffer, format="PNG", optimize=True, compress_level=9)',
+  ].join('; ')
+  return execFileSync('python3', [
+    '-c', script, sourcePath, String(width), String(height),
+  ], { maxBuffer: 4 * 1024 * 1024 }).toString('base64')
+}
+
 function injectRuntimeData() {
   const sourceRuntime = join(publicRoot, 'match-runtime-min')
   const outputRuntime = join(outputRoot, 'match-runtime-min')
@@ -212,6 +234,29 @@ function injectRuntimeData() {
   const selectedBundle = Object.fromEntries(
     Object.entries(sourceBundle).filter(([path]) => shouldKeepRuntimeData(path)),
   )
+
+  const rewrittenRuntimeFlags = Object.keys(selectedBundle)
+    .filter((runtimePath) => /^\/data\/teams\/[^/]+\/flag\.png$/.test(runtimePath))
+    .map((runtimePath) => {
+      const teamId = runtimePath.split('/')[3]
+      const approvedPath = join(publicRoot, 'assets/flags', `${teamId}.png`)
+      if (!existsSync(approvedPath)) {
+        throw new Error(`Missing approved Runtime flag source: ${approvedPath}`)
+      }
+      const originalHash = createHash('sha256')
+        .update(Buffer.from(selectedBundle[runtimePath][0], 'base64'))
+        .digest('hex')
+      const dimensions = pngDimensions(selectedBundle[runtimePath][0])
+      const replacement = fitApprovedFlagBase64(approvedPath, dimensions.width, dimensions.height)
+      const replacementHash = createHash('sha256')
+        .update(Buffer.from(replacement, 'base64'))
+        .digest('hex')
+      if (replacementHash === originalHash) {
+        throw new Error(`Runtime flag replacement is identical to original: ${runtimePath}`)
+      }
+      selectedBundle[runtimePath] = [replacement, 'image/png']
+      return { runtimePath, teamId, originalHash, replacementHash, dimensions }
+    })
 
   // Four files were intentionally external to the legacy bundle. Inline them now
   // so the packaged Runtime contains no duplicate raw data tree and performs no I/O.
@@ -305,6 +350,7 @@ function injectRuntimeData() {
     keptEntries: Object.keys(selectedBundle).length,
     removedEntries: Object.keys(sourceBundle).length - Object.keys(selectedBundle).length,
     includedTeams: [...teamIds],
+    rewrittenRuntimeFlags,
   }
 }
 
@@ -521,16 +567,6 @@ function sanitizePackageAssetPaths() {
 }
 
 function buildSizeReport(runtimeReport, zipBytes = null) {
-  const runtimeBundlePath = join(outputRoot, 'match-runtime-min/__data-bundle.js')
-  const runtimeBundleSource = existsSync(runtimeBundlePath)
-    ? readFileSync(runtimeBundlePath, 'utf8')
-    : ''
-  const formerSelectableResidue = formerSelectableTeams.flatMap(({ id, name }) => [
-    existsSync(join(outputRoot, 'assets', name)) ? `assets/${name}` : null,
-    existsSync(join(outputRoot, 'assets/crests', `${id}.png`)) ? `assets/crests/${id}.png` : null,
-    runtimeBundleSource.includes(`/data/teams/${id}/`) ? `runtime:/data/teams/${id}` : null,
-    runtimeBundleSource.includes(`/data/player/races/${id}`) ? `runtime:/data/player/races/${id}` : null,
-  ]).filter(Boolean)
   const categories = Object.fromEntries(
     ['assets', 'match-runtime-min', 'pixel'].map((directory) => [
       directory,
@@ -538,7 +574,7 @@ function buildSizeReport(runtimeReport, zipBytes = null) {
     ]),
   )
   return {
-    build: 'douyin-four-difficulty-world-cup',
+    build: 'douyin-sixteen-team-international-championship',
     generatedAt: new Date().toISOString(),
     totalBytes: directorySize(outputRoot),
     zipBytes,
@@ -562,23 +598,15 @@ function buildSizeReport(runtimeReport, zipBytes = null) {
     },
     includedTeams: [...teamIds],
     excludedResourceGroups: [
-      '12 non-selectable team player-art directories and crests',
       'gallery UI and gallery artwork',
       'legacy standalone shootout artwork',
-      '44 non-selectable per-team kit directories replaced by one tinted shared kit',
+      '32 schedule-only per-team kit directories replaced by one tinted shared kit',
       'kit studio sources and open-source sample remnants outside the match Runtime',
       'duplicate raw Runtime data tree',
     ],
-    unexpectedTeamAssets: removedTeamNames.filter((name) => (
-      existsSync(join(outputRoot, 'assets', name))
-      || existsSync(join(outputRoot, 'assets/crests', `${name}.png`))
-    )),
-    formerSelectableResidue,
-    scheduleOnlyFormerTeams: formerSelectableTeams.map(({ id, name }) => ({
-      id,
-      name,
-      retained: ['flag', 'shared tinted match kit'],
-    })),
+    unexpectedTeamAssets: [],
+    formerSelectableResidue: [],
+    scheduleOnlyFormerTeams: [],
   }
 }
 
@@ -601,7 +629,7 @@ execFileSync('npx', ['vite', 'build', '--mode', 'interactive'], {
 })
 
 // 2. Copy the explicit application asset whitelist.
-console.log('[2/8] Copying four selectable teams and all 48 flags')
+console.log('[2/8] Copying 16 selectable teams and all 48 flags')
 assetWhitelist.forEach((path) => copyRelative(
   join(publicRoot, 'assets'),
   join(outputRoot, 'assets'),
@@ -617,9 +645,9 @@ readdirSync(sourceRuntime, { withFileTypes: true })
   .filter((entry) => !['data', '__data-bundle.json', '__dirlist.json'].includes(entry.name))
   .forEach((entry) => copyRelative(sourceRuntime, outputRuntime, entry.name))
 
-// 4. Keep exact kits for the four selectable teams. Every other schedule
+// 4. Keep exact kits for the 16 selectable teams. Every other schedule
 // opponent uses two neutral templates tinted from its team palette at Runtime.
-console.log('[4/8] Copying four exact kit sets and building one shared opponent kit')
+console.log('[4/8] Copying 16 exact kit sets and building one shared opponent kit')
 pixelWhitelist.forEach((path) => copyRelative(
   join(publicRoot, 'pixel'),
   join(outputRoot, 'pixel'),
@@ -639,7 +667,7 @@ execFileSync('python3', [
   stdio: 'inherit',
 })
 
-// 5. Inline only the four selectable teams' Runtime data; all opponents use
+// 5. Inline only the 16 selectable teams' Runtime data; all opponents use
 // generated rosters with the shared actor skeleton and their packaged kits.
 console.log('[5/8] Injecting selectable-team Runtime data')
 const runtimeReport = injectRuntimeData()
@@ -653,7 +681,7 @@ writeFileSync(join(outputRoot, 'index.html'), `<!doctype html>
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>剑指美加墨 — 四档难度世界杯</title>
+    <title>剑指美加墨 — 国际足球冠军赛</title>
     <link rel="icon" href="./assets/crests/spain.png" />
     <link rel="stylesheet" href="./game.css" />
     <script>
@@ -713,7 +741,7 @@ const requiredFiles = [
   'game.css',
   'assets/branding/title-frame-1.png',
   'assets/fonts/zpix.ttf',
-  'pixel/stadiums/world-cup-day-v1/stadium-day-master-v1.png',
+  'pixel/stadiums/international-championship-day-v1/stadium-day-master-v1.png',
   'pixel/kits/shared/away/happyseed-human-v4/shirt_front.png',
   'pixel/kits/shared/away-goalkeeper/happyseed-human-v4/hand_left.png',
   'match-runtime-min/happyseed/audio/crowd-ambient.mp3',
@@ -728,13 +756,7 @@ const missing = requiredFiles.filter((path) => !existsSync(join(outputRoot, path
 if (missing.length) throw new Error(`Missing required files: ${missing.join(', ')}`)
 
 const firstReport = buildSizeReport(runtimeReport)
-if (firstReport.unexpectedTeamAssets.length) {
-  throw new Error(`Non-selectable player art entered the package: ${firstReport.unexpectedTeamAssets.join(', ')}`)
-}
-if (firstReport.formerSelectableResidue.length) {
-  throw new Error(`Former France/Argentina selectable resources entered the package: ${firstReport.formerSelectableResidue.join(', ')}`)
-}
-if (firstReport.scheduleAssets.flags !== 48 || firstReport.scheduleAssets.kitTeams !== 5) {
+if (firstReport.scheduleAssets.flags !== 48 || firstReport.scheduleAssets.kitTeams !== teamIds.length + 1) {
   throw new Error(`Full schedule assets are incomplete: ${JSON.stringify(firstReport.scheduleAssets)}`)
 }
 if (existsSync(join(outputRoot, 'assets/shootout')) || existsSync(join(outputRoot, 'assets/图鉴.png'))) {
@@ -744,7 +766,7 @@ const incompletePlayerPools = Object.entries(firstReport.playerArtwork).filter((
   audit.candidatePlayers !== 24 || audit.missing.length > 0
 ))
 if (incompletePlayerPools.length) {
-  throw new Error(`Four-team recruitment artwork is incomplete: ${JSON.stringify(incompletePlayerPools)}`)
+  throw new Error(`Selectable-team recruitment artwork is incomplete: ${JSON.stringify(incompletePlayerPools)}`)
 }
 
 const asciiPathReport = sanitizePackageAssetPaths()

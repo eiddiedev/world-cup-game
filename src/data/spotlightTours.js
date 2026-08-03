@@ -1,3 +1,5 @@
+import { COMPETITION_BRAND } from '@competition-brand'
+
 const tour = (id, title, steps) => ({ id, title, steps })
 
 export const SPOTLIGHT_TOURS = Object.freeze({
@@ -76,11 +78,11 @@ export const SPOTLIGHT_TOURS = Object.freeze({
     {
       target: '[data-guide="logistics-confirm"]',
       title: '确认后进入赛程',
-      body: '配置完成后从这里开始世界杯征程。',
+      body: COMPETITION_BRAND.setupJourney,
       placement: 'top',
     },
   ]),
-  tournament: tour('tournament-highlight', '世界杯赛程指引', [
+  tournament: tour('tournament-highlight', COMPETITION_BRAND.scheduleGuideTitle, [
     {
       target: '[data-guide="tournament-progress"]',
       title: '先踢三场小组赛',
@@ -235,7 +237,7 @@ export const SPOTLIGHT_TOURS = Object.freeze({
   ending: tour('ending-highlight', '征程结局指引', [
     {
       target: '[data-guide="ending-result"]',
-      title: '这是你的世界杯结局',
+      title: COMPETITION_BRAND.endingGuideTitle,
       body: '这里记录最终成绩、球队目标和本届赛事的故事。',
       placement: 'bottom',
     },
@@ -248,7 +250,7 @@ export const SPOTLIGHT_TOURS = Object.freeze({
     {
       target: '[data-guide="ending-actions"]',
       title: '重新挑战或返回首页',
-      body: '重新挑战会开启新的世界杯征程。',
+      body: COMPETITION_BRAND.retryJourney,
       placement: 'top',
     },
   ]),

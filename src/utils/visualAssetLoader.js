@@ -4,16 +4,24 @@ const assetPromises = new Map()
 function preloadImage(url) {
   return new Promise((resolve, reject) => {
     const image = new Image()
-    image.decoding = 'async'
-    image.onload = async () => {
-      try {
-        await image.decode?.()
-      } catch {
-        // Safari may reject decode after a successful load; the bitmap is still usable.
-      }
-      resolve(url)
+    let settled = false
+    const finish = (callback, value) => {
+      if (settled) return
+      settled = true
+      window.clearTimeout(timeoutId)
+      callback(value)
     }
-    image.onerror = () => reject(new Error(`图片加载失败：${url}`))
+    image.decoding = 'async'
+    image.onload = () => {
+      // onload 已经证明图片可用。decode() 在部分 WebView / 后台标签页中
+      // 可能长期不返回，不能让它阻塞完整版首屏和后续比赛预热。
+      image.decode?.().catch(() => {})
+      finish(resolve, url)
+    }
+    image.onerror = () => finish(reject, new Error(`图片加载失败：${url}`))
+    const timeoutId = window.setTimeout(() => {
+      finish(reject, new Error(`图片加载超时：${url}`))
+    }, 8000)
     image.src = url
     if (image.complete && image.naturalWidth) image.onload()
   })

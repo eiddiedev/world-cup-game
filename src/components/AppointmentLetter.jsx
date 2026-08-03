@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { getAppointmentLetter } from '../data/appointmentLetters'
 import { audioManager } from '../utils/audioManager'
+import { COMPETITION_BRAND } from '@competition-brand'
 import '../styles/appointmentLetter.css'
 
 const APPOINTMENT_CARD_WIDTH = 420
@@ -176,11 +177,23 @@ export default function AppointmentLetter({ team, onConfirm, onCancel }) {
         />
 
         {/* 印章 */}
-        <img
-          src="/assets/印章.png"
-          alt="FIFA印章"
-          className={`appointment-stamp ${phase === 'stamping' || phase === 'done' ? 'is-stamped' : ''}`}
-        />
+        {COMPETITION_BRAND.compliant ? (
+          <span
+            role="img"
+            aria-label={COMPETITION_BRAND.appointmentStampAlt}
+            className={`appointment-stamp appointment-stamp-generic ${phase === 'stamping' || phase === 'done' ? 'is-stamped' : ''}`}
+          >
+            <b>赛事组委会</b>
+            <i aria-hidden="true">★</i>
+            <small>2026</small>
+          </span>
+        ) : (
+          <img
+            src="/assets/branding/appointment-stamp.png"
+            alt={COMPETITION_BRAND.appointmentStampAlt}
+            className={`appointment-stamp ${phase === 'stamping' || phase === 'done' ? 'is-stamped' : ''}`}
+          />
+        )}
 
         {/* 操作栏 */}
         <div className="appointment-actions">

@@ -3,7 +3,7 @@ import { extname, relative, sep } from 'node:path'
 import { unzipSync } from 'fflate'
 import { walkFiles } from './lib/variant-build.mjs'
 
-const MAX_BYTES = 8 * 1024 * 1024
+const MAX_BYTES = 15 * 1024 * 1024
 
 function collectEntries(inputPath) {
   if (extname(inputPath).toLowerCase() === '.zip') {

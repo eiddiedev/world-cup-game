@@ -6,12 +6,13 @@ import {
   resultRank,
 } from '../data/codexAchievements'
 import { getCodexProgress } from '../utils/saveManager'
+import { COMPETITION_BRAND } from '@competition-brand'
 import '../styles/codex.css'
 
 const TABS = [
   { id: 'teams', label: '国家档案' },
   { id: 'trophies', label: '奖杯陈列室' },
-  { id: 'records', label: '世界杯记录' },
+  { id: 'records', label: COMPETITION_BRAND.recordsLabel },
   { id: 'achievements', label: '成就' },
 ]
 
@@ -27,7 +28,7 @@ const TARGET_MAP = {
 function isTargetMet(teamId, codex) {
   const team = getTeamById(teamId)
   if (!team) return false
-  const target = TARGET_MAP[team.worldCupTarget] || 'group'
+  const target = TARGET_MAP[team.tournamentTarget] || 'group'
   const achieved = codex.teamResults?.[teamId]
   if (!achieved) return false
   return resultRank(achieved) >= resultRank(target)
@@ -127,7 +128,7 @@ function TeamsTab({ codex }) {
           >
             <img src={team.flag} alt={team.name} className="codex-team-flag" />
             <span className="codex-team-name">{team.name}</span>
-            <span className="codex-team-target">目标：{team.worldCupTarget}</span>
+            <span className="codex-team-target">目标：{team.tournamentTarget}</span>
             {result ? (
               <span className="codex-team-result">
                 {RESULT_ICON[result]} {RESULT_LABELS[result]}
@@ -155,7 +156,7 @@ function TrophiesTab({ runHistory }) {
       <div className="codex-empty">
         <span className="codex-empty-icon pixel-icon">★</span>
         <p>还没有征程记录</p>
-        <small>完成一次世界杯之旅后，记录将在此展示</small>
+        <small>{COMPETITION_BRAND.codexEmpty}</small>
       </div>
     )
   }
@@ -181,7 +182,7 @@ function TrophiesTab({ runHistory }) {
   )
 }
 
-/* ---- Tab 3: 世界杯记录 ---- */
+/* ---- Tab 3: 赛事记录 ---- */
 function RecordsTab({ records }) {
   return (
     <div className="codex-record-list">

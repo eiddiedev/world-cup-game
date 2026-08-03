@@ -9,6 +9,7 @@ import {
   prepareMiniCupMatch,
 } from '../utils/miniCup.js'
 import '../styles/miniCup.css'
+import { COMPETITION_BRAND } from '@competition-brand'
 
 function TeamChip({ teamId, active = false, winner = false }) {
   const team = getTeamById(teamId)
@@ -59,7 +60,7 @@ export default function MiniCupPrepScreen({ saveData, updateSaveData, navigateTo
       <header className="mini-cup-header">
         <button type="button" className="back-button" onClick={() => navigateTo('home')}>←</button>
         <div>
-          <small>四队迷你世界杯 · {run.gameMode === 'player' ? '球员模式' : '教练模式'}</small>
+          <small>{COMPETITION_BRAND.miniTournamentLabel} · {run.gameMode === 'player' ? '球员模式' : '教练模式'}</small>
           <h1>{isFinal ? '决赛备战' : '半决赛备战'}</h1>
         </div>
         <span className="mini-cup-timer">约 2 分钟</span>

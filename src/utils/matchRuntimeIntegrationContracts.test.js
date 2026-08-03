@@ -211,6 +211,10 @@ describe('Match Runtime integration contracts', () => {
     expect(decisionDirector).toContain('function resumeFrozenMatchPlayers(finished)')
     expect(decisionDirector).toContain('function emergencyDecisionCleanup(finished)')
     expect(decisionDirector).toContain('function ensureContinuousMatchRecovery(finished)')
+    expect(decisionDirector).toContain('function wakeDecisionParticipants(finished)')
+    expect(decisionDirector).toContain('function recoverIfStalled(now)')
+    expect(decisionDirector).toContain('recoverIfStalled: recoverIfStalled')
+    expect(standaloneRuntime).toContain('window.__happySeedDecisionDirectorV3.recoverIfStalled(performance.now())')
     expect(decisionDirector).not.toMatch(/\.hasBall\s*=/)
     expect(decisionDirector).toMatch(
       /finally \{[\s\S]*emergencyDecisionCleanup\(finished\)[\s\S]*publishRecoveryDiagnostics/,
@@ -277,18 +281,35 @@ describe('Match Runtime integration contracts', () => {
     expect(runtimeStadium).toContain('pinchStartZoom * nextDistance / pinchStartDistance')
   })
 
-  it('starts interactive-space coach matches zoomed out without changing player mode', () => {
+  it('uses separate interactive-space zoom defaults for coach and player modes', () => {
     expect(runtimeService).toContain('window.__happySeedInteractiveSpace = Boolean(__DOUYIN_BUILD__)')
     expect(runtimeService).toContain(
       'setZoom(CURRENT_VARIANT.matchView.coachDefaultZoom)',
     )
     expect(standaloneRuntime).toContain(
-      'return window.__happySeedInteractiveSpace && !window.__acPlay ? (configured || 0.68) : 1',
+      'if (window.__acPlay) return matchView.playerDefaultZoom || 1.16',
+    )
+    expect(standaloneRuntime).toContain(
+      'return matchView.coachDefaultZoom || 0.68',
     )
     expect(standaloneRuntime).toContain(
       'return window.__happySeedInteractiveSpace && !window.__acPlay ? (configured || 0.48) : 0.8',
     )
     expect(standaloneRuntime).toContain('window.__matchZoomMul = defaultZoomMultiplier()')
+    expect(standaloneRuntime).toContain('if (revealPitch.camera.auto) revealPitch.camera.auto()')
+    expect(standaloneRuntime).toContain('pitch.camera.auto\n      ? pitch.camera.auto()')
+  })
+
+  it('prewarms a real match session and uses the fast kickoff gate in all three variants', () => {
+    expect(mainApp).toContain('const runtimeWarmup = prewarmHappySeedRuntimeSession()')
+    expect(runtimeService).not.toContain(
+      'if (!__DOUYIN_BUILD__) return preloadHappySeedRuntimeCore()',
+    )
+    expect(standaloneRuntime).toContain('kickoffWaitFrames = 8')
+    expect(standaloneRuntime).not.toContain('kickoffWaitFrames = window.__happySeedInteractiveSpace ? 8 : 900')
+    expect(standaloneRuntime).toMatch(
+      /mode\.game\._introBowPending && !introActive\(\)[\s\S]*pitch\.camera\.auto\(\)/,
+    )
   })
 
   it('refreshes custom stadium and player renderers after every native loadMatch', () => {
@@ -304,13 +325,14 @@ describe('Match Runtime integration contracts', () => {
     expect(standaloneRuntime).toContain('"hand_right_accessory"')
   })
 
-  it('forces a coach-mode goalkeeper to distribute a held save instead of freezing', () => {
+  it('forces a goalkeeper to distribute a held save in both coach and player modes', () => {
     expect(standaloneRuntime).toContain('function recoverStalledGoalkeeperDistribution(game, goalkeeper)')
-    expect(standaloneRuntime).toContain('now - watch.startedAt < 2800')
+    expect(standaloneRuntime).toContain('var holdLimit = window.__acPlay ? 4200 : 2800')
+    expect(standaloneRuntime).toContain('now - watch.startedAt < holdLimit')
     expect(standaloneRuntime).toContain('playerStates.AIGoalkeeperPutBallBackInPlay')
     expect(standaloneRuntime).toContain('playerStates.AIGoalkeeperReturnHome')
     expect(standaloneRuntime).toContain('game.__happySeedGoalkeeperHoldWatch = null')
-    expect(standaloneRuntime).toContain('if (!window.__acPlay)')
+    expect(standaloneRuntime).toContain('recoverStalledGoalkeeperDistribution(game, goalkeeper);')
     expect(standaloneRuntime).toContain('recoverStalledGoalkeeperDistribution(game, goalkeeper)')
   })
 
@@ -390,6 +412,16 @@ describe('Match Runtime integration contracts', () => {
     expect(keeper).toMatchObject({ static: false, passing: false })
     expect(teammate).toMatchObject({ static: false, passing: false })
     expect(context.document.body.dataset.goalkeeperDistributionRecovery).toBe('1')
+
+    game.__happySeedGoalkeeperHoldWatch = null
+    context.window.__acPlay = true
+    now = 5000
+    expect(context.recoveryApi.recoverStalledGoalkeeperDistribution(game, keeper)).toBe(false)
+    now = 9100
+    expect(context.recoveryApi.recoverStalledGoalkeeperDistribution(game, keeper)).toBe(false)
+    now = 9301
+    expect(context.recoveryApi.recoverStalledGoalkeeperDistribution(game, keeper)).toBe(true)
+    expect(context.document.body.dataset.goalkeeperDistributionRecovery).toBe('2')
   })
 
   it('loads the interactive-space Runtime once from one ordered static bundle', () => {
@@ -425,10 +457,10 @@ describe('Match Runtime integration contracts', () => {
     expect(interactiveBuilder).toContain('writeUtf8Zip(deliveryDirectory, zipPath)')
   })
 
-  it('packages four exact kits and tints one shared kit for every other opponent', () => {
+  it('packages 16 exact kits and tints one shared kit for schedule-only opponents', () => {
     expect(interactiveBuilder).not.toMatch(/const pixelWhitelist[\s\S]*?'kits'/)
     expect(interactiveBuilder).toContain('scripts/build-shared-runtime-kit.py')
-    expect(interactiveBuilder).toContain("firstReport.scheduleAssets.kitTeams !== 5")
+    expect(interactiveBuilder).toContain('firstReport.scheduleAssets.kitTeams !== teamIds.length + 1')
     expect(standaloneRuntime).toContain('function kitSlotTint(visual, slot)')
     expect(standaloneRuntime).toContain('if (!visual.sharedKit || !visual.palette) return 16777215')
     expect(standaloneRuntime).toContain('sharedKitTint(visual.palette.shorts')

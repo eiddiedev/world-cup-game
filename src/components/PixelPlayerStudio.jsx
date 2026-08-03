@@ -562,7 +562,7 @@ export function ProceduralPlayerComposer({ onOpenSlicer }) {
               <div><dt>Part set</dt><dd>{recipe.partSetId}</dd></div>
               <div><dt>骨架</dt><dd>17 bones / 32 slots</dd></div>
               <div><dt>锚点</dt><dd>root-footline</dd></div>
-              <div><dt>球衣来源</dt><dd>FIFA 2026 / 待授权审核</dd></div>
+              <div><dt>球衣来源</dt><dd>2026 国际赛事参考 / 待合规审核</dd></div>
               <div><dt>配方状态</dt><dd className={validation.valid ? 'is-ok' : 'is-error'}>{validation.valid ? '有效' : validation.errors.join(', ')}</dd></div>
             </dl>
             <div className="studio-batch-actions"><button type="button" onClick={() => exportPack('team')}>导出本队 38 人</button><button type="button" onClick={() => exportPack('all')}>导出 16 队 608 人</button></div>

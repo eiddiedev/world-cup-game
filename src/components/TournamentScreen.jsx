@@ -4,10 +4,11 @@ import { getTeamSchedule, KNOCKOUT_ROUNDS } from '../data/schedules'
 import { generateKnockoutOpponents } from '../services/aiService'
 import { getFallbackKnockoutOpponents, sanitizeKnockoutOpponents } from '../utils/knockoutResolver'
 import { refreshPlayerLineup } from '../utils/playerModeSetup'
+import { COMPETITION_BRAND } from '@competition-brand'
 
 /**
  * 赛程页面
- * 展示世界杯赛程（小组赛→淘汰赛）
+ * 展示赛事赛程（小组赛→淘汰赛）
  */
 
 // 获取国旗图片组件
@@ -274,7 +275,7 @@ export default function TournamentScreen({ saveData, updateSaveData, navigateTo 
       <div className="screen tournament-screen">
         <div className="screen-header">
           <button className="back-button" onClick={() => navigateTo('home')}>←</button>
-          <h1>世界杯赛程</h1>
+          <h1>{COMPETITION_BRAND.scheduleTitle}</h1>
         </div>
         <p>加载赛程中...</p>
       </div>
@@ -349,7 +350,7 @@ export default function TournamentScreen({ saveData, updateSaveData, navigateTo 
     <div className="screen tournament-screen">
       <div className="screen-header">
         <button className="back-button" onClick={() => navigateTo('home')}>←</button>
-        <h1>世界杯赛程</h1>
+        <h1>{COMPETITION_BRAND.scheduleTitle}</h1>
       </div>
 
       {/* 球队信息 */}

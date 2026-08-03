@@ -366,6 +366,7 @@ const BALL_INTENTS = Object.freeze({
   'cross-high': ['aerial', 1.25, -0.03],
   cutback: ['support', 0.16, -0.04],
   'one-two': ['support', 0.16, 0.04],
+  'one-two-return': ['primary', 0.14, -0.03],
   'switch-wide': ['aerial', 0.58, 0.08],
   'free-kick-near': ['nearPost', 1.02, 0.05],
   'free-kick-cross': ['aerial', 1.35, -0.05],
@@ -404,6 +405,7 @@ const BALL_RUNTIME_EVENT_TYPES = Object.freeze({
   'cross-high': 'pass',
   cutback: 'pass',
   'one-two': 'pass',
+  'one-two-return': 'pass',
   'switch-wide': 'pass',
   'free-kick-near': 'shot',
   'free-kick-cross': 'pass',
@@ -461,6 +463,7 @@ function ballTarget(key, context) {
 
 const RUN_INTENTS = Object.freeze({
   'carry-goal': 'goal',
+  'counter-return-run': 'counter-return',
   'support-overlap': 'support-forward',
   'wide-overlap': 'wide-forward',
   'carry-forward': 'forward',
@@ -483,7 +486,22 @@ const RUN_INTENTS = Object.freeze({
 })
 
 function runTarget(key, context) {
-  if (key === 'goal') return [clamp(context.goal[0] - context.direction * 0.08), context.goal[1], 0]
+  // 单次教练选择最多只推进约 18% 场长。尤其反击场景不能把一次“持球推进”
+  // 从后场直接插值到禁区；到达合理起脚区后才允许接射门段。
+  if (key === 'goal') {
+    const boundedX = context.primary[0] + context.direction * 0.18
+    const boxEdgeX = context.goal[0] - context.direction * 0.14
+    return [
+      context.direction > 0 ? Math.min(boundedX, boxEdgeX) : Math.max(boundedX, boxEdgeX),
+      clamp(context.primary[1] + (0.5 - context.primary[1]) * 0.35),
+      0,
+    ]
+  }
+  if (key === 'counter-return') return [
+    clamp(context.primary[0] + context.direction * 0.17),
+    clamp(context.primary[1] + (0.5 - context.primary[1]) * 0.28),
+    0,
+  ]
   if (key === 'support-forward') return [clamp(context.support[0] + context.direction * 0.1), context.support[1], 0]
   if (key === 'wide-forward') return [clamp(context.support[0] + context.direction * 0.12), context.support[1] < 0.5 ? 0.08 : 0.92, 0]
   if (key === 'forward') return [clamp(context.primary[0] + context.direction * 0.12), context.primary[1], 0]
@@ -1058,23 +1076,69 @@ export function buildFormalDecisionSceneScriptV3(decision, actorSource, runtimeM
       const responseBallAffordance = responseContract?.terminals?.includes(terminal)
         ? resolveAffordance(responseContract.affordance, context, roles)
         : null
-      const executionBallAffordance = ballAffordance || responseBallAffordance
-      const executionAffordances = responseBallAffordance
-        ? [...affordances, responseBallAffordance]
-        : affordances
+      // 响应球路是选择执行失败后的下一拍（例如解围被对手截下后射门），
+      // 因此它是最终动作；原选择球路仍必须作为第一段保留，不能被响应覆盖。
+      let sequenceBallAffordances = responseBallAffordance
+        ? [...ballAffordances, responseBallAffordance]
+        : ballAffordances
+      // 传球结果若包含进球，但显式接球人仍远离射程，则继续传给当前阵型中
+      // 最靠近目标球门的已登记前锋。足球和两名执行者都来自实时位置，绝不
+      // 把接球点直接改写到禁区前。
+      const lastSequenceBall = sequenceBallAffordances.at(-1)
+      if (
+        ['goal-for', 'goal-against'].includes(terminal)
+        && lastSequenceBall?.runtimeEventType === 'pass'
+      ) {
+        const desiredSide = terminal === 'goal-for' ? 'home' : 'away'
+        const goal = desiredSide === 'home' ? context.homeAttackGoal : context.homeDefendGoal
+        const currentReceiverRole = receiverRoleForBallAction(lastSequenceBall)
+        const currentReceiverPoint = point3(lastSequenceBall.points.at(-1))
+        const advancedRole = desiredSide === 'home' ? 'aerialTarget' : 'awayAerialTarget'
+        const advancedPoint = point3(
+          roles.positions.get(roles.actors[advancedRole].runtimeActorId)
+          || (desiredSide === 'home' ? context.homeAerial : context.awayAerial),
+        )
+        const currentDistance = Math.abs(currentReceiverPoint[0] - goal[0])
+        const advancedDistance = Math.abs(advancedPoint[0] - goal[0])
+        if (
+          currentDistance > 0.42
+          && advancedRole !== currentReceiverRole
+          && advancedDistance + 0.04 < currentDistance
+        ) {
+          sequenceBallAffordances = [...sequenceBallAffordances, {
+            kind: 'ball-path',
+            intent: 'progressive-link',
+            side: desiredSide,
+            role: currentReceiverRole,
+            startRole: currentReceiverRole,
+            targetRole: advancedRole,
+            runtimeEventType: 'pass',
+            points: curve(currentReceiverPoint, advancedPoint, 0.18, 0.02),
+          }]
+        }
+      }
+      const executionBallAffordance = sequenceBallAffordances.at(-1) || null
+      const executionAffordances = [
+        ...affordances,
+        ...sequenceBallAffordances.slice(ballAffordances.length),
+      ]
       const outcomeBallSide = executionBallAffordance?.side || ballSide
       const outcomeSourceRole = executionBallAffordance?.role || choiceSourceRole
       const target = outcomeTarget(terminal, context, outcomeBallSide, executionAffordances)
       const ballOnlyOutcome = BALL_ONLY_TERMINALS.has(terminal)
         && (Boolean(executionBallAffordance) || Boolean(carryAffordance))
       const carryThenShot = Boolean(carryAffordance && ballOnlyOutcome)
-      const passThenShot = Boolean(
-        executionBallAffordance?.runtimeEventType === 'pass'
-        && ['goal-for', 'goal-against'].includes(terminal)
+      const explicitSequenceShot = Boolean(
+        responseBallAffordance?.runtimeEventType === 'shot'
+        && ballAffordances.length > 0
       )
-      const sequenceBallAffordances = responseBallAffordance
-        ? [responseBallAffordance]
-        : ballAffordances
+      const passThenShot = Boolean(
+        ['goal-for', 'goal-against'].includes(terminal)
+        && (
+          explicitSequenceShot
+          || executionBallAffordance?.runtimeEventType === 'pass'
+        )
+      )
       const multiPassThenShot = Boolean(passThenShot && sequenceBallAffordances.length > 1)
       const movesBall = Boolean(executionBallAffordance) || Boolean(carryAffordance) || ballOnlyOutcome
       const carryEnd = carryAffordance?.points?.at(-1)
@@ -1097,28 +1161,23 @@ export function buildFormalDecisionSceneScriptV3(decision, actorSource, runtimeM
         : executionBallAffordance?.points
         || carryAffordance?.points
         || (ballOnlyOutcome ? curve(context.origin, target, 0.16) : null)
-      const finalPassAffordance = sequenceBallAffordances.at(-1) || executionBallAffordance
-      const receivingShooterRole = passThenShot ? receiverRoleForBallAction(finalPassAffordance) : null
+      const finalPassAffordance = explicitSequenceShot
+        ? sequenceBallAffordances.at(-2)
+        : sequenceBallAffordances.at(-1) || executionBallAffordance
+      const receivingShooterRole = passThenShot
+        ? explicitSequenceShot
+          ? responseBallAffordance.role
+          : receiverRoleForBallAction(finalPassAffordance)
+        : null
       const finalOutcomeSourceRole = receivingShooterRole || outcomeSourceRole
       const outcomeSourceRuntimeActorId = roles.actors[finalOutcomeSourceRole].runtimeActorId
       let receiverPoint = receivingShooterRole
-        ? point3(finalPassAffordance.points.at(-1))
+        ? point3(explicitSequenceShot
+          ? responseBallAffordance.points[0]
+          : finalPassAffordance.points.at(-1))
         : null
-      // 传球后射门起点必须在合理射门距离内：如果接球点距球门太远（进攻进度<0.65），
-      // 强制前移到禁区前沿，避免中场超远射破门的不合理表现。
-      // 仅对多段传球序列生效（单段传中/回传的接球人已在禁区内）
-      if (receiverPoint && ['goal-for', 'goal-against'].includes(terminal)
-        && sequenceBallAffordances.length > 1) {
-        const goalX = terminal === 'goal-for' ? context.homeAttackGoal[0] : context.homeDefendGoal[0]
-        const shotDist = Math.abs(receiverPoint[0] - goalX)
-        if (shotDist > 0.35) {
-          receiverPoint = point3([
-            clamp(goalX - (terminal === 'goal-for' ? context.homeDirection : context.awayDirection) * 0.14),
-            clamp(receiverPoint[1], 0.35, 0.65),
-            0,
-          ])
-        }
-      }
+      // 接球点必须来自实际球员位置或显式跑位终点。这里不得为了让 outcome
+      // 看起来能进球而把接球人瞬移到禁区前；射门距离由场景触发门和角色跑位保证。
       const suppressUnrealizedShot = terminal === 'hold'
         && executionBallAffordance?.runtimeEventType === 'shot'
       const passPath = passThenShot
@@ -1129,7 +1188,9 @@ export function buildFormalDecisionSceneScriptV3(decision, actorSource, runtimeM
         ? curve(cutbackPoint, target, terminal.includes('goal') ? 0.3 : 0.2)
         : null
       const path = passThenShot
-        ? curve(receiverPoint, target, terminal.includes('goal') ? 0.3 : 0.2)
+        ? explicitSequenceShot
+          ? outcomePath(responseBallAffordance.points, target, terminal, context, outcomeBallSide)
+          : curve(receiverPoint, target, terminal.includes('goal') ? 0.3 : 0.2)
         : cutbackShotPath
           ? cutbackShotPath
           : movesBall && !suppressUnrealizedShot
@@ -1167,19 +1228,45 @@ export function buildFormalDecisionSceneScriptV3(decision, actorSource, runtimeM
           : flightDurationMs(carryEnd, target, 'shot'))
         : null
       const cutbackPassMs = cutbackPoint ? 680 : 0
+      const passSegmentCount = passThenShot
+        ? explicitSequenceShot
+          ? Math.max(1, sequenceBallAffordances.length - 1)
+          : sequenceBallAffordances.length
+        : 0
       const durationMs = carryThenShot || passThenShot
         ? passThenShot
-          ? sequenceBallAffordances.length * 760 + passFinishDurationMs
+          ? passSegmentCount * 760 + passFinishDurationMs
           : 1080 + cutbackPassMs + carryFinishDurationMs
         : duelDurationMs
           || ballFlightDurationMs
           || (terminal === 'hold' ? 1050 : 1320)
       const shotAtMs = carryThenShot
         ? 1080 + cutbackPassMs
-        : passThenShot ? sequenceBallAffordances.length * 760 : null
+        : passThenShot ? passSegmentCount * 760 : null
       let pathSegments = passThenShot
         ? (() => {
-          const segs = sequenceBallAffordances.map((affordance) => [...affordance.points.map((p) => [...p])])
+          const authoredPasses = explicitSequenceShot
+            ? sequenceBallAffordances.slice(0, -1)
+            : sequenceBallAffordances
+          const segs = authoredPasses.map((affordance) => [...affordance.points.map((p) => [...p])])
+          // 若下一拍由另一方执行（解围被截、角球后被反击），上一段球路必须
+          // 落在该执行者脚下，再从同一点继续，禁止足球跨场瞬移。
+          for (let index = 1; index < sequenceBallAffordances.length; index += 1) {
+            const nextStart = point3(sequenceBallAffordances[index].points[0])
+            const previous = segs[index - 1]
+            if (!previous) break
+            const previousEnd = previous.at(-1)
+            if (Math.hypot(
+              previousEnd[0] - nextStart[0],
+              previousEnd[1] - nextStart[1],
+            ) <= 0.001) continue
+            previous[2] = [
+              clamp(previous[1][0] * 0.35 + nextStart[0] * 0.65),
+              clamp(previous[1][1] * 0.35 + nextStart[1] * 0.65),
+              Math.max(previous[2][2], nextStart[2]),
+            ]
+            previous[3] = [...nextStart]
+          }
           // 如果射门起点被钳位，最后一段传球的终点也要对齐到钳位后的位置
           const clampedReceiver = receiverPoint
           const lastSeg = segs[segs.length - 1]
@@ -1242,7 +1329,10 @@ export function buildFormalDecisionSceneScriptV3(decision, actorSource, runtimeM
         actions.splice(0, actions.length, ...retained.sort((left, right) => left.atMs - right.atMs))
       }
       if (passThenShot) {
-        for (let index = 1; index < sequenceBallAffordances.length; index += 1) {
+        const authoredPassCount = explicitSequenceShot
+          ? sequenceBallAffordances.length - 1
+          : sequenceBallAffordances.length
+        for (let index = 1; index < authoredPassCount; index += 1) {
           const affordance = sequenceBallAffordances[index]
           const action = actions.find((candidate) => (
             candidate.role === affordance.role
@@ -1251,11 +1341,13 @@ export function buildFormalDecisionSceneScriptV3(decision, actorSource, runtimeM
           ))
           if (action) action.atMs = index * 760
         }
-        const finishAnimation = AERIAL_PASS_INTENTS.has(finalPassAffordance?.intent) ? 'jump' : 'shoot'
+        const finishAnimation = !explicitSequenceShot && AERIAL_PASS_INTENTS.has(finalPassAffordance?.intent)
+          ? 'jump'
+          : 'shoot'
         const genericFinishAt = Math.round(durationMs * 0.58)
         const retained = actions.filter((action) => !(
           action.role === receivingShooterRole
-          && action.atMs === genericFinishAt
+          && (action.atMs === genericFinishAt || (explicitSequenceShot && action.atMs === 0))
           && (action.animation === 'shoot' || action.animation === 'jump')
         ))
         retained.push({
@@ -1506,7 +1598,9 @@ export function buildFormalDecisionSceneScriptV3(decision, actorSource, runtimeM
           : executionBallAffordance?.runtimeEventType || null,
         secondaryRuntimeEvents: [
           ...secondaryRuntimeEvents.filter((event) => event.type !== 'shot'),
-          ...(passThenShot ? sequenceBallAffordances.slice(1).map((affordance, index) => ({
+          ...(passThenShot ? sequenceBallAffordances
+            .slice(1, explicitSequenceShot ? -1 : undefined)
+            .map((affordance, index) => ({
             atMs: (index + 1) * 760,
             type: 'pass',
             role: affordance.role,
@@ -1523,7 +1617,7 @@ export function buildFormalDecisionSceneScriptV3(decision, actorSource, runtimeM
           carryThenShot ? (cutbackPoint ? 1080 : shotAtMs) : outcomePathFinal && !carryAffordance ? 0 : null
         ),
         path: outcomePathFinal,
-        passPath,
+        passPath: passThenShot ? pathSegments?.[0] || passPath : passPath,
         pathSegments,
         segmentEndTimes,
         carryPath: carryThenShot ? carryAffordance.points : null,
@@ -1637,6 +1731,8 @@ export function buildFormalDecisionSceneScriptV3(decision, actorSource, runtimeM
       schemaVersion: runtimeMoment.schemaVersion,
       capturedAtMatchTime: runtimeMoment.capturedAtMatchTime,
       source: 'continuous-match',
+      eligibleForTrigger: contract.mode !== 'freeze-live'
+        || isFormalDecisionMomentEligibleV3(scenarioId, sceneMoment, sourceEvent),
     },
     timeline: {
       selectionFeedbackMs: reusesMatchPenaltyForShootout ? 100 : 150,
@@ -1719,6 +1815,18 @@ export function validateDecisionSceneScriptV3(script, decision = null) {
       }
       if (affordance.kind === 'run-lane' && !script.actors?.[affordance.role]) {
         errors.push(`${choice.id}.run-role`)
+      }
+      if (
+        affordance.kind === 'run-lane'
+        && affordance.carriesBall
+        && script.actors?.[affordance.role]?.side === 'red'
+        && affordance.points?.length === 4
+      ) {
+        const start = affordance.points[0]
+        const end = affordance.points.at(-1)
+        if (Math.abs(end[0] - start[0]) > 0.185) {
+          errors.push(`${choice.id}.run-distance`)
+        }
       }
     }
     const expectedOutcomes = decision?.choices?.find((candidate) => candidate.id === choice.id)?.possible_outcomes || []
@@ -1821,6 +1929,22 @@ export function validateDecisionSceneScriptV3(script, decision = null) {
       } else if (outcome.scoringSide != null) {
         errors.push(`${choice.id}.outcome.unexpectedScoringSide`)
       }
+      if (
+        script.runtimeMoment?.eligibleForTrigger !== false
+        && ['pass-then-shot', 'pass-sequence-then-shot'].includes(outcome.executionMode)
+      ) {
+        const shotOrigin = outcome.path?.[0]
+        const goal = outcome.terminal === 'goal-for'
+          ? script.fieldAnchors.homeAttackGoal
+          : script.fieldAnchors.homeDefendGoal
+        // 补时门将参与角球后被对手吊射空门，是唯一允许越过常规射程的
+        // 已登记结果；其余传球收尾仍必须在进攻三区内完成。
+        const shotDistanceLimit = script.scenarioId === 'late_keeper_up_corner'
+          && choice.id === 'send_keeper_up' ? 1 : 0.42
+        if (shotOrigin && Math.abs(shotOrigin[0] - goal[0]) > shotDistanceLimit) {
+          errors.push(`${choice.id}.outcome.shot-origin`)
+        }
+      }
       const cueTimes = (outcome.actions || []).map((action) => action.atMs)
       if (cueTimes.some((time, index) => index > 0 && time < cueTimes[index - 1])) errors.push(`${choice.id}.actions.order`)
       for (const action of outcome.actions || []) {
@@ -1877,7 +2001,7 @@ function isSweeperClaimWindow(moment, event) {
 const TRIGGER_PREDICATES = Object.freeze({
   'solo-breakaway': (m, e) => m.attackingSide === 'red' && attackProgress(m) >= 0.72 && m.ball.normalized[1] >= 0.28 && m.ball.normalized[1] <= 0.72 && eventIs(e, ['touch', 'pass', 'possession-change']),
   'wide-cross-window': (m, e) => m.attackingSide === 'red' && attackProgress(m) >= 0.62 && (m.ball.normalized[1] <= 0.32 || m.ball.normalized[1] >= 0.68) && eventIs(e, ['touch', 'pass']),
-  'counter-overload': (m, e) => m.attackingSide === 'red' && attackProgress(m) >= 0.35 && attackProgress(m) <= 0.72 && eventIs(e, ['possession-change', 'pass', 'touch']),
+  'counter-overload': (m, e) => m.attackingSide === 'red' && attackProgress(m) >= 0.5 && attackProgress(m) <= 0.72 && eventIs(e, ['possession-change', 'pass', 'touch']),
   'long-shot-window': (m, e) => m.attackingSide === 'red' && attackProgress(m) >= 0.52 && attackProgress(m) <= 0.78 && eventIs(e, ['touch', 'pass']),
   'through-run-window': (m, e) => m.attackingSide === 'red' && attackProgress(m) >= 0.48 && attackProgress(m) <= 0.78 && eventIs(e, ['pass', 'touch']),
   'box-tackle-window': (m, e) => m.attackingSide === 'blue' && attackProgress(m) >= 0.74 && eventIs(e, ['touch', 'possession-change']),

@@ -4,8 +4,8 @@ import { hasVariantFeature } from '../config/runtime'
 import { BRANDING_ASSETS } from '../config/artAssets'
 
 const PRIMARY_MODES = [
-  { id: 'coach', label: '教练模式' },
   { id: 'player', label: '球员模式' },
+  { id: 'coach', label: '教练模式' },
 ]
 
 const CONTINUE_STAGES = new Set([
@@ -73,7 +73,7 @@ export default function HomeScreen({ saveData, updateSaveData, navigateTo, showT
 
   return (
     <main className="screen home-screen">
-      <img className="home-bg" src="/assets/背景图.png" alt="" aria-hidden="true" />
+      <img className="home-bg" src={BRANDING_ASSETS.homeBackground} alt="" aria-hidden="true" />
       <section className="home-stage" aria-label="剑指美加墨">
         <h1 className="PixelTitle title-lockup">
           <span className="logo-animation">

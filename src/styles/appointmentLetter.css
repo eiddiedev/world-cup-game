@@ -221,6 +221,46 @@
   animation: stampDrop 250ms ease-in forwards;
 }
 
+.appointment-stamp-generic {
+  display: grid;
+  aspect-ratio: 1;
+  place-items: center;
+  align-content: center;
+  gap: 2px;
+  box-sizing: border-box;
+  border: 4px double #b12632;
+  border-radius: 50%;
+  color: #b12632;
+  font-style: normal;
+  line-height: 1;
+  text-align: center;
+}
+
+.appointment-stamp-generic::before,
+.appointment-stamp-generic::after {
+  position: absolute;
+  inset: 7px;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  content: '';
+}
+
+.appointment-stamp-generic::after {
+  inset: 12px;
+  border-style: dashed;
+}
+
+.appointment-stamp-generic b,
+.appointment-stamp-generic i,
+.appointment-stamp-generic small {
+  position: relative;
+  z-index: 1;
+}
+
+.appointment-stamp-generic b { font-size: 10px; letter-spacing: .08em; }
+.appointment-stamp-generic i { font-size: 18px; font-style: normal; }
+.appointment-stamp-generic small { font-size: 9px; letter-spacing: .12em; }
+
 @keyframes stampDrop {
   0% {
     opacity: 0;

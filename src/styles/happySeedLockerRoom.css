@@ -18,7 +18,7 @@
   inset: 0;
   background:
     linear-gradient(180deg, rgba(3, 10, 9, .3) 0%, rgba(3, 10, 9, .55) 55%, rgba(3, 10, 9, .82) 100%),
-    url('/assets/hud/locker-room.jpg') center / cover no-repeat;
+    url('/assets/branding/locker-room.jpg') center / cover no-repeat;
   image-rendering: pixelated;
 }
 
