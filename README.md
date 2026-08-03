@@ -122,6 +122,7 @@ node scripts/intel-validation-sim.mjs --rounds 3000
 - `config/variants.mjs` 与 `config/art-rights.json`：三个构建目标、功能边界和版权资源清单的唯一来源。
 - `public/pixel/`：生产像素球员、16 队球衣角色资源、装备和球场切片。
 - `docs/`：游戏策划、机制算法、设计说明、验收与开发交接。
+- 当前三版本与互动空间包体边界交接见 `docs/HANDOFF_2026-08-03_VARIANTS.md`。
 - `scripts/`：资源生成、资产审计、包体构建与平衡模拟。
 
 `public/match-runtime-min/scripts/match.rebuilt.js` 是第三方物理核心，不直接修改；自有适配逻辑位于 `public/match-runtime-min/standalone-match.js`、`public/match-runtime-min/happyseed/` 和 `src/services/happySeedMatchRuntime.js`。
