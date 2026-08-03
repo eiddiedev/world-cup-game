@@ -24,12 +24,19 @@ import { norwayPlayers } from '../src/data/players/norway.js'
 import { capeverdePlayers } from '../src/data/players/capeverde.js'
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
-const publicRoot = join(projectRoot, 'public')
-const outputRoot = join(projectRoot, 'dist-douyin')
-const deliverablesRoot = join(projectRoot, 'deliverables')
+const publicRoot = process.env.TARGETING_PUBLIC_ROOT
+  ? resolve(projectRoot, process.env.TARGETING_PUBLIC_ROOT)
+  : join(projectRoot, 'public')
+const outputRoot = process.env.TARGETING_OUTPUT_ROOT
+  ? resolve(projectRoot, process.env.TARGETING_OUTPUT_ROOT)
+  : join(projectRoot, '.variant-build/compliant-interactive-raw')
+const deliverablesRoot = process.env.TARGETING_DELIVERABLES_ROOT
+  ? resolve(projectRoot, process.env.TARGETING_DELIVERABLES_ROOT)
+  : join(projectRoot, '.variant-build/interactive-legacy')
 const deliveryDirectory = join(deliverablesRoot, 'targeting-2026-interactive')
 const zipPath = join(deliverablesRoot, 'targeting-2026-interactive.zip')
-const maxZipBytes = 30 * 1024 * 1024
+const maxZipBytes = Number(process.env.TARGETING_RAW_MAX_ZIP_BYTES || 30 * 1024 * 1024)
+const rawOnly = process.env.TARGETING_RAW_ONLY === '1'
 
 const teamIds = Object.freeze(['spain', 'england', 'norway', 'capeverde'])
 const teamNames = Object.freeze(['西班牙', '英格兰', '挪威', '佛得角'])
@@ -50,8 +57,8 @@ const formerSelectableTeams = Object.freeze([
 
 const assetWhitelist = Object.freeze([
   '背景图.png',
-  'logo.png',
-  'logo2.png',
+  'branding/title-frame-1.png',
+  'branding/title-frame-2.png',
   '聘书.png',
   '印章.png',
   '征召点.png',
@@ -60,14 +67,14 @@ const assetWhitelist = Object.freeze([
   '锁.png',
   'player-placeholder.png',
   'fonts/zpix.ttf',
-  'hud/world-cup-trophy.png',
+  'branding/trophy.png',
   'hud/locker-room.jpg',
   '属性',
   '后勤',
   '比赛事件',
-  '国旗',
+  'flags',
   ...teamNames,
-  ...teamNames.map((name) => `队徽/${name}.png`),
+  ...teamIds.map((id) => `crests/${id}.png`),
 ])
 
 const pixelWhitelist = Object.freeze([
@@ -520,7 +527,7 @@ function buildSizeReport(runtimeReport, zipBytes = null) {
     : ''
   const formerSelectableResidue = formerSelectableTeams.flatMap(({ id, name }) => [
     existsSync(join(outputRoot, 'assets', name)) ? `assets/${name}` : null,
-    existsSync(join(outputRoot, 'assets/队徽', `${name}.png`)) ? `assets/队徽/${name}.png` : null,
+    existsSync(join(outputRoot, 'assets/crests', `${id}.png`)) ? `assets/crests/${id}.png` : null,
     runtimeBundleSource.includes(`/data/teams/${id}/`) ? `runtime:/data/teams/${id}` : null,
     runtimeBundleSource.includes(`/data/player/races/${id}`) ? `runtime:/data/player/races/${id}` : null,
   ]).filter(Boolean)
@@ -548,7 +555,7 @@ function buildSizeReport(runtimeReport, zipBytes = null) {
       }]
     })),
     scheduleAssets: {
-      flags: walkFiles(join(outputRoot, 'assets/国旗')).length,
+      flags: walkFiles(join(outputRoot, 'assets/flags')).length,
       kitTeams: existsSync(join(outputRoot, 'pixel/kits'))
         ? readdirSync(join(outputRoot, 'pixel/kits'), { withFileTypes: true }).filter((entry) => entry.isDirectory()).length
         : 0,
@@ -564,7 +571,7 @@ function buildSizeReport(runtimeReport, zipBytes = null) {
     ],
     unexpectedTeamAssets: removedTeamNames.filter((name) => (
       existsSync(join(outputRoot, 'assets', name))
-      || existsSync(join(outputRoot, 'assets/队徽', `${name}.png`))
+      || existsSync(join(outputRoot, 'assets/crests', `${name}.png`))
     )),
     formerSelectableResidue,
     scheduleOnlyFormerTeams: formerSelectableTeams.map(({ id, name }) => ({
@@ -581,10 +588,16 @@ mkdirSync(deliverablesRoot, { recursive: true })
 rmSync(deliveryDirectory, { recursive: true, force: true })
 rmSync(zipPath, { force: true })
 
-console.log('[1/8] Vite build (mode=douyin)')
-execFileSync('npx', ['vite', 'build', '--mode', 'douyin'], {
+console.log('[1/8] Vite build (variant=compliant-interactive)')
+execFileSync('npx', ['vite', 'build', '--mode', 'interactive'], {
   cwd: projectRoot,
   stdio: 'inherit',
+  env: {
+    ...process.env,
+    VITE_VARIANT_ID: process.env.VITE_VARIANT_ID || 'compliant-interactive',
+    TARGETING_OUTPUT_DIR: outputRoot,
+    TARGETING_SKIP_PUBLIC_STAGE: '1',
+  },
 })
 
 // 2. Copy the explicit application asset whitelist.
@@ -641,7 +654,7 @@ writeFileSync(join(outputRoot, 'index.html'), `<!doctype html>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>剑指美加墨 — 四档难度世界杯</title>
-    <link rel="icon" href="./assets/队徽/西班牙.png" />
+    <link rel="icon" href="./assets/crests/spain.png" />
     <link rel="stylesheet" href="./game.css" />
     <script>
       (function () {
@@ -680,6 +693,7 @@ execFileSync('python3', [
   join(projectRoot, 'scripts/build-demo-assets.py'),
   projectRoot,
   outputRoot,
+  publicRoot,
 ], {
   cwd: projectRoot,
   stdio: 'inherit',
@@ -697,7 +711,7 @@ const requiredFiles = [
   'runtime-data-a.js',
   'runtime-data-b.js',
   'game.css',
-  'assets/logo.png',
+  'assets/branding/title-frame-1.png',
   'assets/fonts/zpix.ttf',
   'pixel/stadiums/world-cup-day-v1/stadium-day-master-v1.png',
   'pixel/kits/shared/away/happyseed-human-v4/shirt_front.png',
@@ -745,6 +759,11 @@ const initialReport = {
   asciiPaths: asciiPathReport,
 }
 writeFileSync(join(outputRoot, 'asset-report.json'), `${JSON.stringify(initialReport, null, 2)}\n`)
+if (rawOnly) {
+  console.log(`  Raw output: ${formatMiB(initialReport.totalBytes)} (${walkFiles(outputRoot).length} files)`)
+  console.log(`  Folder: ${outputRoot}`)
+  process.exit(0)
+}
 cpSync(outputRoot, deliveryDirectory, { recursive: true })
 
 let zipBytes = -1

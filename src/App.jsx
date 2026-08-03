@@ -31,7 +31,11 @@ import TrainingGround from './components/TrainingGround'
 import GameLoadingScreen from './components/GameLoadingScreen'
 import SpotlightTour from './components/SpotlightTour.jsx'
 import { getScreenSpotlightTour } from './data/spotlightTours.js'
-import { IS_DOUYIN_DEMO } from './config/runtime'
+import {
+  CURRENT_VARIANT,
+  IS_INTERACTIVE_SPACE,
+  hasVariantFeature,
+} from './config/runtime'
 
 const IS_TEST_RUNTIME = import.meta.env.MODE === 'test'
 
@@ -67,15 +71,15 @@ function shouldSoftLoadHeavyAssets() {
  * 管理游戏页面路由和全局状态
  */
 export default function App() {
-  const useDouyinLayout = IS_DOUYIN_DEMO || import.meta.env.DEV
+  const useDouyinLayout = IS_INTERACTIVE_SPACE || import.meta.env.DEV
   const [saveData, setSaveData] = useState(null)
   const [currentScreen, setCurrentScreen] = useState('home')
   const [activeGameMode, setActiveGameMode] = useState('coach')
   const [toast, setToast] = useState(null)
   const [startup, setStartup] = useState({
-    ready: IS_TEST_RUNTIME || IS_DOUYIN_DEMO,
-    progress: IS_TEST_RUNTIME || IS_DOUYIN_DEMO ? 100 : 0,
-    detail: IS_TEST_RUNTIME || IS_DOUYIN_DEMO ? '必要资源加载完成' : '正在准备主视觉',
+    ready: IS_TEST_RUNTIME || IS_INTERACTIVE_SPACE,
+    progress: IS_TEST_RUNTIME || IS_INTERACTIVE_SPACE ? 100 : 0,
+    detail: IS_TEST_RUNTIME || IS_INTERACTIVE_SPACE ? '必要资源加载完成' : '正在准备主视觉',
   })
 
   useEffect(() => {
@@ -94,7 +98,7 @@ export default function App() {
   useEffect(() => {
     // 互动空间优先完成 React 首绘，图片由页面按需加载，避免冷启动被
     // 22 个视觉资源阻塞。完整版仍保留启动预载和进度反馈。
-    if (IS_TEST_RUNTIME || IS_DOUYIN_DEMO) return undefined
+    if (IS_TEST_RUNTIME || IS_INTERACTIVE_SPACE) return undefined
     let cancelled = false
     preloadAssetUrls(getCriticalStartupAssets(teams), {
       concurrency: 6,
@@ -117,7 +121,7 @@ export default function App() {
   }, [])
 
   useEffect(() => {
-    if (IS_TEST_RUNTIME || IS_DOUYIN_DEMO || !startup.ready) return undefined
+    if (IS_TEST_RUNTIME || IS_INTERACTIVE_SPACE || !startup.ready) return undefined
     let cancelled = false
     const cancelTask = scheduleSoftTask(() => {
       preloadHappySeedRuntimeCore()
@@ -148,7 +152,7 @@ export default function App() {
 
   useEffect(() => {
     const run = saveData?.currentRun
-    if (IS_DOUYIN_DEMO || !startup.ready || !run?.teamId) return
+    if (IS_INTERACTIVE_SPACE || !startup.ready || !run?.teamId) return
     const selectedTeam = getTeamById(run.teamId)
     const opponent = getTeamById(run.currentOpponent)
     let cancelled = false
@@ -360,10 +364,10 @@ export default function App() {
       case 'settings':
         return <SettingsScreen {...screenProps} />
       case 'penalty-mode':
-        if (IS_DOUYIN_DEMO) return <HomeScreen {...screenProps} />
+        if (!hasVariantFeature('standalonePenalty')) return <HomeScreen {...screenProps} />
         return <PenaltyModeScreen {...screenProps} />
       case 'codex':
-        if (IS_DOUYIN_DEMO) return <HomeScreen {...screenProps} />
+        if (!hasVariantFeature('codex')) return <HomeScreen {...screenProps} />
         return <CodexScreen {...screenProps} />
       case 'training':
         return <TrainingGround {...screenProps} />
@@ -378,6 +382,11 @@ export default function App() {
 
   return (
     <div className={`app${useDouyinLayout ? ' douyin-demo' : ''}${currentScreen === 'recruitment' ? ' zoom-page-active' : ''}`}>
+      {import.meta.env.DEV && (
+        <div className="variant-dev-badge" data-testid="variant-dev-badge">
+          {CURRENT_VARIANT.label} · {CURRENT_VARIANT.id}
+        </div>
+      )}
       {renderScreen()}
       <SpotlightTour tour={screenSpotlightTour} autoStart />
       {toast && <div className="toast">{toast}</div>}

@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { teams, getDifficultyStars } from '../data/teams'
 import { getAvailableLogisticsBudget } from '../data/prizeMoney'
-import { IS_DOUYIN_DEMO } from '../config/runtime'
+import { IS_INTERACTIVE_SPACE } from '../config/runtime'
 import { createNewRun } from '../utils/saveManager.js'
 import { autoSetupPlayerRun } from '../utils/playerModeSetup.js'
 import AppointmentLetter from './AppointmentLetter'
@@ -55,7 +55,7 @@ export default function TeamSelectScreen({ saveData, updateSaveData, navigateTo,
         </p>
       </div>
 
-      <div className={`team-list${IS_DOUYIN_DEMO ? ' is-demo-team-list' : ''}`} data-guide="team-list">
+      <div className={`team-list${IS_INTERACTIVE_SPACE ? ' is-demo-team-list' : ''}`} data-guide="team-list">
         {unlockedTeams.map((team) => (
           <div
             key={team.id}

@@ -243,7 +243,7 @@ export default function EndingScreen({ saveData, updateSaveData, navigateTo }) {
         )}
         <div className="ending-emoji">
           {finalResult === 'champion'
-            ? <img src="/assets/hud/world-cup-trophy.png" alt="大力神杯" style={{ width: 72, height: 'auto', imageRendering: 'pixelated' }} />
+            ? <img src="/assets/branding/trophy.png" alt="大力神杯" style={{ width: 72, height: 'auto', imageRendering: 'pixelated' }} />
             : ending.emoji}
         </div>
         <h1 className="ending-title" data-guide="ending-result">{ending.title}</h1>

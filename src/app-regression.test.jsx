@@ -24,8 +24,7 @@ import {
   validateTeamCatalog,
   validateTeamRecord,
 } from './data/teamDataSchema.js'
-import { allTeams, teams } from './data/teams.js'
-import { getTeamSchedule } from './data/schedules.js'
+import { teams } from './data/teams.js'
 import { FORMATION_TACTICS } from './data/formationTactics.js'
 import { AudioManager, audioManager } from './utils/audioManager.js'
 import {
@@ -478,8 +477,7 @@ describe('team and player data', () => {
       'norway',
       'capeverde',
     ])
-    expect(getStorageKey(false)).toBe('targeting-2026-save')
-    expect(getStorageKey(true)).toBe('targeting-2026-world-cup-save')
+    expect(getStorageKey()).toBe('targeting-2026-save')
   })
 
   it('keeps every selectable team at a 24-player pool with one named golden star', () => {

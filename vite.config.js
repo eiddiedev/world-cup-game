@@ -1,27 +1,35 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { fileURLToPath } from 'node:url'
+import { resolve } from 'node:path'
 
-// https://vite.dev/config/
 export default defineConfig(({ mode }) => {
-  const isDouyinMinimal = mode === 'douyin-minimal'
-  const isDouyinDemo = mode === 'douyin' || isDouyinMinimal
+  const variantId = process.env.VITE_VARIANT_ID
+    || (mode === 'compliant' ? 'compliant-full' : mode === 'interactive' ? 'compliant-interactive' : 'showcase-full')
+  const isInteractive = variantId === 'compliant-interactive'
   const isLabsBuild = mode === 'labs'
+  const configuredPublicDir = process.env.TARGETING_PUBLIC_DIR
+  const publicDir = isInteractive && process.env.TARGETING_SKIP_PUBLIC_STAGE === '1'
+    ? false
+    : configuredPublicDir
+      ? resolve(process.cwd(), configuredPublicDir)
+      : 'public'
+  const outDir = process.env.TARGETING_OUTPUT_DIR
+    ? resolve(process.cwd(), process.env.TARGETING_OUTPUT_DIR)
+    : resolve(process.cwd(), '.variant-build', variantId)
 
   return {
-    base: isDouyinDemo ? './' : '/',
-    publicDir: isDouyinDemo ? false : 'public',
+    base: './',
+    publicDir,
     plugins: [react()],
-    define: isDouyinDemo ? {
-      'process.env.NODE_ENV': JSON.stringify('production'),
-      '__DOUYIN_BUILD__': JSON.stringify(true),
-    } : {
-      '__DOUYIN_BUILD__': JSON.stringify(false),
+    define: {
+      '__DOUYIN_BUILD__': JSON.stringify(isInteractive),
+      ...(isInteractive ? { 'process.env.NODE_ENV': JSON.stringify('production') } : {}),
     },
     build: {
-      outDir: isDouyinMinimal ? 'dist-douyin-minimal' : isDouyinDemo ? 'dist-douyin' : isLabsBuild ? 'dist-labs' : 'dist',
+      outDir,
       emptyOutDir: true,
-      ...(!isDouyinDemo && isLabsBuild ? {
+      ...(isLabsBuild ? {
         rollupOptions: {
           input: {
             main: fileURLToPath(new URL('./index.html', import.meta.url)),
@@ -31,20 +39,19 @@ export default defineConfig(({ mode }) => {
             pixelPlayerStudio: fileURLToPath(new URL('./pixel-player-studio.html', import.meta.url)),
           },
         },
-      } : !isDouyinDemo ? {
-        rollupOptions: {
-          input: fileURLToPath(new URL('./index.html', import.meta.url)),
-        },
-      } : {}),
-      ...(isDouyinDemo ? {
+      } : isInteractive ? {
         lib: {
           entry: fileURLToPath(new URL('./src/main.jsx', import.meta.url)),
-          name: 'Targeting2026Demo',
+          name: 'Targeting2026Interactive',
           formats: ['iife'],
           fileName: () => 'game.js',
           cssFileName: 'game',
         },
-      } : {}),
+      } : {
+        rollupOptions: {
+          input: fileURLToPath(new URL('./index.html', import.meta.url)),
+        },
+      }),
     },
   }
 })

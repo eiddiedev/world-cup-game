@@ -280,13 +280,13 @@ describe('Match Runtime integration contracts', () => {
   it('starts interactive-space coach matches zoomed out without changing player mode', () => {
     expect(runtimeService).toContain('window.__happySeedInteractiveSpace = Boolean(__DOUYIN_BUILD__)')
     expect(runtimeService).toContain(
-      'else if (__DOUYIN_BUILD__ && !options.playerMode && !options.technicalLab) setZoom(0.68)',
+      'setZoom(CURRENT_VARIANT.matchView.coachDefaultZoom)',
     )
     expect(standaloneRuntime).toContain(
-      'return window.__happySeedInteractiveSpace && !window.__acPlay ? 0.68 : 1',
+      'return window.__happySeedInteractiveSpace && !window.__acPlay ? (configured || 0.68) : 1',
     )
     expect(standaloneRuntime).toContain(
-      'return window.__happySeedInteractiveSpace && !window.__acPlay ? 0.48 : 0.8',
+      'return window.__happySeedInteractiveSpace && !window.__acPlay ? (configured || 0.48) : 0.8',
     )
     expect(standaloneRuntime).toContain('window.__matchZoomMul = defaultZoomMultiplier()')
   })
@@ -413,9 +413,9 @@ describe('Match Runtime integration contracts', () => {
     expect(runtimeService).not.toMatch(
       /if \(__DOUYIN_BUILD__\)[\s\S]{0,800}loadScript\('__data-bundle\.js'\)/,
     )
-    expect(mainApp).toContain('ready: IS_TEST_RUNTIME || IS_DOUYIN_DEMO')
+    expect(mainApp).toContain('ready: IS_TEST_RUNTIME || IS_INTERACTIVE_SPACE')
     expect(mainApp).toMatch(
-      /if \(IS_TEST_RUNTIME \|\| IS_DOUYIN_DEMO\) return undefined[\s\S]*preloadAssetUrls\(getCriticalStartupAssets/,
+      /if \(IS_TEST_RUNTIME \|\| IS_INTERACTIVE_SPACE\) return undefined[\s\S]*preloadAssetUrls\(getCriticalStartupAssets/,
     )
   })
 

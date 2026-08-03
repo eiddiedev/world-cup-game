@@ -4,7 +4,7 @@
 
 《剑指美加墨》是一款面向 2026 世界杯主题的离线优先像素足球游戏。它把国家队经营、24 人征召、阵型与情报、赛前更衣室、约 3 分钟的 11v11 实时比赛、临场决策、换人、战术、点球大战、赛后复盘与图鉴收集串成一条完整征程。
 
-当前正式内容范围固定为 **16 支可执教国家队**，不再以扩展到 48 支可玩队为交付目标。完整世界杯赛程仍保留 48 队对手数据，用于分组和淘汰赛路径；正式版保留当前 16 队高质量美术与玩法资源，抖音互动空间版另行做小包裁剪。
+当前正式内容范围固定为 **16 支可执教国家队**，不再以扩展到 48 支可玩队为交付目标。完整世界杯赛程仍保留 48 队对手数据，用于分组和淘汰赛路径。仓库只维护 `main` 上的一套业务源码，展示完整版、合规完整版和互动空间合规版都由同一提交派生，禁止手工维护版本副本。
 
 ## 一眼看懂当前版本
 
@@ -69,7 +69,15 @@ npm ci
 npm run dev
 ```
 
-Vite 会输出本地地址。开发验收入口包括：
+固定开发入口：
+
+| 命令 | 版本 | 端口 |
+| --- | --- | --- |
+| `npm run dev` / `npm run dev:showcase` | 展示完整版 | 5175 |
+| `npm run dev:compliant` | 合规完整版；素材未齐时拒绝启动 | 5176 |
+| `npm run dev:interactive` | 互动空间合规版；素材未齐时拒绝启动 | 5173 |
+
+开发构建会显示版本标识，正式包不会显示。验收入口包括：
 
 | 入口 | 用途 | 属性 |
 | --- | --- | --- |
@@ -91,7 +99,8 @@ npm run audit:match-equipment
 npm run audit:stadium-slice
 npm run audit:match-sfx
 npm run audit:decision-scenes
-npm run build
+npm run build:showcase
+npm run verify:compliant-pack
 git diff --check
 ```
 
@@ -107,7 +116,10 @@ node scripts/intel-validation-sim.mjs --rounds 3000
 
 - `src/`：React 外壳、16 队数据、经营系统、比赛会话、决策、复盘与测试。
 - `public/match-runtime-min/`：第三方物理核心与自有 HappySeed 适配层。
-- `public/assets/`：界面、头像、聘书、事件、点球和本地音频。
+- `public/assets/`：两个美术包共用的界面、头像、聘书、事件、点球和本地音频。
+- `art-packs/showcase/`：演示用原始标题、奖杯、48 面国旗和 16 个队徽。
+- `art-packs/compliant/`：合规替换素材；未完整验收前保持 `pending`，构建不会回退到原图。
+- `config/variants.mjs` 与 `config/art-rights.json`：三个构建目标、功能边界和版权资源清单的唯一来源。
 - `public/pixel/`：生产像素球员、16 队球衣角色资源、装备和球场切片。
 - `docs/`：游戏策划、机制算法、设计说明、验收与开发交接。
 - `scripts/`：资源生成、资产审计、包体构建与平衡模拟。
@@ -116,10 +128,19 @@ node scripts/intel-validation-sim.mjs --rounds 3000
 
 ## 发布与包体策略
 
-- 当前 `dist/` 解压后约 **122 MiB**；现有发布 ZIP 为 **82.25 MB（78.44 MiB）**。两者都保留 16 队正式美术、球员、比赛和点球资源。
-- `dist/`、`dist-douyin/`、`deliverables/`、`release/` 和 `node_modules/` 均为本地生成物，不提交 Git。
-- 抖音互动空间版目标低于 50 MB：从同一源码按白名单裁剪可玩队和非首屏资源，不反向删除完整版资产。
-- 现有完整包曾因体积触发上传端 HTTP 413，因此不能把“本地构建通过”等同于“互动空间上传通过”。
+```bash
+npm run build:showcase
+npm run build:compliant
+npm run build:interactive
+npm run release:all
+```
+
+- `release:all` 只允许在干净的 `main` 上执行，并从同一 Git SHA 生成三个包及 `release-manifest.json`。
+- 产物统一进入被 Git 忽略的 `artifacts/<YYYYMMDD>-<short-sha>/`，每个包包含 `build-info.json`。
+- 合规素材缺失、尺寸不符、与展示素材字节相同或最终包泄漏原图时，合规构建直接失败。
+- 互动空间版固定四支可选队，保留 48 队赛程、正式比赛点球、教练/球员模式、缩放和完整比赛音效；移除图鉴与独立点球入口。
+- 互动空间 ZIP 根目录必须直接包含 `index.html`，全部路径使用 ASCII，纯离线且不超过 8 MiB；正式出包必须通过互动空间 `h5-validator`。
+- `.variant-build/`、`.variant-public/`、`artifacts/`、旧 `dist*`、`deliverables/`、`release/` 和 `reports/` 都是本地生成物，不提交 Git。
 
 ## 当前边界
 

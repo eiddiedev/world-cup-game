@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { hasContinueGame, getCodexProgress } from '../utils/saveManager'
-import { IS_DOUYIN_DEMO } from '../config/runtime'
+import { hasVariantFeature } from '../config/runtime'
+import { BRANDING_ASSETS } from '../config/artAssets'
 
 const PRIMARY_MODES = [
   { id: 'coach', label: '教练模式' },
@@ -24,7 +25,9 @@ const CONTINUE_STAGES = new Set([
  */
 export default function HomeScreen({ saveData, updateSaveData, navigateTo, showToast }) {
   const [selectedMode, setSelectedMode] = useState(null)
-  const codexProgress = IS_DOUYIN_DEMO ? null : getCodexProgress(saveData)
+  const codexEnabled = hasVariantFeature('codex')
+  const standalonePenaltyEnabled = hasVariantFeature('standalonePenalty')
+  const codexProgress = codexEnabled ? getCodexProgress(saveData) : null
   const hasSave = hasContinueGame(saveData)
   const savedMode = saveData.currentRun?.gameMode || 'coach'
   // 球员模式独立存档判断
@@ -74,8 +77,8 @@ export default function HomeScreen({ saveData, updateSaveData, navigateTo, showT
       <section className="home-stage" aria-label="剑指美加墨">
         <h1 className="PixelTitle title-lockup">
           <span className="logo-animation">
-            <img className="logo-frame logo-frame-1" src="/assets/logo.png" alt="剑指美加墨" />
-            <img className="logo-frame logo-frame-2" src="/assets/logo2.png" alt="" />
+            <img className="logo-frame logo-frame-1" src={BRANDING_ASSETS.titleFrame1} alt="剑指美加墨" />
+            <img className="logo-frame logo-frame-2" src={BRANDING_ASSETS.titleFrame2} alt="" />
           </span>
         </h1>
 
@@ -92,7 +95,7 @@ export default function HomeScreen({ saveData, updateSaveData, navigateTo, showT
             </button>
           ))}
 
-          {!IS_DOUYIN_DEMO && (
+          {standalonePenaltyEnabled && (
             <button
               type="button"
               className="PixelButton menu-button"
@@ -113,7 +116,7 @@ export default function HomeScreen({ saveData, updateSaveData, navigateTo, showT
           </button>
         </nav>
 
-        {!IS_DOUYIN_DEMO && (
+        {codexEnabled && (
           <aside className="PixelPanel codex-panel" onClick={() => navigateTo('codex')} role="button" tabIndex={0} aria-label="图鉴">
             <img src="/assets/图鉴.png" alt="" className="codex-panel-icon" />
             <span className="codex-panel-label">图鉴</span>

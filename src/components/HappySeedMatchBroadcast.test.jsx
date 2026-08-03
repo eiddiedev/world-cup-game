@@ -227,11 +227,11 @@ describe('HappySeed formal match broadcast', () => {
 
     expect(screen.getByRole('banner', { name: '比赛比分' })).toHaveTextContent('法国')
     expect(screen.getByRole('banner', { name: '比赛比分' })).toHaveTextContent('0')
-    expect(screen.getByAltText('法国国旗')).toHaveAttribute('src', '/assets/国旗/法国.png')
-    expect(screen.getByAltText('巴西国旗')).toHaveAttribute('src', '/assets/国旗/巴西.png')
+    expect(screen.getByAltText('法国国旗')).toHaveAttribute('src', '/assets/flags/france.png')
+    expect(screen.getByAltText('巴西国旗')).toHaveAttribute('src', '/assets/flags/brazil.png')
     expect(document.querySelector('.broadcast-cup-mark img')).toHaveAttribute(
       'src',
-      '/assets/hud/world-cup-trophy.png',
+      '/assets/branding/trophy.png',
     )
     expect(document.querySelector('main')).toHaveAttribute('data-pixel-goal-atlas', 'true')
     expect(document.querySelector('main')).toHaveAttribute('data-pixel-ball-texture', 'true')

@@ -1,8 +1,14 @@
 node_modules/
 dist/
 dist-douyin/
+dist-douyin-minimal/
+dist-labs/
 deliverables/
 release/
+reports/
+artifacts/
+.variant-build/
+.variant-public/
 .vite/
 coverage/
 

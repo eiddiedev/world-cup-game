@@ -44,7 +44,7 @@ export default function MiniCupEndingScreen({ saveData, updateSaveData, navigate
       <section className="mini-ending-card PixelPanel">
         <div className="mini-ending-trophy" aria-hidden="true">
           {champion
-            ? <img src="/assets/hud/world-cup-trophy.png" alt="" />
+            ? <img src="/assets/branding/trophy.png" alt="" />
             : <span>◆</span>}
         </div>
         <small>{champion ? '四队迷你世界杯' : '本次征程结束'}</small>

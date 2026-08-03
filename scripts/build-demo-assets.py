@@ -18,8 +18,8 @@ def collect_text(source_root: Path) -> str:
     return "".join(sorted(characters))
 
 
-def subset_font(project_root: Path, output_root: Path) -> None:
-    font_source = project_root / "public/assets/fonts/zpix.ttf"
+def subset_font(project_root: Path, public_root: Path, output_root: Path) -> None:
+    font_source = public_root / "assets/fonts/zpix.ttf"
     font_target = output_root / "assets/fonts/zpix.ttf"
     font_target.parent.mkdir(parents=True, exist_ok=True)
     text_file = output_root / ".font-characters.txt"
@@ -40,8 +40,8 @@ def subset_font(project_root: Path, output_root: Path) -> None:
     text_file.unlink()
 
 
-def build_pitch(project_root: Path, output_root: Path) -> None:
-    source = project_root / "public/assets/足球场.png"
+def build_pitch(public_root: Path, output_root: Path) -> None:
+    source = public_root / "assets/足球场.png"
     target = output_root / "assets/足球场.png"
     target.parent.mkdir(parents=True, exist_ok=True)
     with Image.open(source) as image:
@@ -50,14 +50,14 @@ def build_pitch(project_root: Path, output_root: Path) -> None:
 
 
 def build_pixel_image(
-    project_root: Path,
+    public_root: Path,
     output_root: Path,
-    filename: str,
+    relative_path: str,
     size: tuple[int, int],
     colors: int = 128,
 ) -> None:
-    source = project_root / "public/assets" / filename
-    target = output_root / "assets" / filename
+    source = public_root / "assets" / relative_path
+    target = output_root / "assets" / relative_path
     target.parent.mkdir(parents=True, exist_ok=True)
     with Image.open(source) as image:
         image.thumbnail(size, Image.Resampling.NEAREST)
@@ -81,11 +81,12 @@ def build_pixel_image(
 def main() -> None:
     project_root = Path(sys.argv[1]).resolve()
     output_root = Path(sys.argv[2]).resolve()
-    subset_font(project_root, output_root)
-    build_pitch(project_root, output_root)
-    build_pixel_image(project_root, output_root, "背景图.png", (960, 540))
-    build_pixel_image(project_root, output_root, "logo.png", (900, 244))
-    build_pixel_image(project_root, output_root, "logo2.png", (900, 244))
+    public_root = Path(sys.argv[3]).resolve() if len(sys.argv) > 3 else project_root / "public"
+    subset_font(project_root, public_root, output_root)
+    build_pitch(public_root, output_root)
+    build_pixel_image(public_root, output_root, "背景图.png", (960, 540))
+    build_pixel_image(public_root, output_root, "branding/title-frame-1.png", (900, 244))
+    build_pixel_image(public_root, output_root, "branding/title-frame-2.png", (900, 244))
 
 
 if __name__ == "__main__":

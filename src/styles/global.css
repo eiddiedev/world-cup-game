@@ -9282,3 +9282,18 @@ button {
     left: max(80px, calc(env(safe-area-inset-left) + 56px)) !important;
   }
 }
+/* Development-only target marker. App.jsx never renders it in release builds. */
+.variant-dev-badge {
+  position: fixed;
+  top: max(10px, env(safe-area-inset-top));
+  left: 50%;
+  z-index: 100000;
+  transform: translateX(-50%);
+  padding: 6px 10px;
+  border: 2px solid #f5c542;
+  border-radius: 4px;
+  background: rgba(6, 22, 37, 0.92);
+  color: #fff3b0;
+  font: 700 12px/1.2 monospace;
+  pointer-events: none;
+}

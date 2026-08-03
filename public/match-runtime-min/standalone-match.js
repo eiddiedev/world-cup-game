@@ -111,10 +111,12 @@
   var AUTO_ZOOM = { current: 1, from: 1, target: 1, t0: 0, dur: 0, nextAt: 0 };
   window.__autoZoom = AUTO_ZOOM;
   function defaultZoomMultiplier() {
-    return window.__happySeedInteractiveSpace && !window.__acPlay ? 0.68 : 1;
+    var configured = window.__targetingMatchView && window.__targetingMatchView.coachDefaultZoom;
+    return window.__happySeedInteractiveSpace && !window.__acPlay ? (configured || 0.68) : 1;
   }
   function minimumEffectiveZoom() {
-    return window.__happySeedInteractiveSpace && !window.__acPlay ? 0.48 : 0.8;
+    var configured = window.__targetingMatchView && window.__targetingMatchView.coachMinZoom;
+    return window.__happySeedInteractiveSpace && !window.__acPlay ? (configured || 0.48) : 0.8;
   }
   function autoZoom() {
     var now = performance.now();

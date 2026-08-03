@@ -42,6 +42,7 @@ import {
 } from '../utils/matchRuntimeEvent.js'
 import { runtimeMatchMinute } from '../utils/matchClock.js'
 import { preloadAssetUrls } from '../utils/visualAssetLoader.js'
+import { CURRENT_VARIANT } from '../config/runtime.js'
 
 const RUNTIME_BASE = __DOUYIN_BUILD__ ? './match-runtime-min' : '/match-runtime-min'
 
@@ -751,6 +752,7 @@ export function bootHappySeedMatch(options = {}) {
     const existingCanvas = window.__matchGame?.renderer?.view
     if (existingCanvas) existingCanvas.style.display = ''
     window.__happySeedInteractiveSpace = Boolean(__DOUYIN_BUILD__)
+    window.__targetingMatchView = { ...CURRENT_VARIANT.matchView }
     window.__acPlay = Boolean(options.playerMode)
     let studioRecipe = null
     if (options.studioPreview) {
@@ -827,7 +829,9 @@ export function bootHappySeedMatch(options = {}) {
     await started
     setSpeed(1)
     if (options.studioPreview) setZoom(2.4)
-    else if (__DOUYIN_BUILD__ && !options.playerMode && !options.technicalLab) setZoom(0.68)
+    else if (__DOUYIN_BUILD__ && !options.playerMode && !options.technicalLab) {
+      setZoom(CURRENT_VARIANT.matchView.coachDefaultZoom)
+    }
     if (!options.technicalLab) formalDecisionStatus = 'waiting-opportunity'
     window.addEventListener('ab-match-ended', () => {
       bootPromise = null

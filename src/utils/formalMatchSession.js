@@ -7,10 +7,10 @@ import {
   isFormalDecisionMomentEligibleV3,
 } from './decisionSceneScriptV3.js'
 import { createDerivedMatchRuntimeEvent } from './matchRuntimeEvent.js'
-import { IS_DOUYIN_DEMO } from '../config/runtime.js'
+import { CURRENT_VARIANT } from '../config/runtime.js'
 
 export const FORMAL_MATCH_SESSION_SCHEMA = 'formal-match-session-v1'
-export const FORMAL_MATCH_REALTIME_MINUTES = IS_DOUYIN_DEMO ? 2 : 3
+export const FORMAL_MATCH_REALTIME_MINUTES = CURRENT_VARIANT.formalMatchRealtimeMinutes
 export const FORMAL_MATCH_TARGET_DECISIONS = 10
 export const FORMAL_MATCH_ROUTINE_COMMENTARY_BUDGET = 5
 export const FORMAL_MATCH_DECISION_TARGET_MINUTES = Object.freeze([8, 16, 24, 32, 41, 50, 58, 66, 74, 83])

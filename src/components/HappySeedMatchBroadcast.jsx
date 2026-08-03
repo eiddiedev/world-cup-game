@@ -1289,7 +1289,7 @@ export function HappySeedMatchBroadcast({
           </span>
           <strong className="is-home-score">{broadcast.teams.red.score}</strong>
           <span className="broadcast-cup-mark" aria-hidden="true">
-            <img src="/assets/hud/world-cup-trophy.png" alt="" />
+            <img src="/assets/branding/trophy.png" alt="" />
           </span>
           <strong className="is-away-score">{broadcast.teams.blue.score}</strong>
           <span className="broadcast-team is-away">

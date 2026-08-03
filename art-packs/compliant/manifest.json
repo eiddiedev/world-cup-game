@@ -1,0 +1,6 @@
+{
+  "id": "compliant",
+  "status": "pending",
+  "rightsStatus": "replacement-required",
+  "notes": "Set status to ready only after every entry in config/art-rights.json has an approved replacement."
+}
