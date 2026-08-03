@@ -50,7 +50,7 @@ export const VARIANTS = Object.freeze({
     features: FULL_FEATURES,
     storageKey: 'targeting-2026-save',
     formalMatchRealtimeMinutes: 3,
-    package: Object.freeze({ maxZipBytes: null, compressionProfile: 'lossless' }),
+    package: Object.freeze({ enabled: false, archiveName: null, maxZipBytes: null, compressionProfile: 'lossless' }),
     matchView: Object.freeze({ coachDefaultZoom: 1, coachMinZoom: 0.72 }),
   }),
   'compliant-full': Object.freeze({
@@ -62,7 +62,7 @@ export const VARIANTS = Object.freeze({
     features: FULL_FEATURES,
     storageKey: 'targeting-2026-compliant-full-save',
     formalMatchRealtimeMinutes: 3,
-    package: Object.freeze({ maxZipBytes: null, compressionProfile: 'lossless' }),
+    package: Object.freeze({ enabled: false, archiveName: null, maxZipBytes: null, compressionProfile: 'lossless' }),
     matchView: Object.freeze({ coachDefaultZoom: 1, coachMinZoom: 0.72 }),
   }),
   'compliant-interactive': Object.freeze({
@@ -74,7 +74,12 @@ export const VARIANTS = Object.freeze({
     features: INTERACTIVE_FEATURES,
     storageKey: 'targeting-2026-world-cup-save',
     formalMatchRealtimeMinutes: 2,
-    package: Object.freeze({ maxZipBytes: 8 * 1024 * 1024, compressionProfile: 'platform-safe' }),
+    package: Object.freeze({
+      enabled: true,
+      archiveName: 'targeting-2026-compliant-interactive.zip',
+      maxZipBytes: 8 * 1024 * 1024,
+      compressionProfile: 'platform-safe',
+    }),
     matchView: Object.freeze({ coachDefaultZoom: 0.68, coachMinZoom: 0.48 }),
   }),
 })

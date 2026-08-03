@@ -19,6 +19,8 @@ describe('variant build contracts', () => {
     expect(showcase.playableTeamIds).toHaveLength(16)
     expect(showcase.artPack).toBe('showcase')
     expect(compliant.artPack).toBe('compliant')
+    expect(showcase.package.enabled).toBe(false)
+    expect(compliant.package.enabled).toBe(false)
   })
 
   it('locks the interactive profile to four teams and the intended feature boundary', () => {
@@ -34,6 +36,10 @@ describe('variant build contracts', () => {
       formalMatchPenalties: true,
     })
     expect(interactive.package.maxZipBytes).toBe(8 * 1024 * 1024)
+    expect(interactive.package).toMatchObject({
+      enabled: true,
+      archiveName: 'targeting-2026-compliant-interactive.zip',
+    })
     expect(interactive.matchView).toEqual({ coachDefaultZoom: 0.68, coachMinZoom: 0.48 })
   })
 

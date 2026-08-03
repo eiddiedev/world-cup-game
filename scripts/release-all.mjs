@@ -1,7 +1,7 @@
 import { execFileSync } from 'node:child_process'
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { join, relative } from 'node:path'
-import { VARIANT_IDS } from '../config/variants.mjs'
+import { VARIANT_IDS, VARIANTS } from '../config/variants.mjs'
 import {
   artifactDirectoryFor,
   gitInfo,
@@ -39,10 +39,17 @@ const manifest = {
   sourceBranch: git.branch,
   dirty: false,
   generatedAt: new Date().toISOString(),
-  targets: VARIANT_IDS.map(variantId => ({
-    variantId,
-    archive: `targeting-2026-${variantId}.zip`,
-  })),
+  targets: VARIANT_IDS.map(variantId => VARIANTS[variantId].package.enabled
+    ? {
+      variantId,
+      packaged: true,
+      archive: VARIANTS[variantId].package.archiveName,
+    }
+    : {
+      variantId,
+      packaged: false,
+      outputDirectory: `.variant-build/${variantId}`,
+    }),
 }
 writeFileSync(join(artifactRoot, 'release-manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`)
 console.log(`Release complete: ${artifactRoot}`)

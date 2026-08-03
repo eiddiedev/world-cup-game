@@ -135,8 +135,9 @@ npm run build:interactive
 npm run release:all
 ```
 
-- `release:all` 只允许在干净的 `main` 上执行，并从同一 Git SHA 生成三个包及 `release-manifest.json`。
-- 产物统一进入被 Git 忽略的 `artifacts/<YYYYMMDD>-<short-sha>/`，每个包包含 `build-info.json`。
+- `release:all` 只允许在干净的 `main` 上执行，并从同一 Git SHA 构建三个目标及 `release-manifest.json`。
+- 两个完整版只生成 `.variant-build/<variant-id>/` 网页目录，不生成 ZIP；它们用于本地演示、录制或后续网页部署。
+- 唯一会进入 `artifacts/<YYYYMMDD>-<short-sha>/` 的上传包是 `targeting-2026-compliant-interactive.zip`，包内包含 `build-info.json`。
 - 合规素材缺失、尺寸不符、与展示素材字节相同或最终包泄漏原图时，合规构建直接失败。
 - 互动空间版固定四支可选队，保留 48 队赛程、正式比赛点球、教练/球员模式、缩放和完整比赛音效；移除图鉴与独立点球入口。
 - 互动空间 ZIP 根目录必须直接包含 `index.html`，全部路径使用 ASCII，纯离线且不超过 8 MiB；正式出包必须通过互动空间 `h5-validator`。

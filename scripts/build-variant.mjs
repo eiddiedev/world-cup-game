@@ -1,6 +1,6 @@
 import { execFileSync } from 'node:child_process'
 import { existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
-import { basename, join, relative, resolve, sep } from 'node:path'
+import { join, relative, resolve, sep } from 'node:path'
 import { getVariant } from '../config/variants.mjs'
 import {
   artifactDirectoryFor,
@@ -22,14 +22,11 @@ const git = gitInfo()
 const artifactRoot = process.env.TARGETING_RELEASE_DIR
   ? resolve(projectRoot, process.env.TARGETING_RELEASE_DIR)
   : artifactDirectoryFor(git)
-const artifactNames = {
-  'showcase-full': 'targeting-2026-showcase-full.zip',
-  'compliant-full': 'targeting-2026-compliant-full.zip',
-  'compliant-interactive': 'targeting-2026-compliant-interactive.zip',
-}
-const artifactPath = join(artifactRoot, artifactNames[variantId])
+const artifactPath = variant.package.enabled
+  ? join(artifactRoot, variant.package.archiveName)
+  : null
 const { stagingRoot } = prepareVariantPublic(variantId)
-mkdirSync(artifactRoot, { recursive: true })
+if (artifactPath) mkdirSync(artifactRoot, { recursive: true })
 
 function run(command, args, options = {}) {
   execFileSync(command, args, { cwd: projectRoot, stdio: 'inherit', ...options })
@@ -48,8 +45,13 @@ function buildFull() {
   })
   const buildInfo = writeBuildInfo(outputRoot, variantId)
   if (variant.artPack === 'compliant') assertNoShowcaseArtwork(outputRoot)
-  const zipBytes = writeZip(outputRoot, artifactPath)
-  return { variantId, artifactPath, zipBytes, files: walkFiles(outputRoot).length, buildInfo }
+  return {
+    variantId,
+    outputRoot,
+    packaged: false,
+    files: walkFiles(outputRoot).length,
+    buildInfo,
+  }
 }
 
 function logicalInteractiveReport(outputRoot, zipBytes = null) {
@@ -146,9 +148,12 @@ function buildInteractive() {
   }
 }
 
-const result = variant.platform === 'interactive-space' ? buildInteractive() : buildFull()
+const result = variant.package.enabled ? buildInteractive() : buildFull()
+const resultPath = artifactPath
+  ? join(artifactRoot, 'targeting-2026-compliant-interactive.build-result.json')
+  : join(result.outputRoot, 'build-result.json')
 writeFileSync(
-  join(artifactRoot, `${basename(artifactPath, '.zip')}.build-result.json`),
+  resultPath,
   `${JSON.stringify(result, null, 2)}\n`,
 )
 console.log(JSON.stringify(result, null, 2))
