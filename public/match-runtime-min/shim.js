@@ -79,7 +79,7 @@
     return bundleCache;
   }
   function bundleEntryFor(url) {
-    if (typeof url !== 'string' || url.indexOf('/data/') === -1) return { key: null, entry: null };
+    if (typeof url !== 'string') return { key: null, entry: null };
     let key = url.split('?')[0];
     if (key.indexOf(MATCH_RUNTIME_BASE + '/') === 0) key = key.slice(MATCH_RUNTIME_BASE.length);
     return { key, entry: bundleMap()[key] || null };
@@ -89,10 +89,22 @@
     if (!hit.entry) return url;
     if (window.__bundleTextOnly && !/\.(json|atlas|fnt|xml|txt)$/.test(hit.key)) return url;
     if (!bundleUrls[hit.key]) {
-      const bin = atob(hit.entry[0]);
-      const bytes = new Uint8Array(bin.length);
-      for (let i = 0; i < bin.length; i += 1) bytes[i] = bin.charCodeAt(i);
-      bundleUrls[hit.key] = URL.createObjectURL(new Blob([bytes], { type: hit.entry[1] }));
+      // WKWebView's apph5game:// handler reports blob-backed JSON requests as
+      // complete while leaving PIXI Resource.data=null. Text data URIs avoid
+      // that custom-scheme parsing bug and preserve the original .json
+      // extension already recorded by PIXI before XHR.open is normalized.
+      if (
+        /\.(json|atlas|fnt|xml|txt)$/.test(hit.key) ||
+        hit.key === '/images/indicators.png' ||
+        hit.key === '/images/particles/grass_multiple.png'
+      ) {
+        bundleUrls[hit.key] = 'data:' + hit.entry[1] + ';base64,' + hit.entry[0];
+      } else {
+        const bin = atob(hit.entry[0]);
+        const bytes = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i += 1) bytes[i] = bin.charCodeAt(i);
+        bundleUrls[hit.key] = URL.createObjectURL(new Blob([bytes], { type: hit.entry[1] }));
+      }
     }
     return bundleUrls[hit.key];
   }
@@ -100,17 +112,35 @@
   // is not reliable cross-browser, so text reads come straight from here.
   // Accepts any path shape the engine throws around ('data/x', '/data/x',
   // 'app/data/x', absolute with the runtime base...).
-  window.__bundleReadText = function (p) {
+  function bundleKeyForPath(p) {
     if (typeof p !== 'string') return null;
     let key = p.replace(/\\/g, '/').split('?')[0];
-    const i = key.indexOf('data/');
-    if (i === -1) return null;
-    const entry = bundleMap()['/' + key.slice(i)];
+    const runtimeIndex = key.indexOf(MATCH_RUNTIME_BASE + '/');
+    if (runtimeIndex >= 0) {
+      key = key.slice(runtimeIndex + MATCH_RUNTIME_BASE.length);
+    } else {
+      const publicIndex = key.search(/(?:^|\/)(data|images|happyseed)\//);
+      if (publicIndex < 0) return null;
+      key = key.slice(publicIndex);
+    }
+    while (key.startsWith('/')) key = key.slice(1);
+    return '/' + key;
+  }
+  window.__bundleReadText = function (p) {
+    const key = bundleKeyForPath(p);
+    if (!key) return null;
+    const entry = bundleMap()[key];
     if (!entry) return null;
     const bin = atob(entry[0]);
     const bytes = new Uint8Array(bin.length);
     for (let j = 0; j < bin.length; j += 1) bytes[j] = bin.charCodeAt(j);
     return new TextDecoder('utf-8').decode(bytes);
+  };
+  window.__bundleDataUrl = function (p) {
+    const key = bundleKeyForPath(p);
+    if (!key) return null;
+    const entry = bundleMap()[key];
+    return entry ? 'data:' + entry[1] + ';base64,' + entry[0] : null;
   };
 
   function normalizePublicAssetUrlRaw(url) {

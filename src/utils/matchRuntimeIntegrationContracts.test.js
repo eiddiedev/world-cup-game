@@ -24,6 +24,14 @@ const matchBroadcast = readFileSync(
   path.join(projectRoot, 'src/components/HappySeedMatchBroadcast.jsx'),
   'utf8',
 )
+const mainApp = readFileSync(
+  path.join(projectRoot, 'src/App.jsx'),
+  'utf8',
+)
+const interactiveBuilder = readFileSync(
+  path.join(projectRoot, 'scripts/build-interactive.mjs'),
+  'utf8',
+)
 
 describe('Match Runtime integration contracts', () => {
   it('extends both halves with data-driven stoppage time outside the third-party core', () => {
@@ -193,7 +201,7 @@ describe('Match Runtime integration contracts', () => {
   it('uses one bounded recovery path without expiring while the coach is still reading', () => {
     expect(runtimeService).toContain("'happyseed/runtime-v2.js?v=13'")
     expect(runtimeService).toContain("'happyseed/runtime-v3.js?v=14'")
-    expect(runtimeService).toContain("'standalone-match.js?v=42'")
+    expect(runtimeService).toContain("'standalone-match.js?v=43'")
     expect(matchBroadcast).toMatch(
       /withDecisionWatchdog\(\s*prepareFormalCoachDecision\(/,
     )
@@ -267,6 +275,20 @@ describe('Match Runtime integration contracts', () => {
     expect(runtimeStadium).toContain('document.addEventListener("pointermove"')
     expect(runtimeStadium).toContain('if (window.__acPlay || event.touches.length !== 2) return')
     expect(runtimeStadium).toContain('pinchStartZoom * nextDistance / pinchStartDistance')
+  })
+
+  it('starts interactive-space coach matches zoomed out without changing player mode', () => {
+    expect(runtimeService).toContain('window.__happySeedInteractiveSpace = Boolean(__DOUYIN_BUILD__)')
+    expect(runtimeService).toContain(
+      'else if (__DOUYIN_BUILD__ && !options.playerMode && !options.technicalLab) setZoom(0.68)',
+    )
+    expect(standaloneRuntime).toContain(
+      'return window.__happySeedInteractiveSpace && !window.__acPlay ? 0.68 : 1',
+    )
+    expect(standaloneRuntime).toContain(
+      'return window.__happySeedInteractiveSpace && !window.__acPlay ? 0.48 : 0.8',
+    )
+    expect(standaloneRuntime).toContain('window.__matchZoomMul = defaultZoomMultiplier()')
   })
 
   it('refreshes custom stadium and player renderers after every native loadMatch', () => {
@@ -368,6 +390,49 @@ describe('Match Runtime integration contracts', () => {
     expect(keeper).toMatchObject({ static: false, passing: false })
     expect(teammate).toMatchObject({ static: false, passing: false })
     expect(context.document.body.dataset.goalkeeperDistributionRecovery).toBe('1')
+  })
+
+  it('loads the interactive-space Runtime once from one ordered static bundle', () => {
+    expect(interactiveBuilder).not.toContain(
+      '<script src="./match-runtime-min/__data-bundle.js"></script>',
+    )
+    expect(interactiveBuilder).not.toContain(
+      '<script src="./match-runtime-min/__dirlist.js"></script>',
+    )
+    expect(interactiveBuilder).toContain(
+      '<script defer src="./runtime-data-a.js"></script>',
+    )
+    expect(interactiveBuilder).toContain('<script defer src="./runtime-data-b.js"></script>')
+    expect(interactiveBuilder).toContain('<script defer src="./app-bundle.js"></script>')
+    expect(interactiveBuilder).toContain('function buildPlatformScriptShards()')
+    expect(interactiveBuilder).toContain('Platform script shard exceeds 3 MiB')
+    expect(interactiveBuilder).toContain('function sanitizePackageAssetPaths()')
+    expect(interactiveBuilder).toContain('CSP-unsafe Runtime compilers remain')
+    expect(runtimeService).toContain('const SCRIPT_PATHS = __DOUYIN_BUILD__ ? [] : [')
+    expect(runtimeService).toContain('互动空间比赛引擎静态包未完成注入')
+    expect(runtimeService).not.toMatch(
+      /if \(__DOUYIN_BUILD__\)[\s\S]{0,800}loadScript\('__data-bundle\.js'\)/,
+    )
+    expect(mainApp).toContain('ready: IS_TEST_RUNTIME || IS_DOUYIN_DEMO')
+    expect(mainApp).toMatch(
+      /if \(IS_TEST_RUNTIME \|\| IS_DOUYIN_DEMO\) return undefined[\s\S]*preloadAssetUrls\(getCriticalStartupAssets/,
+    )
+  })
+
+  it('packages interactive-space archives with UTF-8 path metadata', () => {
+    expect(interactiveBuilder).toContain("import { zipSync } from 'fflate'")
+    expect(interactiveBuilder).toContain('function writeUtf8Zip(')
+    expect(interactiveBuilder).toContain('writeUtf8Zip(deliveryDirectory, zipPath)')
+  })
+
+  it('packages four exact kits and tints one shared kit for every other opponent', () => {
+    expect(interactiveBuilder).not.toMatch(/const pixelWhitelist[\s\S]*?'kits'/)
+    expect(interactiveBuilder).toContain('scripts/build-shared-runtime-kit.py')
+    expect(interactiveBuilder).toContain("firstReport.scheduleAssets.kitTeams !== 5")
+    expect(standaloneRuntime).toContain('function kitSlotTint(visual, slot)')
+    expect(standaloneRuntime).toContain('if (!visual.sharedKit || !visual.palette) return 16777215')
+    expect(standaloneRuntime).toContain('sharedKitTint(visual.palette.shorts')
+    expect(standaloneRuntime).toContain('sharedKitTint(visual.palette.socks')
   })
 
   it('restores frozen live-shot players from Idle to explicit AI states', () => {

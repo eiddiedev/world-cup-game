@@ -6,13 +6,17 @@ import {
   adaptLineupToFormation,
   autoSelectLineupForFormation,
 } from './lineupFormation.js'
-import { HAPPYSEED_HUMAN_PART_SET_ID } from './happySeedHumanPlayer.js'
+import {
+  buildHappySeedKitPalette,
+  HAPPYSEED_HUMAN_PART_SET_ID,
+} from './happySeedHumanPlayer.js'
 
 export const HAPPYSEED_RUNTIME_ACTOR_SCHEMA_VERSION = 'happyseed-runtime-actors-v1'
 export const HAPPYSEED_RUNTIME_ACTOR_COUNT = 22
 export const HAPPYSEED_FORMATION_TRANSITION_MS = 1600
 export const HAPPYSEED_RUNTIME_PLAYER_DISPLAY_SCALE = 0.62
 const PIXEL_PREFIX = __DOUYIN_BUILD__ ? './pixel' : '/pixel'
+const DOUYIN_SELECTABLE_TEAM_IDS = new Set(['spain', 'england', 'norway', 'capeverde'])
 
 const SIDE_ORDER = ['red', 'blue']
 const POSITION_ORDER = ['GK', 'DF', 'MF', 'FW']
@@ -128,12 +132,18 @@ function bodyProfileFor(player) {
   return HEAD_VARIANT_IDS[stableHash(playerId) % HEAD_VARIANT_IDS.length]
 }
 
+export function resolveHappySeedRuntimeKitTeamId(teamId, isDouyinBuild = __DOUYIN_BUILD__) {
+  return isDouyinBuild && !DOUYIN_SELECTABLE_TEAM_IDS.has(teamId) ? 'shared' : teamId
+}
+
 function buildVisualAssets(teamId, player, assignedPosition, kitVariant) {
   const role = assignedPosition === 'GK' ? 'goalkeeper' : 'outfield'
   const bodyProfileId = bodyProfileFor(player)
   const kitType = role === 'goalkeeper'
     ? (kitVariant === 'away' ? 'away-goalkeeper' : 'goalkeeper')
     : kitVariant
+  const kitAssetTeamId = resolveHappySeedRuntimeKitTeamId(teamId)
+  const sharedKit = kitAssetTeamId === 'shared'
   const playerRoot = `${PIXEL_PREFIX}/player/${HAPPYSEED_HUMAN_PART_SET_ID}/${bodyProfileId}`
 
   return {
@@ -141,8 +151,10 @@ function buildVisualAssets(teamId, player, assignedPosition, kitVariant) {
     role,
     kitVariant,
     kitType,
+    sharedKit,
+    palette: buildHappySeedKitPalette(teamId, role, kitVariant),
     playerRoot,
-    kitRoot: `${PIXEL_PREFIX}/kits/${teamId}/${kitType}/${HAPPYSEED_HUMAN_PART_SET_ID}`,
+    kitRoot: `${PIXEL_PREFIX}/kits/${kitAssetTeamId}/${kitType}/${HAPPYSEED_HUMAN_PART_SET_ID}`,
     number: `${PIXEL_PREFIX}/numbers/${HAPPYSEED_HUMAN_PART_SET_ID}/${player.number}.png`,
     headFront: `${playerRoot}/head_front.png`,
     headBack: `${playerRoot}/head_back.png`,

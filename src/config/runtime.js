@@ -1,6 +1,8 @@
-export const IS_DOUYIN_DEMO = import.meta.env?.MODE === 'douyin'
+export const IS_DOUYIN_MINIMAL = import.meta.env?.MODE === 'douyin-minimal'
+export const IS_DOUYIN_DEMO = import.meta.env?.MODE === 'douyin' || IS_DOUYIN_MINIMAL
 
-export const DOUYIN_DEMO_TEAM_IDS = ['france', 'curacao']
+// 互动空间版保留四档难度的可选球队；其余球队只参与完整赛程。
+export const DOUYIN_DEMO_TEAM_IDS = ['spain', 'england', 'norway', 'capeverde']
 
 export const ALL_PLAYABLE_TEAM_IDS = [
   'spain',
@@ -32,5 +34,5 @@ export function getPlayableTeamIds(demo = IS_DOUYIN_DEMO) {
 }
 
 export function getStorageKey(demo = IS_DOUYIN_DEMO) {
-  return demo ? 'targeting-2026-douyin-demo-save' : 'targeting-2026-save'
+  return demo ? 'targeting-2026-world-cup-save' : 'targeting-2026-save'
 }

@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { hasContinueGame, getCodexProgress } from '../utils/saveManager'
+import { IS_DOUYIN_DEMO } from '../config/runtime'
 
 const PRIMARY_MODES = [
   { id: 'coach', label: '教练模式' },
@@ -23,7 +24,7 @@ const CONTINUE_STAGES = new Set([
  */
 export default function HomeScreen({ saveData, updateSaveData, navigateTo, showToast }) {
   const [selectedMode, setSelectedMode] = useState(null)
-  const codexProgress = getCodexProgress(saveData)
+  const codexProgress = IS_DOUYIN_DEMO ? null : getCodexProgress(saveData)
   const hasSave = hasContinueGame(saveData)
   const savedMode = saveData.currentRun?.gameMode || 'coach'
   // 球员模式独立存档判断
@@ -91,14 +92,16 @@ export default function HomeScreen({ saveData, updateSaveData, navigateTo, showT
             </button>
           ))}
 
-          <button
-            type="button"
-            className="PixelButton menu-button"
-            onClick={() => navigateTo('penalty-mode')}
-          >
-            <span className="button-face" aria-hidden="true" />
-            <span className="button-label">点球大战</span>
-          </button>
+          {!IS_DOUYIN_DEMO && (
+            <button
+              type="button"
+              className="PixelButton menu-button"
+              onClick={() => navigateTo('penalty-mode')}
+            >
+              <span className="button-face" aria-hidden="true" />
+              <span className="button-label">点球大战</span>
+            </button>
+          )}
 
           <button
             type="button"
@@ -110,11 +113,13 @@ export default function HomeScreen({ saveData, updateSaveData, navigateTo, showT
           </button>
         </nav>
 
-        <aside className="PixelPanel codex-panel" onClick={() => navigateTo('codex')} role="button" tabIndex={0} aria-label="图鉴">
-          <img src="/assets/图鉴.png" alt="" className="codex-panel-icon" />
-          <span className="codex-panel-label">图鉴</span>
-          <span className="codex-panel-progress">{codexProgress.done}/{codexProgress.total}</span>
-        </aside>
+        {!IS_DOUYIN_DEMO && (
+          <aside className="PixelPanel codex-panel" onClick={() => navigateTo('codex')} role="button" tabIndex={0} aria-label="图鉴">
+            <img src="/assets/图鉴.png" alt="" className="codex-panel-icon" />
+            <span className="codex-panel-label">图鉴</span>
+            <span className="codex-panel-progress">{codexProgress.done}/{codexProgress.total}</span>
+          </aside>
+        )}
       </section>
 
       {selectedMode && (

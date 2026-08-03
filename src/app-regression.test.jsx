@@ -473,11 +473,13 @@ describe('team and player data', () => {
       'curacao',
     ])
     expect(selectPlayableTeams(sourceTeams, true).map(team => team.id)).toEqual([
-      'france',
-      'curacao',
+      'spain',
+      'england',
+      'norway',
+      'capeverde',
     ])
     expect(getStorageKey(false)).toBe('targeting-2026-save')
-    expect(getStorageKey(true)).toBe('targeting-2026-douyin-demo-save')
+    expect(getStorageKey(true)).toBe('targeting-2026-world-cup-save')
   })
 
   it('keeps every selectable team at a 24-player pool with one named golden star', () => {

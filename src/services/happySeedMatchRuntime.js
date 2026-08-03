@@ -53,7 +53,7 @@ const SCRIPT_PATHS = __DOUYIN_BUILD__ ? [] : [
   'scripts/match.rebuilt.js',
   'happyseed/runtime-v2.js?v=13',
   'happyseed/runtime-v3.js?v=14',
-  'standalone-match.js?v=42',
+  'standalone-match.js?v=43',
 ]
 
 const MATCH_EVENTS = [
@@ -750,6 +750,7 @@ export function bootHappySeedMatch(options = {}) {
     // 确保引擎 canvas 可见（上次卸载时可能被隐藏）
     const existingCanvas = window.__matchGame?.renderer?.view
     if (existingCanvas) existingCanvas.style.display = ''
+    window.__happySeedInteractiveSpace = Boolean(__DOUYIN_BUILD__)
     window.__acPlay = Boolean(options.playerMode)
     let studioRecipe = null
     if (options.studioPreview) {
@@ -826,6 +827,7 @@ export function bootHappySeedMatch(options = {}) {
     await started
     setSpeed(1)
     if (options.studioPreview) setZoom(2.4)
+    else if (__DOUYIN_BUILD__ && !options.playerMode && !options.technicalLab) setZoom(0.68)
     if (!options.technicalLab) formalDecisionStatus = 'waiting-opportunity'
     window.addEventListener('ab-match-ended', () => {
       bootPromise = null

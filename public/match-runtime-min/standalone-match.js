@@ -110,6 +110,12 @@
   }
   var AUTO_ZOOM = { current: 1, from: 1, target: 1, t0: 0, dur: 0, nextAt: 0 };
   window.__autoZoom = AUTO_ZOOM;
+  function defaultZoomMultiplier() {
+    return window.__happySeedInteractiveSpace && !window.__acPlay ? 0.68 : 1;
+  }
+  function minimumEffectiveZoom() {
+    return window.__happySeedInteractiveSpace && !window.__acPlay ? 0.48 : 0.8;
+  }
   function autoZoom() {
     var now = performance.now();
     if (window.__introStart)
@@ -141,8 +147,9 @@
     return AUTO_ZOOM.current < 1 ? 1 : AUTO_ZOOM.current;
   }
   function effZoom() {
-    var z = MATCH_ZOOM * (window.__matchZoomMul || 1) * autoZoom();
-    return ((z = z < 0.8 ? 0.8 : z > 6 ? 6 : z), z * introScale());
+    var z = MATCH_ZOOM * (window.__matchZoomMul || 1) * autoZoom(),
+      minimumZoom = minimumEffectiveZoom();
+    return ((z = z < minimumZoom ? minimumZoom : z > 6 ? 6 : z), z * introScale());
   }
   ((window.__matchZoom = {
     get: function () {
@@ -159,7 +166,7 @@
       window.__matchZoom.set((window.__matchZoomMul || 1) * d);
     },
     reset: function () {
-      window.__matchZoomMul = 1;
+      window.__matchZoomMul = defaultZoomMultiplier();
       try {
         window.__matchGame.pitch.camera.instantZoom(effZoom());
       } catch {}

@@ -323,9 +323,15 @@ export default function HappySeedRuntimeLab() {
       }
       setLabDirectorPhase('staging')
       await prepareFormalCoachDecision(decision, runtimeMoment, sourceEvent)
+      const preparedChoice = decision.choices.find((choice) => (
+        choice.id === selectedLabChoice.id
+      )) || decision.choices[0]
+      const preparedOutcome = preparedChoice.possible_outcomes.includes(selectedLabOutcome)
+        ? selectedLabOutcome
+        : preparedChoice.possible_outcomes[0]
       setLabDecision(decision)
-      setLabChoiceId(decision.choices[0].id)
-      setLabOutcomeId(decision.choices[0].possible_outcomes[0])
+      setLabChoiceId(preparedChoice.id)
+      setLabOutcomeId(preparedOutcome)
       setLabDirectorPhase('choosing')
       setStatus(`V3 Lab 已准备：${selectedLabScenario.trigger}`)
     } catch (directorError) {
@@ -515,8 +521,8 @@ export default function HappySeedRuntimeLab() {
                   disabled={labDirectorPhase !== 'idle'}
                   onChange={(event) => setLabOutcomeId(event.target.value)}
                 >
-                  {selectedLabChoice.possible_outcomes.map((outcome) => (
-                    <option value={outcome} key={outcome}>{outcome}</option>
+                  {selectedLabChoice.possible_outcomes.map((outcome, index) => (
+                    <option value={outcome} key={`${outcome}-${index}`}>{outcome}</option>
                   ))}
                 </select>
               </label>

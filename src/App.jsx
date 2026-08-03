@@ -73,9 +73,9 @@ export default function App() {
   const [activeGameMode, setActiveGameMode] = useState('coach')
   const [toast, setToast] = useState(null)
   const [startup, setStartup] = useState({
-    ready: IS_TEST_RUNTIME,
-    progress: IS_TEST_RUNTIME ? 100 : 0,
-    detail: IS_TEST_RUNTIME ? '必要资源加载完成' : '正在准备主视觉',
+    ready: IS_TEST_RUNTIME || IS_DOUYIN_DEMO,
+    progress: IS_TEST_RUNTIME || IS_DOUYIN_DEMO ? 100 : 0,
+    detail: IS_TEST_RUNTIME || IS_DOUYIN_DEMO ? '必要资源加载完成' : '正在准备主视觉',
   })
 
   useEffect(() => {
@@ -92,7 +92,9 @@ export default function App() {
   }, [])
 
   useEffect(() => {
-    if (IS_TEST_RUNTIME) return undefined
+    // 互动空间优先完成 React 首绘，图片由页面按需加载，避免冷启动被
+    // 22 个视觉资源阻塞。完整版仍保留启动预载和进度反馈。
+    if (IS_TEST_RUNTIME || IS_DOUYIN_DEMO) return undefined
     let cancelled = false
     preloadAssetUrls(getCriticalStartupAssets(teams), {
       concurrency: 6,
@@ -115,7 +117,7 @@ export default function App() {
   }, [])
 
   useEffect(() => {
-    if (IS_TEST_RUNTIME || !startup.ready) return undefined
+    if (IS_TEST_RUNTIME || IS_DOUYIN_DEMO || !startup.ready) return undefined
     let cancelled = false
     const cancelTask = scheduleSoftTask(() => {
       preloadHappySeedRuntimeCore()
@@ -146,7 +148,7 @@ export default function App() {
 
   useEffect(() => {
     const run = saveData?.currentRun
-    if (!startup.ready || !run?.teamId) return
+    if (IS_DOUYIN_DEMO || !startup.ready || !run?.teamId) return
     const selectedTeam = getTeamById(run.teamId)
     const opponent = getTeamById(run.currentOpponent)
     let cancelled = false
@@ -358,8 +360,10 @@ export default function App() {
       case 'settings':
         return <SettingsScreen {...screenProps} />
       case 'penalty-mode':
+        if (IS_DOUYIN_DEMO) return <HomeScreen {...screenProps} />
         return <PenaltyModeScreen {...screenProps} />
       case 'codex':
+        if (IS_DOUYIN_DEMO) return <HomeScreen {...screenProps} />
         return <CodexScreen {...screenProps} />
       case 'training':
         return <TrainingGround {...screenProps} />

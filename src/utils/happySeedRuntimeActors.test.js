@@ -5,11 +5,21 @@ import {
   buildHappySeedRuntimeActorConfig,
   patchHappySeedRuntimeActor,
   planHappySeedRuntimeFormationChange,
+  resolveHappySeedRuntimeKitTeamId,
   substituteHappySeedRuntimeActor,
   validateHappySeedRuntimeActorConfig,
 } from './happySeedRuntimeActors.js'
 
 describe('HappySeed Runtime 业务球员映射', () => {
+  it('keeps four selectable kits and shares one tinted kit for other Douyin opponents', () => {
+    expect(resolveHappySeedRuntimeKitTeamId('spain', true)).toBe('spain')
+    expect(resolveHappySeedRuntimeKitTeamId('england', true)).toBe('england')
+    expect(resolveHappySeedRuntimeKitTeamId('norway', true)).toBe('norway')
+    expect(resolveHappySeedRuntimeKitTeamId('capeverde', true)).toBe('capeverde')
+    expect(resolveHappySeedRuntimeKitTeamId('france', true)).toBe('shared')
+    expect(resolveHappySeedRuntimeKitTeamId('france', false)).toBe('france')
+  })
+
   it('maps two budget-sized squads onto 22 unique runtime actor slots', () => {
     const config = buildHappySeedRuntimeActorConfig({ red: 'france', blue: 'brazil' })
     const validation = validateHappySeedRuntimeActorConfig(config)

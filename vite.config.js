@@ -4,7 +4,8 @@ import { fileURLToPath } from 'node:url'
 
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
-  const isDouyinDemo = mode === 'douyin'
+  const isDouyinMinimal = mode === 'douyin-minimal'
+  const isDouyinDemo = mode === 'douyin' || isDouyinMinimal
   const isLabsBuild = mode === 'labs'
 
   return {
@@ -18,7 +19,7 @@ export default defineConfig(({ mode }) => {
       '__DOUYIN_BUILD__': JSON.stringify(false),
     },
     build: {
-      outDir: isDouyinDemo ? 'dist-douyin' : isLabsBuild ? 'dist-labs' : 'dist',
+      outDir: isDouyinMinimal ? 'dist-douyin-minimal' : isDouyinDemo ? 'dist-douyin' : isLabsBuild ? 'dist-labs' : 'dist',
       emptyOutDir: true,
       ...(!isDouyinDemo && isLabsBuild ? {
         rollupOptions: {
