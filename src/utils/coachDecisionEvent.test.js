@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { COACH_DECISION_EVENT_DEFINITIONS } from '../data/coachDecisionEvents.js'
 import { DECISION_LIBRARY, getScenarioById } from '../data/decisionLibrary.js'
 import {
+  calculateDecisionGoalConversion,
   executeDecision,
   resolveChoiceResult,
 } from './decisionSystem.js'
@@ -135,6 +136,29 @@ describe('CoachDecisionEvent phase one', () => {
     expect(scored).toMatchObject({ outcome: 'goal_chip', isSuccess: true, homeScoreChange: 1 })
     expect(missed.isSuccess).toBe(false)
     expect(missed.homeScoreChange).toBe(0)
+  })
+
+  it('reduces decision goal conversion after a high-scoring or one-sided match develops', () => {
+    const choice = getScenarioById('solo_run_penalty').choices.find(item => item.id === 'far_post_shot')
+    const openMatch = calculateDecisionGoalConversion(choice, 0.72, {
+      teamAvgRating: 86,
+      myScore: 1,
+      oppScore: 1,
+    })
+    const fourGoalMatch = calculateDecisionGoalConversion(choice, 0.72, {
+      teamAvgRating: 86,
+      myScore: 3,
+      oppScore: 1,
+    })
+    const runawayLead = calculateDecisionGoalConversion(choice, 0.72, {
+      teamAvgRating: 86,
+      myScore: 5,
+      oppScore: 1,
+    })
+
+    expect(fourGoalMatch).toBeLessThan(openMatch)
+    expect(runawayLead).toBeLessThan(fourGoalMatch)
+    expect(runawayLead).toBeGreaterThan(0)
   })
 
   it('records defensive goal outcomes on the opponent score authority', () => {

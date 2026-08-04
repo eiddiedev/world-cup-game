@@ -962,7 +962,7 @@ describe('DecisionSceneScriptV3', () => {
       .choices.find((choice) => choice.id === 'direct_freekick')
     const solo = DECISION_LIBRARY.find((scenario) => scenario.id === 'solo_run_penalty')
       .choices.find((choice) => choice.id === 'shoot_near_post')
-    expect(freeKick.goal_conversion).toBe(0.12)
+    expect(freeKick.goal_conversion).toBe(0.10)
     expect(freeKick.goal_conversion).toBeLessThan(solo.goal_conversion / 4)
     expect(freeKick.conversion_miss_outcome).toBe('hit_wall')
   })

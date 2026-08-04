@@ -2077,6 +2077,7 @@
   function resetReusableMatchLifecycle(game, reason) {
     var pitch = game && game.pitch;
     if (!game || !pitch) return null;
+    restorePlayerModeDemoShape(game);
     try {
       var director = window.__happySeedDecisionDirectorV3;
       if (director && director.cancel) director.cancel();
@@ -2281,6 +2282,149 @@
       console.warn("[standalone-match] stoppage-time end failed", error);
     }
   }
+  function playerModeAssistProfile() {
+    var profile = window.__happySeedPlayerModeAssist;
+    return acPlay() && profile && profile.enabled ? profile : null;
+  }
+  function restorePlayerModeDemoShape(game) {
+    var pitch = game && game.pitch,
+      teams = pitch ? [pitch.redTeam, pitch.blueTeam] : [];
+    for (var ti = 0; ti < teams.length; ti += 1) {
+      var team = teams[ti],
+        homes = team && team._happySeedDemoHomes;
+      if (!homes) continue;
+      homes.forEach(function (record) {
+        if (!record || !record.player || !record.player.home) return;
+        record.player.home.x = record.x;
+        record.player.home.y = record.y;
+      });
+      team._happySeedDemoHomes = null;
+    }
+    if (game) {
+      game.__happySeedPlayerAssistOwner = null;
+      game.__happySeedPlayerAssistGraceUntil = 0;
+      game.__happySeedPlayerAssistNextShapeAt = 0;
+      game.__happySeedPlayerAssistPresser = null;
+      game.__happySeedPlayerAssistActive = !1;
+    }
+    window.__happySeedPlayerModeAssistSnapshot = null;
+    try {
+      delete document.body.dataset.playerModeAssist;
+      delete document.body.dataset.playerModeActivePressers;
+    } catch {}
+  }
+  function widenPlayerModeDefensiveShape(game, profile) {
+    var pitch = game.pitch,
+      team = pitch.blueTeam,
+      players = team && (team.allPlayers || team.players) || [];
+    if (!team || team._happySeedDemoHomes || !players.length) return;
+    team._happySeedDemoHomes = players.map(function (player) {
+      return player && player.home
+        ? { player: player, x: player.home.x, y: player.home.y }
+        : null;
+    });
+    var centerY = pitch.height / 2,
+      width = Number(profile.defensiveWidth || 1);
+    team._happySeedDemoHomes.forEach(function (record) {
+      if (!record || !record.player || !record.player.home
+        || record.player.isGoalkeeper) return;
+      record.player.home.y = Math.max(
+        pitch.height * .08,
+        Math.min(
+          pitch.height * .92,
+          centerY + (record.y - centerY) * width,
+        ),
+      );
+    });
+  }
+  function releasePlayerModeDefensiveShape(game) {
+    var pitch = game.pitch,
+      playerStates = runtime("players/states"),
+      playerGlobals = runtime("players/global"),
+      team = pitch.blueTeam,
+      players = team && (team.fieldPlayers || team.players || team.allPlayers) || [],
+      nextState = team && team.inControl
+        ? playerStates.AIAttack
+        : playerStates.AIDefend;
+    players.forEach(function (player) {
+      if (!player || player.isGoalkeeper || !player.states) return;
+      try { playerGlobals.forceAI(player, null); } catch {}
+      try { nextState && player.states.change(nextState); } catch {}
+    });
+    game.__happySeedPlayerAssistPresser = null;
+    game.__happySeedPlayerAssistActive = !1;
+  }
+  function applyPlayerModeDemoAssist(game) {
+    var profile = playerModeAssistProfile(),
+      pitch = game && game.pitch;
+    if (!profile || !pitch || game.__happySeedTrainingActive
+      || runtimeStateName(game) !== "Match" || pitch.ballOutOfPlay) return !1;
+    widenPlayerModeDefensiveShape(game, profile);
+    var owner = pitch.ball && (pitch.ball.owner || pitch.ball.inHands),
+      now = performance.now();
+    // Keep the same press shape while a pass is travelling. Releasing all AI
+    // on every owner-less frame recreates the swarm just before the receiver's
+    // grace window begins.
+    if (!owner) return Boolean(game.__happySeedPlayerAssistActive);
+    if (owner.team !== pitch.redTeam || owner.isGoalkeeper || !owner.position) {
+      if (game.__happySeedPlayerAssistActive)
+        releasePlayerModeDefensiveShape(game);
+      return !1;
+    }
+    if (owner !== game.__happySeedPlayerAssistOwner) {
+      game.__happySeedPlayerAssistOwner = owner;
+      game.__happySeedPlayerAssistGraceUntil =
+        now + Number(profile.receptionGraceMs || 0);
+      game.__happySeedPlayerAssistNextShapeAt = 0;
+    }
+    if (now < Number(game.__happySeedPlayerAssistNextShapeAt || 0)) return !0;
+    game.__happySeedPlayerAssistNextShapeAt =
+      now + Number(profile.shapeRefreshMs || 280);
+    var playerStates = runtime("players/states"),
+      playerGlobals = runtime("players/global"),
+      team = pitch.blueTeam,
+      opponents = (team && (team.fieldPlayers || team.players || team.allPlayers) || [])
+        .filter(function (player) {
+          return player && !player.isGoalkeeper && player.position && player.states;
+        })
+        .map(function (player) {
+          var dx = player.position.x - owner.position.x,
+            dy = player.position.y - owner.position.y;
+          return { player: player, distance: Math.sqrt(dx * dx + dy * dy) };
+        })
+        .sort(function (a, b) { return a.distance - b.distance; }),
+      graceActive = now < Number(game.__happySeedPlayerAssistGraceUntil || 0),
+      presser = graceActive ? null : opponents[0] && opponents[0].player,
+      cover = opponents[graceActive ? 0 : 1] || null,
+      coverMinimumDistance = Number(profile.coverMinimumDistance || 6.5);
+    for (var i = 0; i < opponents.length; i += 1) {
+      var entry = opponents[i], player = entry.player;
+      try { playerGlobals.forceAI(player, null); } catch {}
+      if (player === presser) {
+        if (player !== game.__happySeedPlayerAssistPresser)
+          try { player.states.change(playerStates.AIDefend); } catch {}
+        continue;
+      }
+      if (cover && player === cover.player && !graceActive
+        && entry.distance >= coverMinimumDistance) continue;
+      if (stateObjectName(player.states.current) !== "ReturnHome")
+        try { player.states.change(playerStates.ReturnHome); } catch {}
+    }
+    game.__happySeedPlayerAssistPresser = presser;
+    game.__happySeedPlayerAssistActive = !0;
+    window.__happySeedPlayerModeAssistSnapshot = {
+      enabled: !0,
+      receptionGrace: graceActive,
+      activePressers: presser ? 1 : 0,
+      coverPlayers: cover ? 1 : 0,
+      defensiveWidth: Number(profile.defensiveWidth || 1),
+    };
+    try {
+      document.body.dataset.playerModeAssist = graceActive ? "reception-grace" : "shape";
+      document.body.dataset.playerModeActivePressers = String(presser ? 1 : 0);
+    } catch {}
+    return !0;
+  }
   function createPlayPhase() {
     var State = runtime("core/states").State,
       geometry = runtime("core/math/geometry"),
@@ -2294,6 +2438,7 @@
           (this._aiming = !1),
           (this._aimSlow = null),
           (this._shootHeld = 0),
+          (this._bufferedPassUntil = 0),
           mode.game.pitch.resume(),
           mode.game.stadium.resume());
       },
@@ -2312,6 +2457,7 @@
               trainingTarget = mode.game.__happySeedTrainingActive
                 ? mode.game.allPlayers[mode.game.__happySeedTrainingPlayerIndex]
                 : null;
+            applyPlayerModeDemoAssist(mode.game);
             if (trainingTarget) {
               this._wasLive = live;
               u0.enabled = !0;
@@ -2394,7 +2540,9 @@
             }
             var ti = window.__touchInput;
             if (ti && ti.active && u0.controller) {
-              var c = u0.controller;
+              var c = u0.controller,
+                assistProfile = playerModeAssistProfile(),
+                inputNow = performance.now();
               ((c.velocity.x = ti.vx), (c.velocity.y = ti.vy));
               var sp = Math.sqrt(ti.vx * ti.vx + ti.vy * ti.vy);
               ((c.speed = sp > 1 ? 1 : sp),
@@ -2402,7 +2550,18 @@
                   ((c.direction.x = ti.vx / sp), (c.direction.y = ti.vy / sp)),
                 (c.shoot.isActive = !!ti.shoot),
                 (c.sprint.isActive = !!ti.sprint),
-                ti.pass && ((c.pass.isActive = !0), (ti.pass = !1)),
+                ti.pass &&
+                  (u0.player && u0.player.hasBall
+                    ? (c.pass.isActive = !0)
+                    : assistProfile &&
+                      (this._bufferedPassUntil = inputNow +
+                        Number(assistProfile.passInputBufferMs || 0)),
+                  (ti.pass = !1)),
+                this._bufferedPassUntil > inputNow &&
+                  u0.player && u0.player.hasBall &&
+                  ((c.pass.isActive = !0), (this._bufferedPassUntil = 0)),
+                this._bufferedPassUntil && this._bufferedPassUntil <= inputNow &&
+                  (this._bufferedPassUntil = 0),
                 ti.lob && ((c.lob.isActive = !0), (ti.lob = !1)),
                 ti.switchPlayer &&
                   ((c.togglePlayer.isActive = !0), (ti.switchPlayer = !1)),

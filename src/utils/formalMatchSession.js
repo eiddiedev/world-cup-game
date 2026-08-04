@@ -45,7 +45,7 @@ const PRIORITY_CHANNEL_SCENARIO_IDS = new Set([
 export const FORMAL_GOAL_VAR_REVIEW_RATE = 0.28
 export const FORMAL_GOAL_VAR_DISALLOW_RATE = 0.12
 export const FORMAL_MATCH_BALANCE_TARGETS = Object.freeze({
-  totalGoals: Object.freeze([3, 4.2]),
+  totalGoals: Object.freeze([3.5, 4.5]),
   opponentGoals: Object.freeze([0.6, 1.2]),
   redCards: Object.freeze([0.15, 0.25]),
   penalties: Object.freeze([0.5, 0.9]),

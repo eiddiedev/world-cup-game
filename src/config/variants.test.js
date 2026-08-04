@@ -69,11 +69,19 @@ describe('variant build contracts', () => {
     })
   })
 
-  it('accepts the approved compliant pack without any showcase fallback', () => {
+  it('keeps pending replacements fail-closed or accepts the approved pack without fallback', () => {
     const manifest = JSON.parse(readFileSync(
       resolve(root, 'art-packs/compliant/manifest.json'),
       'utf8',
     ))
+    if (manifest.status === 'pending') {
+      expect(manifest.pendingItems.length).toBeGreaterThan(0)
+      const protectedKeys = new Set(rights.entries.map(entry => entry.key))
+      manifest.pendingItems.forEach(key => expect(protectedKeys.has(key), key).toBe(true))
+      expect(() => validateArtPack('compliant-full')).toThrow(/fail-closed/)
+      expect(() => validateArtPack('compliant-interactive')).toThrow(/fail-closed/)
+      return
+    }
     expect(manifest.status).toBe('ready')
     expect(manifest.pendingItems).toEqual([])
     expect(() => validateArtPack('compliant-full')).not.toThrow()

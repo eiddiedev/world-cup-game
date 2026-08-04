@@ -201,7 +201,7 @@ describe('Match Runtime integration contracts', () => {
   it('uses one bounded recovery path without expiring while the coach is still reading', () => {
     expect(runtimeService).toContain("'happyseed/runtime-v2.js?v=13'")
     expect(runtimeService).toContain("'happyseed/runtime-v3.js?v=14'")
-    expect(runtimeService).toContain("'standalone-match.js?v=43'")
+    expect(runtimeService).toContain("'standalone-match.js?v=46'")
     expect(matchBroadcast).toMatch(
       /withDecisionWatchdog\(\s*prepareFormalCoachDecision\(/,
     )
@@ -298,6 +298,114 @@ describe('Match Runtime integration contracts', () => {
     expect(standaloneRuntime).toContain('window.__matchZoomMul = defaultZoomMultiplier()')
     expect(standaloneRuntime).toContain('if (revealPitch.camera.auto) revealPitch.camera.auto()')
     expect(standaloneRuntime).toContain('pitch.camera.auto\n      ? pitch.camera.auto()')
+  })
+
+  it('enables the demo-friendly pace and bounded press only in player mode', () => {
+    expect(runtimeService).toContain(
+      'window.__happySeedPlayerModeAssist = getPlayerModeDemoAssistProfile(options.playerMode)',
+    )
+    expect(runtimeService).toContain(
+      'setSpeed(window.__happySeedPlayerModeAssist?.speed || 1)',
+    )
+    expect(runtimeService).toContain(
+      'document.body.dataset.playerModePace = String(window.__happySeedPlayerModeAssist.speed)',
+    )
+    expect(standaloneRuntime).toContain('function applyPlayerModeDemoAssist(game)')
+    expect(standaloneRuntime).toContain('function widenPlayerModeDefensiveShape(game, profile)')
+    expect(standaloneRuntime).toContain('now + Number(profile.receptionGraceMs || 0)')
+    expect(standaloneRuntime).toContain('this._bufferedPassUntil = inputNow +')
+    expect(standaloneRuntime).toMatch(
+      /trainingTarget = mode\.game\.__happySeedTrainingActive[\s\S]*applyPlayerModeDemoAssist\(mode\.game\);[\s\S]*if \(trainingTarget\)/,
+    )
+  })
+
+  it('holds the defensive shape during reception grace, then releases one presser', () => {
+    const helperStart = standaloneRuntime.indexOf('function playerModeAssistProfile()')
+    const helperEnd = standaloneRuntime.indexOf('function createPlayPhase()', helperStart)
+    const helperSource = standaloneRuntime.slice(helperStart, helperEnd)
+    let now = 100
+    const changes = []
+    const redTeam = {}
+    const blueTeam = { inControl: false }
+    const owner = { team: redTeam, position: { x: 50, y: 30 } }
+    const opponents = Array.from({ length: 10 }, (_, index) => ({
+      id: `blue-${index}`,
+      team: blueTeam,
+      position: { x: 54 + index * 4, y: 30 },
+      home: { x: 70 + index, y: index % 2 ? 20 : 40 },
+      states: {
+        current: { name: 'AIChaseBall' },
+        change(next) {
+          this.current = { name: next }
+          changes.push(`blue-${index}:${next}`)
+        },
+      },
+    }))
+    blueTeam.fieldPlayers = opponents
+    blueTeam.allPlayers = opponents
+    const game = {
+      pitch: {
+        width: 100,
+        height: 60,
+        ballOutOfPlay: false,
+        ball: { owner, inHands: null },
+        redTeam,
+        blueTeam,
+      },
+    }
+    const context = {
+      acPlay: () => true,
+      runtimeStateName: () => 'Match',
+      stateObjectName: (state) => state?.name || '',
+      performance: { now: () => now },
+      document: { body: { dataset: {} } },
+      window: {
+        __happySeedPlayerModeAssist: {
+          enabled: true,
+          receptionGraceMs: 500,
+          defensiveWidth: 1.12,
+          coverMinimumDistance: 6.5,
+          shapeRefreshMs: 280,
+        },
+      },
+      runtime(name) {
+        if (name === 'players/global') return { forceAI() {} }
+        return {
+          ReturnHome: 'ReturnHome',
+          AIDefend: 'AIDefend',
+          AIAttack: 'AIAttack',
+        }
+      },
+    }
+    runInNewContext(
+      `${helperSource}; assistApi = { applyPlayerModeDemoAssist };`,
+      context,
+    )
+
+    expect(context.assistApi.applyPlayerModeDemoAssist(game)).toBe(true)
+    expect(context.window.__happySeedPlayerModeAssistSnapshot).toMatchObject({
+      receptionGrace: true,
+      activePressers: 0,
+      coverPlayers: 1,
+    })
+    expect(changes.filter((entry) => entry.endsWith(':ReturnHome'))).toHaveLength(10)
+    expect(opponents[0].home.y).toBeCloseTo(41.2)
+
+    now = 700
+    game.__happySeedPlayerAssistNextShapeAt = 0
+    expect(context.assistApi.applyPlayerModeDemoAssist(game)).toBe(true)
+    expect(context.window.__happySeedPlayerModeAssistSnapshot).toMatchObject({
+      receptionGrace: false,
+      activePressers: 1,
+      coverPlayers: 1,
+    })
+    expect(changes).toContain('blue-0:AIDefend')
+    expect(opponents.slice(2).every((player) => player.states.current.name === 'ReturnHome')).toBe(true)
+
+    const changeCountBeforePassFlight = changes.length
+    game.pitch.ball.owner = null
+    expect(context.assistApi.applyPlayerModeDemoAssist(game)).toBe(true)
+    expect(changes).toHaveLength(changeCountBeforePassFlight)
   })
 
   it('prewarms a real match session and uses the fast kickoff gate in all three variants', () => {

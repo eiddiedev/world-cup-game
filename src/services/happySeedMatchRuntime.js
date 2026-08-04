@@ -44,6 +44,7 @@ import {
 import { runtimeMatchMinute } from '../utils/matchClock.js'
 import { preloadAssetUrls } from '../utils/visualAssetLoader.js'
 import { CURRENT_VARIANT } from '../config/runtime.js'
+import { getPlayerModeDemoAssistProfile } from '../utils/playerModeDemoAssist.js'
 
 const RUNTIME_BASE = __DOUYIN_BUILD__ ? './match-runtime-min' : '/match-runtime-min'
 
@@ -55,7 +56,7 @@ const SCRIPT_PATHS = __DOUYIN_BUILD__ ? [] : [
   'scripts/match.rebuilt.js',
   'happyseed/runtime-v2.js?v=13',
   'happyseed/runtime-v3.js?v=14',
-  'standalone-match.js?v=43',
+  'standalone-match.js?v=46',
 ]
 
 const MATCH_EVENTS = [
@@ -764,6 +765,12 @@ export function bootHappySeedMatch(options = {}) {
     window.__happySeedInteractiveSpace = Boolean(__DOUYIN_BUILD__)
     window.__targetingMatchView = { ...CURRENT_VARIANT.matchView }
     window.__acPlay = Boolean(options.playerMode)
+    window.__happySeedPlayerModeAssist = getPlayerModeDemoAssistProfile(options.playerMode)
+    if (window.__happySeedPlayerModeAssist) {
+      document.body.dataset.playerModePace = String(window.__happySeedPlayerModeAssist.speed)
+    } else {
+      delete document.body.dataset.playerModePace
+    }
     let studioRecipe = null
     if (options.studioPreview) {
       try {
@@ -846,7 +853,7 @@ export function bootHappySeedMatch(options = {}) {
     }
     await started
     options.onProgress?.(99, '正在同步开球阵型')
-    setSpeed(1)
+    setSpeed(window.__happySeedPlayerModeAssist?.speed || 1)
     if (options.studioPreview) setZoom(2.4)
     else if (__DOUYIN_BUILD__ && !options.playerMode && !options.technicalLab) {
       setZoom(CURRENT_VARIANT.matchView.coachDefaultZoom)
@@ -995,6 +1002,7 @@ export function shutdownMatchRuntime() {
   delete document.body.dataset.trainingPitchState
   delete document.body.dataset.trainingPlayerControlled
   delete document.body.dataset.trainingPlayerPosition
+  delete document.body.dataset.playerModePace
 }
 
 export function pauseMatch() {
