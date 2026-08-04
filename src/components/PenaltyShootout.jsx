@@ -10,7 +10,7 @@ import { getKeeperTendency } from '../data/keeperTendencies.js'
 import { getTeamFlag } from '../data/teams.js'
 import '../styles/happySeedBroadcastV2.css'
 
-// —— 画布与场景（背景图原生分辨率 1672×941，cover 铺满全屏）——
+// —— 画布与场景（主背景原生分辨率 1672×941，cover 铺满全屏）——
 const LOGICAL_WIDTH = 1672
 const LOGICAL_HEIGHT = 941
 const GOAL = { x: 448, y: 231, w: 776, h: 258 }

@@ -1,4 +1,4 @@
-export const HAPPYSEED_PIXEL_STADIUM_ID = 'world-cup-day-v1'
+export const HAPPYSEED_PIXEL_STADIUM_ID = 'international-championship-day-v1'
 const PIXEL_PREFIX = __DOUYIN_BUILD__ ? './pixel' : '/pixel'
 
 export const HAPPYSEED_STADIUM_SOURCE_SIZE = Object.freeze({ width: 4096, height: 2048 })
@@ -23,7 +23,7 @@ export const HAPPYSEED_STADIUM_GOAL_LINE_X = Object.freeze({
 export const HAPPYSEED_STADIUM_GOAL_VISUAL_NUDGE_X = Object.freeze({ left: 12, right: -12 })
 
 export const HAPPYSEED_STADIUM_LAYERS = Object.freeze([
-  { id: 'master-background', label: '统一白天世界杯像素球场', runtimeLayer: 'base' },
+  { id: 'master-background', label: '统一白天国际赛事像素球场', runtimeLayer: 'base' },
   { id: 'runtime-goal-back', label: '原生球门后框', runtimeLayer: 'bottom' },
   { id: 'runtime-goal-front', label: '原生门柱前框', runtimeLayer: 'middle' },
   { id: 'runtime-net', label: '原生动态球网', runtimeLayer: 'runtime-net' },
@@ -70,7 +70,7 @@ export function getHappySeedPixelStadiumContract() {
   return {
     schemaVersion: 'happyseed-pixel-stadium-v2',
     id: HAPPYSEED_PIXEL_STADIUM_ID,
-    visualThesis: '明亮人类世界杯像素场作为唯一背景，原生球门、动态球网、角色和足球保持独立。',
+    visualThesis: '明亮人类国际赛事像素场作为唯一背景，原生球门、动态球网、角色和足球保持独立。',
     sourceSize: HAPPYSEED_STADIUM_SOURCE_SIZE,
     runtimeSize: HAPPYSEED_STADIUM_RUNTIME_SIZE,
     runtimeScale: 1.25,

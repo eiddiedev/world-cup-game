@@ -10,13 +10,14 @@ import {
   buildHappySeedKitPalette,
   HAPPYSEED_HUMAN_PART_SET_ID,
 } from './happySeedHumanPlayer.js'
+import { INTERACTIVE_PLAYABLE_TEAM_IDS } from '../../config/variants.mjs'
 
 export const HAPPYSEED_RUNTIME_ACTOR_SCHEMA_VERSION = 'happyseed-runtime-actors-v1'
 export const HAPPYSEED_RUNTIME_ACTOR_COUNT = 22
 export const HAPPYSEED_FORMATION_TRANSITION_MS = 1600
 export const HAPPYSEED_RUNTIME_PLAYER_DISPLAY_SCALE = 0.62
 const PIXEL_PREFIX = __DOUYIN_BUILD__ ? './pixel' : '/pixel'
-const DOUYIN_SELECTABLE_TEAM_IDS = new Set(['spain', 'england', 'norway', 'capeverde'])
+const DOUYIN_SELECTABLE_TEAM_IDS = new Set(INTERACTIVE_PLAYABLE_TEAM_IDS)
 
 const SIDE_ORDER = ['red', 'blue']
 const POSITION_ORDER = ['GK', 'DF', 'MF', 'FW']

@@ -2,6 +2,7 @@ import React from 'react'
 import { getTeamById } from '../data/teams.js'
 import { createMiniCupRun } from '../utils/miniCup.js'
 import '../styles/miniCup.css'
+import { COMPETITION_BRAND } from '@competition-brand'
 
 const TEAM_ENDINGS = {
   spain: {
@@ -47,7 +48,7 @@ export default function MiniCupEndingScreen({ saveData, updateSaveData, navigate
             ? <img src="/assets/branding/trophy.png" alt="" />
             : <span>◆</span>}
         </div>
-        <small>{champion ? '四队迷你世界杯' : '本次征程结束'}</small>
+        <small>{champion ? COMPETITION_BRAND.miniTournamentLabel : '本次征程结束'}</small>
         <h1>{champion ? '冠军！' : run?.knockoutRound === 'final' ? '决赛惜败' : '止步四强'}</h1>
         <div className="mini-ending-team">
           {team?.flag && <img src={team.flag} alt="" />}

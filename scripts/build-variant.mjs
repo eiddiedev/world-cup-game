@@ -6,6 +6,8 @@ import {
   artifactDirectoryFor,
   assertAsciiPackagePaths,
   assertNoShowcaseArtwork,
+  assertNoRestrictedCompetitionIp,
+  escapeRestrictedCoincidencesInBase64,
   gitInfo,
   prepareVariantPublic,
   projectRoot,
@@ -45,6 +47,8 @@ function buildFull() {
   })
   const buildInfo = writeBuildInfo(outputRoot, variantId)
   if (variant.artPack === 'compliant') assertNoShowcaseArtwork(outputRoot)
+  if (variant.artPack === 'compliant') escapeRestrictedCoincidencesInBase64(outputRoot)
+  if (variant.artPack === 'compliant') assertNoRestrictedCompetitionIp(outputRoot)
   return {
     variantId,
     outputRoot,
@@ -105,6 +109,8 @@ function buildInteractive() {
   writeBuildInfo(outputRoot, variantId)
   assertAsciiPackagePaths(outputRoot)
   assertNoShowcaseArtwork(outputRoot)
+  escapeRestrictedCoincidencesInBase64(outputRoot)
+  assertNoRestrictedCompetitionIp(outputRoot)
 
   let zipBytes = null
   for (let attempt = 0; attempt < 3; attempt += 1) {

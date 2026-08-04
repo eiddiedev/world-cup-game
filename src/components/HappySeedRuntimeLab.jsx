@@ -693,7 +693,7 @@ export default function HappySeedRuntimeLab() {
         ) : activeLabStage === 'stadium' ? (
           <section className="runtime-stadium-slice" aria-label="像素球场、看台与观众切片">
             <div className="runtime-stadium-meta">
-              <span>{stadiumScene.ready ? 'WORLD CUP NIGHT · READY' : '正在装配分层场景…'}</span>
+              <span>{stadiumScene.ready ? 'INTERNATIONAL MATCH · READY' : '正在装配分层场景…'}</span>
               <small>{stadiumScene.layerCount} 层 / {stadiumScene.cameraPresetCount} 镜头</small>
             </div>
             <div className="runtime-scene-preserves" aria-label="运行时保留项">

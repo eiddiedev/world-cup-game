@@ -555,6 +555,61 @@ describe('DecisionSceneScriptV3', () => {
     expect(finishEnd[1]).toBeLessThanOrEqual(0.5647)
   })
 
+  it('keeps every role action inside its authored semantic range', () => {
+    for (const scenario of DECISION_LIBRARY) {
+      const decision = buildFormalCoachDecision({ actorSource, scenarioId: scenario.id })
+      const script = buildFormalDecisionSceneScriptV3(
+        decision,
+        actorSource,
+        runtimeMoment,
+        sourceEvent,
+      )
+      for (const choice of script.choices) {
+        for (const lane of choice.affordances.filter((item) => (
+          item.kind === 'run-lane'
+          && item.carriesBall
+          && script.actors[item.role]?.side === 'red'
+        ))) {
+          const start = lane.points[0]
+          const end = lane.points.at(-1)
+          expect(
+            Math.abs(end[0] - start[0]),
+            `${scenario.id}/${choice.id}/${lane.role}/run-distance`,
+          ).toBeLessThanOrEqual(0.185)
+        }
+        for (const outcome of Object.values(choice.outcomes)) {
+          if (script.runtimeMoment.eligibleForTrigger === false) continue
+          if (!['pass-then-shot', 'pass-sequence-then-shot'].includes(outcome.executionMode)) continue
+          const goal = outcome.terminal === 'goal-for'
+            ? script.fieldAnchors.homeAttackGoal
+            : script.fieldAnchors.homeDefendGoal
+          const limit = scenario.id === 'late_keeper_up_corner'
+            && choice.id === 'send_keeper_up' ? 1 : 0.42
+          expect(
+            Math.abs(outcome.path[0][0] - goal[0]),
+            `${scenario.id}/${choice.id}/${outcome.terminal}/shot-origin`,
+          ).toBeLessThanOrEqual(limit)
+        }
+      }
+    }
+  })
+
+  it('does not offer a 3v2 counter in the home defensive half', () => {
+    const event = { id: 'runtime.counter.touch', type: 'touch' }
+    expect(isFormalDecisionMomentEligibleV3('counter_attack_3v2', {
+      ...runtimeMoment,
+      attackingSide: 'red',
+      attackDirection: 1,
+      ball: { normalized: [0.35, 0.5, 0] },
+    }, event)).toBe(false)
+    expect(isFormalDecisionMomentEligibleV3('counter_attack_3v2', {
+      ...runtimeMoment,
+      attackingSide: 'red',
+      attackDirection: 1,
+      ball: { normalized: [0.52, 0.5, 0] },
+    }, event)).toBe(true)
+  })
+
   it('forces the opponent toward the corner with two actor motions and a real blue corner restart', () => {
     const decision = buildFormalCoachDecision({ actorSource, scenarioId: 'last_defender_tackle' })
     const script = buildFormalDecisionSceneScriptV3(
@@ -907,7 +962,7 @@ describe('DecisionSceneScriptV3', () => {
       .choices.find((choice) => choice.id === 'direct_freekick')
     const solo = DECISION_LIBRARY.find((scenario) => scenario.id === 'solo_run_penalty')
       .choices.find((choice) => choice.id === 'shoot_near_post')
-    expect(freeKick.goal_conversion).toBe(0.12)
+    expect(freeKick.goal_conversion).toBe(0.10)
     expect(freeKick.goal_conversion).toBeLessThan(solo.goal_conversion / 4)
     expect(freeKick.conversion_miss_outcome).toBe('hit_wall')
   })

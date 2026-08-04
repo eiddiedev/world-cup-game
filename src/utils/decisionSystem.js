@@ -412,9 +412,45 @@ export function executeDecision(scenario, lineup, gameState, options = {}) {
  * 解析玩家选择的结果
  */
 // 默认进球转化率：成功池里的 goal 结果不必然转化为进球，
-// 让决策进球占全场进球的比例落在 25-35% 的真实区间。
+// 对齐“约 10 次决策、约 4 个总进球”，避免成功池里的 goal 结果连续滚雪球。
 // 选项可用 goal_conversion / conversion_miss_outcome 单独覆盖。
-const DEFAULT_GOAL_CONVERSION = 0.62
+const DEFAULT_GOAL_CONVERSION = 0.42
+
+/**
+ * Keep a successful coaching choice meaningful without letting ten decision
+ * windows turn into a goal conveyor belt.  The first goals retain their full
+ * authored chance; once a match is already open, further decision-created
+ * goals become progressively harder.  Native Runtime goals are untouched and
+ * there is deliberately no hard score cap.
+ */
+export function calculateDecisionGoalConversion(choice, successProb, gameState = {}) {
+  const baseConversion = typeof choice?.goal_conversion === 'number'
+    ? choice.goal_conversion
+    : DEFAULT_GOAL_CONVERSION
+  const teamAvgRating = Number(gameState.teamAvgRating || 70)
+  const teamTierFactor = Math.min(1.18, Math.max(0.72, 1 + (teamAvgRating - 78) * 0.025))
+  const myScore = Math.max(0, Number(gameState.myScore || 0))
+  const oppScore = Math.max(0, Number(gameState.oppScore || 0))
+  const totalGoals = myScore + oppScore
+  const lead = Math.max(0, myScore - oppScore)
+  const totalGoalFactor = totalGoals <= 2
+    ? 1
+    : totalGoals === 3
+      ? 0.9
+      : totalGoals === 4
+        ? 0.72
+        : 0.55
+  const leadFactor = lead <= 1 ? 1 : lead === 2 ? 0.86 : 0.68
+  const matchPaceFactor = Math.max(0.42, totalGoalFactor * leadFactor)
+
+  return Math.min(
+    0.86,
+    Math.max(
+      0.04,
+      baseConversion * (successProb * 2 - 0.5) * teamTierFactor * matchPaceFactor,
+    ),
+  )
+}
 
 export function resolveChoiceResult(choice, keyPlayer, gameState) {
   const isKnockout = gameState.isKnockout || false;
@@ -461,11 +497,7 @@ export function resolveChoiceResult(choice, keyPlayer, gameState) {
   // 球队档位同时影响转化：弱队即使决策正确，执行成色也低于强队。
   // 未转化时必须落到该选项合法结果池内的未进分支，
   // 否则导演会因为结果分支不存在而冻结比赛。
-  const baseConversion = typeof choice.goal_conversion === 'number'
-    ? choice.goal_conversion
-    : DEFAULT_GOAL_CONVERSION;
-  const teamTierFactor = Math.min(1.25, Math.max(0.5, (teamAvgRating - 72) / 12));
-  const goalConversion = Math.min(0.92, baseConversion * (successProb * 2.0 - 0.5) * teamTierFactor);
+  const goalConversion = calculateDecisionGoalConversion(choice, successProb, gameState);
   if (goalOutcomes.includes(outcome) && Math.random() > goalConversion) {
     const missOutcome = choice.conversion_miss_outcome
       || choice.possible_outcomes.find((candidate) => (

@@ -43,6 +43,14 @@ export default function TrainingGround({ saveData, navigateTo, updateSaveData })
   const restoreRenderRef = useRef(null)
   const lastDeadBallStateRef = useRef('')
 
+  // 自由训练不走正式比赛的事故播报节奏，门柱/横梁碰撞由 Runtime 的
+  // 精确碰撞信号直接播放，避免事件被正式赛演出队列吞掉或延迟。
+  useEffect(() => {
+    const onGoalFrameHit = () => audioManager.playSound('postHit')
+    window.addEventListener('ab-training-goal-frame-hit', onGoalFrameHit)
+    return () => window.removeEventListener('ab-training-goal-frame-hit', onGoalFrameHit)
+  }, [])
+
   // 挂载：body标记 + 关闭球场欢呼
   useEffect(() => {
     document.body.classList.add('training-mode')

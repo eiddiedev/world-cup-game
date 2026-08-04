@@ -1,6 +1,7 @@
 {
   "id": "compliant",
-  "status": "pending",
-  "rightsStatus": "replacement-required",
-  "notes": "Set status to ready only after every entry in config/art-rights.json has an approved replacement."
+  "status": "ready",
+  "rightsStatus": "approved-replacements",
+  "pendingItems": [],
+  "notes": "All 69 replacement assets, eight interactive Runtime flag rewrites, the generic two-handled trophy, and both x=586 title frames were approved on 2026-08-03."
 }

@@ -12,6 +12,7 @@ import {
 import {
   preloadHappySeedMatchAssets,
   preloadHappySeedRuntimeCore,
+  prewarmHappySeedRuntimeSession,
 } from './services/happySeedMatchRuntime'
 import HomeScreen from './components/HomeScreen'
 import TeamSelectScreen from './components/TeamSelectScreen'
@@ -121,10 +122,14 @@ export default function App() {
   }, [])
 
   useEffect(() => {
-    if (IS_TEST_RUNTIME || IS_INTERACTIVE_SPACE || !startup.ready) return undefined
+    if (IS_TEST_RUNTIME || !startup.ready) return undefined
     let cancelled = false
     const cancelTask = scheduleSoftTask(() => {
-      preloadHappySeedRuntimeCore()
+      // 三个版本都在首页空闲期完成一次真实 Runtime 会话装配。
+      // 完整版保留原画质与资源，只把 PIXI、球场和首套球衣的初始化
+      // 从“点击进入比赛后”前移到用户浏览首页/阵容时。
+      const runtimeWarmup = prewarmHappySeedRuntimeSession()
+      runtimeWarmup
         .then(() => {
           if (cancelled) return
           return preloadAssetUrls(getSecondaryTeamAssets(teams), { concurrency: 2 })
@@ -132,7 +137,9 @@ export default function App() {
         .catch((error) => {
           console.warn('[Match preload] 比赛引擎将在进入比赛时重试', error)
         })
-    })
+    }, IS_INTERACTIVE_SPACE
+      ? { delayMs: 600, idleTimeoutMs: 1400 }
+      : undefined)
 
     return () => {
       cancelled = true
@@ -152,15 +159,17 @@ export default function App() {
 
   useEffect(() => {
     const run = saveData?.currentRun
-    if (IS_INTERACTIVE_SPACE || !startup.ready || !run?.teamId) return
+    if (!startup.ready || !run?.teamId) return
     const selectedTeam = getTeamById(run.teamId)
     const opponent = getTeamById(run.currentOpponent)
     let cancelled = false
     let penaltyTimer = null
     const cancelTask = scheduleSoftTask(async () => {
-      const selectedPlayerAssets = preloadAssetUrls(getSelectedTeamPlayerAssets(selectedTeam), {
-        concurrency: 4,
-      })
+      const selectedPlayerAssets = IS_INTERACTIVE_SPACE
+        ? Promise.resolve()
+        : preloadAssetUrls(getSelectedTeamPlayerAssets(selectedTeam), {
+          concurrency: 4,
+        })
 
       try {
         await Promise.all([
@@ -181,7 +190,7 @@ export default function App() {
             ...(run.suspendedPlayers || []),
           ],
         }, { assetConcurrency: 3 })
-        if (cancelled || !shouldSoftLoadHeavyAssets()) return
+        if (cancelled || IS_INTERACTIVE_SPACE || !shouldSoftLoadHeavyAssets()) return
 
         penaltyTimer = window.setTimeout(() => {
           preloadAssetUrlsSoftly(getPenaltyShootoutAssets(), {

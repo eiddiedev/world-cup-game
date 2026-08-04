@@ -12,7 +12,7 @@
   overflow: auto;
   background:
     linear-gradient(180deg, rgba(19, 42, 37, 0.82), rgba(15, 27, 42, 0.92)),
-    url("/assets/背景图.png") center / cover;
+    url("/assets/branding/home-background.png") center / cover;
   color: var(--pixel-cream);
 }
 
@@ -46,6 +46,13 @@
   max-width: 100% !important;
   max-height: 100% !important;
   image-rendering: pixelated;
+}
+
+/* Standalone Runtime inserts its WebGL surface directly under <body>. Keep
+   compositor scaling nearest-neighbour on high-DPR mobile displays. */
+body > canvas {
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
 }
 
 .match-runtime-panel {

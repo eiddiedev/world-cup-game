@@ -84,7 +84,7 @@ def main() -> None:
     public_root = Path(sys.argv[3]).resolve() if len(sys.argv) > 3 else project_root / "public"
     subset_font(project_root, public_root, output_root)
     build_pitch(public_root, output_root)
-    build_pixel_image(public_root, output_root, "背景图.png", (960, 540))
+    build_pixel_image(public_root, output_root, "branding/home-background.png", (960, 540))
     build_pixel_image(public_root, output_root, "branding/title-frame-1.png", (900, 244))
     build_pixel_image(public_root, output_root, "branding/title-frame-2.png", (900, 244))
 

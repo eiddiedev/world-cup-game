@@ -134,7 +134,7 @@ body { background: #061413 !important; }
 .broadcast-audio-start strong { color: var(--hud-gold); font-size: 22px; }
 .broadcast-audio-start span { color: #d8e0d7; font-size: 11px; font-weight: 700; }
 
-/* Pixel World Cup scoreboard */
+/* Pixel tournament scoreboard */
 .broadcast-scoreboard {
   top: max(10px, env(safe-area-inset-top));
   left: max(12px, env(safe-area-inset-left));

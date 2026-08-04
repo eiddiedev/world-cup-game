@@ -9,6 +9,7 @@ import { getTeamTacticalProfile } from './teamFormations.js'
 import { selectPlayableTeams } from '../config/runtime.js'
 import { opponentTeams } from './opponentTeams.js'
 import { crestAsset, flagAsset } from '../config/artAssets.js'
+import { COMPETITION_BRAND } from '@competition-brand'
 
 function withTacticalProfile(team) {
   const tacticalProfile = getTeamTacticalProfile(team.id)
@@ -47,10 +48,10 @@ export const allTeams = [
     logo: crestAsset('法国'),
     jerseyColor: '#1f4aa8',
     description: '天才扎堆，但更衣室是个谜。',
-    mission: '重夺大力神杯',
+    mission: COMPETITION_BRAND.teams.franceMission,
     faMessage: '天赋可以兑现为冠军，证明给世界看。',
     faExpectation: '★★★★★ 重返世界之巅',
-    worldCupTarget: '夺冠',
+    tournamentTarget: '夺冠',
     group: 'I 组',
     groupOpponents: [
       { name: '塞内加尔', flag: flagAsset('塞内加尔') },
@@ -77,7 +78,7 @@ export const allTeams = [
     mission: '摘下第六颗星',
     faMessage: '五星荣耀属于过去，第六颗星属于未来。',
     faExpectation: '★★★★★ 第六颗星',
-    worldCupTarget: '夺冠',
+    tournamentTarget: '夺冠',
     group: 'C 组',
     groupOpponents: [
       { name: '摩洛哥', flag: flagAsset('摩洛哥') },
@@ -105,7 +106,7 @@ export const allTeams = [
     mission: '重返世界之巅',
     faMessage: '距离冠军只差一步，全国期待你举起奖杯。',
     faExpectation: '★★★★★ 举国期待夺冠',
-    worldCupTarget: '夺冠',
+    tournamentTarget: '夺冠',
     group: 'J 组',
     groupOpponents: [
       { name: '阿尔及利亚', flag: flagAsset('阿尔及利亚') },
@@ -129,10 +130,10 @@ export const allTeams = [
     logo: crestAsset('葡萄牙'),
     jerseyColor: '#b51d2a',
     description: '一个人撑起一支队伍的极限。',
-    mission: '圆梦世界杯',
-    faMessage: '欧洲冠军已到手，世界杯梦想等你完成。',
+    mission: COMPETITION_BRAND.teams.portugalMission,
+    faMessage: COMPETITION_BRAND.teams.portugalMessage,
     faExpectation: '★★★★☆ 创造新时代',
-    worldCupTarget: '四强',
+    tournamentTarget: '四强',
     group: 'K 组',
     groupOpponents: [
       { name: '民主刚果', flag: flagAsset('刚果') },
@@ -159,7 +160,7 @@ export const allTeams = [
     mission: '日耳曼战车归来',
     faMessage: '经历低谷，承受质疑，让世界重新敬畏战车。',
     faExpectation: '★★★★☆ 重返豪门行列',
-    worldCupTarget: '四强',
+    tournamentTarget: '四强',
     group: 'E 组',
     groupOpponents: [
       { name: '库拉索', flag: flagAsset('库拉索') },
@@ -186,7 +187,7 @@ export const allTeams = [
     mission: '亚洲新高度',
     faMessage: '让日本不仅创造惊喜，更创造历史。',
     faExpectation: '★★★☆☆ 冲击历史最佳战绩',
-    worldCupTarget: '八强',
+    tournamentTarget: '八强',
     group: 'F 组',
     groupOpponents: [
       { name: '荷兰', flag: flagAsset('荷兰') },
@@ -209,11 +210,11 @@ export const allTeams = [
     hero: '/assets/挪威/魔人布欧.png',
     logo: crestAsset('挪威'),
     jerseyColor: '#c8313d',
-    description: '本届世界杯最大黑马。',
+    description: COMPETITION_BRAND.teams.norwayDescription,
     mission: '黑马之路',
-    faMessage: '本届世界杯最大黑马，让维京战歌响彻世界。',
+    faMessage: COMPETITION_BRAND.teams.norwayMessage,
     faExpectation: '★★★☆☆ 更进一步',
-    worldCupTarget: '16强',
+    tournamentTarget: '16强',
     group: 'I 组',
     groupOpponents: [
       { name: '法国', flag: flagAsset('法国') },
@@ -240,7 +241,7 @@ export const allTeams = [
     mission: '黑马不是奇迹',
     faMessage: '世界已认识摩洛哥，请证明我们属于顶级。',
     faExpectation: '★★★☆☆ 延续黑马传奇',
-    worldCupTarget: '四强',
+    tournamentTarget: '四强',
     group: 'C 组',
     groupOpponents: [
       { name: '巴西', flag: flagAsset('巴西') },
@@ -263,11 +264,11 @@ export const allTeams = [
     hero: '/assets/库拉索/蓝浪飞翼.png',
     logo: crestAsset('库拉索'),
     jerseyColor: '#1267b4',
-    description: '参加世界杯本身就是奇迹。',
+    description: COMPETITION_BRAND.teams.curacaoDescription,
     mission: '加勒比风暴',
     faMessage: '终场哨声未响，没人能定义我们的极限。',
     faExpectation: '★☆☆☆☆ 享受挑战，书写传奇',
-    worldCupTarget: '争取首胜',
+    tournamentTarget: '争取首胜',
     group: 'E 组',
     groupOpponents: [
       { name: '德国', flag: flagAsset('德国') },
@@ -291,9 +292,9 @@ export const allTeams = [
     jerseyColor: '#c60b1e',
     description: '重走冠军之路。',
     mission: '捍卫冠军荣耀',
-    faMessage: '重走冠军之路，再一次把大力神杯带回西班牙。',
+    faMessage: COMPETITION_BRAND.teams.spainMessage,
     faExpectation: '★★★★★ 冠军势在必得',
-    worldCupTarget: '夺冠',
+    tournamentTarget: '夺冠',
     group: 'H 组',
     groupOpponents: [
       { name: '佛得角', flag: flagAsset('佛得角') },
@@ -317,7 +318,7 @@ export const allTeams = [
     mission: '让足球回家',
     faMessage: '最遗憾的那一步，这次让足球真的回家。',
     faExpectation: '★★★★☆ 至少闯入决赛',
-    worldCupTarget: '夺冠',
+    tournamentTarget: '夺冠',
     group: 'L 组',
     groupOpponents: [
       { name: '克罗地亚', flag: flagAsset('克罗地亚') },
@@ -342,7 +343,7 @@ export const allTeams = [
     mission: '黄金一代绽放',
     faMessage: '激情与天赋并存，迎接哥伦比亚黄金时代。',
     faExpectation: '★★★☆☆ 黄金一代证明自己',
-    worldCupTarget: '八强',
+    tournamentTarget: '八强',
     group: 'K 组',
     groupOpponents: [
       { name: '葡萄牙', flag: flagAsset('葡萄牙') },
@@ -364,9 +365,9 @@ export const allTeams = [
     jerseyColor: '#3c3b6e',
     description: '东道主之一，足球新大陆正在觉醒。',
     mission: '足球新时代',
-    faMessage: '世界杯来到美国，让足球走进每个人心中。',
+    faMessage: COMPETITION_BRAND.teams.usaMessage,
     faExpectation: '★★★☆☆ 主场不留遗憾',
-    worldCupTarget: '八强',
+    tournamentTarget: '八强',
     group: 'D 组',
     groupOpponents: [
       { name: '巴拉圭', flag: flagAsset('巴拉圭') },
@@ -386,11 +387,11 @@ export const allTeams = [
     flag: flagAsset('墨西哥'),
     logo: crestAsset('墨西哥'),
     jerseyColor: '#006847',
-    description: '高原主场，第五度举办世界杯的国度。',
+    description: COMPETITION_BRAND.teams.mexicoDescription,
     mission: '捍卫主场荣耀',
     faMessage: '阿兹特克呐喊不息，赢得比赛更赢得骄傲。',
     faExpectation: '★★★★☆ 东道主必须有所作为',
-    worldCupTarget: '八强',
+    tournamentTarget: '八强',
     group: 'A 组',
     groupOpponents: [
       { name: '南非', flag: flagAsset('南非') },
@@ -414,7 +415,7 @@ export const allTeams = [
     mission: '北境崛起',
     faMessage: '主场是压力也是机会，在世界舞台留名。',
     faExpectation: '★★☆☆☆ 创造国家历史',
-    worldCupTarget: '16强',
+    tournamentTarget: '16强',
     group: 'B 组',
     groupOpponents: [
       { name: '波黑', flag: flagAsset('波黑') },
@@ -438,7 +439,7 @@ export const allTeams = [
     mission: '群岛奇迹',
     faMessage: '延续奇迹，让大西洋群岛的故事走得更远。',
     faExpectation: '★★☆☆☆ 再创奇迹',
-    worldCupTarget: '小组出线',
+    tournamentTarget: '小组出线',
     group: 'H 组',
     groupOpponents: [
       { name: '西班牙', flag: flagAsset('西班牙') },
@@ -461,7 +462,7 @@ export const teams = selectPlayableTeams(allTeams)
 }))
 
 /**
- * 48支世界杯球队国旗映射（中文名 → 图片路径）
+ * 48 支赛事球队旗帜映射（中文名 → 图片路径）
  */
 const FLAG_MAP = {
   // A组

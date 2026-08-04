@@ -19,7 +19,7 @@ import {
   SAMPLE_TEAM_IDS,
   TEAM_DATA_SCHEMA_VERSION,
   VISUAL_RECIPE_RULE,
-  WORLD_CUP_TEAM_CAPACITY,
+  TOURNAMENT_TEAM_CAPACITY,
   buildVisualRecipeId,
   validateTeamCatalog,
   validateTeamRecord,
@@ -132,6 +132,10 @@ describe('home screen', () => {
     expect(screen.getByRole('button', { name: '球员模式' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: '点球大战' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: '设置' })).toBeInTheDocument()
+    expect(Array.from(
+      screen.getByRole('navigation', { name: '主菜单' }).querySelectorAll('button'),
+      button => button.textContent.trim(),
+    )).toEqual(['球员模式', '教练模式', '点球大战', '设置'])
     expect(screen.queryByRole('button', { name: '点球测试' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: '小人样板' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'AI与赞助' })).not.toBeInTheDocument()
@@ -449,7 +453,7 @@ describe('settings and audio', () => {
 })
 
 describe('team and player data', () => {
-  it('limits the Douyin demo to the requested representative teams', () => {
+  it('keeps all configured teams selectable in the interactive variant', () => {
     const sourceTeams = [
       { id: 'spain' },
       { id: 'france' },
@@ -473,9 +477,13 @@ describe('team and player data', () => {
     ])
     expect(selectPlayableTeams(sourceTeams, true).map(team => team.id)).toEqual([
       'spain',
+      'france',
+      'argentina',
       'england',
       'norway',
       'capeverde',
+      'brazil',
+      'curacao',
     ])
     expect(getStorageKey()).toBe('targeting-2026-save')
   })
@@ -515,7 +523,7 @@ describe('team and player data', () => {
 
   it('publishes a 48-team-ready schema with France and Curacao as complete samples', () => {
     expect(TEAM_DATA_SCHEMA_VERSION).toBe('team-roster-v2')
-    expect(WORLD_CUP_TEAM_CAPACITY).toBe(48)
+    expect(TOURNAMENT_TEAM_CAPACITY).toBe(48)
     expect(ROSTER_POOL_RULES).toMatchObject({
       minimum: 24,
       target: 24,

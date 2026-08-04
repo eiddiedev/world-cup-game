@@ -54,6 +54,12 @@ PROFILES = {
         "stadium_colors": 12,
         "jpeg_quality": 42,
     },
+    "match-quality": {
+        "asset_colors": 24,
+        "pixel_colors": 0,
+        "stadium_colors": 96,
+        "jpeg_quality": 56,
+    },
 }
 
 
@@ -63,7 +69,7 @@ def walk_files(root: Path) -> list[Path]:
 
 def png_color_budget(relative_path: Path, profile: dict[str, int]) -> int:
     normalized = relative_path.as_posix()
-    if normalized == "pixel/stadiums/world-cup-day-v1/stadium-day-master-v1.png":
+    if normalized == "pixel/stadiums/international-championship-day-v1/stadium-day-master-v1.png":
         return profile["stadium_colors"]
     if normalized.startswith("pixel/"):
         return profile["pixel_colors"]

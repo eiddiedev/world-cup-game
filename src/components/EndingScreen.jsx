@@ -3,6 +3,7 @@ import { getTeamById } from '../data/teams'
 import { resultRank, checkAchievements } from '../data/codexAchievements'
 import { createInitialCodex } from '../utils/saveManager'
 import { calculatePrizeMoney, settleLogisticsBudget } from '../data/prizeMoney'
+import { COMPETITION_BRAND } from '@competition-brand'
 
 /**
  * 结局页面
@@ -58,11 +59,11 @@ export default function EndingScreen({ saveData, updateSaveData, navigateTo }) {
     '四强': 4,
     '夺冠': 6,
   }
-  const targetMet = team?.worldCupTarget === '争取首胜'
+  const targetMet = team?.tournamentTarget === '争取首胜'
     ? winCount > 0
-    : (resultRanks[finalResult] || 0) >= (targetRanks[team?.worldCupTarget] ?? 0)
+    : (resultRanks[finalResult] || 0) >= (targetRanks[team?.tournamentTarget] ?? 0)
   const teamEpilogue = team
-    ? `「${team.mission}」${targetMet ? '——足协目标已经达成。' : `——本届未能完成“${team.worldCupTarget}”目标。`} ${team.faMessage}`
+    ? `「${team.mission}」${targetMet ? '——足协目标已经达成。' : `——本届未能完成“${team.tournamentTarget}”目标。`} ${team.faMessage}`
     : null
 
   const endings = {
@@ -100,13 +101,13 @@ export default function EndingScreen({ saveData, updateSaveData, navigateTo }) {
     round32: {
       emoji: '🌟',
       title: '32强',
-      message: '世界杯的舞台太残酷，但你来过了。',
+      message: COMPETITION_BRAND.defeatMessage,
       special: teamEpilogue,
     },
     group: {
       emoji: '😢',
       title: '小组未出线',
-      message: '世界杯的舞台太残酷，但你来过了。',
+      message: COMPETITION_BRAND.defeatMessage,
       special: teamEpilogue,
     },
   }
@@ -243,7 +244,7 @@ export default function EndingScreen({ saveData, updateSaveData, navigateTo }) {
         )}
         <div className="ending-emoji">
           {finalResult === 'champion'
-            ? <img src="/assets/branding/trophy.png" alt="大力神杯" style={{ width: 72, height: 'auto', imageRendering: 'pixelated' }} />
+            ? <img src="/assets/branding/trophy.png" alt={COMPETITION_BRAND.championIconAlt} style={{ width: 72, height: 'auto', imageRendering: 'pixelated' }} />
             : ending.emoji}
         </div>
         <h1 className="ending-title" data-guide="ending-result">{ending.title}</h1>

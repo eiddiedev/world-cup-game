@@ -33,7 +33,7 @@ const BASE_DECISION_LIBRARY = [
         ],
         outcome_deltas: { goal: 0.28, goal_against: 0.0, win_delta: 0.12 },
         possible_outcomes: ['goal', 'goal', 'goal', 'saved_near', 'miss_near'],
-        goal_conversion: 0.56,
+        goal_conversion: 0.46,
         conversion_miss_outcome: 'saved_near',
       },
       {
@@ -49,7 +49,7 @@ const BASE_DECISION_LIBRARY = [
         ],
         outcome_deltas: { goal: 0.24, goal_against: 0.0, win_delta: 0.11 },
         possible_outcomes: ['goal_chip', 'goal_chip', 'miss_over', 'saved_chip'],
-        goal_conversion: 0.52,
+        goal_conversion: 0.43,
         conversion_miss_outcome: 'saved_chip',
       },
       {
@@ -202,7 +202,7 @@ const BASE_DECISION_LIBRARY = [
         outcome_deltas: { goal: 0.20, goal_against: 0.0, win_delta: 0.09 },
         possible_outcomes: ['goal_freekick', 'saved_freekick', 'hit_wall', 'miss_over'],
         // 即使是高水平主罚者，禁区外直接任意球也不应接近单刀转化率。
-        goal_conversion: 0.12,
+        goal_conversion: 0.10,
         conversion_miss_outcome: 'hit_wall',
       },
       {

@@ -30,7 +30,7 @@
     "audit:match-equipment": "node scripts/audit-pixel-match-equipment.mjs",
     "audit:stadium-slice": "node scripts/audit-pixel-stadium-slice.mjs",
     "audit:match-sfx": "node scripts/audit-match-sfx-assets.mjs",
-    "audit:decision-scenes": "node scripts/audit-decision-scenes-v3.mjs",
+    "audit:decision-scenes": "vite-node scripts/audit-decision-scenes-v3.mjs",
     "balance": "node scripts/balance-sim.mjs",
     "balance:decisions": "node scripts/decision-balance-sim.mjs",
     "lint": "eslint .",

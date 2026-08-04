@@ -8,6 +8,7 @@ import {
   HAPPYSEED_PIXEL_STADIUM_ASSETS,
   getHappySeedPixelStadiumContract,
 } from '../utils/happySeedPixelStadium.js'
+import { COMPETITION_BRAND } from '@competition-brand'
 import {
   buildHappySeedRuntimeActorConfig,
   getHappySeedRuntimeActorSnapshot as getActorContractSnapshot,
@@ -43,6 +44,7 @@ import {
 import { runtimeMatchMinute } from '../utils/matchClock.js'
 import { preloadAssetUrls } from '../utils/visualAssetLoader.js'
 import { CURRENT_VARIANT } from '../config/runtime.js'
+import { getPlayerModeDemoAssistProfile } from '../utils/playerModeDemoAssist.js'
 
 const RUNTIME_BASE = __DOUYIN_BUILD__ ? './match-runtime-min' : '/match-runtime-min'
 
@@ -54,7 +56,7 @@ const SCRIPT_PATHS = __DOUYIN_BUILD__ ? [] : [
   'scripts/match.rebuilt.js',
   'happyseed/runtime-v2.js?v=13',
   'happyseed/runtime-v3.js?v=14',
-  'standalone-match.js?v=43',
+  'standalone-match.js?v=46',
 ]
 
 const MATCH_EVENTS = [
@@ -88,6 +90,7 @@ const MATCH_EVENTS = [
 let bootPromise = null
 let dataCachePromise = null
 let runtimeCorePromise = null
+let runtimeSessionWarmPromise = null
 let runtimeShutdownEpoch = 0
 let speed = 1
 let matchDurationMinutes = 3
@@ -243,7 +246,7 @@ export function preloadHappySeedRuntimeCore({ onProgress } = {}) {
       preloadDataCaches(),
       preloadAssetUrls(Object.values(HAPPYSEED_PIXEL_STADIUM_ASSETS), {
         concurrency: 4,
-        onProgress: ({ percent }) => onProgress?.(8 + Math.round(percent * 0.34), '正在准备世界杯球场'),
+        onProgress: ({ percent }) => onProgress?.(8 + Math.round(percent * 0.34), COMPETITION_BRAND.matchLoading),
       }),
     ])
     onProgress?.(45, '正在启动比赛引擎')
@@ -508,7 +511,7 @@ export function getHumanSliceSnapshot() {
 export function getStadiumSceneSnapshot() {
   return window.__happySeedStadiumScene?.getSnapshot?.() || {
     ready: false,
-    id: 'world-cup-day-v1',
+    id: 'international-championship-day-v1',
     activeCamera: 'normal',
     cameraMode: 'ball',
     cameraTarget: { x: 0, y: 0 },
@@ -734,7 +737,15 @@ export function bootHappySeedMatch(options = {}) {
   // renderer before consulting bootPromise so a healthy in-flight Runtime can
   // never be left running behind a hidden canvas.
   retainMatchRuntime()
-  if (bootPromise) return bootPromise
+  if (bootPromise) {
+    // A real match must not inherit the placeholder teams from an in-flight
+    // home-screen warm-up. Wait for texture assembly, then reuse the loaded
+    // Runtime through the normal restart path with the requested teams.
+    if (runtimeSessionWarmPromise && !options.prewarmOnly) {
+      return runtimeSessionWarmPromise.then(() => bootHappySeedMatch(options))
+    }
+    return bootPromise
+  }
 
   bootPromise = (async () => {
     const restartingExistingRuntime = Boolean(window.__matchGame)
@@ -754,6 +765,12 @@ export function bootHappySeedMatch(options = {}) {
     window.__happySeedInteractiveSpace = Boolean(__DOUYIN_BUILD__)
     window.__targetingMatchView = { ...CURRENT_VARIANT.matchView }
     window.__acPlay = Boolean(options.playerMode)
+    window.__happySeedPlayerModeAssist = getPlayerModeDemoAssistProfile(options.playerMode)
+    if (window.__happySeedPlayerModeAssist) {
+      document.body.dataset.playerModePace = String(window.__happySeedPlayerModeAssist.speed)
+    } else {
+      delete document.body.dataset.playerModePace
+    }
     let studioRecipe = null
     if (options.studioPreview) {
       try {
@@ -817,6 +834,7 @@ export function bootHappySeedMatch(options = {}) {
     }
 
     const started = waitForMatchStart(30000, restartingExistingRuntime)
+    options.onProgress?.(96, '正在创建比赛现场')
     window.__startStandaloneMatch({
       red: selectedTeams.red,
       blue: selectedTeams.blue,
@@ -826,8 +844,16 @@ export function bootHappySeedMatch(options = {}) {
       ai: options.ai ?? (options.playerMode ? 0 : 2),
       side: options.side || 'home',
     })
+    if (options.prewarmOnly) {
+      const warmCanvas = window.__matchGame?.renderer?.view
+      if (warmCanvas) {
+        warmCanvas.style.display = 'none'
+        warmCanvas.setAttribute('aria-hidden', 'true')
+      }
+    }
     await started
-    setSpeed(1)
+    options.onProgress?.(99, '正在同步开球阵型')
+    setSpeed(window.__happySeedPlayerModeAssist?.speed || 1)
     if (options.studioPreview) setZoom(2.4)
     else if (__DOUYIN_BUILD__ && !options.playerMode && !options.technicalLab) {
       setZoom(CURRENT_VARIANT.matchView.coachDefaultZoom)
@@ -843,6 +869,31 @@ export function bootHappySeedMatch(options = {}) {
   })
 
   return bootPromise
+}
+
+/**
+ * Assemble PIXI, stadium and the first kit textures while any edition is idle
+ * on its home screen. This moves real initialization work; it never reports a
+ * playable match until the Runtime's own start event fires.
+ */
+export function prewarmHappySeedRuntimeSession() {
+  if (window.__matchGame?.__happySeedStandaloneLoaded) return Promise.resolve()
+  if (runtimeSessionWarmPromise) return runtimeSessionWarmPromise
+
+  runtimeSessionWarmPromise = bootHappySeedMatch({
+    red: 'spain',
+    blue: 'brazil',
+    playerMode: true,
+    ai: 0,
+    time: 3,
+    prewarmOnly: true,
+  }).then(() => {
+    shutdownMatchRuntime()
+  }).finally(() => {
+    runtimeSessionWarmPromise = null
+  })
+
+  return runtimeSessionWarmPromise
 }
 
 /**
@@ -951,6 +1002,7 @@ export function shutdownMatchRuntime() {
   delete document.body.dataset.trainingPitchState
   delete document.body.dataset.trainingPlayerControlled
   delete document.body.dataset.trainingPlayerPosition
+  delete document.body.dataset.playerModePace
 }
 
 export function pauseMatch() {

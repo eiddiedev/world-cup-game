@@ -49,6 +49,8 @@ body > canvas {
   height: 100% !important;
   z-index: 1;
   display: block;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
 }
 
 body.loading > canvas {

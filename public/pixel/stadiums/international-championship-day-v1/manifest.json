@@ -16,7 +16,7 @@
     ],
     "tolerancePx": 2
   },
-  "stadiumId": "world-cup-day-v1",
+  "stadiumId": "international-championship-day-v1",
   "opaqueBackgroundCount": 1,
   "runtimePitchOverlay": false,
   "goalPositionSource": "stadium.json",
@@ -25,14 +25,14 @@
   "totalKiB": 4784.8,
   "files": [
     {
-      "path": "/pixel/stadiums/world-cup-day-v1/stadium-day-master-v1.png",
+      "path": "/pixel/stadiums/international-championship-day-v1/stadium-day-master-v1.png",
       "bytes": 4896021,
       "width": 4096,
       "height": 2048,
       "role": "single-opaque-background"
     },
     {
-      "path": "/pixel/stadiums/world-cup-day-v1/scene.json",
+      "path": "/pixel/stadiums/international-championship-day-v1/scene.json",
       "bytes": 3572,
       "role": "scene-contract"
     }

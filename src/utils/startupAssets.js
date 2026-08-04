@@ -1,9 +1,11 @@
+import { COMPETITION_BRAND } from '@competition-brand'
+
 const STARTUP_INTERFACE_ASSETS = [
-  '/assets/背景图.png',
+  '/assets/branding/home-background.png',
   '/assets/branding/title-frame-1.png',
   '/assets/branding/title-frame-2.png',
   '/assets/聘书.png?v=2',
-  '/assets/印章.png',
+  ...(COMPETITION_BRAND.compliant ? [] : ['/assets/branding/appointment-stamp.png']),
   '/assets/征召点.png',
   '/assets/金币.png',
   '/assets/锁.png',

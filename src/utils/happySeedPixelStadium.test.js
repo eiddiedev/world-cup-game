@@ -64,8 +64,8 @@ describe('HappySeed pixel stadium contract', () => {
       goalPositionSource: 'stadium.json',
     })
     expect(contract.assets).toEqual({
-      masterBackground: '/pixel/stadiums/world-cup-day-v1/stadium-day-master-v1.png',
-      scene: '/pixel/stadiums/world-cup-day-v1/scene.json',
+      masterBackground: '/pixel/stadiums/international-championship-day-v1/stadium-day-master-v1.png',
+      scene: '/pixel/stadiums/international-championship-day-v1/scene.json',
       ballTexture: '/pixel/runtime-equipment/happyseed-equipment-v6/football-pixel-v6.png',
       goalAtlas: '/pixel/runtime-equipment/happyseed-equipment-v6/goal-net-pixel-v6.png',
       equipmentManifest: '/pixel/runtime-equipment/happyseed-equipment-v6/manifest.json',

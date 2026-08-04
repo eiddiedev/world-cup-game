@@ -2,9 +2,9 @@
 
 ## 目的
 
-`world-cup-day-v1` 是正式 Runtime 当前使用的 11v11 像素世界杯场景。它只替换比赛表现层，不改变第三方 Runtime 的世界坐标、球门碰撞、动态球网、足球物理、相机实现或深度排序。阶段 3 的 `world-cup-night-v1` 已在 2026-07-19 清理中退役，源码不再保留；如需追溯可从 Git 历史恢复。
+`international-championship-day-v1` 是正式 Runtime 当前使用的 11v11 像素国际赛事场景。它只替换比赛表现层，不改变第三方 Runtime 的世界坐标、球门碰撞、动态球网、足球物理、相机实现或深度排序。旧夜间场景已在 2026-07-19 清理中退役，源码不再保留；如需追溯可从 Git 历史恢复。
 
-场景视觉基准是明亮白天世界杯看台、清晰条纹草坪和人类像素观众。人物仍是画面的第一识别层；观众与场边环境只建立世界杯氛围，不与球员争夺注意力。
+场景视觉基准是明亮白天国际赛事看台、清晰条纹草坪和人类像素观众。人物仍是画面的第一识别层；观众与场边环境只建立赛事氛围，不与球员争夺注意力。
 
 ## 尺寸与尺度
 
@@ -42,7 +42,7 @@
 
 - `scripts/generate-pixel-stadium-slice.mjs`：从已校准的主背景生成 `scene.json` 与清单。
 - `scripts/audit-pixel-stadium-slice.mjs`：校验图片尺寸、单背景、投影误差、镜头和物理保留项。
-- `public/pixel/stadiums/world-cup-day-v1/manifest.json`：记录当前资源的逐文件体积。
+- `public/pixel/stadiums/international-championship-day-v1/manifest.json`：记录当前资源的逐文件体积。
 
 观众已烘焙进主背景，不会随球队和球员数量线性增加资源体积。
 

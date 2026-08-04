@@ -1,6 +1,6 @@
 export const TEAM_DATA_SCHEMA_VERSION = 'team-roster-v2'
 
-export const WORLD_CUP_TEAM_CAPACITY = 48
+export const TOURNAMENT_TEAM_CAPACITY = 48
 
 export const SAMPLE_TEAM_IDS = Object.freeze(['france', 'curacao'])
 
@@ -105,7 +105,7 @@ export function buildTeamSchemaMetadata(team) {
 
   return {
     schemaVersion: TEAM_DATA_SCHEMA_VERSION,
-    tournamentTeamCapacity: WORLD_CUP_TEAM_CAPACITY,
+    tournamentTeamCapacity: TOURNAMENT_TEAM_CAPACITY,
     dataStage: SAMPLE_TEAM_IDS.includes(team.id) ? 'sample-complete' : 'playable-seed',
     rosterConfig: ROSTER_POOL_RULES,
     rosterSummary: {
@@ -173,8 +173,8 @@ export function validateTeamCatalog(teamCatalog = []) {
   const errors = []
   const teamIds = teamCatalog.map(team => team.id)
 
-  if (teamCatalog.length > WORLD_CUP_TEAM_CAPACITY) {
-    errors.push(`team catalog exceeds ${WORLD_CUP_TEAM_CAPACITY} teams`)
+  if (teamCatalog.length > TOURNAMENT_TEAM_CAPACITY) {
+    errors.push(`team catalog exceeds ${TOURNAMENT_TEAM_CAPACITY} teams`)
   }
   if (new Set(teamIds).size !== teamIds.length) errors.push('team ids must be unique')
 
@@ -187,7 +187,7 @@ export function validateTeamCatalog(teamCatalog = []) {
     valid: errors.length === 0,
     errors,
     teamCount: teamCatalog.length,
-    remainingCapacity: Math.max(0, WORLD_CUP_TEAM_CAPACITY - teamCatalog.length),
-    completeTournament: errors.length === 0 && teamCatalog.length === WORLD_CUP_TEAM_CAPACITY,
+    remainingCapacity: Math.max(0, TOURNAMENT_TEAM_CAPACITY - teamCatalog.length),
+    completeTournament: errors.length === 0 && teamCatalog.length === TOURNAMENT_TEAM_CAPACITY,
   }
 }

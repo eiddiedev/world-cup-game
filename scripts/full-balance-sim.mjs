@@ -332,6 +332,8 @@ function summarize(matches) {
     goalDistribution,
     decisionsPerMatch: mean(decisions),
     decisionGoalsPerMatch: mean(decisionGoals),
+    decisionGoalsForPerMatch: mean(matches.map((m) => m.total.decisionGoals)),
+    decisionGoalsAgainstPerMatch: mean(matches.map((m) => m.total.oppGoals)),
     decisionGoalShare: mean(decisionGoals) / Math.max(0.001, mean(goals)),
     cornersPerMatch: mean(corners),
     penaltiesPerMatch: mean(penalties),
@@ -493,14 +495,14 @@ if (AS_JSON) {
   console.log('═'.repeat(68))
   console.log(`全链路平衡仿真 · 每对阵 ${RUNS} 场 × ${Object.keys(matchupRecords).length} 对阵 = ${allMatches.length} 场 · 每队执教 ${TOURNAMENTS_PER_TEAM} 届锦标赛`)
   console.log('═'.repeat(68))
-  console.log(`场均进球        ${num(report.overall.goalsPerMatch)} ± ${num(report.overall.goalsStd)}   (目标 ~3.0)`)
+  console.log(`场均进球        ${num(report.overall.goalsPerMatch)} ± ${num(report.overall.goalsStd)}   (目标 ~4.0)`)
   console.log(`进球分布        ${Object.entries(report.overall.goalDistribution).map(([goals, share]) => `${goals}球 ${pct(share)}`).join(' · ')}`)
   console.log(`场均角球        ${num(report.overall.cornersPerMatch)}          (目标 ~2.0)`)
   console.log(`场均点球        ${num(report.overall.penaltiesPerMatch)}          (目标 ~0.5)`)
   console.log(`场均黄牌        ${num(report.overall.yellowPerMatch)}          (目标 ~3.0)`)
   console.log(`场均红牌        ${num(report.overall.redPerMatch)}          (目标 ~0.2)`)
   console.log(`场均决策        ${num(report.overall.decisionsPerMatch)}          (目标 ~10.0)`)
-  console.log(`决策进球/场     ${num(report.overall.decisionGoalsPerMatch)} · 占总进球 ${pct(report.overall.decisionGoalShare)} (目标 25-35%)`)
+  console.log(`决策进球/场     ${num(report.overall.decisionGoalsPerMatch)} · 占总进球 ${pct(report.overall.decisionGoalShare)} (目标 35-45%)`)
   console.log('─'.repeat(68))
   console.log('分层胜率 (胜/平/负):')
   for (const [key, value] of Object.entries(tierSummary)) {

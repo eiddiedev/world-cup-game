@@ -1,3 +1,5 @@
+import { COMPETITION_BRAND } from '@competition-brand'
+
 /**
  * 图鉴成就定义
  * 每个成就包含 id, name, desc, icon, tiers(可选), check(saveData) 函数
@@ -22,7 +24,7 @@ export const CODEX_ACHIEVEMENTS = [
   {
     id: 'first_champion',
     name: '初登王座',
-    desc: '带领国家队获得世界杯冠军',
+    desc: COMPETITION_BRAND.championAchievement,
     icon: '★',
     tiers: [1, 3, 5],
     tierLabels: ['I 初登王座', 'II 三冠教头', 'III 五冠传奇'],
