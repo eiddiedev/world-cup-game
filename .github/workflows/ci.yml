@@ -18,14 +18,7 @@ jobs:
       - run: python3 -m pip install Pillow fonttools
       - run: npm test -- --run
       - run: npm run lint
-      - run: npm run build:showcase
-      - name: Verify compliant fail-closed state or build ready targets
-        env:
-          H5_VALIDATOR_OPTIONAL: "1"
-        run: |
-          if node -e "const m=require('./art-packs/compliant/manifest.json');process.exit(m.status==='ready'?0:1)"; then
-            npm run build:compliant
-            npm run build:interactive
-          else
-            npm run verify:compliant-pack
-          fi
+      - run: npm run audit:font-subset
+      - run: npm run audit:stadium-slice
+      - run: npm run build
+      - run: npm run verify:compliant-pack
