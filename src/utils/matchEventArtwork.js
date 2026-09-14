@@ -4,6 +4,8 @@ export const MATCH_EVENT_ARTWORK = Object.freeze({
   goal: Object.freeze({ src: '/assets/比赛事件/进球.png', label: '进球', headline: '皮球越过门线，进球！', holdMs: 3200 }),
   'runtime-goal': Object.freeze({ src: '/assets/比赛事件/进球.png', label: '进球', headline: '皮球越过门线，进球！', holdMs: 3200 }),
   'ab-goal': Object.freeze({ src: '/assets/比赛事件/进球.png', label: '进球', headline: '皮球越过门线，进球！', holdMs: 3200 }),
+  offside_called: Object.freeze({ src: null, label: '越位', headline: '裁判鸣哨：进攻球员越位。', holdMs: 2400 }),
+  goal_disallowed: Object.freeze({ src: '/assets/比赛事件/VAR-NO-GOAL.png', label: '越位 · NO GOAL', headline: '越位在先，进球无效。', holdMs: 3000 }),
   'var-review': Object.freeze({ src: '/assets/比赛事件/VAR.png', label: '检查 VAR 中', headline: 'VAR 正在检查刚才的进球。', holdMs: 2800 }),
   'var-review:penalty': Object.freeze({ src: '/assets/比赛事件/VAR.png', label: '检查 VAR 中', headline: 'VAR 正在检查禁区内犯规。', holdMs: 2800 }),
   'var-result:valid': Object.freeze({ src: '/assets/比赛事件/VAR-GOAL.png', label: 'GOAL', headline: 'VAR 确认：进球有效！', holdMs: 3000 }),

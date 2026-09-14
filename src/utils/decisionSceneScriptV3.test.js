@@ -308,25 +308,75 @@ describe('DecisionSceneScriptV3', () => {
   })
 
   it('never opens a penalty appeal outside the real penalty area', () => {
-    for (const scenarioId of [
-      'var_penalty_review',
-      'defensive_line_handball_var',
-      'handball_penalty_claim',
-    ]) {
+    const cases = [
+      { scenarioId: 'var_penalty_review', side: 'red', insideDetail: { inPenaltyArea: true } },
+      { scenarioId: 'defensive_line_handball_var', side: 'blue', insideDetail: { inAttackingPenaltyArea: true } },
+      { scenarioId: 'handball_penalty_claim', side: 'red', insideDetail: { inAttackingPenaltyArea: true } },
+    ]
+    for (const { scenarioId, side, insideDetail } of cases) {
       const outside = {
         id: `runtime.${scenarioId}.outside`,
         type: 'handball-review',
         sourceEventId: 'runtime.shot.outside',
+        side,
         detail: { inPenaltyArea: false },
       }
       const inside = {
         ...outside,
         id: `runtime.${scenarioId}.inside`,
-        detail: { inPenaltyArea: true },
+        detail: insideDetail,
       }
       expect(isFormalDecisionMomentEligibleV3(scenarioId, runtimeMoment, outside)).toBe(false)
       expect(isFormalDecisionMomentEligibleV3(scenarioId, runtimeMoment, inside)).toBe(true)
     }
+  })
+
+  it('严格按射门方分流攻防手球，不把对手射门判成我方申诉', () => {
+    const redShot = {
+      id: 'runtime.handball.red',
+      type: 'handball-review',
+      side: 'red',
+      detail: { inAttackingPenaltyArea: true },
+    }
+    const blueShot = {
+      ...redShot,
+      id: 'runtime.handball.blue',
+      side: 'blue',
+    }
+
+    expect(isFormalDecisionMomentEligibleV3('handball_penalty_claim', runtimeMoment, redShot)).toBe(true)
+    expect(isFormalDecisionMomentEligibleV3('handball_penalty_claim', runtimeMoment, blueShot)).toBe(false)
+    expect(isFormalDecisionMomentEligibleV3('defensive_line_handball_var', runtimeMoment, blueShot)).toBe(true)
+    expect(isFormalDecisionMomentEligibleV3('defensive_line_handball_var', runtimeMoment, redShot)).toBe(false)
+  })
+
+  it('通用 VAR 点球复核以源事件确定进攻方，不受后续球权切换影响', () => {
+    const decision = buildFormalCoachDecision({ actorSource, scenarioId: 'var_penalty_review' })
+    const blueShotReview = buildFormalDecisionSceneScriptV3(
+      decision,
+      actorSource,
+      { ...runtimeMoment, attackingSide: 'red' },
+      {
+        id: 'runtime.blue-shot.handball',
+        type: 'handball-review',
+        side: 'blue',
+        detail: { inAttackingPenaltyArea: true },
+      },
+    )
+    const redDefenderFoul = buildFormalDecisionSceneScriptV3(
+      decision,
+      actorSource,
+      { ...runtimeMoment, attackingSide: 'red' },
+      {
+        id: 'runtime.red-defender.foul',
+        type: 'tackle-contact',
+        side: 'red',
+        detail: { inOwnPenaltyArea: true, awardedSide: 'blue' },
+      },
+    )
+
+    expect(blueShotReview.attackingSide).toBe('blue')
+    expect(redDefenderFoul.attackingSide).toBe('blue')
   })
 
   it('authors carrying choices as a running dribble instead of a static translation', () => {

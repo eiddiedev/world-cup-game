@@ -3,9 +3,11 @@ import { createPortal } from 'react-dom'
 import {
   bootHappySeedMatch,
   applyRuntimeDisciplinaryCard,
+  applyOnlineMatchRuntimeSnapshot,
   applyRuntimeVarResult,
   cancelFormalCoachDecision,
   captureFormalMatchRuntimeMoment,
+  captureOnlineMatchRuntimeSnapshot,
   createFormalCoachDecision,
   executeFormalCoachDecisionChoice,
   getConservativeFormalCoachChoice,
@@ -17,6 +19,7 @@ import {
   prepareFormalCoachDecision,
   resumeMatch,
   setRuntimeGoalPresentationHold,
+  setOnlineMatchRuntimePaused,
   setSpeed,
   setRuntimeStoppageMinutes,
   setTeamTacticalStance,
@@ -28,10 +31,14 @@ import {
   subscribeToRuntimeDecisionChoices,
   subscribeToRuntimeMatchEvents,
   substituteRuntimeActor,
+  updatePlayerInputForSide,
   withDecisionWatchdog,
   retainMatchRuntime,
   scheduleMatchRuntimeShutdown,
 } from '../services/happySeedMatchRuntime.js'
+import { onlineRoomClient } from '../services/onlineRoomClient.js'
+import { ONLINE_KEY_EVENT_TYPES, ONLINE_MESSAGE } from '../online/onlineProtocol.js'
+import { resolvePlayerModeDifficulty } from '../utils/playerModeDemoAssist.js'
 import {
   buildBroadcastSubstitutionBoard,
   buildMatchBroadcastView,
@@ -64,7 +71,6 @@ import SpotlightTour from './SpotlightTour.jsx'
 import { SPOTLIGHT_TOURS } from '../data/spotlightTours.js'
 import { hasCompletedSpotlightTour } from '../utils/spotlightTourStorage.js'
 import { startGamepadInput, stopGamepadInput } from '../utils/gamepadInput.js'
-import { autoSubstituteRedSide } from '../utils/playerModeSetup.js'
 import {
   pickLockerRoomSubstitution,
   resolveLockerRoomChoice,
@@ -78,6 +84,9 @@ import {
 import { shouldEnableCoachDecisions } from '../utils/coachDecisionMode.js'
 
 const SPEEDS = [1, 2, 3]
+const ONLINE_TRANSIENT_ACTIONS = ['pass', 'lob', 'switchPlayer', 'tackle']
+const ONLINE_KEY_EVENTS = new Set(ONLINE_KEY_EVENT_TYPES)
+const IRON_SUPPRESSED_EVENT_TYPES = new Set(['foul', 'card', 'penalty', 'offside'])
 const MAX_SUBSTITUTION_WINDOWS = 3
 const MAX_SUBSTITUTION_PLAYERS = 5
 const TACTICAL_STANCES = Object.freeze([
@@ -155,8 +164,11 @@ export function HappySeedMatchBroadcast({
   shootoutActive = false,
 }) {
   const params = useMemo(() => new URLSearchParams(window.location.search), [])
-  const gameMode = saveData?.currentRun?.gameMode || 'coach'
-  const isPlayerMode = gameMode === 'player'
+  const gameMode = saveData?.currentRun?.gameMode || 'journey'
+  const isOnline = gameMode === 'online'
+  const isJourney = gameMode === 'journey' || gameMode === 'player'
+  const isPlayerMode = ['journey', 'online', 'player'].includes(gameMode)
+  const [onlineNetwork, setOnlineNetwork] = useState(() => onlineRoomClient.getSnapshot())
   const coachDecisionMode = useMemo(() => (
     shouldEnableCoachDecisions(gameMode, params, import.meta.env.DEV)
   ), [gameMode, params])
@@ -165,11 +177,27 @@ export function HappySeedMatchBroadcast({
     || (import.meta.env.DEV && params.has('time') && Number(params.get('time')) < 1)
   ), [params])
   const currentRun = saveData?.currentRun || null
-  const redTeamId = currentRun?.teamId || params.get('red') || 'france'
+  const onlineRoom = isOnline
+    ? (onlineNetwork.room || currentRun?.onlineRoom || null)
+    : null
+  const onlineOwnSeatId = currentRun?.onlineSeatId || onlineNetwork.seatId || 'host'
+  const onlineOwnSide = onlineOwnSeatId === 'guest' ? 'blue' : 'red'
+  const managedSide = isOnline ? onlineOwnSide : 'red'
+  const isOnlineHost = isOnline && onlineOwnSeatId === 'host'
+  const matchRuleset = currentRun?.ruleset || onlineRoom?.ruleset || 'standard'
+  const isIronRuleset = matchRuleset === 'iron'
+  const redTeamId = isOnline
+    ? (onlineRoom?.host?.teamId || (onlineOwnSide === 'red' ? currentRun?.teamId : currentRun?.currentOpponent) || 'france')
+    : (currentRun?.teamId || params.get('red') || 'france')
   const opponentTeam = getTeamById(currentRun?.currentOpponent)
-  const blueTeamId = opponentTeam?.id || params.get('blue') || 'brazil'
+  const blueTeamId = isOnline
+    ? (onlineRoom?.guest?.teamId || (onlineOwnSide === 'blue' ? currentRun?.teamId : currentRun?.currentOpponent) || 'brazil')
+    : (opponentTeam?.id || params.get('blue') || 'brazil')
   const redTeam = getTeamById(redTeamId)
   const blueTeam = getTeamById(blueTeamId)
+  const playerModeDifficulty = useMemo(() => (
+    resolvePlayerModeDifficulty(redTeam, blueTeam)
+  ), [redTeam, blueTeam])
   const forcedScenarioIds = useMemo(() => (
     import.meta.env.DEV
       ? (params.get('scenarios') || params.get('scenario') || '')
@@ -219,7 +247,7 @@ export function HappySeedMatchBroadcast({
   const [eventArtwork, setEventArtwork] = useState(null)
   const [audioStarted, setAudioStarted] = useState(() => audioManager.userUnlocked)
   const [prematchPlanned, setPrematchPlanned] = useState(() => (
-    import.meta.env.MODE !== 'test' && !audioManager.userUnlocked
+    !isOnline && import.meta.env.MODE !== 'test' && !audioManager.userUnlocked
   ))
   // 赛前更衣室完成门控：未完成前不允许开赛（避免决策过程中已开球）
   const [prematchGateClear, setPrematchGateClear] = useState(false)
@@ -246,8 +274,10 @@ export function HappySeedMatchBroadcast({
   const sessionRef = useRef(matchSession)
   const runtimeMomentRef = useRef(null)
   const completedReportedRef = useRef(false)
+  const forfeitedRef = useRef(false)
   const extraTimeKickoffPendingRef = useRef(false)
-  const halftimeAutoSubDoneRef = useRef(false)
+  const managementPanelOpenRef = useRef(false)
+  const managementPanelResumeRef = useRef(false)
   const runtimeEventQueueRef = useRef([])
   const runtimeIncidentTimersRef = useRef(new Set())
   const eventArtworkTimerRef = useRef(null)
@@ -257,6 +287,21 @@ export function HappySeedMatchBroadcast({
   const secondHalfStoppageBaselineRef = useRef(null)
   const lastTacticalFatigueMinuteRef = useRef(0)
   const draggingInIdRef = useRef(null)
+  const onlineInputRef = useRef({
+    vx: 0,
+    vy: 0,
+    shoot: false,
+    sprint: false,
+    pass: false,
+    lob: false,
+    switchPlayer: false,
+    tackle: false,
+  })
+  const onlineMatchEndedSentRef = useRef(false)
+  const onlineRemoteSubstitutionUsageRef = useRef({
+    red: { windows: 0, players: 0 },
+    blue: { windows: 0, players: 0 },
+  })
   const [sfxBus] = useState(() => createMatchSfxBus())
   const [showExitConfirm, setShowExitConfirm] = useState(false)
   const matchTour = isPlayerMode ? SPOTLIGHT_TOURS['match-player'] : SPOTLIGHT_TOURS['match-coach']
@@ -283,11 +328,8 @@ export function HappySeedMatchBroadcast({
   const showEventArtwork = useCallback((event) => {
     const artwork = getMatchEventArtwork(event)
     if (!artwork) return
-    // 球员模式：只显示红黄牌和角球，且用紧凑左上角样式
-    if (isPlayerMode) {
-      const allowedTypes = new Set(['card', 'corner'])
-      if (!allowedTypes.has(artwork.eventType)) return
-    }
+    // 直接操控模式同样保留完整事件播报，但通过 is-compact 样式避开
+    // 摇杆和动作键，不再丢弃进球、扑救、犯规等信息。
     if (eventArtworkTimerRef.current) window.clearTimeout(eventArtworkTimerRef.current)
     setEventArtwork(artwork)
     eventArtworkTimerRef.current = window.setTimeout(() => {
@@ -362,16 +404,30 @@ export function HappySeedMatchBroadcast({
     bootHappySeedMatch({
       red: redTeamId,
       blue: blueTeamId,
-      redFormation: currentRun?.formation,
-      redSquadPlayerIds: currentRun?.roster || currentRun?.purchasedPlayerIds || [],
-      redLineupPlayerIds: currentRun?.lineup || [],
+      gameMode,
+      ruleset: matchRuleset,
+      online: isOnline ? {
+        role: isOnlineHost ? 'host' : 'guest',
+        side: onlineOwnSide,
+      } : null,
+      redFormation: isOnline ? onlineRoom?.host?.formation : currentRun?.formation,
+      redSquadPlayerIds: isOnline
+        ? (onlineRoom?.host?.squadPlayerIds || [])
+        : (currentRun?.roster || currentRun?.purchasedPlayerIds || []),
+      redLineupPlayerIds: isOnline
+        ? (onlineRoom?.host?.lineupPlayerIds || [])
+        : (currentRun?.lineup || []),
+      blueFormation: isOnline ? onlineRoom?.guest?.formation : undefined,
+      blueSquadPlayerIds: isOnline ? (onlineRoom?.guest?.squadPlayerIds || []) : undefined,
+      blueLineupPlayerIds: isOnline ? (onlineRoom?.guest?.lineupPlayerIds || []) : undefined,
       redPlayerStateById: currentRun?.playerMatchStates || {},
       redUnavailablePlayerIds: [
         ...(currentRun?.injuredPlayers || []),
         ...(currentRun?.suspendedPlayers || []),
       ],
       playerMode: isPlayerMode,
-      ai: params.has('ai') ? Number(params.get('ai')) : (isPlayerMode ? 0 : 2),
+      playerModeDifficulty,
+      ai: params.has('ai') ? Number(params.get('ai')) : undefined,
       time: params.has('time') ? Number(params.get('time')) : FORMAL_MATCH_REALTIME_MINUTES,
       matchStartStaminaBonus: _logisticsMods.matchStartStaminaBonus,
       moraleDecayReduction: _logisticsMods.moraleDecayReduction,
@@ -410,15 +466,13 @@ export function HappySeedMatchBroadcast({
       setRuntimeLoadingDetail('比赛现场准备完成')
       requestAnimationFrame(() => requestAnimationFrame(() => setRuntimeLoading(false)))
       commitSession((current) => startFormalMatchSession(current))
-      // 球员模式：开赛后自动换下体力不足的球员
-      if (isPlayerMode) autoSubstituteRedSide()
     }).catch((bootError) => {
       console.error(bootError)
       setError(bootError.message || '比赛引擎启动失败')
       setRuntimeLoading(true)
     })
     return undefined
-  }, [audioStarted, blueTeamId, commitSession, currentRun, isPlayerMode, params, prematchGateClear, redTeamId])
+  }, [audioStarted, blueTeamId, commitSession, currentRun, gameMode, isOnline, isOnlineHost, isPlayerMode, matchRuleset, onlineOwnSide, onlineRoom, params, playerModeDifficulty, prematchGateClear, redTeamId])
 
   // 进入加时赛：先置 extraTime 标志，加时更衣室在 effect 里打开，
   // 引擎重开球在更衣室关闭（或无场景可开）后进行
@@ -438,16 +492,194 @@ export function HappySeedMatchBroadcast({
       runtimeEventId,
     ))
     setStatus(`终场 · ${finished.score.red}:${finished.score.blue} · 本场 ${finished.decisions.length} 次决策`)
+    if (isOnlineHost && !onlineMatchEndedSentRef.current) {
+      onlineMatchEndedSentRef.current = true
+      onlineRoomClient.sendAuthoritativeEvent({
+        type: 'match-ended',
+        id: runtimeEventId || `online-match-ended-${Date.now()}`,
+        result: {
+          score: { ...finished.score },
+          forceShootout,
+        },
+      })
+    }
     if (onMatchComplete && !completedReportedRef.current) {
       completedReportedRef.current = true
       window.setTimeout(() => onMatchComplete({
         session: finished,
-        report: buildFormalMatchSessionReport(finished),
+        report: {
+          ...buildFormalMatchSessionReport(finished),
+          forfeited: forfeitedRef.current,
+        },
         actorSnapshot: getRuntimeActorSnapshot(),
         forceShootout,
       }), 900)
     }
-  }, [commitSession, onMatchComplete])
+  }, [commitSession, isOnlineHost, onMatchComplete])
+
+  const resolveOnlineHasBall = useCallback(() => {
+    const authoritative = captureOnlineMatchRuntimeSnapshot()
+    const ownerId = authoritative?.ownerRuntimeActorId
+    if (!ownerId) return false
+    return authoritative.actors?.some((actor) => (
+      actor.runtimeActorId === ownerId && actor.side === onlineOwnSide
+    )) || false
+  }, [onlineOwnSide])
+
+  const handlePlayerInput = useCallback((patch) => {
+    if (!isOnline) {
+      updatePlayerInputForSide('red', patch)
+      return
+    }
+    Object.assign(onlineInputRef.current, patch)
+    // 房主的红方输入直接进入权威 Runtime，网络只负责把同一帧记账；
+    // 客人的蓝方输入只上传给房主，绝不在客端独立推动比赛物理。
+    if (isOnlineHost) updatePlayerInputForSide('red', patch)
+  }, [isOnline, isOnlineHost])
+
+  useEffect(() => {
+    if (!isOnline) return undefined
+    const timer = window.setInterval(() => {
+      const frame = { ...onlineInputRef.current }
+      if (!onlineRoomClient.sendInput(frame)) return
+      ONLINE_TRANSIENT_ACTIONS.forEach((action) => {
+        if (frame[action]) onlineInputRef.current[action] = false
+      })
+    }, 1000 / 20)
+    return () => {
+      window.clearInterval(timer)
+      updatePlayerInputForSide(onlineOwnSide, {
+        vx: 0,
+        vy: 0,
+        shoot: false,
+        sprint: false,
+      })
+    }
+  }, [isOnline, onlineOwnSide])
+
+  useEffect(() => {
+    if (!isOnline || !isOnlineHost) return undefined
+    const timer = window.setInterval(() => {
+      const authoritative = captureOnlineMatchRuntimeSnapshot()
+      if (authoritative) onlineRoomClient.sendAuthoritativeSnapshot(authoritative)
+    }, 1000 / 12)
+    return () => window.clearInterval(timer)
+  }, [isOnline, isOnlineHost])
+
+  useEffect(() => {
+    if (!isOnline || isOnlineHost) return undefined
+    let frameId = 0
+    const applyInterpolatedFrame = () => {
+      const authoritative = onlineRoomClient.getInterpolatedSnapshot()
+      if (authoritative) applyOnlineMatchRuntimeSnapshot(authoritative)
+      frameId = window.requestAnimationFrame(applyInterpolatedFrame)
+    }
+    frameId = window.requestAnimationFrame(applyInterpolatedFrame)
+    return () => window.cancelAnimationFrame(frameId)
+  }, [isOnline, isOnlineHost])
+
+  useEffect(() => {
+    if (!isOnline) return undefined
+    return onlineRoomClient.subscribe((network, message) => {
+      setOnlineNetwork(network)
+      if (message?.type === ONLINE_MESSAGE.INPUT && isOnlineHost) {
+        updatePlayerInputForSide(message.frame?.side, message.frame)
+      }
+      if (message?.type === ONLINE_MESSAGE.TACTICS) {
+        const side = message.side === 'blue' ? 'blue' : 'red'
+        if (setTeamTacticalStance(side, message.stance) && isOnlineHost) {
+          onlineRoomClient.sendAuthoritativeEvent({
+            type: 'tactical-change',
+            id: `online-tactics-${side}-${Date.now()}`,
+            side,
+            detail: { side, stance: message.stance },
+          })
+        }
+      }
+      if (message?.type === ONLINE_MESSAGE.SUBSTITUTION_REQUEST && isOnlineHost) {
+        const side = message.side === 'blue' ? 'blue' : 'red'
+        const usage = onlineRemoteSubstitutionUsageRef.current[side]
+        const remainingPlayers = Math.max(0, MAX_SUBSTITUTION_PLAYERS - usage.players)
+        const swaps = (message.swaps || []).slice(0, remainingPlayers)
+        const completed = usage.windows >= MAX_SUBSTITUTION_WINDOWS
+          ? []
+          : swaps.filter((swap) => (
+            substituteRuntimeActor(side, swap.outPlayerId, swap.inPlayerId)
+          ))
+        if (completed.length && usage.windows < MAX_SUBSTITUTION_WINDOWS) {
+          usage.windows += 1
+          usage.players += completed.length
+          setRuntimeActors(getRuntimeActorSnapshot())
+          onlineRoomClient.sendAuthoritativeEvent({
+            type: 'substitution',
+            id: `online-substitution-${side}-${Date.now()}`,
+            side,
+            detail: { side, swaps: completed },
+          })
+        }
+      }
+      if (message?.type === ONLINE_MESSAGE.CONTROL) {
+        setOnlineMatchRuntimePaused(message.paused)
+        if (message.paused) pauseMatch()
+        else resumeMatch()
+        setPaused(Boolean(message.paused))
+        setStatus(message.paused ? '对方正在调整阵容或战术，比赛已暂停' : '双方调整完成，比赛继续')
+      }
+      if (message?.type === ONLINE_MESSAGE.MATCH_PAUSED) {
+        setOnlineMatchRuntimePaused(true)
+        pauseMatch()
+        setPaused(true)
+        setStatus('对方掉线，比赛暂停；保留席位 20 秒')
+      }
+      if (message?.type === ONLINE_MESSAGE.MATCH_ABORTED) {
+        setOnlineMatchRuntimePaused(true)
+        pauseMatch()
+        setPaused(true)
+        setStatus('重连超时，本场已作废；返回原房间后可重新开始')
+        window.dispatchEvent(new CustomEvent('ab-online-match-aborted', {
+          detail: message,
+        }))
+      }
+      if (message?.type === ONLINE_MESSAGE.ROOM_STATE
+        && network.room?.status === 'playing') {
+        setOnlineMatchRuntimePaused(false)
+        resumeMatch()
+        setPaused(false)
+      }
+      if (message?.type === ONLINE_MESSAGE.EVENT && message.event) {
+        if (message.event.type === 'match-ended' && !isOnlineHost) {
+          const result = message.event.result || {}
+          if (result.score) {
+            commitSession((current) => ({
+              ...current,
+              score: {
+                red: Number(result.score.red || 0),
+                blue: Number(result.score.blue || 0),
+              },
+            }))
+          }
+          if (!completedReportedRef.current) {
+            finishMatch(message.event.id || null, Boolean(result.forceShootout))
+          }
+        } else if (!isOnlineHost) {
+          if (message.event.type === 'substitution') {
+            const side = message.event.detail?.side === 'blue' ? 'blue' : 'red'
+            ;(message.event.detail?.swaps || []).forEach((swap) => {
+              substituteRuntimeActor(side, swap.outPlayerId, swap.inPlayerId)
+            })
+            setRuntimeActors(getRuntimeActorSnapshot())
+          }
+          if (message.event.type === 'tactical-change') {
+            const side = message.event.detail?.side === 'blue' ? 'blue' : 'red'
+            setTeamTacticalStance(side, message.event.detail?.stance)
+          }
+          window.dispatchEvent(new CustomEvent('ab-runtime-match-event', {
+            detail: message.event,
+          }))
+        }
+      }
+    })
+  }, [commitSession, finishMatch, isOnline, isOnlineHost])
 
   // 测试快捷键：E 直接进加时，P 直接进点球大战，W 强制3-0胜利
   useEffect(() => {
@@ -518,6 +750,7 @@ export function HappySeedMatchBroadcast({
 
     const deliverRuntimeEvent = (event, options = {}) => {
       if (!event) return
+      if (isIronRuleset && IRON_SUPPRESSED_EVENT_TYPES.has(event.type)) return
       if (event.type === 'var-result') applyRuntimeVarResult(event)
       if (event.type === 'injury' && event.primaryRuntimeActorId) {
         setRuntimeActorState(event.primaryRuntimeActorId, { injured: true })
@@ -545,7 +778,20 @@ export function HappySeedMatchBroadcast({
     }
 
     const unsubscribe = subscribeToRuntimeMatchEvents((sourceEvent) => {
-      const derivedEvents = deriveFormalRuntimeIncidents(sourceEvent)
+      const derivedEvents = deriveFormalRuntimeIncidents(sourceEvent, {
+        // 球员模式以实时操作结果为准：球一旦越过门线就记分，不再进入
+        // 教练模式的赛后 VAR 撤销链路。
+        allowGoalReview: !isPlayerMode,
+      }).filter((event) => (
+        !isIronRuleset || !IRON_SUPPRESSED_EVENT_TYPES.has(event.type)
+      ))
+      if (isOnlineHost && ONLINE_KEY_EVENTS.has(sourceEvent.type)) {
+        onlineRoomClient.sendAuthoritativeEvent(sourceEvent)
+      }
+      if (isOnlineHost) {
+        derivedEvents.filter((event) => ONLINE_KEY_EVENTS.has(event.type))
+          .forEach((event) => onlineRoomClient.sendAuthoritativeEvent(event))
+      }
       if (sourceEvent.type === 'goal') {
         lastGoalAtRef.current = Date.now()
         const reviewEvent = derivedEvents.find((event) => event.type === 'var-review')
@@ -598,7 +844,7 @@ export function HappySeedMatchBroadcast({
       runtimeIncidentTimersRef.current.clear()
       releaseGoalPresentation()
     }
-  }, [sfxBus, showEventArtwork])
+  }, [isIronRuleset, isOnlineHost, isPlayerMode, sfxBus, showEventArtwork])
 
   useEffect(() => {
     const timer = window.setInterval(() => {
@@ -682,11 +928,11 @@ export function HappySeedMatchBroadcast({
 
   const substitutionBoard = useMemo(() => (
     buildBroadcastSubstitutionBoard(runtimeActors, {
-      side: 'red',
+      side: managedSide,
       outPlayerId: selectedOutId,
       inPlayerId: selectedInId,
     })
-  ), [runtimeActors, selectedInId, selectedOutId])
+  ), [managedSide, runtimeActors, selectedInId, selectedOutId])
 
   const substitutionWindowsLeft = Math.max(
     0,
@@ -697,7 +943,8 @@ export function HappySeedMatchBroadcast({
     MAX_SUBSTITUTION_PLAYERS - substitutionBoard.substitutionsMade,
   )
   const recommendedTacticalStance = (() => {
-    const diff = matchSession.score.red - matchSession.score.blue
+    const redDiff = matchSession.score.red - matchSession.score.blue
+    const diff = managedSide === 'blue' ? -redDiff : redDiff
     if (diff <= -2) return 'all-out-attack'
     if (diff === -1) return 'attack'
     if (diff === 1) return 'defend'
@@ -707,10 +954,22 @@ export function HappySeedMatchBroadcast({
   const applyTacticalStance = (stanceId) => {
     const stance = TACTICAL_STANCES.find((item) => item.id === stanceId)
     if (!stance) return
-    if (!setTeamTacticalStance('red', stanceId)) {
+    if (isOnline && !isOnlineHost) {
+      if (!onlineRoomClient.setTacticalStance(stanceId)) {
+        setError('战术调整未能发送给房主')
+        return
+      }
+      setTacticalStance(stanceId)
+      setShowTactics(false)
+      setError('')
+      setStatus(`战术调整已发送：${stance.label}`)
+      return
+    }
+    if (!setTeamTacticalStance(managedSide, stanceId)) {
       setError('战术调整未能进入 Runtime')
       return
     }
+    if (isOnlineHost) onlineRoomClient.setTacticalStance(stanceId)
     setTacticalStance(stanceId)
     setShowTactics(false)
     setError('')
@@ -721,6 +980,7 @@ export function HappySeedMatchBroadcast({
   // —— 更衣室决策：赛前 / 中场 / 加时中场 / 点球大战前 ——
   const LOCKER_ROOM_SCENARIO_COUNT = { prematch: 2, halftime: 2, extratime: 1, shootout: 1 }
   const openLockerRoom = (phase, { pause = false } = {}) => {
+    if (!isJourney) return false
     if (lockerRoomHandledRef.current.has(phase) || lockerRoom) return false
     const scenarioCount = LOCKER_ROOM_SCENARIO_COUNT[phase] || 1
     const scenarios = []
@@ -814,14 +1074,13 @@ export function HappySeedMatchBroadcast({
   // 此时比赛尚未启动，选择的效果先记入 prematchChoicesRef，开赛后补打到真实球员。
   // 无论更衣室是否打开，都必须放行 prematchGateClear，否则比赛永远不会启动
   useEffect(() => {
-    if (import.meta.env.MODE === 'test') {
-      setPrematchGateClear(true)
-      return undefined
-    }
-    // 球员模式不开赛前更衣室，直接放行 Runtime 装配。
-    if (isPlayerMode) {
+    if (!isJourney) {
       setPrematchGateClear(true)
       setPrematchPlanned(false)
+      return undefined
+    }
+    if (import.meta.env.MODE === 'test') {
+      setPrematchGateClear(true)
       return undefined
     }
     const timer = window.setTimeout(() => {
@@ -831,27 +1090,16 @@ export function HappySeedMatchBroadcast({
       }
     }, 600)
     return () => window.clearTimeout(timer)
-  }, [isPlayerMode])
+  }, [gameMode, isJourney])
 
   // 中场休息 / 加时中场 / 点球大战前：按比赛阶段触发。
   // 常规中场的 period-change 一旦发生过 halfTimeSeen 就永真，
   // 所以加时两个钩子必须独立判断，不能挂在 else-if 链上
   useEffect(() => {
+    if (!isJourney) return
     const halfTimeSeen = matchSession.commentary.some((line) => (
       line.type === 'period-change' && line.text.startsWith('上半场结束')
     ))
-    // 球员模式：中场自动换人（仅一次），加时直接重开球，不弹更衣室
-    if (isPlayerMode) {
-      if (halfTimeSeen && !halftimeAutoSubDoneRef.current) {
-        halftimeAutoSubDoneRef.current = true
-        autoSubstituteRedSide()
-      }
-      if (matchSession.extraTime && extraTimeKickoffPendingRef.current) {
-        extraTimeKickoffPendingRef.current = false
-        startExtraTime()
-      }
-      return
-    }
     if (halfTimeSeen) openLockerRoom('halftime', { pause: true })
     // 加时重开球以 extraTime 标志 + 待开球标记为准，不依赖分钟数
     //（E 键可能在 90 分钟前直接进入加时）
@@ -865,14 +1113,43 @@ export function HappySeedMatchBroadcast({
     } else if (matchSession.extraTime && matchSession.minute >= 105) {
       openLockerRoom('shootout', { pause: true })
     }
-  }, [lockerRoom, matchSession, isPlayerMode])
+  }, [isJourney, lockerRoom, matchSession])
+
+  useEffect(() => {
+    const panelOpen = showTactics || showSubstitutions
+    if (panelOpen && !managementPanelOpenRef.current) {
+      managementPanelOpenRef.current = true
+      managementPanelResumeRef.current = !paused
+      if (!paused) {
+        if (isOnline) {
+          setOnlineMatchRuntimePaused(true)
+          onlineRoomClient.setManagementPaused(true)
+        }
+        pauseMatch()
+        setPaused(true)
+      }
+      return
+    }
+    if (!panelOpen && managementPanelOpenRef.current) {
+      managementPanelOpenRef.current = false
+      if (managementPanelResumeRef.current) {
+        managementPanelResumeRef.current = false
+        if (isOnline) {
+          setOnlineMatchRuntimePaused(false)
+          onlineRoomClient.setManagementPaused(false)
+        }
+        resumeMatch()
+        setPaused(false)
+      }
+    }
+  }, [isOnline, paused, showSubstitutions, showTactics])
   const pendingOutgoingIds = new Set(pendingSubstitutions.map((swap) => swap.outgoing.playerId))
   const pendingIncomingIds = new Set(pendingSubstitutions.map((swap) => swap.incoming.playerId))
   const pendingSwapByOutgoingId = new Map(pendingSubstitutions.map((swap) => [
     swap.outgoing.playerId,
     swap,
   ]))
-  const availableBench = (runtimeActors.sides?.red?.bench || []).filter((player) => (
+  const availableBench = (runtimeActors.sides?.[managedSide]?.bench || []).filter((player) => (
     player.state?.status === 'bench' && !pendingIncomingIds.has(player.playerId)
   ))
   const substitutionBenchPreview = [
@@ -882,6 +1159,10 @@ export function HappySeedMatchBroadcast({
 
   const togglePause = () => {
     const nextPaused = !paused
+    if (isOnline) {
+      setOnlineMatchRuntimePaused(nextPaused)
+      onlineRoomClient.setManagementPaused(nextPaused, 'manual-pause')
+    }
     if (nextPaused) pauseMatch()
     else resumeMatch()
     setPaused(nextPaused)
@@ -896,7 +1177,7 @@ export function HappySeedMatchBroadcast({
   const queueSubstitution = (outPlayerId, inPlayerId) => {
     if (substitutionWindowsLeft <= 0 || substitutionPlayersLeft <= 0) return false
     const outgoing = substitutionBoard.active.find((player) => player.playerId === outPlayerId)
-    const incoming = runtimeActors.sides?.red?.bench?.find((player) => (
+    const incoming = runtimeActors.sides?.[managedSide]?.bench?.find((player) => (
       player.playerId === inPlayerId && player.state?.status === 'bench'
     ))
     if (!outgoing || !incoming || outgoing.isGoalkeeper !== (incoming.naturalPosition === 'GK')) {
@@ -964,8 +1245,23 @@ export function HappySeedMatchBroadcast({
 
   const confirmSubstitutions = () => {
     if (!pendingSubstitutions.length || substitutionWindowsLeft <= 0) return
+    if (isOnline && !isOnlineHost) {
+      const sent = onlineRoomClient.requestSubstitutions(pendingSubstitutions.map((swap) => ({
+        outPlayerId: swap.outgoing.playerId,
+        inPlayerId: swap.incoming.playerId,
+      })))
+      if (!sent) {
+        setError('换人申请未能发送给房主')
+        return
+      }
+      setSubstitutionWindowsUsed((current) => current + 1)
+      setPendingSubstitutions([])
+      setShowSubstitutions(false)
+      setStatus('换人申请已发送，等待权威 Runtime 确认')
+      return
+    }
     const completed = pendingSubstitutions.filter((swap) => (
-      substituteRuntimeActor('red', swap.outgoing.playerId, swap.incoming.playerId)
+      substituteRuntimeActor(managedSide, swap.outgoing.playerId, swap.incoming.playerId)
     ))
     if (!completed.length) {
       setError('本次换人没有通过 Runtime 在场资格校验')
@@ -976,6 +1272,20 @@ export function HappySeedMatchBroadcast({
     completed.forEach(({ outgoing, incoming }) => {
       commitSession((current) => recordFormalSubstitution(current, outgoing, incoming))
     })
+    if (isOnlineHost) {
+      onlineRoomClient.sendAuthoritativeEvent({
+        type: 'substitution',
+        id: `online-substitution-${Date.now()}`,
+        side: managedSide,
+        detail: {
+          side: managedSide,
+          swaps: completed.map((swap) => ({
+            outPlayerId: swap.outgoing.playerId,
+            inPlayerId: swap.incoming.playerId,
+          })),
+        },
+      })
+    }
     setPendingSubstitutions([])
     setSelectedOutId(null)
     setSelectedInId(null)
@@ -1178,9 +1488,12 @@ export function HappySeedMatchBroadcast({
   // 球员模式：启用手柄输入轮询，卸载时停止
   useEffect(() => {
     if (!isPlayerMode) return undefined
-    startGamepadInput()
+    startGamepadInput({
+      onInput: handlePlayerInput,
+      resolveHasBall: isOnline ? resolveOnlineHasBall : undefined,
+    })
     return () => stopGamepadInput()
-  }, [isPlayerMode])
+  }, [handlePlayerInput, isOnline, isPlayerMode, resolveOnlineHasBall])
 
   const latestLine = broadcast.commentary[broadcast.commentary.length - 1]
   const decisionInteractionLocked = ['staging', 'choosing', 'executing', 'settled'].includes(decisionPhase)
@@ -1270,7 +1583,12 @@ export function HappySeedMatchBroadcast({
         document.body,
       )}
 
-      {isPlayerMode && <PlayerControls />}
+      {isPlayerMode && (
+        <PlayerControls
+          onInput={handlePlayerInput}
+          resolveHasBall={isOnline ? resolveOnlineHasBall : undefined}
+        />
+      )}
 
       {!audioStarted && !prematchPlanned && (
         <div className="broadcast-audio-start" role="dialog" aria-label="开始比赛并开启声音">
@@ -1368,8 +1686,8 @@ export function HappySeedMatchBroadcast({
         )}
       </header>
 
-      {!isPlayerMode && <section
-        className={`broadcast-commentary${latestLine?.tone === 'highlight' ? ' is-key' : ''}`}
+      <section
+        className={`broadcast-commentary${isPlayerMode ? ' is-direct-control' : ''}${latestLine?.tone === 'highlight' ? ' is-key' : ''}`}
         aria-label="比赛播报"
         aria-live="polite"
       >
@@ -1384,7 +1702,7 @@ export function HappySeedMatchBroadcast({
             <span>{error || '双方球员已经就位，准备开球。'}</span>
           </p>
         )}
-      </section>}
+      </section>
 
       <div className="broadcast-status" aria-live="polite">
         <span className={error ? 'is-error' : ''}>{error || status}</span>
@@ -1419,6 +1737,7 @@ export function HappySeedMatchBroadcast({
               <button type="button" className="broadcast-exit-confirm" onClick={() => {
                 setShowExitConfirm(false)
                 if (!completedReportedRef.current) {
+                  forfeitedRef.current = true
                   // 立即停止引擎与所有环境音
                   pauseMatch()
                   audioManager.stopCrowdAmbient()
@@ -1432,7 +1751,7 @@ export function HappySeedMatchBroadcast({
         </div>
       )}
 
-      {!isPlayerMode && <button
+      <button
         type="button"
         className="broadcast-substitution-trigger broadcast-tactics-trigger"
         data-guide="match-tactics-trigger"
@@ -1442,7 +1761,7 @@ export function HappySeedMatchBroadcast({
         onClick={() => {
           if (showTactics) setShowTactics(false)
           else {
-            setTacticalStance(getTeamTacticalStance('red'))
+            setTacticalStance(getTeamTacticalStance(managedSide))
             setShowTactics(true)
           }
           setShowSubstitutions(false)
@@ -1454,9 +1773,9 @@ export function HappySeedMatchBroadcast({
           <strong>战术</strong>
           <small>{TACTICAL_STANCES.find((item) => item.id === tacticalStance)?.label || '攻守平衡'}</small>
         </span>
-      </button>}
+      </button>
 
-      {!isPlayerMode && <button
+      <button
         type="button"
         className="broadcast-substitution-trigger"
         data-guide="match-substitutions-trigger"
@@ -1477,7 +1796,7 @@ export function HappySeedMatchBroadcast({
           <strong>换人</strong>
           <small>{substitutionWindowsLeft} 次 · {substitutionPlayersLeft} 人</small>
         </span>
-      </button>}
+      </button>
 
       {showTactics && (
         <div className="broadcast-substitution-backdrop" onPointerDown={() => setShowTactics(false)}>
@@ -1489,7 +1808,7 @@ export function HappySeedMatchBroadcast({
           >
             <header>
               <div>
-                <small>{broadcast.teams.red.name} · 当前 {TACTICAL_STANCES.find((item) => item.id === tacticalStance)?.label || '攻守平衡'}</small>
+                <small>{broadcast.teams[managedSide].name} · 当前 {TACTICAL_STANCES.find((item) => item.id === tacticalStance)?.label || '攻守平衡'}</small>
                 <strong>战术调整</strong>
               </div>
               <span>比分 {matchSession.score.red}:{matchSession.score.blue}</span>
@@ -1603,7 +1922,7 @@ export function HappySeedMatchBroadcast({
           >
             <header>
               <div>
-                <small>{broadcast.teams.red.name} · {runtimeActors.sides?.red?.formation || redTeam?.defaultFormation || '4-3-3'}</small>
+                <small>{broadcast.teams[managedSide].name} · {runtimeActors.sides?.[managedSide]?.formation || (managedSide === 'red' ? redTeam : blueTeam)?.defaultFormation || '4-3-3'}</small>
                 <strong>阵型换人</strong>
               </div>
               <span>{substitutionWindowsLeft} 次窗口 · {substitutionPlayersLeft} 人名额</span>
@@ -1626,7 +1945,7 @@ export function HappySeedMatchBroadcast({
                 return (
                   <button
                     type="button"
-                    className={`broadcast-formation-player${selectedOutId === player.playerId ? ' is-selected' : ''}${pendingSwap ? ' is-pending' : ''}${draggingInId ? ' is-drop-target' : ''}`}
+                    className={`broadcast-formation-player${selectedOutId === player.playerId ? ' is-selected' : ''}${pendingSwap ? ' is-pending' : ''}${draggingInId ? ' is-drop-target' : ''}${player.state?.status === 'injured' ? ' is-injured' : ''}`}
                     key={player.playerId}
                     style={formationLayouts.get(player.playerId)}
                     aria-label={pendingSwap
@@ -1638,7 +1957,7 @@ export function HappySeedMatchBroadcast({
                     onDragOver={(event) => event.preventDefault()}
                     onDrop={(event) => dropSubstituteOnPlayer(event, player.playerId)}
                   >
-                    <small>{pendingSwap ? '换入' : playerPosition(player)}</small>
+                    <small>{pendingSwap ? '换入' : player.state?.status === 'injured' ? '伤退' : playerPosition(player)}</small>
                     <strong>{displayedPlayer.number}</strong>
                     <span>{displayedPlayer.name}</span>
                     <em>{Math.round(displayedPlayer.state?.stamina ?? displayedPlayer.stamina ?? 0)}</em>

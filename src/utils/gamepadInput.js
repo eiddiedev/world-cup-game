@@ -32,6 +32,8 @@ const SPRINT_THRESHOLD = 0.85
 
 let rafId = null
 let prevButtons = {}
+let inputSink = updatePlayerInput
+let hasBallResolver = null
 
 export function getPlayerHasBall() {
   try {
@@ -94,7 +96,7 @@ function pollGamepad() {
 
   const stickMag = Math.hypot(vx, vy)
   const isSprint = stickMag >= SPRINT_THRESHOLD
-  const hasBall = getPlayerHasBall()
+  const hasBall = Boolean((hasBallResolver || getPlayerHasBall)())
 
   const patch = {
     vx,
@@ -113,7 +115,7 @@ function pollGamepad() {
     if (isDown(BTN.TRIANGLE)) patch.sprint = true
   }
 
-  updatePlayerInput(patch)
+  inputSink(patch)
 
   gamepadVisualState.vx = vx
   gamepadVisualState.vy = vy
@@ -133,9 +135,13 @@ function pollGamepad() {
   rafId = requestAnimationFrame(pollGamepad)
 }
 
-export function startGamepadInput() {
+export function startGamepadInput(options = {}) {
   if (rafId != null) return
   prevButtons = {}
+  inputSink = typeof options.onInput === 'function' ? options.onInput : updatePlayerInput
+  hasBallResolver = typeof options.resolveHasBall === 'function'
+    ? options.resolveHasBall
+    : null
   rafId = requestAnimationFrame(pollGamepad)
 }
 
@@ -146,4 +152,6 @@ export function stopGamepadInput() {
   }
   prevButtons = {}
   gamepadVisualState.active = false
+  inputSink = updatePlayerInput
+  hasBallResolver = null
 }

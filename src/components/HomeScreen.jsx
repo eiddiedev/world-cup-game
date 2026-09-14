@@ -1,40 +1,34 @@
 import React, { useState } from 'react'
 import { hasContinueGame, getCodexProgress } from '../utils/saveManager'
-import { hasVariantFeature } from '../config/runtime'
+import { hasVariantFeature, IS_ONLINE_ENTRY_ENABLED } from '../config/runtime'
 import { BRANDING_ASSETS } from '../config/artAssets'
 
 const PRIMARY_MODES = [
-  { id: 'player', label: '球员模式' },
-  { id: 'coach', label: '教练模式' },
+  { id: 'journey', label: '冠军征程' },
 ]
 
 const CONTINUE_STAGES = new Set([
   'team-select',
   'recruitment',
-  'logistics',
   'tournament',
   'lineup',
+  'item-prep',
   'match',
   'post-match',
   'ending',
 ])
 
 /**
- * 首页只呈现玩家真正需要选择的四个入口。
+ * 首页只呈现正式玩法入口。
  * 开发实验、AI 和商业化能力保留在项目内部，不占用主菜单层级。
  */
 export default function HomeScreen({ saveData, updateSaveData, navigateTo, showToast }) {
   const [selectedMode, setSelectedMode] = useState(null)
   const codexEnabled = hasVariantFeature('codex')
-  const standalonePenaltyEnabled = hasVariantFeature('standalonePenalty')
   const codexProgress = codexEnabled ? getCodexProgress(saveData) : null
   const hasSave = hasContinueGame(saveData)
-  const savedMode = saveData.currentRun?.gameMode || 'coach'
-  // 球员模式独立存档判断
-  const playerModeHasSave = Boolean(saveData.playerModeRun)
-  const canContinueMode = selectedMode === 'player'
-    ? playerModeHasSave
-    : (hasSave && savedMode === 'coach')
+  const journeyRun = saveData.journeyRun || saveData.currentRun
+  const canContinueMode = selectedMode === 'journey' && hasSave
 
   const openModeDialog = (mode) => setSelectedMode(mode)
 
@@ -46,30 +40,18 @@ export default function HomeScreen({ saveData, updateSaveData, navigateTo, showT
 
   const continueGame = () => {
     if (!canContinueMode) {
-      showToast(`暂无${selectedMode === 'player' ? '球员' : '教练'}模式存档`)
+      showToast('暂无冠军征程存档')
       return
     }
-
-    if (selectedMode === 'player') {
-      // 球员模式：从 playerModeRun 恢复
-      const playerRun = saveData.playerModeRun
-      const stage = playerRun?.stage || 'tournament'
-      updateSaveData({ ...saveData, currentRun: playerRun })
-      setSelectedMode(null)
-      navigateTo(CONTINUE_STAGES.has(stage) ? stage : 'tournament', {
-        gameMode: 'player',
-      })
-      return
-    }
-
-    const stage = saveData.currentRun?.stage || 'tournament'
+    const stage = journeyRun?.stage || 'tournament'
+    updateSaveData({ ...saveData, currentRun: journeyRun, journeyRun })
     setSelectedMode(null)
     navigateTo(CONTINUE_STAGES.has(stage) ? stage : 'tournament', {
-      gameMode: selectedMode,
+      gameMode: 'journey',
     })
   }
 
-  const selectedModeLabel = selectedMode === 'player' ? '球员模式' : '教练模式'
+  const selectedModeLabel = '冠军征程'
 
   return (
     <main className="screen home-screen">
@@ -95,14 +77,14 @@ export default function HomeScreen({ saveData, updateSaveData, navigateTo, showT
             </button>
           ))}
 
-          {standalonePenaltyEnabled && (
+          {IS_ONLINE_ENTRY_ENABLED && (
             <button
               type="button"
               className="PixelButton menu-button"
-              onClick={() => navigateTo('penalty-mode')}
+              onClick={() => navigateTo('online-lobby', { gameMode: 'online' })}
             >
               <span className="button-face" aria-hidden="true" />
-              <span className="button-label">点球大战</span>
+              <span className="button-label">联机对战</span>
             </button>
           )}
 
@@ -165,11 +147,7 @@ export default function HomeScreen({ saveData, updateSaveData, navigateTo, showT
             </div>
 
             <p className="mode-save-status">
-              {selectedMode === 'player'
-                ? (playerModeHasSave ? '可继续上次的球员模式' : '该模式暂无存档')
-                : (!hasSave || savedMode !== 'coach'
-                  ? '该模式暂无存档'
-                  : '可继续上次的教练模式')}
+              {hasSave ? '可继续上次的冠军征程' : '该模式暂无存档'}
             </p>
           </section>
         </div>

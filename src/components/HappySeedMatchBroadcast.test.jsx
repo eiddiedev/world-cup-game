@@ -15,11 +15,13 @@ import {
 import { audioManager } from '../utils/audioManager.js'
 
 const serviceMocks = vi.hoisted(() => ({
+  applyOnlineMatchRuntimeSnapshot: vi.fn(() => true),
   applyRuntimeDisciplinaryCard: vi.fn((event) => event),
   applyRuntimeVarResult: vi.fn(() => true),
   bootHappySeedMatch: vi.fn(() => Promise.resolve()),
   cancelFormalCoachDecision: vi.fn(() => true),
   captureFormalMatchRuntimeMoment: vi.fn(),
+  captureOnlineMatchRuntimeSnapshot: vi.fn(() => null),
   createFormalCoachDecision: vi.fn(),
   executeFormalCoachDecisionChoice: vi.fn(),
   followStadiumBall: vi.fn(() => true),
@@ -40,6 +42,7 @@ const serviceMocks = vi.hoisted(() => ({
   getTeamTacticalStance: vi.fn(() => 'balanced'),
   setRuntimeActorState: vi.fn(() => true),
   setRuntimeGoalPresentationHold: vi.fn(() => true),
+  setOnlineMatchRuntimePaused: vi.fn(() => true),
   setStadiumCrowdMotion: vi.fn(),
   setZoom: vi.fn(() => true),
   retainMatchRuntime: vi.fn(),
@@ -67,6 +70,8 @@ const serviceMocks = vi.hoisted(() => ({
     return () => {}
   }),
   substituteRuntimeActor: vi.fn(() => true),
+  updatePlayerInput: vi.fn(() => true),
+  updatePlayerInputForSide: vi.fn(() => true),
 }))
 
 vi.mock('../services/happySeedMatchRuntime.js', () => serviceMocks)
@@ -146,6 +151,9 @@ describe('HappySeed formal match broadcast', () => {
     width: 220,
     height: 90,
   }))
+  const retiredCoachSave = {
+    currentRun: { gameMode: 'coach', teamId: 'france', currentOpponent: 'brazil' },
+  }
 
   afterEach(() => {
     vi.useRealTimers()
@@ -270,7 +278,7 @@ describe('HappySeed formal match broadcast', () => {
       })
       return () => {}
     })
-    render(<HappySeedMatchBroadcast />)
+    render(<HappySeedMatchBroadcast saveData={retiredCoachSave} />)
     await act(async () => {})
 
     // 进球播报图片延迟 1 秒出现（等球完全进网）
@@ -310,7 +318,7 @@ describe('HappySeed formal match broadcast', () => {
       })
       return () => {}
     })
-    render(<HappySeedMatchBroadcast />)
+    render(<HappySeedMatchBroadcast saveData={retiredCoachSave} />)
     await act(async () => {})
 
     // VAR 检查画面延迟 1 秒出现
@@ -389,15 +397,14 @@ describe('HappySeed formal match broadcast', () => {
     expect(screen.queryByRole('button', { name: '数据' })).not.toBeInTheDocument()
   })
 
-  it('keeps only pause and speed in the top-right match controls', () => {
+  it('keeps only pause and exit in direct-control match controls', () => {
     render(<HappySeedMatchBroadcast />)
 
     const controls = screen.getByRole('navigation', { name: '比赛控制' })
-    expect(controls.querySelectorAll('button')).toHaveLength(3)
+    expect(controls.querySelectorAll('button')).toHaveLength(2)
     fireEvent.click(screen.getByRole('button', { name: /暂停/ }))
-    fireEvent.click(screen.getByRole('button', { name: '1×' }))
     expect(serviceMocks.pauseMatch).toHaveBeenCalledTimes(1)
-    expect(serviceMocks.setSpeed).toHaveBeenCalledWith(2)
+    expect(serviceMocks.setSpeed).not.toHaveBeenCalled()
     expect(screen.queryByRole('navigation', { name: '自由镜头控制' })).not.toBeInTheDocument()
   })
 
@@ -514,7 +521,7 @@ describe('HappySeed formal match broadcast', () => {
       authority: createMatchVisualAuthorityState(),
     })
     serviceMocks.captureFormalMatchRuntimeMoment.mockReturnValue(runtimeMoment)
-    render(<HappySeedMatchBroadcast />)
+    render(<HappySeedMatchBroadcast saveData={retiredCoachSave} />)
 
     const decisionPanel = await screen.findByLabelText('限时教练决策')
     expect(decisionPanel).toHaveTextContent('危险任意球')
@@ -579,7 +586,7 @@ describe('HappySeed formal match broadcast', () => {
       }),
       completed: Promise.resolve({ completed: true }),
     })
-    render(<HappySeedMatchBroadcast />)
+    render(<HappySeedMatchBroadcast saveData={retiredCoachSave} />)
 
     await screen.findByLabelText('限时教练决策')
     fireEvent.click(screen.getByRole('button', { name: /直接射门.*风险：可能撞墙或打高/ }))
@@ -620,7 +627,7 @@ describe('HappySeed formal match broadcast', () => {
       }),
       completed: Promise.resolve({ completed: true }),
     })
-    render(<HappySeedMatchBroadcast />)
+    render(<HappySeedMatchBroadcast saveData={retiredCoachSave} />)
 
     await screen.findByLabelText('限时教练决策')
     fireEvent.click(screen.getByRole('button', { name: /直接射门.*风险：可能撞墙或打高/ }))
@@ -646,7 +653,7 @@ describe('HappySeed formal match broadcast', () => {
       authority: createMatchVisualAuthorityState(),
     })
     serviceMocks.captureFormalMatchRuntimeMoment.mockReturnValue(runtimeMoment)
-    render(<HappySeedMatchBroadcast />)
+    render(<HappySeedMatchBroadcast saveData={retiredCoachSave} />)
 
     const decisionPanel = await screen.findByLabelText('限时教练决策')
     expect(decisionPanel).toHaveClass('is-left')
@@ -668,7 +675,7 @@ describe('HappySeed formal match broadcast', () => {
       authority: createMatchVisualAuthorityState(),
     })
     serviceMocks.captureFormalMatchRuntimeMoment.mockReturnValue(runtimeMoment)
-    const { container } = render(<HappySeedMatchBroadcast />)
+    const { container } = render(<HappySeedMatchBroadcast saveData={retiredCoachSave} />)
     const decisionPanel = await screen.findByLabelText('限时教练决策')
 
     expect(decisionPanel).toHaveTextContent('危险任意球')

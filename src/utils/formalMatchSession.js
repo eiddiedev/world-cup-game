@@ -210,7 +210,7 @@ export function resolveFormalGoalVar(sourceEvent) {
   }
 }
 
-export function deriveFormalRuntimeIncidents(sourceEvent) {
+export function deriveFormalRuntimeIncidents(sourceEvent, options = {}) {
   if (!sourceEvent?.id) return []
   const incidents = []
   const push = (type, detail = {}) => incidents.push(createDerivedMatchRuntimeEvent(sourceEvent, {
@@ -245,9 +245,10 @@ export function deriveFormalRuntimeIncidents(sourceEvent) {
   if (sourceEvent.type === 'shot' && stableRoll(sourceEvent.id, 'handball') < 0.055) {
     push('handball-review', {
       inPenaltyArea: sourceEvent.detail?.inAttackingPenaltyArea === true,
+      inAttackingPenaltyArea: sourceEvent.detail?.inAttackingPenaltyArea === true,
     })
   }
-  if (sourceEvent.type === 'goal') {
+  if (sourceEvent.type === 'goal' && options.allowGoalReview !== false) {
     const resolution = resolveFormalGoalVar(sourceEvent)
     if (resolution?.reviewed) {
       push('var-review', resolution)
@@ -518,6 +519,9 @@ function commentaryForRuntimeEvent(session, event, actorSource) {
       text: `${event.detail?.awardedSide === 'blue' ? session.opponentName : session.teamName}获得点球，裁判指向点球点，比赛将进入点球处理。`,
     },
     offside: { type: 'offside', tone: 'standard', text: `${actor}在进攻传球时越位，进球或推进无效。` },
+    offside_called: { type: 'offside_called', tone: 'highlight', text: `${actor}参与进攻时处于越位位置，裁判鸣哨。` },
+    goal_disallowed: { type: 'goal_disallowed', tone: 'highlight', text: '足球已经入网，但越位在先，进球无效。' },
+    indirect_free_kick: { type: 'indirect_free_kick', tone: 'standard', text: `${sideName}在越位参与位置获得间接任意球。` },
     'handball-review': { type: 'handball-review', tone: eventTone, text: '射门击中防守球员，裁判正在核对是否手球。' },
     'var-review': { type: 'var-review', tone: eventTone, text: 'VAR 正在复核刚才的真实进球过程。' },
     'var-result': {
@@ -565,7 +569,20 @@ function applyRuntimeEvents(session, runtimeEvents, actorSource, options = {}) {
     if (event.type === 'save') next = applyStatsDelta(next, side, { saves: 1 })
     if (event.type === 'corner') next = applyStatsDelta(next, side, { corners: 1 })
     if (event.type === 'foul') next = applyStatsDelta(next, side, { fouls: 1 })
-    if (event.type === 'offside') next = applyStatsDelta(next, side, { offsides: 1 })
+    if (event.type === 'offside' || event.type === 'offside_called') {
+      next = applyStatsDelta(next, side, { offsides: 1 })
+    }
+    if (event.type === 'goal_disallowed') {
+      const scoringSide = event.detail?.scoringSide === 'blue' ? 'blue' : 'red'
+      next.score[scoringSide] = Math.max(0, next.score[scoringSide] - 1)
+      next.nativeRuntimeScore[scoringSide] = Math.max(
+        0,
+        next.nativeRuntimeScore[scoringSide] - 1,
+      )
+      if (next.lastRuntimeGoal && next.lastRuntimeGoal.disallowed !== true) {
+        next.lastRuntimeGoal = { ...next.lastRuntimeGoal, disallowed: true }
+      }
+    }
     if (event.type === 'var-result' && event.detail?.outcome === 'disallowed') {
       if (event.detail?.decision === true) next.pendingGoalDecision = null
       if (event.detail?.reason === 'offside') {

@@ -6,10 +6,10 @@ const root = resolve(import.meta.dirname, '../..')
 const vercelConfig = JSON.parse(readFileSync(resolve(root, 'vercel.json'), 'utf8'))
 
 describe('Vercel deployment target', () => {
-  it('publishes the showcase web directory without invoking a packaged target', () => {
+  it('publishes the compliant full web directory without invoking the interactive package target', () => {
     expect(vercelConfig.framework).toBe('vite')
-    expect(vercelConfig.buildCommand).toBe('npm run build:showcase')
-    expect(vercelConfig.outputDirectory).toBe('.variant-build/showcase-full')
-    expect(vercelConfig.buildCommand).not.toMatch(/compliant|interactive|release/)
+    expect(vercelConfig.buildCommand).toBe('npm run build:compliant')
+    expect(vercelConfig.outputDirectory).toBe('.variant-build/compliant-full')
+    expect(vercelConfig.buildCommand).not.toMatch(/interactive|release/)
   })
 })

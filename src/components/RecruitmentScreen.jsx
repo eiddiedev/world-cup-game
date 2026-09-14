@@ -5,6 +5,7 @@ import {
   NATIONAL_SQUAD_SIZE,
   MIN_PURCHASE,
   buildRecommendedNationalSquad,
+  getNationalSquadBudget,
   validateNationalSquad,
 } from '../data/rosterRules'
 
@@ -49,7 +50,7 @@ export default function RecruitmentScreen({ saveData, updateSaveData, navigateTo
   }
 
   const availablePlayers = team.players || []
-  const totalBudget = team.budget
+  const totalBudget = getNationalSquadBudget(availablePlayers, team.budget)
   const squadValidation = validateNationalSquad(purchasedPlayers, totalBudget)
   const spentBudget = squadValidation.spent
   const remainingBudget = totalBudget - spentBudget
@@ -118,16 +119,16 @@ export default function RecruitmentScreen({ saveData, updateSaveData, navigateTo
         purchasedPlayerIds: purchasedPlayers,
         roster: purchasedPlayers, // 保存完整阵容
         matchIndex: 0, // 从第一场比赛开始
-        stage: 'logistics',
+        stage: 'tournament',
       },
     })
-    navigateTo('logistics')
+    navigateTo('tournament')
   }
 
   // 一键推荐征召：按阵型、预算和最低位置结构推荐23人
   const handleAutoRecruit = () => {
     const formation = saveData.currentRun?.formation || getTeamDefaultFormation(team.id)
-    const selected = buildRecommendedNationalSquad(availablePlayers, team.budget, formation)
+    const selected = buildRecommendedNationalSquad(availablePlayers, totalBudget, formation)
 
     if (selected.length === 0) {
       showToast('无法生成征召推荐')
@@ -203,7 +204,7 @@ export default function RecruitmentScreen({ saveData, updateSaveData, navigateTo
 
         <div style={{ textAlign: 'center' }}>
           <p className="recruitment-hint">
-            从{availablePlayers.length}人候选池中征召（至少{MIN_PURCHASE}人，受预算约束）。默认阵型 {team.defaultFormation}，风格：{team.styleTags?.join(' / ')}。
+            从{availablePlayers.length}人候选池中按预算征召完整 {NATIONAL_SQUAD_SIZE} 人名单。默认阵型 {team.defaultFormation}，风格：{team.styleTags?.join(' / ')}。
           </p>
         </div>
 

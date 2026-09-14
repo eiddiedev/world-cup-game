@@ -3,11 +3,11 @@ import { COMPETITION_BRAND } from '@competition-brand'
 const tour = (id, title, steps) => ({ id, title, steps })
 
 export const SPOTLIGHT_TOURS = Object.freeze({
-  'team-select-coach': tour('team-select-coach-highlight', '国家队选择指引', [
+  'team-select-journey': tour('team-select-journey-highlight', '国家队选择指引', [
     {
       target: '[data-guide="team-list"]',
       title: '点击一支国家队',
-      body: '难度越高，对手越强。征召点用于组建阵容，后勤预算用于提升球队保障。',
+      body: '难度越高，对手越强。征召点用于从候选池组建完整 23 人名单。',
       placement: 'top',
       advanceOnTarget: true,
     },
@@ -51,7 +51,7 @@ export const SPOTLIGHT_TOURS = Object.freeze({
     {
       target: '[data-guide="recruitment-confirm"]',
       title: '确认你的国家队',
-      body: '人数和位置都满足要求后，点击这里锁定阵容并进入后勤配置。',
+      body: '23 人名单和位置结构满足要求后，点击这里锁定阵容并进入冠军赛程。',
       placement: 'top',
     },
   ]),
@@ -92,7 +92,7 @@ export const SPOTLIGHT_TOURS = Object.freeze({
     {
       target: '[data-guide="tournament-current-match"]',
       title: '从当前场次继续',
-      body: '教练模式点击“排兵布阵”，球员模式点击“开始比赛”。淘汰赛输掉一场就会结束征程。',
+      body: '每一场都先重新排兵布阵，再准备道具并进入更衣室。淘汰赛输掉一场就会结束征程。',
       placement: 'left',
       advanceOnTarget: true,
     },
@@ -256,7 +256,7 @@ export const SPOTLIGHT_TOURS = Object.freeze({
   ]),
 })
 
-export function getScreenSpotlightTour(screen, gameMode = 'coach') {
+export function getScreenSpotlightTour(screen, gameMode = 'journey') {
   if (screen === 'team-select') return SPOTLIGHT_TOURS[`team-select-${gameMode}`]
   if (screen === 'match' || screen === 'penalty-mode') return null
   if (screen === 'mini-cup-prep') return SPOTLIGHT_TOURS.tournament

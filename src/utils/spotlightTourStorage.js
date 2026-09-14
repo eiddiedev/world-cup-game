@@ -1,12 +1,50 @@
-// 仅记录当前这次页面打开期间完成过的教程。
-// 刷新浏览器后模块会重新加载，集合随之清空，方便现场重复演示。
-const completedToursThisPage = new Set()
+const STORAGE_KEY = 'targeting-2026:spotlight-tours:v1'
+const fallbackCompletedTours = new Set()
+
+function getStorage() {
+  try {
+    const storage = typeof window !== 'undefined' ? window.localStorage : null
+    return storage
+      && typeof storage.getItem === 'function'
+      && typeof storage.setItem === 'function'
+      ? storage
+      : null
+  } catch {
+    return null
+  }
+}
+
+function readCompletedTours() {
+  const storage = getStorage()
+  if (!storage) return new Set(fallbackCompletedTours)
+
+  try {
+    const value = JSON.parse(storage.getItem(STORAGE_KEY) || '[]')
+    if (!Array.isArray(value)) return new Set()
+    return new Set(value.filter((id) => typeof id === 'string' && id))
+  } catch {
+    return new Set(fallbackCompletedTours)
+  }
+}
 
 export function hasCompletedSpotlightTour(id) {
-  return Boolean(id) && completedToursThisPage.has(id)
+  return Boolean(id) && readCompletedTours().has(id)
 }
 
 export function markSpotlightTourComplete(id) {
   if (!id) return
-  completedToursThisPage.add(id)
+  const completedTours = readCompletedTours()
+  completedTours.add(id)
+
+  const storage = getStorage()
+  if (!storage) {
+    fallbackCompletedTours.add(id)
+    return
+  }
+
+  try {
+    storage.setItem(STORAGE_KEY, JSON.stringify([...completedTours]))
+  } catch {
+    fallbackCompletedTours.add(id)
+  }
 }

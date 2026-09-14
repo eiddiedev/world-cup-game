@@ -985,6 +985,11 @@ export function buildFormalDecisionSceneScriptV3(decision, actorSource, runtimeM
   }
   const reusesMatchPenaltyForShootout = scenarioId === 'match_penalty'
     && decision.runtimeContext === 'shootout'
+  const sourceEventAttackingSide = sourceEvent?.detail?.awardedSide
+    || (['shot', 'handball-review'].includes(sourceEvent?.type) ? sourceEvent?.side : null)
+    || (['tackle-contact', 'foul'].includes(sourceEvent?.type) && sourceEvent?.side
+      ? (sourceEvent.side === 'red' ? 'blue' : 'red')
+      : null)
   const contractAttackingSide = reusesMatchPenaltyForShootout
     ? runtimeMoment.attackingSide
     : contract.attackingSide
@@ -1679,6 +1684,8 @@ export function buildFormalDecisionSceneScriptV3(decision, actorSource, runtimeM
     runtimeContext: decision.runtimeContext || 'match',
     minute: decision.coachDecisionEvent.minute,
     side: 'red',
+    // 判罚演出必须以源事件为准，不能被事件后已经切换的当前球权翻转。
+    attackingSide: contractAttackingSide || sourceEventAttackingSide || sceneMoment.attackingSide || 'red',
     mode: contract.mode,
     triggerId: contract.triggerId,
     sourceEvent: sourceEvent ? {
@@ -2050,6 +2057,8 @@ export function isFormalDecisionMomentEligibleV3(scenarioId, runtimeMoment, sour
       || sourceEvent?.type === 'penalty'
     if (!inPenaltyArea) return false
   }
+  if (contract.requiresAttackingPenaltyArea
+    && !(sourceEvent?.detail?.inAttackingPenaltyArea || sourceEvent?.detail?.inPenaltyArea)) return false
   if (contract.mode === 'blackout-stage' || contract.mode === 'freeze-incident') {
     if (!sourceEvent?.id && contract.triggerId !== 'stamina-dead-ball') return false
   }

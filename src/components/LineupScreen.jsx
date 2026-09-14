@@ -16,6 +16,7 @@ import {
 } from '../utils/opponentTactics.js'
 import { getLogisticsModifiers } from '../utils/logisticsEffects.js'
 import { computeMatchIntel } from '../utils/scoutIntel.js'
+import { onlineRoomClient } from '../services/onlineRoomClient.js'
 import '../styles/intel-panel.css'
 
 /**
@@ -121,6 +122,7 @@ function getStatusGradeColor(grade) {
 }
 
 export default function LineupScreen({ saveData, updateSaveData, navigateTo, showToast }) {
+  const isOnline = saveData.currentRun?.gameMode === 'online'
   const formations = FORMATION_NAMES
   const teamDefaultFormation = getTeamDefaultFormation(saveData.currentRun?.teamId)
 
@@ -536,23 +538,33 @@ export default function LineupScreen({ saveData, updateSaveData, navigateTo, sho
       showToast('首发中包含伤停球员，请重新调整阵容！')
       return
     }
+    const nextRun = {
+      ...saveData.currentRun,
+      lineup: lineupPlayers,
+      formation: selectedFormation,
+      matchAttackRating: getAttackRating(),
+      matchDefenseRating: getDefenseRating(),
+      lineupAssessment,
+      stage: isOnline ? 'online-lobby' : 'item-prep',
+      isKnockoutMatch: Boolean(saveData.currentRun?.miniCup) || saveData.currentRun?.isKnockoutMatch,
+      miniCup: saveData.currentRun?.miniCup
+        ? { ...saveData.currentRun.miniCup, status: 'playing' }
+        : saveData.currentRun?.miniCup,
+    }
+    if (isOnline) {
+      const squadPlayerIds = allRosterPlayers.map((player) => player.id)
+      const lineupPlayerIds = lineupPlayers.map((player) => player.id)
+      if (!onlineRoomClient.lockLineup(squadPlayerIds, lineupPlayerIds, selectedFormation)) {
+        showToast('阵容未能同步到房间，请检查网络')
+        return
+      }
+    }
     updateSaveData({
       ...saveData,
-      currentRun: {
-        ...saveData.currentRun,
-        lineup: lineupPlayers,
-        formation: selectedFormation,
-        matchAttackRating: getAttackRating(),
-        matchDefenseRating: getDefenseRating(),
-        lineupAssessment,
-        stage: 'match',
-        isKnockoutMatch: Boolean(saveData.currentRun?.miniCup) || saveData.currentRun?.isKnockoutMatch,
-        miniCup: saveData.currentRun?.miniCup
-          ? { ...saveData.currentRun.miniCup, status: 'playing' }
-          : saveData.currentRun?.miniCup,
-      },
+      currentRun: nextRun,
+      ...(isOnline ? { onlineRun: nextRun } : {}),
     })
-    navigateTo('match')
+    navigateTo(isOnline ? 'online-lobby' : 'item-prep', { gameMode: isOnline ? 'online' : 'journey' })
   }
 
   // 六维图
@@ -669,7 +681,7 @@ export default function LineupScreen({ saveData, updateSaveData, navigateTo, sho
   return (
     <div className="screen lineup-screen">
       <div className="screen-header">
-        <button className="back-button" onClick={() => navigateTo(saveData.currentRun?.miniCup ? 'logistics' : 'tournament')}>←</button>
+        <button className="back-button" onClick={() => navigateTo(isOnline ? 'online-lobby' : saveData.currentRun?.miniCup ? 'logistics' : 'tournament')}>←</button>
         <h1>排兵布阵</h1>
       </div>
 
@@ -979,7 +991,9 @@ export default function LineupScreen({ saveData, updateSaveData, navigateTo, sho
           onClick={handleConfirmLineup}
           disabled={startingLineup.length < 11}
         >
-          {startingLineup.length < 11 ? `还需选择 ${11 - startingLineup.length} 名球员` : '确认阵容 → 开始比赛'}
+          {startingLineup.length < 11
+            ? `还需选择 ${11 - startingLineup.length} 名球员`
+            : isOnline ? '锁定阵容 → 返回房间' : '确认阵容 → 道具准备'}
         </button>
       </div>
 

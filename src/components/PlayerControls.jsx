@@ -19,22 +19,24 @@ import '../styles/playerControls.css'
 const JOYSTICK_RADIUS = 56
 const SPRINT_THRESHOLD = 0.85
 
-function useHasBall() {
+function useHasBall(resolveHasBall = getPlayerHasBall) {
   const [hasBall, setHasBall] = useState(false)
   useEffect(() => {
     const tick = () => {
       if (document.hidden) return
-      const hb = gamepadVisualState.active ? gamepadVisualState.hasBall : getPlayerHasBall()
+      const hb = gamepadVisualState.active
+        ? gamepadVisualState.hasBall
+        : Boolean(resolveHasBall())
       setHasBall((current) => (current === hb ? current : hb))
     }
     tick()
     const timer = window.setInterval(tick, 100)
     return () => window.clearInterval(timer)
-  }, [])
+  }, [resolveHasBall])
   return hasBall
 }
 
-function Joystick() {
+function Joystick({ onInput }) {
   const baseRef = useRef(null)
   const pointerIdRef = useRef(null)
   const [knob, setKnob] = useState({ x: 0, y: 0 })
@@ -80,7 +82,7 @@ function Joystick() {
     const ny = dy / max
     const isSprint = Math.hypot(nx, ny) >= SPRINT_THRESHOLD
     setSprinting(isSprint)
-    updatePlayerInput({ vx: nx, vy: ny, sprint: isSprint })
+    onInput({ vx: nx, vy: ny, sprint: isSprint })
   }
 
   const reset = () => {
@@ -88,7 +90,7 @@ function Joystick() {
     touchActiveRef.current = false
     setKnob({ x: 0, y: 0 })
     setSprinting(false)
-    updatePlayerInput({ vx: 0, vy: 0, sprint: false })
+    onInput({ vx: 0, vy: 0, sprint: false })
   }
 
   const onPointerDown = (event) => {
@@ -134,7 +136,7 @@ function Joystick() {
  * @param {'pass'|'shoot'|'lob'|'tackle'|'switchPlayer'} noBallAction 无球时发送的信号
  * @param {boolean} hold 是否持续按住
  */
-function ActionButton({ labelWithBall, labelNoBall, className, withBallAction, noBallAction, hold, hasBall }) {
+function ActionButton({ labelWithBall, labelNoBall, className, withBallAction, noBallAction, hold, hasBall, onInput }) {
   const [pressed, setPressed] = useState(false)
   const label = hasBall ? labelWithBall : labelNoBall
   const action = hasBall ? withBallAction : noBallAction
@@ -155,13 +157,13 @@ function ActionButton({ labelWithBall, labelNoBall, className, withBallAction, n
   const press = (event) => {
     event.preventDefault()
     setPressed(true)
-    updatePlayerInput({ [action]: true })
+    onInput({ [action]: true })
   }
   const release = (event) => {
     event.preventDefault()
     setPressed(false)
     if (!hold) return
-    updatePlayerInput({ [action]: false })
+    onInput({ [action]: false })
   }
 
   return (
@@ -178,13 +180,16 @@ function ActionButton({ labelWithBall, labelNoBall, className, withBallAction, n
   )
 }
 
-export default function PlayerControls() {
-  const hasBall = useHasBall()
+export default function PlayerControls({
+  onInput = updatePlayerInput,
+  resolveHasBall = getPlayerHasBall,
+}) {
+  const hasBall = useHasBall(resolveHasBall)
 
   return (
     <div className="player-controls" aria-label="球员操作区" data-guide="match-player-controls">
       <div className="pc-left">
-        <Joystick />
+        <Joystick onInput={onInput} />
       </div>
       <div className="pc-right">
         <div className="pc-dpad">
@@ -193,28 +198,28 @@ export default function PlayerControls() {
             labelWithBall="护球" labelNoBall="压迫"
             className="pc-btn-top"
             withBallAction="sprint" noBallAction="sprint"
-            hold hasBall={hasBall}
+            hold hasBall={hasBall} onInput={onInput}
           />
           {/* 左(□): 有球=挑传 / 无球=铲球 */}
           <ActionButton
             labelWithBall="挑传" labelNoBall="铲球"
             className="pc-btn-left"
             withBallAction="lob" noBallAction="tackle"
-            hold={false} hasBall={hasBall}
+            hold={false} hasBall={hasBall} onInput={onInput}
           />
           {/* 右(○): 射门（通用） */}
           <ActionButton
             labelWithBall="射门" labelNoBall="射门"
             className="pc-btn-right"
             withBallAction="shoot" noBallAction="shoot"
-            hold hasBall={hasBall}
+            hold hasBall={hasBall} onInput={onInput}
           />
           {/* 下(×): 有球=传球 / 无球=切人 */}
           <ActionButton
             labelWithBall="传球" labelNoBall="切人"
             className="pc-btn-bottom"
             withBallAction="pass" noBallAction="switchPlayer"
-            hold={false} hasBall={hasBall}
+            hold={false} hasBall={hasBall} onInput={onInput}
           />
         </div>
       </div>

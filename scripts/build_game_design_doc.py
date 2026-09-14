@@ -345,7 +345,7 @@ def add_opening(doc):
     p = doc.add_paragraph()
     p.alignment = WD_ALIGN_PARAGRAPH.CENTER
     p.paragraph_format.space_after = Pt(24)
-    set_font(p.add_run('版本日期：2026-07-26  ·  H5 网页 / 抖音互动空间'), size=9.5, color=MUTED)
+    set_font(p.add_run('版本日期：2026-09-03  ·  合规 H5 基线 / 抖音小游戏目标'), size=9.5, color=MUTED)
 
 
 def build():

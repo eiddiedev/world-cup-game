@@ -15,6 +15,7 @@ coverage/
 .DS_Store
 **/.DS_Store
 *.log
+/*.zip
 
 .env
 .env.*
@@ -48,3 +49,6 @@ src/CLAUDE.md
 
 # Legacy prototype snapshots kept locally for reference.
 *.old
+.vercel
+.env*
+!.env.example

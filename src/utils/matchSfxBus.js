@@ -43,7 +43,7 @@ export function createMatchSfxBus(options = {}) {
         playedEventIds.add(event.id)
         return audio.playSound('periodWhistle')
       }
-      if (['foul', 'offside', 'throw-in-violation', 'penalty'].includes(event.type)) {
+      if (['foul', 'offside', 'offside_called', 'goal_disallowed', 'throw-in-violation', 'penalty'].includes(event.type)) {
         playedEventIds.add(event.id)
         return audio.playSound('whistle')
       }

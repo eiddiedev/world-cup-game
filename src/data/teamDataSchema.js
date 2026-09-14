@@ -8,9 +8,9 @@ export const ROSTER_POOL_RULES = Object.freeze({
   minimum: 24,
   target: 24,
   maximum: 24,
-  nationalSquadSize: 24,
-  // 2026新体系：从24人候选池中至少购买11人即可继续，不设固定23人上限
-  minPurchase: 11,
+  nationalSquadSize: 23,
+  // 冠军征程从 24 人候选池中按预算锁定正式 23 人名单。
+  minPurchase: 23,
   nationalSquadMinimums: Object.freeze({ GK: 2, DF: 3, MF: 3, FW: 2 }),
   positionTargets: Object.freeze({ GK: 2, DF: 8, MF: 8, FW: 6 }),
 })

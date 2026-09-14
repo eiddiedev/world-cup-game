@@ -45,6 +45,8 @@ import { runtimeMatchMinute } from '../utils/matchClock.js'
 import { preloadAssetUrls } from '../utils/visualAssetLoader.js'
 import { CURRENT_VARIANT } from '../config/runtime.js'
 import { getPlayerModeDemoAssistProfile } from '../utils/playerModeDemoAssist.js'
+import { resolveCompliantCaptureBias } from '../utils/compliantCaptureBias.js'
+import { getMatchRulesetContract } from '../utils/matchRulesets.js'
 
 const RUNTIME_BASE = __DOUYIN_BUILD__ ? './match-runtime-min' : '/match-runtime-min'
 
@@ -55,8 +57,8 @@ const SCRIPT_PATHS = __DOUYIN_BUILD__ ? [] : [
   'shim.js',
   'scripts/match.rebuilt.js',
   'happyseed/runtime-v2.js?v=13',
-  'happyseed/runtime-v3.js?v=14',
-  'standalone-match.js?v=46',
+  'happyseed/runtime-v3.js?v=26',
+  'standalone-match.js?v=76',
 ]
 
 const MATCH_EVENTS = [
@@ -173,11 +175,11 @@ async function preloadDataCaches() {
   if (window.__dataBundleCache && window.__dirlistCache) return
   if (dataCachePromise) return dataCachePromise
   if (__DOUYIN_BUILD__) {
-    // 互动空间不再进入模式后动态追加脚本。构建产物会把数据与引擎
+    // 平台打包版不再进入模式后动态追加脚本。构建产物会把数据与引擎
     // 合并成一个 defer 脚本，在首轮静态加载时按固定顺序完成注入。
     dataCachePromise = Promise.resolve().then(() => {
       if (!window.__dataBundleCache || !window.__dirlistCache) {
-        throw new Error('互动空间比赛引擎静态包未完成注入')
+        throw new Error('平台比赛引擎静态包未完成注入')
       }
     }).catch((error) => {
       dataCachePromise = null
@@ -732,20 +734,28 @@ export function applyRuntimeVarResult(event) {
 }
 
 export function bootHappySeedMatch(options = {}) {
-  // A previous React tree may have scheduled singleton cleanup during a route
-  // transition (or StrictMode's development-only effect replay). Claim the
-  // renderer before consulting bootPromise so a healthy in-flight Runtime can
-  // never be left running behind a hidden canvas.
-  retainMatchRuntime()
   if (bootPromise) {
     // A real match must not inherit the placeholder teams from an in-flight
-    // home-screen warm-up. Wait for texture assembly, then reuse the loaded
-    // Runtime through the normal restart path with the requested teams.
+    // home-screen warm-up. Keep that warm-up invisible until it has completely
+    // released the renderer, then claim the canvas for the requested match.
     if (runtimeSessionWarmPromise && !options.prewarmOnly) {
       return runtimeSessionWarmPromise.then(() => bootHappySeedMatch(options))
     }
-    return bootPromise
+    retainMatchRuntime({ visible: false })
+    return bootPromise.then(async (snapshot) => {
+      if (!options.prewarmOnly) {
+        await waitForStadiumMasterReady()
+        retainMatchRuntime({ visible: true })
+      }
+      return snapshot
+    })
   }
+
+  // A previous React tree may have scheduled singleton cleanup during a route
+  // transition (or StrictMode's development-only effect replay). Claim the
+  // renderer for playable screens, while an idle prewarm keeps every late-
+  // inserted PIXI canvas suppressed through the body visibility contract.
+  retainMatchRuntime({ visible: false })
 
   bootPromise = (async () => {
     const restartingExistingRuntime = Boolean(window.__matchGame)
@@ -756,20 +766,29 @@ export function bootHappySeedMatch(options = {}) {
       window.__matchGame.__happySeedTrainingActive = false
       window.__matchGame.__happySeedTrainingPlayerIndex = null
       window.__matchGame.__happySeedTrainingDefenderIndex = null
+      window.__matchGame.__happySeedUiPaused = false
       try { window.__matchGame.resume() } catch { /* Runtime may still be loading. */ }
+      try { window.__matchGame.pitch?.resume?.() } catch { /* Runtime may still be loading. */ }
+      try { window.__matchGame.stadium?.resume?.() } catch { /* Runtime may still be loading. */ }
     }
     ensureRuntimeSettings()
-    // 确保引擎 canvas 可见（上次卸载时可能被隐藏）
-    const existingCanvas = window.__matchGame?.renderer?.view
-    if (existingCanvas) existingCanvas.style.display = ''
     window.__happySeedInteractiveSpace = Boolean(__DOUYIN_BUILD__)
     window.__targetingMatchView = { ...CURRENT_VARIANT.matchView }
     window.__acPlay = Boolean(options.playerMode)
-    window.__happySeedPlayerModeAssist = getPlayerModeDemoAssistProfile(options.playerMode)
+    window.__happySeedGameMode = options.gameMode || (options.playerMode ? 'journey' : 'legacy-coach')
+    window.__happySeedRuleset = options.ruleset === 'iron' ? 'iron' : 'standard'
+    window.__happySeedMatchRulesetConfig = getMatchRulesetContract(window.__happySeedRuleset)
+    window.__happySeedOnlineRuntime?.reset?.()
+    window.__happySeedPlayerModeAssist = getPlayerModeDemoAssistProfile(
+      options.playerMode,
+      options.playerModeDifficulty,
+    )
     if (window.__happySeedPlayerModeAssist) {
       document.body.dataset.playerModePace = String(window.__happySeedPlayerModeAssist.speed)
+      document.body.dataset.playerModeDifficulty = window.__happySeedPlayerModeAssist.difficulty
     } else {
       delete document.body.dataset.playerModePace
+      delete document.body.dataset.playerModeDifficulty
     }
     let studioRecipe = null
     if (options.studioPreview) {
@@ -788,6 +807,14 @@ export function bootHappySeedMatch(options = {}) {
       red: options.red || 'france',
       blue: options.blue || 'brazil',
     }
+    const compliantCaptureBias = resolveCompliantCaptureBias({
+      variantId: CURRENT_VARIANT.id,
+      gameMode: options.playerMode ? 'player' : 'coach',
+      teamId: selectedTeams.red,
+      opponentTeamId: selectedTeams.blue,
+    })
+    if (compliantCaptureBias) window.__happySeedCompliantCaptureBias = compliantCaptureBias
+    else delete window.__happySeedCompliantCaptureBias
     runtimeActorConfig = await preloadHappySeedMatchAssets({
       ...options,
       ...selectedTeams,
@@ -834,6 +861,7 @@ export function bootHappySeedMatch(options = {}) {
     }
 
     const started = waitForMatchStart(30000, restartingExistingRuntime)
+    const stadiumReady = waitForStadiumMasterReady(30000)
     options.onProgress?.(96, '正在创建比赛现场')
     window.__startStandaloneMatch({
       red: selectedTeams.red,
@@ -841,18 +869,28 @@ export function bootHappySeedMatch(options = {}) {
       stadium: options.stadium || 'international',
       ball: options.ball || 'classic_1',
       time: matchDurationMinutes,
-      ai: options.ai ?? (options.playerMode ? 0 : 2),
+      ai: options.ai ?? (options.playerMode
+        ? (window.__happySeedPlayerModeAssist?.ai ?? 1)
+        : 2),
       side: options.side || 'home',
+      playerMode: Boolean(options.playerMode),
     })
-    if (options.prewarmOnly) {
-      const warmCanvas = window.__matchGame?.renderer?.view
-      if (warmCanvas) {
-        warmCanvas.style.display = 'none'
-        warmCanvas.setAttribute('aria-hidden', 'true')
-      }
+    hideMatchRuntimeCanvas()
+    await Promise.all([started, stadiumReady])
+    if (options.online) {
+      configureOnlineMatchRuntime({
+        enabled: true,
+        role: options.online.role,
+        side: options.online.side,
+        ruleset: options.ruleset,
+      })
     }
-    await started
+    if (!options.prewarmOnly) retainMatchRuntime({ visible: true })
     options.onProgress?.(99, '正在同步开球阵型')
+    if (compliantCaptureBias?.tacticalStances) {
+      setTeamTacticalStance('red', compliantCaptureBias.tacticalStances.red)
+      setTeamTacticalStance('blue', compliantCaptureBias.tacticalStances.blue)
+    }
     setSpeed(window.__happySeedPlayerModeAssist?.speed || 1)
     if (options.studioPreview) setZoom(2.4)
     else if (__DOUYIN_BUILD__ && !options.playerMode && !options.technicalLab) {
@@ -904,15 +942,67 @@ export function clearBootPromise() {
   bootPromise = null
 }
 
+function isStadiumMasterReady() {
+  return window.__happySeedStadiumScene?.getSnapshot?.().ready === true
+}
+
+export function waitForStadiumMasterReady(timeout = 30000) {
+  if (isStadiumMasterReady()) return Promise.resolve(true)
+  return new Promise((resolve, reject) => {
+    let timer = 0
+    const cleanup = () => {
+      window.clearTimeout(timer)
+      window.removeEventListener('ab-stadium-slice-ready', onReady)
+    }
+    const onReady = () => {
+      if (!isStadiumMasterReady()) return
+      cleanup()
+      resolve(true)
+    }
+    timer = window.setTimeout(() => {
+      cleanup()
+      hideMatchRuntimeCanvas()
+      reject(new Error('最终竖向草皮加载失败，请检查网络后重试'))
+    }, timeout)
+    window.addEventListener('ab-stadium-slice-ready', onReady)
+    // Close the small race between the first readiness check and listener setup.
+    onReady()
+  })
+}
+
 function restoreMatchRuntimeCanvas() {
   const game = window.__matchGame
   const canvas = game?.renderer?.view
   if (!canvas) return false
+  if (!isStadiumMasterReady()) {
+    hideMatchRuntimeCanvas()
+    return false
+  }
+
+  document.body?.removeAttribute('data-match-runtime-canvas')
 
   if (!canvas.isConnected) document.body.insertBefore(canvas, document.body.firstChild)
   canvas.style.removeProperty('display')
+  canvas.style.removeProperty('visibility')
   canvas.style.removeProperty('opacity')
   canvas.removeAttribute('aria-hidden')
+  return true
+}
+
+/**
+ * Hide the singleton Runtime surface without disposing its loaded textures.
+ *
+ * The body attribute is intentionally set even before PIXI creates the canvas:
+ * the global CSS contract then suppresses a renderer inserted later during an
+ * asynchronous home-screen prewarm, closing the one-frame background leak.
+ */
+export function hideMatchRuntimeCanvas() {
+  document.body?.setAttribute('data-match-runtime-canvas', 'hidden')
+  const canvas = window.__matchGame?.renderer?.view
+  if (!canvas) return false
+  canvas.style.display = 'none'
+  canvas.style.visibility = 'hidden'
+  canvas.setAttribute('aria-hidden', 'true')
   return true
 }
 
@@ -923,14 +1013,19 @@ function restoreMatchRuntimeCanvas() {
  * The epoch makes the cleanup from that synthetic unmount cancellable, while
  * also covering an immediate real route transition into another Runtime view.
  */
-export function retainMatchRuntime() {
+export function retainMatchRuntime({ visible = true } = {}) {
   const epoch = ++runtimeShutdownEpoch
-  restoreMatchRuntimeCanvas()
+  if (visible) restoreMatchRuntimeCanvas()
+  else hideMatchRuntimeCanvas()
 
   window.requestAnimationFrame?.(() => {
     if (epoch !== runtimeShutdownEpoch) return
-    restoreMatchRuntimeCanvas()
-    try { window.__matchGame?.resize?.() } catch { /* Renderer may still be loading. */ }
+    if (visible) {
+      restoreMatchRuntimeCanvas()
+      try { window.__matchGame?.resize?.() } catch { /* Renderer may still be loading. */ }
+    } else {
+      hideMatchRuntimeCanvas()
+    }
   })
   return epoch
 }
@@ -962,6 +1057,7 @@ export function shutdownMatchRuntime() {
     game.__happySeedTrainingActive = false
     game.__happySeedTrainingPlayerIndex = null
     game.__happySeedTrainingDefenderIndex = null
+    game.__happySeedUiPaused = true
     if (game.pitch) {
       game.pitch.practice = false
     }
@@ -977,9 +1073,10 @@ export function shutdownMatchRuntime() {
       }
     }
     try { game.pause() } catch { /* Runtime may already be stopped. */ }
-    const canvas = game.renderer?.view
-    if (canvas) canvas.style.display = 'none'
+    try { game.pitch?.pause?.() } catch { /* Runtime may already be stopped. */ }
+    try { game.stadium?.pause?.() } catch { /* Runtime may already be stopped. */ }
   }
+  hideMatchRuntimeCanvas()
   // 保留已经加载完成的引擎、纹理和数据缓存；下一局由
   // __startStandaloneMatch 直接切入一个全新的 StandaloneMatch 状态。
   // 不要再次调用单例 PIXI loader：它在 complete 后不会再次触发回调，
@@ -997,6 +1094,7 @@ export function shutdownMatchRuntime() {
       tackle: false,
     })
   }
+  window.__happySeedOnlineRuntime?.reset?.()
   delete document.body.dataset.trainingRuntime
   delete document.body.dataset.trainingPitchPlayers
   delete document.body.dataset.trainingPitchState
@@ -1008,14 +1106,23 @@ export function shutdownMatchRuntime() {
 export function pauseMatch() {
   const game = getGame()
   if (!game) return false
-  game.pause()
+  game.__happySeedUiPaused = true
+  // The legacy Runtime owns three independently pausable layers.  Reused
+  // matches occasionally leave the top-level game and its pitch/stadium out
+  // of sync, so the React pause button must drive all three explicitly.
+  try { game.pause?.() } catch { /* Keep the remaining layers synchronized. */ }
+  try { game.pitch?.pause?.() } catch { /* Keep the remaining layers synchronized. */ }
+  try { game.stadium?.pause?.() } catch { /* Keep the remaining layers synchronized. */ }
   return true
 }
 
 export function resumeMatch() {
   const game = getGame()
   if (!game) return false
-  game.resume()
+  game.__happySeedUiPaused = false
+  try { game.resume?.() } catch { /* Keep the remaining layers synchronized. */ }
+  try { game.pitch?.resume?.() } catch { /* Keep the remaining layers synchronized. */ }
+  try { game.stadium?.resume?.() } catch { /* Keep the remaining layers synchronized. */ }
   return true
 }
 
@@ -1513,7 +1620,16 @@ const DECISION_VAR_RESULT_CONTRACTS = Object.freeze({
   }),
 })
 
-function emitFormalDecisionRuntimeConsequences(script, choiceId, outcomeId) {
+export function resolveDecisionPenaltySides(script) {
+  const awardedSide = script?.attackingSide
+  if (!['red', 'blue'].includes(awardedSide)) return null
+  return {
+    awardedSide,
+    offendingSide: awardedSide === 'red' ? 'blue' : 'red',
+  }
+}
+
+export function emitFormalDecisionRuntimeConsequences(script, choiceId, outcomeId) {
   const emit = window.__happySeedEmitRuntimeEvent
   const sourceEventId = script?.sourceEvent?.id
   if (typeof emit !== 'function' || !sourceEventId) return []
@@ -1554,13 +1670,26 @@ function emitFormalDecisionRuntimeConsequences(script, choiceId, outcomeId) {
 
   if (['penalty_awarded', 'penalty_won', 'yellow_card_penalty', 'red_card_penalty'].includes(outcomeId)) {
     // `side` is the offending side; `awardedSide` owns the following kick.
-    // Keeping those meanings distinct lets the staged penalty scene select
-    // the correct taker instead of only narrating a penalty that never occurs.
-    push('penalty', opponent || primary, { side: 'blue', detail: { awardedSide: 'red' } })
-    // freeze-incident 模式下判罚点球：标记脚本禁止恢复比赛，
-    // 否则冻结瞬间的射门会继续飞入球网导致进球+点球双重计算
-    if (script.mode === 'freeze-incident') {
-      script.__suppressResumeForPenalty = true
+    // The scene's attacking side is authoritative: defensive decisions are
+    // blue attacks, while attacking handball claims are red attacks. Never
+    // default a malformed incident to a home penalty.
+    const penaltySides = resolveDecisionPenaltySides(script)
+    if (penaltySides) {
+      const offendingActor = penaltySides.offendingSide === 'red' ? primary : opponent
+      push('penalty', offendingActor, {
+        side: penaltySides.offendingSide,
+        detail: { awardedSide: penaltySides.awardedSide },
+      })
+      // freeze-incident 模式下判罚点球：标记脚本禁止恢复比赛，
+      // 否则冻结瞬间的射门会继续飞入球网导致进球+点球双重计算
+      if (script.mode === 'freeze-incident') {
+        script.__suppressResumeForPenalty = true
+      }
+    } else {
+      console.error('[happy-seed-runtime] penalty incident is missing an attacking side', {
+        scenarioId,
+        outcomeId,
+      })
     }
   }
   if (DECISION_YELLOW_CARD_OUTCOMES.has(outcomeId)) {
@@ -1785,9 +1914,45 @@ export async function resolveAndPlayFormalCoachDecision(decision, choiceId) {
 }
 
 export function updatePlayerInput(patch) {
-  if (!window.__touchInput) return false
+  return updatePlayerInputForSide('red', patch)
+}
+
+export function updatePlayerInputForSide(side, patch) {
+  const normalizedSide = side === 'blue' ? 'blue' : 'red'
+  const onlineBridge = window.__happySeedOnlineRuntime
+  if (onlineBridge?.getState?.().enabled) {
+    return Boolean(onlineBridge.setInput?.(normalizedSide, patch))
+  }
+  if (normalizedSide !== 'red' || !window.__touchInput) return false
   Object.assign(window.__touchInput, patch, { active: true })
   return true
+}
+
+export function configureOnlineMatchRuntime(options = {}) {
+  return window.__happySeedOnlineRuntime?.configure?.(options) || null
+}
+
+export function getOnlineMatchRuntimeState() {
+  return window.__happySeedOnlineRuntime?.getState?.() || {
+    enabled: false,
+    role: 'host',
+    mode: 'authority',
+    localSide: 'red',
+    ruleset: 'standard',
+    paused: false,
+  }
+}
+
+export function captureOnlineMatchRuntimeSnapshot() {
+  return window.__happySeedOnlineRuntime?.getSnapshot?.() || null
+}
+
+export function applyOnlineMatchRuntimeSnapshot(snapshot) {
+  return Boolean(window.__happySeedOnlineRuntime?.applySnapshot?.(snapshot))
+}
+
+export function setOnlineMatchRuntimePaused(paused) {
+  return Boolean(window.__happySeedOnlineRuntime?.setPaused?.(paused))
 }
 
 export function releasePlayerInput() {

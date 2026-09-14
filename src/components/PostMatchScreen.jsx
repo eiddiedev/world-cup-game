@@ -2,6 +2,8 @@ import React, { useMemo } from 'react'
 import { getTeamById } from '../data/teams'
 import { buildPostMatchInsights } from '../utils/postMatchInsights'
 import { getNextRunAfterMatch } from '../utils/tournamentProgress'
+import { getJourneyItem } from '../utils/journeyItems.js'
+import { onlineRoomClient } from '../services/onlineRoomClient.js'
 
 /**
  * 赛后结算页面
@@ -15,6 +17,8 @@ export default function PostMatchScreen({ saveData, updateSaveData, navigateTo }
   const uniqueMatchInjuries = Array.from(new Set(matchInjuries))
   const uniqueMatchRedCards = Array.from(new Set(matchRedCards))
   const knockoutRound = saveData.currentRun?.knockoutRound
+  const matchDrops = saveData.currentRun?.lastMatchDrops || []
+  const isOnline = saveData.currentRun?.gameMode === 'online'
 
   // 判断是否真正打完所有比赛
   const isKnockoutDone = Boolean(saveData.currentRun?.isKnockoutMatch && knockoutRound === 'final' && result?.result)
@@ -57,6 +61,41 @@ export default function PostMatchScreen({ saveData, updateSaveData, navigateTo }
   const isDraw = result.result === 'draw'
   const resultText = isWin ? '胜利！' : isDraw ? '平局' : '失利'
   const resultEmoji = isWin ? '🎉' : isDraw ? '🤝' : '😢'
+
+  if (isOnline) {
+    const returnForRematch = () => {
+      onlineRoomClient.requestRematch()
+      const nextRun = { ...saveData.currentRun, stage: 'online-lobby' }
+      updateSaveData({ ...saveData, currentRun: nextRun, onlineRun: nextRun })
+      navigateTo('online-lobby', { gameMode: 'online' })
+    }
+    const leaveOnlineRoom = () => {
+      onlineRoomClient.close({ forgetRoom: true })
+      updateSaveData({ ...saveData, currentRun: null, onlineRun: null })
+      navigateTo('home')
+    }
+    return (
+      <main className="screen post-match-compact online-post-match">
+        <section className="post-result-header">
+          <div className="post-result-emoji">{resultEmoji}</div>
+          <h1>{resultText}</h1>
+          <div className="post-score-row">
+            <span>{team?.name}</span>
+            <span className="post-score-box">{homeScore} - {awayScore}</span>
+            <span>{opponent}</span>
+          </div>
+          <p>{saveData.currentRun?.ruleset === 'iron' ? '铁血足球' : '标准对战'} · 房间 {saveData.currentRun?.onlineRoomCode || saveData.currentRun?.onlineRoom?.code}</p>
+        </section>
+        <div className="post-actions">
+          <button type="button" className="PixelButton compact-button post-action-button" onClick={returnForRematch}>
+            <span className="button-face" aria-hidden="true" />
+            <span className="button-label">回到房间 · 再来一局</span>
+          </button>
+          <button type="button" className="back-button" onClick={leaveOnlineRoom}>退出房间</button>
+        </div>
+      </main>
+    )
+  }
   const mvp = lineup.length > 0
     ? [...lineup].sort((left, right) => Number(right.rating || right.overall || 0) - Number(left.rating || left.overall || 0))[0]
     : null
@@ -173,6 +212,13 @@ export default function PostMatchScreen({ saveData, updateSaveData, navigateTo }
           <div className="PixelPanel post-mini-panel post-advice-panel">
             <div className="post-panel-title">教练组建议</div>
             {insights.advice.map((advice, index) => <div key={index} className="post-review-line">{advice}</div>)}
+          </div>
+
+          <div className="PixelPanel post-mini-panel">
+            <div className="post-panel-title">比赛掉落</div>
+            {matchDrops.length > 0
+              ? <div className="post-review-line">{matchDrops.map((itemId) => getJourneyItem(itemId)?.label || itemId).join('、')}</div>
+              : <div className="post-review-empty">弃权不产生道具掉落。</div>}
           </div>
         </div>
 

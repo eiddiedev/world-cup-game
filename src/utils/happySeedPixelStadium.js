@@ -1,5 +1,6 @@
 export const HAPPYSEED_PIXEL_STADIUM_ID = 'international-championship-day-v1'
-const PIXEL_PREFIX = __DOUYIN_BUILD__ ? './pixel' : '/pixel'
+const IS_DOUYIN_BUILD = typeof __DOUYIN_BUILD__ !== 'undefined' && __DOUYIN_BUILD__
+const PIXEL_PREFIX = IS_DOUYIN_BUILD ? './pixel' : '/pixel'
 
 export const HAPPYSEED_STADIUM_SOURCE_SIZE = Object.freeze({ width: 4096, height: 2048 })
 export const HAPPYSEED_STADIUM_RUNTIME_SIZE = Object.freeze({ width: 5120, height: 2560 })
@@ -39,7 +40,7 @@ export const HAPPYSEED_STADIUM_CAMERA_PRESETS = Object.freeze([
 ])
 
 export const HAPPYSEED_PIXEL_STADIUM_ASSETS = Object.freeze({
-  masterBackground: `${PIXEL_PREFIX}/stadiums/${HAPPYSEED_PIXEL_STADIUM_ID}/stadium-day-master-v1.png`,
+  masterBackground: `${PIXEL_PREFIX}/stadiums/${HAPPYSEED_PIXEL_STADIUM_ID}/stadium-day-master-v4.png`,
   scene: `${PIXEL_PREFIX}/stadiums/${HAPPYSEED_PIXEL_STADIUM_ID}/scene.json`,
   ballTexture: `${PIXEL_PREFIX}/runtime-equipment/happyseed-equipment-v6/football-pixel-v6.png`,
   goalAtlas: `${PIXEL_PREFIX}/runtime-equipment/happyseed-equipment-v6/goal-net-pixel-v6.png`,
@@ -52,11 +53,15 @@ export const HAPPYSEED_STADIUM_COMPOSITION = Object.freeze({
     humanCrowd: true,
     lighting: 'bright-daylight',
     generatedLayerRole: 'single-master-background',
+    grassStripeDirection: 'perspective-goal-line-parallel',
+    grassStripeVanishingPoint: [2048, -9000],
+    grassStripeReferenceY: 611,
   },
   projectionReference: 'animal-cup-international-runtime',
   sourcePitchBounds: HAPPYSEED_STADIUM_SOURCE_PITCH_BOUNDS,
   opaqueBackgroundCount: 1,
   runtimePitchOverlay: false,
+  legacyPitchFallback: false,
   reuseOriginalGoalSprites: true,
   goalPositionSource: 'stadium.json',
   goalVisualAlignment: {
@@ -68,7 +73,7 @@ export const HAPPYSEED_STADIUM_COMPOSITION = Object.freeze({
 
 export function getHappySeedPixelStadiumContract() {
   return {
-    schemaVersion: 'happyseed-pixel-stadium-v2',
+    schemaVersion: 'happyseed-pixel-stadium-v4',
     id: HAPPYSEED_PIXEL_STADIUM_ID,
     visualThesis: '明亮人类国际赛事像素场作为唯一背景，原生球门、动态球网、角色和足球保持独立。',
     sourceSize: HAPPYSEED_STADIUM_SOURCE_SIZE,
@@ -91,7 +96,9 @@ export function getHappySeedPixelStadiumContract() {
       preserveCamera: true,
       preserveDepthSort: true,
       hideLegacyAnimalCrowd: true,
-      sharedModes: ['coach', 'player', 'penalty'],
+      sharedModes: ['journey', 'online', 'penalty'],
+      markingAlignmentTolerancePx: 0,
+      revealOnlyAfterMasterRender: true,
       networking: 'none',
     },
   }
@@ -99,7 +106,7 @@ export function getHappySeedPixelStadiumContract() {
 
 export function validateHappySeedPixelStadiumContract(contract) {
   const errors = []
-  if (contract?.schemaVersion !== 'happyseed-pixel-stadium-v2') errors.push('schemaVersion')
+  if (contract?.schemaVersion !== 'happyseed-pixel-stadium-v4') errors.push('schemaVersion')
   if (contract?.id !== HAPPYSEED_PIXEL_STADIUM_ID) errors.push('id')
   if (contract?.sourceSize?.width !== 4096 || contract?.sourceSize?.height !== 2048) errors.push('sourceSize')
   if (contract?.runtimeSize?.width !== 5120 || contract?.runtimeSize?.height !== 2560) errors.push('runtimeSize')
@@ -109,6 +116,13 @@ export function validateHappySeedPixelStadiumContract(contract) {
   if (contract?.scaleReference?.anchor !== 'root-footline') errors.push('scaleReference.anchor')
   if (contract?.composition?.opaqueBackgroundCount !== 1) errors.push('composition.opaqueBackgroundCount')
   if (contract?.composition?.runtimePitchOverlay !== false) errors.push('composition.runtimePitchOverlay')
+  if (contract?.composition?.legacyPitchFallback !== false) errors.push('composition.legacyPitchFallback')
+  if (contract?.composition?.artSource?.grassStripeDirection !== 'perspective-goal-line-parallel') errors.push('composition.artSource.grassStripeDirection')
+  if (contract?.composition?.artSource?.grassStripeVanishingPoint?.[0] !== 2048
+    || contract?.composition?.artSource?.grassStripeVanishingPoint?.[1] !== -9000) {
+    errors.push('composition.artSource.grassStripeVanishingPoint')
+  }
+  if (contract?.composition?.artSource?.grassStripeReferenceY !== 611) errors.push('composition.artSource.grassStripeReferenceY')
   if (contract?.composition?.reuseOriginalGoalSprites !== true) errors.push('composition.reuseOriginalGoalSprites')
   if (contract?.composition?.goalPositionSource !== 'stadium.json') errors.push('composition.goalPositionSource')
   if (contract?.composition?.goalVisualAlignment?.source !== 'pitchBounds') errors.push('composition.goalVisualAlignment.source')
@@ -125,5 +139,7 @@ export function validateHappySeedPixelStadiumContract(contract) {
   if (contract?.invariants?.preserveBallGeometry !== true) errors.push('invariants.preserveBallGeometry')
   if (contract?.invariants?.equipmentFiltering !== 'nearest') errors.push('invariants.equipmentFiltering')
   if (contract?.invariants?.networking !== 'none') errors.push('invariants.networking')
+  if (contract?.invariants?.markingAlignmentTolerancePx !== 0) errors.push('invariants.markingAlignmentTolerancePx')
+  if (contract?.invariants?.revealOnlyAfterMasterRender !== true) errors.push('invariants.revealOnlyAfterMasterRender')
   return { valid: errors.length === 0, errors }
 }

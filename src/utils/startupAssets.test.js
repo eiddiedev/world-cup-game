@@ -15,7 +15,7 @@ describe('startup asset priority', () => {
     expect(assets).toContain('/assets/branding/title-frame-1.png')
     expect(assets).toContain('/assets/branding/title-frame-2.png')
     expect(assets).toContain('/assets/聘书.png?v=2')
-    expect(assets).toContain('/assets/branding/appointment-stamp.png')
+    expect(assets).not.toContain('/assets/branding/appointment-stamp.png')
     expect(assets).toContain('/assets/金币.png')
     expect(assets).toContain('/assets/征召点.png')
     teams.forEach((team) => {

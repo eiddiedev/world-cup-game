@@ -4,7 +4,6 @@ import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import {
   ALL_PLAYABLE_TEAM_IDS,
-  INTERACTIVE_PLAYABLE_TEAM_IDS,
   VARIANTS,
 } from '../../config/variants.mjs'
 import { rasterDimensions, validateArtPack } from '../../scripts/lib/variant-build.mjs'
@@ -14,44 +13,30 @@ const rights = JSON.parse(readFileSync(resolve(root, 'config/art-rights.json'), 
 const sha256 = path => createHash('sha256').update(readFileSync(path)).digest('hex')
 
 describe('variant build contracts', () => {
-  it('keeps both full variants behaviorally identical', () => {
-    const showcase = VARIANTS['showcase-full']
+  it('exposes only the compliant full product target', () => {
     const compliant = VARIANTS['compliant-full']
-    expect(showcase.features).toEqual(compliant.features)
-    expect(showcase.playableTeamIds).toEqual(compliant.playableTeamIds)
-    expect(showcase.playableTeamIds).toHaveLength(16)
-    expect(showcase.artPack).toBe('showcase')
+    expect(Object.keys(VARIANTS)).toEqual(['compliant-full'])
+    expect(compliant.playableTeamIds).toEqual(ALL_PLAYABLE_TEAM_IDS)
+    expect(compliant.playableTeamIds).toHaveLength(16)
     expect(compliant.artPack).toBe('compliant')
-    expect(showcase.brandingProfile).toBe('showcase')
     expect(compliant.brandingProfile).toBe('compliant')
-    expect(showcase.package.enabled).toBe(false)
     expect(compliant.package.enabled).toBe(false)
-  })
-
-  it('keeps all 16 teams in the interactive profile without widening its feature boundary', () => {
-    const interactive = VARIANTS['compliant-interactive']
-    expect(interactive.playableTeamIds).toEqual(ALL_PLAYABLE_TEAM_IDS)
-    expect(interactive.playableTeamIds).toEqual(INTERACTIVE_PLAYABLE_TEAM_IDS)
-    expect(ALL_PLAYABLE_TEAM_IDS).toHaveLength(16)
-    expect(interactive.features).toMatchObject({
-      coachMode: true,
-      playerMode: true,
-      codex: false,
-      standalonePenalty: false,
+    expect(compliant.targetPlatform).toBe('douyin-mini-game')
+    expect(compliant.features).toMatchObject({
+      coachMode: false,
+      playerMode: false,
+      journeyMode: true,
+      onlineMode: true,
+      ironFootball: true,
+      deterministicOffside: true,
+      codex: true,
+      standalonePenalty: true,
       formalMatchPenalties: true,
     })
-    expect(interactive.package.maxZipBytes).toBe(15 * 1024 * 1024)
-    expect(interactive.package).toMatchObject({
-      enabled: true,
-      archiveName: 'targeting-2026-compliant-interactive.zip',
-      compressionProfile: 'match-quality',
-    })
-    expect(Object.values(VARIANTS).filter(variant => variant.package.enabled).map(variant => variant.id))
-      .toEqual(['compliant-interactive'])
-    expect(interactive.matchView).toEqual({
-      coachDefaultZoom: 0.68,
-      coachMinZoom: 0.48,
-      playerDefaultZoom: 1.16,
+    expect(compliant.matchView).toEqual({
+      coachDefaultZoom: 1,
+      coachMinZoom: 0.72,
+      playerDefaultZoom: 1,
     })
   })
 
@@ -79,13 +64,11 @@ describe('variant build contracts', () => {
       const protectedKeys = new Set(rights.entries.map(entry => entry.key))
       manifest.pendingItems.forEach(key => expect(protectedKeys.has(key), key).toBe(true))
       expect(() => validateArtPack('compliant-full')).toThrow(/fail-closed/)
-      expect(() => validateArtPack('compliant-interactive')).toThrow(/fail-closed/)
       return
     }
     expect(manifest.status).toBe('ready')
     expect(manifest.pendingItems).toEqual([])
     expect(() => validateArtPack('compliant-full')).not.toThrow()
-    expect(() => validateArtPack('compliant-interactive')).not.toThrow()
     rights.entries
       .filter(entry => entry.compliantPolicy === 'exclude')
       .forEach(entry => {

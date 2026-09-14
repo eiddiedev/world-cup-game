@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { HappySeedMatchBroadcast } from './HappySeedMatchBroadcast.jsx'
 import PenaltyShootout from './PenaltyShootout.jsx'
 import {
@@ -8,6 +8,11 @@ import {
 import { getLogisticsModifiers } from '../utils/logisticsEffects.js'
 import { createInitialCodex } from '../utils/saveManager.js'
 import { audioManager } from '../utils/audioManager.js'
+import { getTeamById } from '../data/teams.js'
+import {
+  awardJourneyDrops,
+  clearJourneyTransientItemEffects,
+} from '../utils/journeyItems.js'
 import '../styles/happySeedBroadcastV2.css'
 
 /**
@@ -23,9 +28,55 @@ export default function MatchScreen({
 }) {
   const [pendingShootout, setPendingShootout] = useState(null)
 
+  useEffect(() => {
+    const handleOnlineAbort = () => {
+      const currentRun = saveData.currentRun
+      if (currentRun?.gameMode !== 'online') return
+      updateSaveData({
+        ...saveData,
+        currentRun: { ...currentRun, stage: 'online-lobby' },
+      })
+      navigateTo('online-lobby', { gameMode: 'online' })
+    }
+    window.addEventListener('ab-online-match-aborted', handleOnlineAbort)
+    return () => window.removeEventListener('ab-online-match-aborted', handleOnlineAbort)
+  }, [navigateTo, saveData, updateSaveData])
+
   const persistMatchComplete = useCallback(({ report, actorSnapshot, session: completedSession }, shootoutWinner = null, shootoutResult = null) => {
     const currentRun = saveData.currentRun
     if (!currentRun || currentRun.lastMatchResult?.matchId === report.matchId) return
+
+    if (currentRun.gameMode === 'online') {
+      const ownSide = currentRun.onlineSeatId === 'guest' ? 'blue' : 'red'
+      const redScore = Number(report.homeScore || 0)
+      const blueScore = Number(report.awayScore || 0)
+      const ownScore = ownSide === 'blue' ? blueScore : redScore
+      const opponentScore = ownSide === 'blue' ? redScore : blueScore
+      const opponentTeamId = ownSide === 'blue'
+        ? currentRun.onlineRoom?.host?.teamId
+        : currentRun.onlineRoom?.guest?.teamId
+      const onlineReport = {
+        ...report,
+        homeScore: ownScore,
+        awayScore: opponentScore,
+        teamName: getTeamById(currentRun.teamId)?.name || report.teamName,
+        opponent: getTeamById(opponentTeamId)?.name || report.opponent,
+        result: ownScore > opponentScore ? 'win' : ownScore < opponentScore ? 'loss' : 'draw',
+        authoritativeScore: { red: redScore, blue: blueScore },
+        online: true,
+      }
+      const nextRun = {
+        ...currentRun,
+        lastMatchResult: onlineReport,
+        stage: 'post-match',
+      }
+      updateSaveData({ ...saveData, currentRun: nextRun, onlineRun: nextRun })
+      audioManager.playSound('whistle')
+      if (onlineReport.result === 'win') audioManager.playWin()
+      else if (onlineReport.result === 'loss') audioManager.playLose()
+      navigateTo('post-match')
+      return
+    }
 
     const resolvedReport = shootoutWinner
       ? {
@@ -187,11 +238,17 @@ export default function MatchScreen({
       }
     }
 
+    const postItemSettlement = currentRun.gameMode === 'journey'
+      ? clearJourneyTransientItemEffects(settledRun)
+      : settledRun
+    const dropSettlement = currentRun.gameMode === 'journey'
+      ? awardJourneyDrops(postItemSettlement, authoritativeReport)
+      : { run: settledRun, drops: [] }
     const nextSaveData = {
       ...saveData,
       codex: { ...codex, records, unlockedAchievements },
       currentRun: {
-        ...settledRun,
+        ...dropSettlement.run,
         matchInjuries,
         matchRedCards,
         lastMatchResult: authoritativeReport,
@@ -252,7 +309,7 @@ export default function MatchScreen({
           homeFormation={saveData.currentRun?.formation || '4-3-3'}
           awayFormation={pendingShootout.actorSnapshot?.sides?.blue?.formation || '4-3-3'}
           stabilityBonus={getLogisticsModifiers(saveData.currentRun?.logisticsLevels).penaltyStabilityBonus}
-          gameMode={saveData.currentRun?.gameMode || 'coach'}
+          gameMode={saveData.currentRun?.gameMode || 'journey'}
           onComplete={(winner, shootoutResult) => {
             const completion = pendingShootout
             setPendingShootout(null)

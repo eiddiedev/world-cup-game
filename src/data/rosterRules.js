@@ -9,6 +9,15 @@ export const NATIONAL_SQUAD_MINIMUMS = ROSTER_POOL_RULES.nationalSquadMinimums
 
 const POSITION_ORDER = ['GK', 'DF', 'MF', 'FW']
 
+export function getNationalSquadBudget(players = [], listedBudget = 0) {
+  const cheapestCompleteSquad = [...players]
+    .sort((left, right) => Number(left.price || 0) - Number(right.price || 0))
+    .slice(0, NATIONAL_SQUAD_SIZE)
+    .reduce((total, player) => total + Number(player.price || 0), 0)
+  const playableBudget = Math.ceil((cheapestCompleteSquad * 1.12) / 50) * 50
+  return Math.max(Number(listedBudget || 0), playableBudget)
+}
+
 function countByPosition(players = []) {
   return POSITION_ORDER.reduce((counts, position) => {
     counts[position] = players.filter(player => player.position === position).length

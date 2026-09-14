@@ -5,6 +5,32 @@ import { createInitialCommercializationState } from '../data/commercialization.j
 import { getAvailableLogisticsBudget } from '../data/prizeMoney.js'
 
 const STORAGE_KEY = getStorageKey()
+export const SAVE_SCHEMA_VERSION = 2
+export const JOURNEY_RUN_VERSION = 2
+
+const STARTER_JOURNEY_INVENTORY = Object.freeze({
+  'sports-drink': 1,
+  'football-boots': 1,
+  'tactical-board': 1,
+})
+
+function normalizeJourneyStage(stage) {
+  if (stage === 'training' || stage === 'logistics' || stage === 'mini-cup-prep') return 'tournament'
+  return stage || 'tournament'
+}
+
+export function migrateLegacyRunToJourney(run) {
+  if (!run) return null
+  return {
+    ...run,
+    gameMode: 'journey',
+    runVersion: JOURNEY_RUN_VERSION,
+    stage: normalizeJourneyStage(run.stage),
+    itemInventory: { ...(run.itemInventory || {}) },
+    matchItemLoadout: [...(run.matchItemLoadout || [])],
+    itemDropHistory: [...(run.itemDropHistory || [])],
+  }
+}
 
 /**
  * 创建初始图鉴数据
@@ -38,10 +64,14 @@ export function createInitialCodex() {
  */
 export function createInitialSaveData() {
   return {
+    saveVersion: SAVE_SCHEMA_VERSION,
     unlockTeams: getPlayableTeamIds(),
     championshipHistory: [],
     currentRun: null,
-    playerModeRun: null,  // 球员模式独立存档
+    journeyRun: null,
+    onlineRun: null,
+    playerModeRun: null,  // 旧球员模式只用于一次性迁移与兼容备份
+    legacyCoachBackup: null,
     logisticsBudgets: {},  // { [teamId]: number } 每队累积的后勤预算
     aiEnhancement: createInitialAiEnhancementState(),
     commercialization: createInitialCommercializationState(),
@@ -69,9 +99,23 @@ export function loadSaveData() {
     saved.unlockTeams = getPlayableTeamIds()
     const initialCodex = createInitialCodex()
     const savedCodex = saved.codex || {}
+    const legacyPlayerRun = saved.playerModeRun
+      || (saved.currentRun?.gameMode === 'player' ? saved.currentRun : null)
+    const legacyCoachRun = saved.currentRun?.gameMode === 'coach' ? saved.currentRun : null
+    const journeyRun = migrateLegacyRunToJourney(
+      saved.journeyRun
+      || (saved.currentRun?.gameMode === 'journey' ? saved.currentRun : null)
+      || legacyPlayerRun
+      || legacyCoachRun,
+    )
     return {
       ...initial,
       ...saved,
+      saveVersion: SAVE_SCHEMA_VERSION,
+      currentRun: journeyRun,
+      journeyRun,
+      playerModeRun: saved.playerModeRun || null,
+      legacyCoachBackup: saved.legacyCoachBackup || legacyCoachRun || null,
       codex: {
         ...initialCodex,
         ...savedCodex,
@@ -139,13 +183,14 @@ export function persistSaveData(saveData) {
 /**
  * 创建新的征程
  */
-export function createNewRun(teamId, gameMode = 'coach', saveData = null) {
+export function createNewRun(teamId, gameMode = 'journey', saveData = null) {
   const logisticsBudget = saveData
     ? getAvailableLogisticsBudget(teamId, saveData)
     : 3000
   return {
     teamId,
-    gameMode,
+    gameMode: gameMode === 'online' ? 'online' : 'journey',
+    runVersion: JOURNEY_RUN_VERSION,
     formation: getTeamDefaultFormation(teamId),
     stage: 'recruitment',
     startedAt: new Date().toISOString(),
@@ -156,6 +201,9 @@ export function createNewRun(teamId, gameMode = 'coach', saveData = null) {
     tournamentData: null,
     logisticsLevels: {},   // { [deptId]: level } 本次 run 的部门等级
     logisticsBudget,       // 本局可用后勤预算
+    itemInventory: { ...STARTER_JOURNEY_INVENTORY },
+    matchItemLoadout: [],
+    itemDropHistory: [],
   }
 }
 
@@ -193,5 +241,5 @@ export function getCodexProgress(saveData) {
  * 检查是否有继续游戏
  */
 export function hasContinueGame(saveData) {
-  return Boolean(saveData.currentRun)
+  return Boolean(saveData.journeyRun || saveData.currentRun)
 }

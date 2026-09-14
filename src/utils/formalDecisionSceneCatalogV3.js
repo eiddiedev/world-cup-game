@@ -316,11 +316,21 @@ export const FORMAL_DECISION_SCENE_CATALOG_V3 = Object.freeze({
   defensive_line_handball_var: scene('freeze-incident', 'defensive-handball-review', 'hands_behind_back', {
     hands_behind_back: [A('actor', 'defender-explain')],
     block_line_anyway: [A('zone', 'goal-line-block')],
-  }, { sourceEventTypes: ['shot', 'handball-review'], requiresPenaltyArea: true }),
+  }, {
+    sourceEventTypes: ['shot', 'handball-review'],
+    sourceEventSide: 'blue',
+    attackingSide: 'blue',
+    requiresAttackingPenaltyArea: true,
+  }),
   handball_penalty_claim: scene('freeze-incident', 'attacking-handball-claim', 'calm_handball_claim', {
     calm_handball_claim: [A('actor', 'captain-referee', { centerKey: 'origin' })],
     crowd_ref_handball: [A('actor', 'team-appeal', { centerKey: 'origin' })],
-  }, { sourceEventTypes: ['shot', 'handball-review'], requiresPenaltyArea: true }),
+  }, {
+    sourceEventTypes: ['shot', 'handball-review'],
+    sourceEventSide: 'red',
+    attackingSide: 'red',
+    requiresAttackingPenaltyArea: true,
+  }),
   second_ball_corner_attack: scene('freeze-live', 'corner-second-ball', 'chip_back_post', {
     volley_second_ball: [B('volley-goal', 'home', 'primary')],
     chip_back_post: [B('dink-far-post', 'home', 'primary', { targetRole: 'aerialTarget' })],

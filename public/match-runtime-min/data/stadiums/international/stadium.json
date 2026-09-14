@@ -4,7 +4,7 @@
     "ballFriction": 5,
     "sprites": [
         {
-            "texture": "stadium.jpg",
+            "texture": "bootstrap.png",
             "position": [
                 0,
                 0

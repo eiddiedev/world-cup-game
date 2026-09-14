@@ -322,6 +322,36 @@ describe('FormalMatchSession 正式比赛权威链', () => {
       .toEqual({ red: 1, blue: 0 })
   })
 
+  it('counts every real goal in the two capture fixtures without caps or suppression', () => {
+    let germany = startFormalMatchSession(createFormalMatchSession({
+      variantId: 'compliant-full',
+      gameMode: 'coach',
+      teamId: 'germany',
+      opponentTeamId: 'curacao',
+    }))
+    germany = recordFormalRuntimeGoal(germany, {
+      score: [9, 2],
+      runtimeEventId: 'runtime.capture.real-score.germany',
+      timestamp: 10000,
+    }, moment, actorSource)
+    expect(germany.score).toEqual({ red: 9, blue: 2 })
+    expect(germany.nativeRuntimeScore).toEqual({ red: 9, blue: 2 })
+
+    let capeVerde = startFormalMatchSession(createFormalMatchSession({
+      variantId: 'compliant-full',
+      gameMode: 'coach',
+      teamId: 'capeverde',
+      opponentTeamId: 'spain',
+    }))
+    capeVerde = recordFormalRuntimeGoal(capeVerde, {
+      score: [0, 3],
+      runtimeEventId: 'runtime.capture.real-score.spain',
+      timestamp: 11000,
+    }, moment, actorSource)
+    expect(capeVerde.score).toEqual({ red: 0, blue: 3 })
+    expect(capeVerde.nativeRuntimeScore).toEqual({ red: 0, blue: 3 })
+  })
+
   it('describes a goalkeeper touch that still crosses the line as a failed parry, not a save', () => {
     const scorer = actorSource.actors.find((actor) => actor.side === 'red' && !actor.isGoalkeeper)
     const session = recordFormalRuntimeGoal(
@@ -463,6 +493,17 @@ describe('FormalMatchSession 正式比赛权威链', () => {
     expect(deriveFormalRuntimeIncidents(goal)).toEqual([])
   })
 
+  it('never derives a goal review when player mode disables goal VAR', () => {
+    const goal = runtimeEvent('goal', 40, {
+      detail: { forceVarReview: true, forceVarOutcome: 'disallowed', score: [1, 0] },
+    })
+    expect(deriveFormalRuntimeIncidents(goal, { allowGoalReview: false })).toEqual([])
+    expect(deriveFormalRuntimeIncidents(goal).map((event) => event.type)).toEqual([
+      'var-review',
+      'var-result',
+    ])
+  })
+
   it('reviews a stable minority of unforced goals instead of every goal', () => {
     const reviewed = Array.from({ length: 200 }, (_, index) => (
       deriveFormalRuntimeIncidents(runtimeEvent('goal', 20 + (index % 70), {
@@ -555,6 +596,46 @@ describe('FormalMatchSession 正式比赛权威链', () => {
       tone: 'standard',
       text: expect.stringContaining('进球无效'),
     })
+  })
+
+  it('rolls a delayed-offside goal back exactly once from its authoritative event id', () => {
+    let session = startFormalMatchSession(createFormalMatchSession())
+    session = recordFormalRuntimeGoal(session, {
+      score: [1, 0],
+      runtimeEventId: 'runtime.63.goal',
+      timestamp: 63_000,
+    }, moment, actorSource)
+    const disallowed = runtimeEvent('goal_disallowed', 63, {
+      id: 'runtime.63.goal-disallowed',
+      side: 'red',
+      sourceEventId: 'runtime.63.goal',
+      detail: {
+        scoringSide: 'red',
+        rollbackToken: 'offside-rollback:runtime.63.goal',
+      },
+    })
+    session = advanceFormalMatchSession(session, {
+      snapshot: { minute: 63 },
+      runtimeMoment: moment,
+      actorSource,
+      decisionsEnabled: false,
+      deriveRuntimeIncidents: false,
+      runtimeEvents: [disallowed],
+    }).session
+    expect(session.score).toEqual({ red: 0, blue: 0 })
+    expect(session.nativeRuntimeScore).toEqual({ red: 0, blue: 0 })
+    expect(session.lastRuntimeGoal).toMatchObject({ disallowed: true })
+
+    const duplicate = advanceFormalMatchSession(session, {
+      snapshot: { minute: 63 },
+      runtimeMoment: moment,
+      actorSource,
+      decisionsEnabled: false,
+      deriveRuntimeIncidents: false,
+      runtimeEvents: [disallowed],
+    }).session
+    expect(duplicate.score).toEqual({ red: 0, blue: 0 })
+    expect(duplicate.commentary.filter((line) => line.type === 'goal_disallowed')).toHaveLength(1)
   })
 
   it('highlights VAR lines only when they belong to a coach-decision goal', () => {

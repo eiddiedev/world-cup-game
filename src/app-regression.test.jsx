@@ -51,6 +51,7 @@ import { getTeamDefaultFormation } from './data/teamFormations.js'
 import {
   MIN_PURCHASE,
   buildRecommendedNationalSquad,
+  getNationalSquadBudget,
   validateNationalSquad,
 } from './data/rosterRules.js'
 import { getMatchKits, getTeamKit } from './data/teamKits.js'
@@ -72,7 +73,7 @@ afterEach(() => {
 })
 
 describe('home screen', () => {
-  it('opens the coach save dialog and routes a new save into team selection', async () => {
+  it('opens the champion journey save dialog and routes a new save into team selection', async () => {
     const clickSpy = vi.spyOn(audioManager, 'playClick').mockImplementation(() => true)
     const store = new Map()
     const localStorageMock = {
@@ -84,9 +85,9 @@ describe('home screen', () => {
     Object.defineProperty(window, 'localStorage', { value: localStorageMock, configurable: true })
     render(<App />)
 
-    const coachButton = await screen.findByRole('button', { name: '教练模式' })
-    fireEvent.pointerDown(coachButton)
-    fireEvent.click(coachButton)
+    const journeyButton = await screen.findByRole('button', { name: '冠军征程' })
+    fireEvent.pointerDown(journeyButton)
+    fireEvent.click(journeyButton)
 
     const newSaveButton = await screen.findByRole('button', { name: '新的挑战' })
     fireEvent.click(newSaveButton)
@@ -118,7 +119,7 @@ describe('home screen', () => {
     })
   })
 
-  it('shows all four player-facing menu entries', () => {
+  it('keeps the undeployed online entry out of the production menu', () => {
     const navigateTo = vi.fn()
     render(
       <HomeScreen
@@ -128,14 +129,16 @@ describe('home screen', () => {
       />,
     )
 
-    expect(screen.getByRole('button', { name: '教练模式' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: '球员模式' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: '点球大战' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '冠军征程' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: '教练模式' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: '球员模式' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: '联机对战' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: '点球大战' })).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: '设置' })).toBeInTheDocument()
     expect(Array.from(
       screen.getByRole('navigation', { name: '主菜单' }).querySelectorAll('button'),
       button => button.textContent.trim(),
-    )).toEqual(['球员模式', '教练模式', '点球大战', '设置'])
+    )).toEqual(['冠军征程', '设置'])
     expect(screen.queryByRole('button', { name: '点球测试' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: '小人样板' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'AI与赞助' })).not.toBeInTheDocument()
@@ -144,7 +147,7 @@ describe('home screen', () => {
     expect(screen.queryByText('两场夺冠 · 约 5–7 分钟')).not.toBeInTheDocument()
   })
 
-  it('stores the selected mode when starting a player-mode save', () => {
+  it('stores journey when starting a champion journey save', () => {
     const navigateTo = vi.fn()
     render(
       <HomeScreen
@@ -154,12 +157,12 @@ describe('home screen', () => {
       />,
     )
 
-    fireEvent.click(screen.getByRole('button', { name: '球员模式' }))
-    expect(screen.getByRole('dialog', { name: '球员模式' })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: '冠军征程' }))
+    expect(screen.getByRole('dialog', { name: '冠军征程' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: '继续征程' })).toBeDisabled()
 
     fireEvent.click(screen.getByRole('button', { name: '新的挑战' }))
-    expect(navigateTo).toHaveBeenCalledWith('team-select', { gameMode: 'player' })
+    expect(navigateTo).toHaveBeenCalledWith('team-select', { gameMode: 'journey' })
   })
 })
 
@@ -287,7 +290,7 @@ describe('mobile lineup interaction', () => {
 describe('settings and audio', () => {
   it('merges missing settings from older saves', () => {
     const store = new Map([
-      ['targeting-2026-save', JSON.stringify({
+      ['targeting-2026-compliant-full-save', JSON.stringify({
         unlockTeams: ['france'],
         settings: { sound: false },
       })],
@@ -453,7 +456,7 @@ describe('settings and audio', () => {
 })
 
 describe('team and player data', () => {
-  it('keeps all configured teams selectable in the interactive variant', () => {
+  it('keeps all configured teams selectable in the maintained full variant', () => {
     const sourceTeams = [
       { id: 'spain' },
       { id: 'france' },
@@ -485,7 +488,7 @@ describe('team and player data', () => {
       'brazil',
       'curacao',
     ])
-    expect(getStorageKey()).toBe('targeting-2026-save')
+    expect(getStorageKey()).toBe('targeting-2026-compliant-full-save')
   })
 
   it('keeps every selectable team at a 24-player pool with one named golden star', () => {
@@ -528,8 +531,8 @@ describe('team and player data', () => {
       minimum: 24,
       target: 24,
       maximum: 24,
-      nationalSquadSize: 24,
-      minPurchase: 11,
+      nationalSquadSize: 23,
+      minPurchase: 23,
       nationalSquadMinimums: { GK: 2, DF: 3, MF: 3, FW: 2 },
       positionTargets: { GK: 2, DF: 8, MF: 8, FW: 6 },
     })
@@ -578,8 +581,9 @@ describe('team and player data', () => {
 
   it('builds valid recommended national squads of at least 11 players', () => {
     for (const team of teams) {
-      const squad = buildRecommendedNationalSquad(team.players, team.budget, team.defaultFormation)
-      const validation = validateNationalSquad(squad, team.budget)
+      const budget = getNationalSquadBudget(team.players, team.budget)
+      const squad = buildRecommendedNationalSquad(team.players, budget, team.defaultFormation)
+      const validation = validateNationalSquad(squad, budget)
 
       expect(squad.length, team.name).toBeGreaterThanOrEqual(MIN_PURCHASE)
       expect(validation.valid, team.name).toBe(true)
@@ -606,19 +610,26 @@ describe('team and player data', () => {
       platformLimit: 200,
     })
     expect(DATA_RUNTIME_CONSTRAINTS.networking).toMatchObject({
-      realtimePvp: false,
-      websocket: false,
-      onlinePvp: false,
+      realtimePvp: true,
+      websocket: true,
+      onlinePvp: true,
+      authority: 'room-host',
+      inputHz: 20,
+      snapshotHz: 12,
+      interpolationMs: 100,
+      reconnectGraceMs: 20_000,
+      targetConnections: 200,
+      targetRooms: 100,
       aiProvider: 'volcengine',
     })
-    expect(DATA_RUNTIME_CONSTRAINTS.runtimeModes).toEqual(['coach', 'player', 'penalty', 'aiSimulation'])
+    expect(DATA_RUNTIME_CONSTRAINTS.runtimeModes).toEqual(['journey', 'online', 'penalty', 'aiSimulation'])
 
     for (const team of teams) {
       expect(team.dataConsumers, team.name).toEqual(expect.arrayContaining([
         'local-match-engine',
         'volcengine-ai-analysis',
-        'coach-mode',
-        'player-mode',
+        'journey-mode',
+        'online-mode',
         'penalty-mode',
         'ai-simulation',
       ]))

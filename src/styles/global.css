@@ -55,6 +55,15 @@ body > canvas {
   image-rendering: crisp-edges;
 }
 
+/* The match Runtime mounts outside React, so route changes cannot unmount this
+   node. The attribute is also set before an idle prewarm creates the canvas,
+   preventing a late PIXI insertion from becoming the home-screen background. */
+body[data-match-runtime-canvas="hidden"] > canvas {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
 .match-runtime-panel {
   display: grid;
   grid-template-rows: auto auto auto auto minmax(0, 1fr);
@@ -6793,7 +6802,7 @@ button {
 }
 
 /* ══════════════════════════════════════════════════════════════════════
-   手机端综合优化 — 抖音互动空间适配
+   手机端综合优化 — 移动端 / 抖音小游戏适配基础
    ══════════════════════════════════════════════════════════════════════ */
 
 /* ── 招募页：竖版卡片 ── */
@@ -9303,4 +9312,25 @@ button {
   color: #fff3b0;
   font: 700 12px/1.2 monospace;
   pointer-events: none;
+}
+.online-lobby-screen { overflow-y: auto; padding-bottom: 48px; }
+.online-entry-grid, .online-room-seats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; max-width: 980px; margin: 24px auto; }
+.online-entry-card { display: grid; gap: 18px; padding: 24px; }
+.online-entry-card input { min-height: 58px; border: 3px solid #1b3764; background: #f5e8be; color: #1b3764; font: 700 28px/1 Zpix, monospace; text-align: center; letter-spacing: .28em; }
+.online-ruleset-picker { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.online-ruleset-picker button, .online-team-grid button { border: 2px solid #1b3764; background: #e8d9ac; color: #1b3764; padding: 12px; font-family: Zpix, monospace; }
+.online-ruleset-picker button.is-selected, .online-team-grid button.is-selected { background: #c99a2e; box-shadow: inset 0 0 0 2px #f8edc8; }
+.online-seat { padding: 18px; display: grid; gap: 8px; }
+.online-seat.is-self { outline: 3px solid #c99a2e; }
+.online-seat small { color: #5c6780; }
+.online-team-picker { max-width: 1120px; margin: 22px auto; }
+.online-team-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.online-team-grid button { display: grid; justify-items: center; gap: 6px; }
+.online-team-grid img { width: 46px; height: 30px; object-fit: cover; }
+.online-ready-bar { position: sticky; bottom: 12px; max-width: 900px; margin: 22px auto 0; padding: 14px; display: flex; align-items: center; justify-content: center; gap: 16px; background: rgba(16, 32, 55, .94); color: #fff; border: 3px solid #c99a2e; }
+.online-service-error { max-width: 720px; margin: 50px auto; padding: 28px; }
+@media (max-width: 760px) {
+  .online-entry-grid, .online-room-seats { grid-template-columns: 1fr; }
+  .online-team-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .online-ready-bar { flex-wrap: wrap; }
 }

@@ -64,7 +64,7 @@ describe('HappySeed pixel stadium contract', () => {
       goalPositionSource: 'stadium.json',
     })
     expect(contract.assets).toEqual({
-      masterBackground: '/pixel/stadiums/international-championship-day-v1/stadium-day-master-v1.png',
+      masterBackground: '/pixel/stadiums/international-championship-day-v1/stadium-day-master-v4.png',
       scene: '/pixel/stadiums/international-championship-day-v1/scene.json',
       ballTexture: '/pixel/runtime-equipment/happyseed-equipment-v6/football-pixel-v6.png',
       goalAtlas: '/pixel/runtime-equipment/happyseed-equipment-v6/goal-net-pixel-v6.png',
@@ -72,7 +72,7 @@ describe('HappySeed pixel stadium contract', () => {
     })
   })
 
-  it('preserves collision, dynamic net, camera, depth sort and three-mode reuse', () => {
+  it('preserves collision, dynamic net, camera, depth sort and production-mode reuse', () => {
     const contract = getHappySeedPixelStadiumContract()
     expect(validateHappySeedPixelStadiumContract(contract)).toEqual({ valid: true, errors: [] })
     expect(contract.invariants).toMatchObject({
@@ -83,7 +83,9 @@ describe('HappySeed pixel stadium contract', () => {
       preserveCamera: true,
       preserveDepthSort: true,
       hideLegacyAnimalCrowd: true,
-      sharedModes: ['coach', 'player', 'penalty'],
+      markingAlignmentTolerancePx: 0,
+      revealOnlyAfterMasterRender: true,
+      sharedModes: ['journey', 'online', 'penalty'],
       networking: 'none',
     })
   })

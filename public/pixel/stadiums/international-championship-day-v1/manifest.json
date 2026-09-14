@@ -1,5 +1,5 @@
 {
-  "schemaVersion": "happyseed-pixel-stadium-assets-v3",
+  "schemaVersion": "happyseed-pixel-stadium-assets-v5",
   "generatedBy": "scripts/generate-pixel-stadium-slice.mjs",
   "artPipeline": "image-generation-single-master-background",
   "projectionLock": {
@@ -14,26 +14,33 @@
       2800,
       1057
     ],
-    "tolerancePx": 2
+    "tolerancePx": 0
   },
+  "grassStripeDirection": "perspective-goal-line-parallel",
+  "grassStripeVanishingPoint": [
+    2048,
+    -9000
+  ],
+  "grassStripeReferenceY": 611,
+  "legacyPitchFallback": false,
   "stadiumId": "international-championship-day-v1",
   "opaqueBackgroundCount": 1,
   "runtimePitchOverlay": false,
   "goalPositionSource": "stadium.json",
   "fileCount": 2,
-  "totalBytes": 4899593,
-  "totalKiB": 4784.8,
+  "totalBytes": 4233748,
+  "totalKiB": 4134.5,
   "files": [
     {
-      "path": "/pixel/stadiums/international-championship-day-v1/stadium-day-master-v1.png",
-      "bytes": 4896021,
+      "path": "/pixel/stadiums/international-championship-day-v1/stadium-day-master-v4.png",
+      "bytes": 4229830,
       "width": 4096,
       "height": 2048,
       "role": "single-opaque-background"
     },
     {
       "path": "/pixel/stadiums/international-championship-day-v1/scene.json",
-      "bytes": 3572,
+      "bytes": 3918,
       "role": "scene-contract"
     }
   ]

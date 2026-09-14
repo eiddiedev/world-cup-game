@@ -5,7 +5,7 @@ export function shouldEnableCoachDecisions(
   params = new URLSearchParams(),
   allowDebugOverrides = false,
 ) {
-  if (gameMode === 'player') return false
+  if (gameMode !== 'coach') return false
   if (!allowDebugOverrides) return true
   return (
     params.get('events') !== 'manual'

@@ -295,6 +295,7 @@ export default function PenaltyShootout({
   homeLineup = [],
   awayLineup = [],
   stabilityBonus = 0,
+  onlineSession = null,
   onComplete,
   onExit,
 }) {
@@ -303,6 +304,9 @@ export default function PenaltyShootout({
   const rafRef = useRef(null)
   const timersRef = useRef([])
   const onCompleteRef = useRef(onComplete)
+  const onlineSessionRef = useRef(onlineSession)
+  const processedOnlineAttemptRef = useRef(null)
+  const previousOnlineStatusRef = useRef(onlineSession?.status)
   const imagesRef = useRef(null)
   const metricsRef = useRef(null)
   const scalesRef = useRef({ p: 1, gk: 1 })
@@ -310,14 +314,16 @@ export default function PenaltyShootout({
   const sceneRef = useRef({
     phase: 'loading',
     mode: 'shoot',
+    shootingTeam: 'home',
     kick: null,
     drag: null,
     aimStart: 0,
-    shots: [],
+    shots: onlineSession?.shots || [],
   })
   const [loaded, setLoaded] = useState(false)
-  const [shots, setShots] = useState([])
+  const [shots, setShots] = useState(onlineSession?.shots || [])
   const [phase, setPhase] = useState('loading')
+  const [controlMode, setControlMode] = useState('shoot')
   const [promptText, setPromptText] = useState('')
   const [banner, setBanner] = useState(null)
   const [finishedWinner, setFinishedWinner] = useState(null)
@@ -326,7 +332,13 @@ export default function PenaltyShootout({
     onCompleteRef.current = onComplete
   }, [onComplete])
 
+  useEffect(() => {
+    onlineSessionRef.current = onlineSession
+  }, [onlineSession])
+
+  const onlineMode = Boolean(onlineSession)
   const isHomeTurn = shots.length % 2 === 0
+  const isShootingControl = onlineMode ? controlMode === 'shoot' : isHomeTurn
   const homeScore = shots.filter(shot => shot.team === 'home' && shot.scored).length
   const awayScore = shots.filter(shot => shot.team === 'away' && shot.scored).length
   const currentRound = Math.floor(shots.length / 2) + 1
@@ -345,9 +357,17 @@ export default function PenaltyShootout({
 
   const beginRound = () => {
     const scene = sceneRef.current
+    const activeOnlineSession = onlineSessionRef.current
     const round = Math.floor(scene.shots.length / 2) + 1
     const homeShooting = scene.shots.length % 2 === 0
-    scene.mode = homeShooting ? 'shoot' : 'keep'
+    scene.shootingTeam = homeShooting ? 'home' : 'away'
+    if (activeOnlineSession) {
+      const shooterSeatId = homeShooting ? 'host' : 'guest'
+      scene.mode = activeOnlineSession.seatId === shooterSeatId ? 'shoot' : 'keep'
+    } else {
+      scene.mode = homeShooting ? 'shoot' : 'keep'
+    }
+    setControlMode(scene.mode)
     const homeKicks = scene.shots.filter(shot => shot.team === 'home').length
     const awayKicks = scene.shots.filter(shot => shot.team === 'away').length
     scene.shooter = homeShooting ? pickShooter(homeLineup, homeKicks) : pickShooter(awayLineup, awayKicks)
@@ -355,8 +375,18 @@ export default function PenaltyShootout({
     scene.kick = null
     scene.drag = null
     setBanner(null)
+    const onlineRole = scene.mode === 'shoot' ? 'shooter' : 'keeper'
+    if (activeOnlineSession?.submitted?.[onlineRole]) {
+      syncPhase('waiting')
+      setPromptText('方向已锁定，等待对方完成操作…')
+      return
+    }
     syncPhase('prompt')
-    setPromptText(`第 ${round} 轮 · ${homeShooting ? homeTeam : awayTeam}主罚`)
+    setPromptText(
+      activeOnlineSession
+        ? `第 ${round} 轮 · ${homeShooting ? homeTeam : awayTeam}主罚 · ${scene.mode === 'shoot' ? '你来射门' : '你来扑救'}`
+        : `第 ${round} 轮 · ${homeShooting ? homeTeam : awayTeam}主罚`,
+    )
     schedule(() => {
       scene.aimStart = performance.now()
       syncPhase('aim')
@@ -367,7 +397,7 @@ export default function PenaltyShootout({
     const scene = sceneRef.current
     const shot = {
       round: Math.floor(scene.shots.length / 2) + 1,
-      team: scene.mode === 'shoot' ? 'home' : 'away',
+      team: scene.shootingTeam,
       scored: attempt.scored,
       saved: attempt.saved,
       missed: attempt.missed,
@@ -417,6 +447,29 @@ export default function PenaltyShootout({
     const scene = sceneRef.current
     if (scene.phase !== 'aim') return
     const zone = zoneFromSwipe(dx, dy)
+    const activeOnlineSession = onlineSessionRef.current
+    if (activeOnlineSession) {
+      if (activeOnlineSession.status !== 'playing') {
+        syncPhase('waiting')
+        setPromptText('比赛已暂停，正在等待对方重连…')
+        return
+      }
+      const submitted = activeOnlineSession.onSubmit?.({
+        attemptIndex: activeOnlineSession.attemptIndex,
+        role: scene.mode === 'shoot' ? 'shooter' : 'keeper',
+        zone,
+        overpowered: scene.mode === 'shoot' && length > POWER_LIMIT,
+        power: scene.mode === 'shoot' ? Math.min(1.5, length / POWER_LIMIT) : 0,
+      })
+      if (submitted === false) {
+        setPromptText('方向提交失败，请重试')
+        return
+      }
+      scene.drag = null
+      syncPhase('waiting')
+      setPromptText('方向已锁定，等待对方完成操作…')
+      return
+    }
     const shooterTec = scene.shooter?.tec || scene.shooter?.rating || 70
     const keeperDef = scene.keeper?.def || scene.keeper?.rating || 70
 
@@ -443,7 +496,7 @@ export default function PenaltyShootout({
       overpowered,
       shooterTec,
       keeperDef,
-      stabilityBonus: scene.mode === 'shoot' ? stabilityBonus : 0,
+      stabilityBonus: scene.shootingTeam === 'home' ? stabilityBonus : 0,
       random: Math.random,
     })
 
@@ -475,6 +528,100 @@ export default function PenaltyShootout({
     schedule(() => audioManager.playSound('ballShot'), BALL_LAUNCH_MS)
     schedule(() => onKickDone(attempt), BALL_LAUNCH_MS + flightMs * scene.kick.flightT)
   }
+
+  const animateOnlineAttempt = (resolvedAttempt) => {
+    const scene = sceneRef.current
+    const homeShooting = resolvedAttempt.team === 'home'
+    const priorTeamShots = scene.shots.filter((shot) => shot.team === resolvedAttempt.team).length
+    scene.shootingTeam = resolvedAttempt.team
+    scene.shooter = homeShooting
+      ? pickShooter(homeLineup, priorTeamShots)
+      : pickShooter(awayLineup, priorTeamShots)
+    scene.keeper = homeShooting ? pickGoalkeeper(awayLineup) : pickGoalkeeper(homeLineup)
+    scene.drag = null
+    const power = Math.max(0.25, Math.min(1, Number(resolvedAttempt.power) || 0.7))
+    const flightMs = 560 - 300 * power
+    const zone = zoneRect(resolvedAttempt.shooterZone)
+    scene.kick = {
+      start: performance.now(),
+      keeperWait: KEEPER_WAIT_MIN + KEEPER_WAIT_SPAN / 2,
+      flightMs,
+      flightT: 1,
+      traj: resolvedAttempt.overpowered
+        ? missTrajectory(
+          zone.x + zone.w / 2 - SPOT.x,
+          (zone.y + zone.h / 2 - SPOT.y) * (resolvedAttempt.shooterZone.endsWith('top') ? 2.2 : 1.3),
+        )
+        : trajectoryFor(resolvedAttempt.shooterZone, 0),
+      shooterZone: resolvedAttempt.shooterZone,
+      keeperZone: resolvedAttempt.keeperZone,
+      collision: null,
+      attempt: resolvedAttempt,
+    }
+    setBanner(null)
+    syncPhase('kick')
+    schedule(() => audioManager.playSound('ballShot'), BALL_LAUNCH_MS)
+    schedule(() => {
+      if (resolvedAttempt.scored) audioManager.playSound('whistle')
+      else if (resolvedAttempt.saved) audioManager.playSound('ballTouch')
+      else audioManager.playSound('whistle')
+      syncPhase('result')
+      setBanner({
+        type: resolvedAttempt.scored ? 'goal' : resolvedAttempt.saved ? 'save' : 'miss',
+        text: resolvedAttempt.scored ? 'GOAL!' : resolvedAttempt.saved ? 'SAVE!' : 'MISS!',
+      })
+      schedule(() => {
+        const latestOnlineSession = onlineSessionRef.current
+        const syncedShots = latestOnlineSession?.shots || [...scene.shots, resolvedAttempt]
+        scene.shots = syncedShots
+        setShots(syncedShots)
+        const winner = latestOnlineSession?.winner || getShootoutWinner(syncedShots)
+        if (winner) {
+          syncPhase('done')
+          setFinishedWinner(winner)
+          setBanner({
+            type: 'winner',
+            text: winner === 'home' ? `${homeTeam}获胜！` : `${awayTeam}获胜！`,
+          })
+          schedule(() => onCompleteRef.current?.(winner, {
+            homeScore: syncedShots.filter((shot) => shot.team === 'home' && shot.scored).length,
+            awayScore: syncedShots.filter((shot) => shot.team === 'away' && shot.scored).length,
+            shots: syncedShots,
+          }), COMPLETE_DELAY)
+        } else {
+          beginRound()
+        }
+      }, RESULT_DURATION)
+    }, BALL_LAUNCH_MS + flightMs)
+  }
+
+  useEffect(() => {
+    const resolvedAttempt = onlineSession?.resolvedAttempt
+    if (!onlineMode || !loaded || !resolvedAttempt?.id) return
+    if (processedOnlineAttemptRef.current === resolvedAttempt.id) return
+    processedOnlineAttemptRef.current = resolvedAttempt.id
+    animateOnlineAttempt(resolvedAttempt)
+  }, [loaded, onlineMode, onlineSession?.resolvedAttempt])
+
+  useEffect(() => {
+    if (!onlineMode || !loaded) return
+    const previousStatus = previousOnlineStatusRef.current
+    previousOnlineStatusRef.current = onlineSession?.status
+    if (onlineSession?.status === 'paused' && ['prompt', 'aim'].includes(sceneRef.current.phase)) {
+      syncPhase('waiting')
+      setPromptText('比赛已暂停，正在等待对方重连…')
+      return
+    }
+    if (previousStatus === 'paused' && onlineSession?.status === 'playing') {
+      const role = sceneRef.current.mode === 'shoot' ? 'shooter' : 'keeper'
+      if (onlineSession.submitted?.[role]) {
+        syncPhase('waiting')
+        setPromptText('连接已恢复，等待对方完成操作…')
+      } else {
+        beginRound()
+      }
+    }
+  }, [loaded, onlineMode, onlineSession?.status, onlineSession?.submitted])
 
   // —— 预加载素材 + 人物包围盒 + 左扑镜像 + 客队球衣换色 ——
   useEffect(() => {
@@ -530,6 +677,9 @@ export default function PenaltyShootout({
       }
       imagesRef.current = images
       metricsRef.current = metrics
+      const startingShots = onlineSessionRef.current?.shots || []
+      sceneRef.current.shots = startingShots
+      setShots(startingShots)
       setLoaded(true)
       beginRound()
     })
@@ -594,8 +744,8 @@ export default function PenaltyShootout({
       }
 
       // 双方配色：我方原色，客队换色（A_ 前缀）
-      const keeperPrefix = scene.mode === 'shoot' ? 'A_' : ''
-      const kickerPrefix = scene.mode === 'shoot' ? '' : 'A_'
+      const keeperPrefix = scene.shootingTeam === 'home' ? 'A_' : ''
+      const kickerPrefix = scene.shootingTeam === 'home' ? '' : 'A_'
 
       // 门将：待机 GK1；扑救时身体先横移再逐帧伸展（碰撞体积跟随身体）
       let keeperFrame = `${keeperPrefix}gk1`
@@ -655,7 +805,7 @@ export default function PenaltyShootout({
             const hitbox = keeperHitbox(keeperFrame, keeperAnchor, images, metrics,
               scalesRef.current.gk)
             const point = bezierPoint(kick.traj, t)
-            if (hitbox && t > 0.4 && point.x >= hitbox.x0 && point.x <= hitbox.x1
+            if ((!onlineMode || kick.attempt.saved) && hitbox && t > 0.4 && point.x >= hitbox.x0 && point.x <= hitbox.x1
               && point.y >= hitbox.y0 && point.y <= hitbox.y1) {
               kick.collision = { t }
               audioManager.playSound('ballTouch') // 门将触球瞬间的触球音
@@ -682,7 +832,7 @@ export default function PenaltyShootout({
     return () => {
       if (rafRef.current) cancelAnimationFrame(rafRef.current)
     }
-  }, [loaded])
+  }, [loaded, onlineMode])
 
   useEffect(() => () => {
     timersRef.current.forEach(id => clearTimeout(id))
@@ -763,19 +913,19 @@ export default function PenaltyShootout({
       />
 
       {!loaded && <div className="penalty-prompt">正在加载点球素材…</div>}
-      {loaded && phase === 'prompt' && !finishedWinner && (
+      {loaded && (phase === 'prompt' || phase === 'waiting') && !finishedWinner && (
         <div className="penalty-prompt">{promptText}</div>
       )}
       {banner && (
         <div className={`penalty-banner penalty-banner--${banner.type}`}>{banner.text}</div>
       )}
 
-      {!finishedWinner && (
+      {!finishedWinner && (!onlineMode || phase !== 'waiting') && (
         <div className="penalty-hint">
           <span className="penalty-hint-text">
-            {isHomeTurn ? '滑动射门！' : '滑动扑救！'}
+            {isShootingControl ? '滑动射门！' : '滑动扑救！'}
           </span>
-          {!isHomeTurn && phase === 'aim' && (
+          {!isShootingControl && phase === 'aim' && (
             <div className="penalty-countdown" aria-label="扑救倒计时">
               <i ref={countdownBarRef} />
             </div>

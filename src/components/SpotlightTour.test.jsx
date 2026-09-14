@@ -2,7 +2,7 @@
 import React from 'react'
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import '@testing-library/jest-dom/vitest'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import SpotlightTour from './SpotlightTour.jsx'
 import { hasCompletedSpotlightTour } from '../utils/spotlightTourStorage.js'
@@ -17,11 +17,27 @@ const TEST_TOUR = {
 }
 
 describe('SpotlightTour', () => {
-  afterEach(() => {
-    cleanup()
+  beforeEach(() => {
+    const values = new Map()
+    Object.defineProperty(window, 'localStorage', {
+      configurable: true,
+      value: {
+        get length() { return values.size },
+        clear: () => values.clear(),
+        getItem: (key) => values.has(key) ? values.get(key) : null,
+        key: (index) => [...values.keys()][index] || null,
+        removeItem: (key) => values.delete(key),
+        setItem: (key, value) => values.set(key, String(value)),
+      },
+    })
   })
 
-  it('依次高亮目标，并在本次页面打开期间记住状态', async () => {
+  afterEach(() => {
+    cleanup()
+    window.localStorage.clear()
+  })
+
+  it('依次高亮目标，并持久记住已完成状态', async () => {
     render(
       <>
         <button

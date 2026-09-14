@@ -13,13 +13,16 @@ import {
   preloadHappySeedMatchAssets,
   preloadHappySeedRuntimeCore,
   prewarmHappySeedRuntimeSession,
+  hideMatchRuntimeCanvas,
 } from './services/happySeedMatchRuntime'
 import HomeScreen from './components/HomeScreen'
 import TeamSelectScreen from './components/TeamSelectScreen'
 import RecruitmentScreen from './components/RecruitmentScreen'
 import LineupScreen from './components/LineupScreen'
-import LogisticsScreen from './components/LogisticsScreen'
 import TournamentScreen from './components/TournamentScreen'
+import JourneyItemPrepScreen from './components/JourneyItemPrepScreen'
+import OnlineLobbyScreen from './components/OnlineLobbyScreen'
+import OnlinePenaltyModeScreen from './components/OnlinePenaltyModeScreen'
 import MatchScreen from './components/MatchScreen'
 import PostMatchScreen from './components/PostMatchScreen'
 import EndingScreen from './components/EndingScreen'
@@ -28,13 +31,12 @@ import PixelPlayerLab from './components/PixelPlayerLab'
 import EnhancementHubScreen from './components/EnhancementHubScreen'
 import PenaltyModeScreen from './components/PenaltyModeScreen'
 import CodexScreen from './components/CodexScreen'
-import TrainingGround from './components/TrainingGround'
 import GameLoadingScreen from './components/GameLoadingScreen'
 import SpotlightTour from './components/SpotlightTour.jsx'
 import { getScreenSpotlightTour } from './data/spotlightTours.js'
 import {
-  CURRENT_VARIANT,
   IS_INTERACTIVE_SPACE,
+  IS_ONLINE_ENTRY_ENABLED,
   hasVariantFeature,
 } from './config/runtime'
 
@@ -75,7 +77,7 @@ export default function App() {
   const useDouyinLayout = IS_INTERACTIVE_SPACE || import.meta.env.DEV
   const [saveData, setSaveData] = useState(null)
   const [currentScreen, setCurrentScreen] = useState('home')
-  const [activeGameMode, setActiveGameMode] = useState('coach')
+  const [activeGameMode, setActiveGameMode] = useState('journey')
   const [toast, setToast] = useState(null)
   const [startup, setStartup] = useState({
     ready: IS_TEST_RUNTIME || IS_INTERACTIVE_SPACE,
@@ -86,7 +88,7 @@ export default function App() {
   useEffect(() => {
     const data = loadSaveData()
     setSaveData(data)
-    setActiveGameMode(data.currentRun?.gameMode || 'coach')
+    setActiveGameMode(data.currentRun?.gameMode || 'journey')
 
     // 初始化音效系统
     try {
@@ -97,7 +99,7 @@ export default function App() {
   }, [])
 
   useEffect(() => {
-    // 互动空间优先完成 React 首绘，图片由页面按需加载，避免冷启动被
+    // 平台打包版优先完成 React 首绘，图片由页面按需加载，避免冷启动被
     // 22 个视觉资源阻塞。完整版仍保留启动预载和进度反馈。
     if (IS_TEST_RUNTIME || IS_INTERACTIVE_SPACE) return undefined
     let cancelled = false
@@ -155,6 +157,16 @@ export default function App() {
 
   useEffect(() => {
     if (currentScreen !== 'match') audioManager.stopMatchAudio()
+  }, [currentScreen])
+
+  useEffect(() => {
+    // The Runtime renderer is a singleton canvas mounted directly under body,
+    // outside React's screen tree. Hide it immediately on every non-Runtime
+    // route so an async warm-up or delayed component cleanup can never leave a
+    // live pitch behind the menu UI.
+    if (currentScreen !== 'match' && currentScreen !== 'training') {
+      hideMatchRuntimeCanvas()
+    }
   }, [currentScreen])
 
   useEffect(() => {
@@ -243,7 +255,7 @@ export default function App() {
       const tag = event.target?.tagName
       if (tag === 'INPUT' || tag === 'TEXTAREA') return
       if (event.key === 'r' || event.key === 'R') {
-        // 强制雨天 + 教练模式快速进入比赛
+        // 强制雨天 + 冠军征程快速进入比赛
         window.__happySeedForceWeather = 'rain'
         const team = teams.find(t => t.id === 'france') || teams[0]
         const playerIds = (team.players || []).map(p => p.id)
@@ -251,17 +263,17 @@ export default function App() {
         setSaveData((prev) => {
           const base = prev || loadSaveData()
           const newRun = {
-            ...createNewRun(team.id, 'coach', base),
+            ...createNewRun(team.id, 'journey', base),
             stage: 'match',
             purchasedPlayerIds: playerIds,
             roster: playerIds,
             lineup,
           }
-          const next = { ...base, currentRun: newRun }
+          const next = { ...base, currentRun: newRun, journeyRun: newRun }
           persistSaveData(next)
           return next
         })
-        setActiveGameMode('coach')
+        setActiveGameMode('journey')
         setCurrentScreen('match')
         return
       }
@@ -286,8 +298,8 @@ export default function App() {
               },
             },
           }
-          if (next.currentRun.gameMode === 'player') {
-            next.playerModeRun = next.currentRun
+          if (next.currentRun.gameMode === 'journey') {
+            next.journeyRun = next.currentRun
           }
           persistSaveData(next)
           return next
@@ -300,9 +312,10 @@ export default function App() {
   }, [])
 
   const updateSaveData = (newData) => {
-    // 球员模式存档同步：当 currentRun 属于球员模式时，同步写入 playerModeRun
-    if (newData.currentRun?.gameMode === 'player') {
-      newData = { ...newData, playerModeRun: newData.currentRun }
+    if (newData.currentRun?.gameMode === 'journey') {
+      newData = { ...newData, journeyRun: newData.currentRun }
+    } else if (newData.currentRun?.gameMode === 'online') {
+      newData = { ...newData, onlineRun: newData.currentRun }
     }
     setSaveData(newData)
     persistSaveData(newData)
@@ -314,14 +327,14 @@ export default function App() {
   }
 
   const navigateTo = (screen, { skipRecruitmentGuard = false, gameMode } = {}) => {
-    if (gameMode === 'coach' || gameMode === 'player') {
+    if (gameMode === 'journey' || gameMode === 'online') {
       setActiveGameMode(gameMode)
     }
     if (screen === 'recruitment' && !skipRecruitmentGuard) {
       const latestData = loadSaveData()
       const stage = latestData?.currentRun?.stage
       const isRecruitmentDone = stage && [
-        'logistics', 'tournament', 'lineup', 'match', 'post-match', 'ending',
+        'tournament', 'lineup', 'item-prep', 'match', 'post-match', 'ending',
       ].includes(stage)
       if (isRecruitmentDone) {
         showToast('阵容已确认，无法返回招募页面')
@@ -357,10 +370,16 @@ export default function App() {
         return <TeamSelectScreen {...screenProps} />
       case 'recruitment':
         return <RecruitmentScreen {...screenProps} />
-      case 'logistics':
-        return <LogisticsScreen {...screenProps} />
       case 'lineup':
         return <LineupScreen {...screenProps} />
+      case 'item-prep':
+        return <JourneyItemPrepScreen {...screenProps} />
+      case 'online-lobby':
+        if (!IS_ONLINE_ENTRY_ENABLED) return <HomeScreen {...screenProps} />
+        return <OnlineLobbyScreen {...screenProps} />
+      case 'online-penalty':
+        if (!IS_ONLINE_ENTRY_ENABLED) return <HomeScreen {...screenProps} />
+        return <OnlinePenaltyModeScreen {...screenProps} />
       case 'tournament':
       case 'mini-cup-prep':
         return <TournamentScreen {...screenProps} />
@@ -378,8 +397,6 @@ export default function App() {
       case 'codex':
         if (!hasVariantFeature('codex')) return <HomeScreen {...screenProps} />
         return <CodexScreen {...screenProps} />
-      case 'training':
-        return <TrainingGround {...screenProps} />
       case 'enhancement-hub':
         return <EnhancementHubScreen {...screenProps} />
       case 'pixel-player-lab':
@@ -391,11 +408,6 @@ export default function App() {
 
   return (
     <div className={`app${useDouyinLayout ? ' douyin-demo' : ''}${currentScreen === 'recruitment' ? ' zoom-page-active' : ''}`}>
-      {import.meta.env.DEV && (
-        <div className="variant-dev-badge" data-testid="variant-dev-badge">
-          {CURRENT_VARIANT.label} · {CURRENT_VARIANT.id}
-        </div>
-      )}
       {renderScreen()}
       <SpotlightTour tour={screenSpotlightTour} autoStart />
       {toast && <div className="toast">{toast}</div>}

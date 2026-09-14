@@ -4,17 +4,12 @@ import { fileURLToPath } from 'node:url'
 import { resolve } from 'node:path'
 
 export default defineConfig(({ mode }) => {
-  const variantId = process.env.VITE_VARIANT_ID
-    || (mode === 'compliant' ? 'compliant-full' : mode === 'interactive' ? 'compliant-interactive' : 'showcase-full')
-  const isInteractive = variantId === 'compliant-interactive'
-  const isCompliant = variantId === 'compliant-full' || isInteractive
+  const variantId = process.env.VITE_VARIANT_ID || 'compliant-full'
   const isLabsBuild = mode === 'labs'
   const configuredPublicDir = process.env.TARGETING_PUBLIC_DIR
-  const publicDir = isInteractive && process.env.TARGETING_SKIP_PUBLIC_STAGE === '1'
-    ? false
-    : configuredPublicDir
-      ? resolve(process.cwd(), configuredPublicDir)
-      : 'public'
+  const publicDir = configuredPublicDir
+    ? resolve(process.cwd(), configuredPublicDir)
+    : 'public'
   const outDir = process.env.TARGETING_OUTPUT_DIR
     ? resolve(process.cwd(), process.env.TARGETING_OUTPUT_DIR)
     : resolve(process.cwd(), '.variant-build', variantId)
@@ -26,16 +21,15 @@ export default defineConfig(({ mode }) => {
     resolve: {
       alias: {
         '@competition-brand': fileURLToPath(new URL(
-          isCompliant
-            ? './src/config/competitionBrand.compliant.js'
-            : './src/config/competitionBrand.showcase.js',
+          './src/config/competitionBrand.compliant.js',
           import.meta.url,
         )),
       },
     },
     define: {
-      '__DOUYIN_BUILD__': JSON.stringify(isInteractive),
-      ...(isInteractive ? { 'process.env.NODE_ENV': JSON.stringify('production') } : {}),
+      // The current maintained target is still the compliant H5 baseline.
+      // A future Douyin Mini Game adapter must opt into packaged-runtime behavior explicitly.
+      '__DOUYIN_BUILD__': JSON.stringify(false),
     },
     build: {
       outDir,
@@ -49,14 +43,6 @@ export default defineConfig(({ mode }) => {
             happySeedDecisionReview: fileURLToPath(new URL('./happyseed-decision-review.html', import.meta.url)),
             pixelPlayerStudio: fileURLToPath(new URL('./pixel-player-studio.html', import.meta.url)),
           },
-        },
-      } : isInteractive ? {
-        lib: {
-          entry: fileURLToPath(new URL('./src/main.jsx', import.meta.url)),
-          name: 'Targeting2026Interactive',
-          formats: ['iife'],
-          fileName: () => 'game.js',
-          cssFileName: 'game',
         },
       } : {
         rollupOptions: {

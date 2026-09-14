@@ -7,12 +7,10 @@ import {
   readFileSync,
   readdirSync,
   rmSync,
-  statSync,
   writeFileSync,
 } from 'node:fs'
 import { dirname, extname, join, relative, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { zipSync } from 'fflate'
 import { getVariant } from '../../config/variants.mjs'
 
 export const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
@@ -178,11 +176,25 @@ export function prepareVariantPublic(variantId) {
 
 export function gitInfo() {
   const run = args => execFileSync('git', args, { cwd: projectRoot, encoding: 'utf8' }).trim()
-  return {
-    branch: run(['branch', '--show-current']),
-    sha: run(['rev-parse', 'HEAD']),
-    shortSha: run(['rev-parse', '--short=8', 'HEAD']),
-    dirty: run(['status', '--porcelain']).length > 0,
+  try {
+    return {
+      branch: run(['branch', '--show-current']),
+      sha: run(['rev-parse', 'HEAD']),
+      shortSha: run(['rev-parse', '--short=8', 'HEAD']),
+      dirty: run(['status', '--porcelain']).length > 0,
+    }
+  } catch {
+    const sha = process.env.TARGETING_SOURCE_SHA
+      || process.env.VERCEL_GIT_COMMIT_SHA
+      || 'unknown'
+    return {
+      branch: process.env.TARGETING_SOURCE_BRANCH
+        || process.env.VERCEL_GIT_COMMIT_REF
+        || 'vercel-local-upload',
+      sha,
+      shortSha: sha === 'unknown' ? 'unknown' : sha.slice(0, 8),
+      dirty: process.env.TARGETING_BUILD_DIRTY === '1',
+    }
   }
 }
 
@@ -288,27 +300,4 @@ export function assertNoRestrictedCompetitionIp(outputRoot) {
     throw new Error(`Restricted competition IP entered compliant output:\n- ${violations.join('\n- ')}`)
   }
   return { scannedFiles: walkFiles(outputRoot).length, violations: [] }
-}
-
-export function writeZip(sourceRoot, zipPath) {
-  mkdirSync(dirname(zipPath), { recursive: true })
-  const entries = Object.fromEntries(walkFiles(sourceRoot).map(path => [
-    relative(sourceRoot, path).split(sep).join('/'),
-    new Uint8Array(readFileSync(path)),
-  ]))
-  rmSync(zipPath, { force: true })
-  writeFileSync(zipPath, zipSync(entries, { level: 9 }))
-  return statSync(zipPath).size
-}
-
-export function assertAsciiPackagePaths(root) {
-  const invalid = walkFiles(root)
-    .map(path => relative(root, path).split(sep).join('/'))
-    .filter(path => !/^[\x20-\x7e]+$/.test(path))
-  if (invalid.length) throw new Error(`Non-ASCII package paths remain: ${invalid.join(', ')}`)
-}
-
-export function artifactDirectoryFor(git = gitInfo()) {
-  const date = new Date().toISOString().slice(0, 10).replaceAll('-', '')
-  return join(projectRoot, 'artifacts', `${date}-${git.shortSha}`)
 }

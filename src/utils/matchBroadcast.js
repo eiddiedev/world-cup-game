@@ -131,7 +131,14 @@ function positionRank(player) {
 export function buildBroadcastSubstitutionBoard(actorSnapshot = {}, options = {}) {
   const side = options.side === 'blue' ? 'blue' : 'red'
   const active = (actorSnapshot.actors || [])
-    .filter((actor) => actor.side === side && actor.state?.onPitch)
+    .filter((actor) => actor.side === side && (
+      actor.state?.onPitch
+      || (
+        actor.state?.status === 'injured'
+        && Number(actor.state?.hp) <= 0
+        && !actor.state?.substitutedOut
+      )
+    ))
     .sort((left, right) => (
       positionRank(left) - positionRank(right)
       || left.number - right.number

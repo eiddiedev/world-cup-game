@@ -288,9 +288,18 @@
         });
       }
 
+      function preserveNativeGoalkeeper(entry) {
+        return Boolean(
+          entry && entry.actor && entry.actor.isGoalkeeper
+          && active && active.script
+          && active.script.runtimeContext !== "shootout"
+        );
+      }
+
       function setEntityPosition(position) {
         var entry = entryFor(position.runtimeActorId);
-        if (!entry || !entry.entity || !entry.entity.position) return;
+        if (!entry || !entry.entity || !entry.entity.position
+          || preserveNativeGoalkeeper(entry)) return;
         entry.entity.position.x = pitch.width * position.normalized[0];
         entry.entity.position.y = pitch.height * position.normalized[1];
         entry.entity.position.z = 0;
@@ -314,7 +323,7 @@
             : frame && frame.redTeam,
           authoredPlayer = authoredTeam && authoredTeam.players
             && authoredTeam.players[actor && actor.runtimeLocalIndex];
-        if (entityId == null) return;
+        if (entityId == null || preserveNativeGoalkeeper(entry)) return;
         if (authoredPlayer && authoredPlayer.position) {
           authoredPlayer.position.x = pitch.width * position.normalized[0];
           authoredPlayer.position.y = pitch.height * position.normalized[1];
@@ -676,45 +685,112 @@
         }
       }
 
+      function activateDecisionPossession(entry) {
+        if (!entry || !entry.entity || !entry.entity.position || !pitch.ball)
+          return !1;
+        var player = entry.entity,
+          ball = pitch.ball;
+        // Decision possession recovery is only for outfield players. Goalkeepers
+        // must stay on the native goalkeeper state machine; forcing AI/dribble or
+        // distribution here can pull them away from their goal in coach mode.
+        if (player.isGoalkeeper || entry.actor && entry.actor.isGoalkeeper) return !1;
+        try {
+          player.static = !1;
+          player.passing = !1;
+          playerGlobals.forceAI(player, null);
+        } catch {}
+        try {
+          ball.placeAtPosition(
+            player.position.x,
+            player.position.y,
+            Math.max(ball.radius || .12, .12),
+          );
+          if (typeof player.forceTrap === "function") player.forceTrap(ball);
+          else if (typeof player.trap === "function") player.trap(ball, !0);
+        } catch {}
+        if (!ball.owner && !player.hasBall && ball.inHands !== player) {
+          try { ball.owner = player; } catch {}
+        }
+        var confirmed = Boolean(
+          ball.owner === player || player.hasBall || ball.inHands === player,
+        );
+        if (!confirmed) return !1;
+        try {
+          if (player.team) {
+            player.team.controllingPlayer = player;
+            player.team.activePlayer = player;
+            player.team.receivingPlayer = null;
+            if (player.team.opponents)
+              player.team.opponents.receivingPlayer = null;
+          }
+        } catch {}
+        try {
+          player.states.change(playerStates.AIDribble);
+        } catch {
+          return !1;
+        }
+        return !0;
+      }
+
+      function confirmNativeGoalkeeperPossession(entry) {
+        if (!entry || !entry.entity || !entry.entity.position || !pitch.ball)
+          return !1;
+        var goalkeeper = entry.entity,
+          ball = pitch.ball;
+        if (!goalkeeper.isGoalkeeper && !(entry.actor && entry.actor.isGoalkeeper))
+          return !1;
+        if (ball.inHands === goalkeeper || ball.owner === goalkeeper || goalkeeper.hasBall)
+          return !0;
+        // Kinematic save outcomes may finish before the native trap signal. Let
+        // the existing trap implementation claim the ball, but do not rewrite
+        // goalkeeper AI state, position or team control from the decision layer.
+        if (ball.inHands || ball.owner) return !1;
+        try {
+          ball.placeAtPosition(
+            goalkeeper.position.x,
+            goalkeeper.position.y,
+            Math.max(ball.radius || .12, .12),
+          );
+          if (typeof goalkeeper.forceTrap === "function") goalkeeper.forceTrap(ball);
+          else if (typeof goalkeeper.trap === "function") goalkeeper.trap(ball, !0);
+        } catch {}
+        return Boolean(
+          ball.inHands === goalkeeper || ball.owner === goalkeeper || goalkeeper.hasBall,
+        );
+      }
+
       function handoffContinuation() {
         if (!active || !active.execution) return !1;
         var continuation = active.execution.continuation;
         if (!continuation || continuation.type !== "actor-possession") return !1;
         var entry = entryFor(continuation.runtimeActorId);
         if (!entry || !entry.entity || !entry.entity.position) return !1;
-        // 强制清除所有球权归属：无论当前谁持球（包括门将 inHands），
-        // 都必须先完全释放，否则 forceTrap 在引擎信号链上抛错后球权永远确认不到
-        try {
-          if (pitch.ball.inHands) {
-            try { pitch.ball.inHands.dropBall && pitch.ball.inHands.dropBall(); } catch {}
-            pitch.ball.inHands = null;
-          }
-        } catch {}
-        try {
-          if (pitch.ball.owner) {
-            try { pitch.ball.owner.release && pitch.ball.owner.release(); } catch {}
-            try { pitch.ball.owner.passing = !1; } catch {}
-            pitch.ball.owner = null;
-          }
-        } catch {}
-        // 原生扑救模式：门将已经把球抱在怀里（inHands），不再重放 trap
-        if (pitch.ball.inHands !== entry.entity) {
-          pitch.ball.placeAtPosition(
-            entry.entity.position.x,
-            entry.entity.position.y,
-            Math.max(pitch.ball.radius || .12, .12),
-          );
+        var goalkeeperTarget = Boolean(
+          entry.entity.isGoalkeeper || entry.actor && entry.actor.isGoalkeeper,
+        );
+        if (goalkeeperTarget) {
+          confirmNativeGoalkeeperPossession(entry);
+        } else {
+          // Outfield decisions need an explicit native possession handoff. Never
+          // run this release path for a goalkeeper holding the ball.
           try {
-            if (typeof entry.entity.forceTrap === "function") entry.entity.forceTrap(pitch.ball);
-            else if (typeof entry.entity.trap === "function") entry.entity.trap(pitch.ball, !0);
+            if (pitch.ball.inHands) {
+              try { pitch.ball.inHands.dropBall && pitch.ball.inHands.dropBall(); } catch {}
+              pitch.ball.inHands = null;
+            }
           } catch {}
+          try {
+            if (pitch.ball.owner) {
+              try { pitch.ball.owner.release && pitch.ball.owner.release(); } catch {}
+              try { pitch.ball.owner.passing = !1; } catch {}
+              pitch.ball.owner = null;
+            }
+          } catch {}
+          activateDecisionPossession(entry);
         }
-        if (!pitch.ball.owner && !entry.entity.hasBall && pitch.ball.inHands !== entry.entity) {
-          try { pitch.ball.owner = entry.entity; } catch {}
-        }
-        if (entry.actor && entry.actor.isGoalkeeper
-          && window.__happySeedEnforceGoalkeeperSafety)
-          window.__happySeedEnforceGoalkeeperSafety();
+        if (goalkeeperTarget
+          && window.__happySeedMonitorGoalkeeperDistribution)
+          window.__happySeedMonitorGoalkeeperDistribution();
         var possessionConfirmed = Boolean(
           pitch.ball.owner === entry.entity
           || entry.entity.hasBall
@@ -789,7 +865,8 @@
         try { pitch.ball.inHands = saved.inHands || null; } catch {}
         finished.savedActors.forEach(function (position) {
           var entry = entryFor(position.runtimeActorId);
-          if (!entry || !entry.entity || !entry.entity.position) return;
+          if (!entry || !entry.entity || !entry.entity.position
+            || preserveNativeGoalkeeper(entry)) return;
           entry.entity.position.x = position.x;
           entry.entity.position.y = position.y;
           entry.entity.position.z = position.z;
@@ -816,6 +893,13 @@
         }
         frozen.forEach(function (player) {
           if (!player || !player.states) return;
+          var retiredEntry = actorEntries.find(function (entry) {
+            return entry && entry.entity === player;
+          });
+          if (retiredEntry && retiredEntry.actor
+            && (retiredEntry.actor._runtimeRemoved
+              || retiredEntry.actor._runtimeRemovalPending
+              || retiredEntry.actor.state && retiredEntry.actor.state.onPitch === !1)) return;
           try { playerGlobals.forceAI(player, null); } catch {}
           try {
             player.static = !1;
@@ -870,6 +954,7 @@
           actorEntries.forEach(function (entry) {
             if (!entry || !entry.actor || entry.actor._runtimeRemoved
               || entry.actor.state && entry.actor.state.onPitch === !1
+              || entry.actor.isGoalkeeper || entry.entity && entry.entity.isGoalkeeper
               || !entry.entity || !entry.entity.position || !entry.entity.team) return;
             var dx = entry.entity.position.x - ball.position.x,
               dy = entry.entity.position.y - ball.position.y,
@@ -890,13 +975,7 @@
             ball.velocity.y = 0;
             ball.velocity.z = 0;
           }
-          try { ball.owner = bestEntry.entity; } catch {}
-          try {
-            bestEntry.entity.static = !1;
-            bestEntry.entity.states.change(bestEntry.entity.isGoalkeeper
-              ? playerStates.AIGoalkeeperPutBallBackInPlay
-              : playerStates.AIDribble);
-          } catch {}
+          activateDecisionPossession(bestEntry);
         } catch (ballError) {
           console.error("[decision-director-v3] loose-ball recovery failed", ballError);
         }
@@ -924,7 +1003,9 @@
         var carrier = pitch.ball && (pitch.ball.inHands || pitch.ball.owner), woke = 0;
         actorEntries.forEach(function (entry) {
           var player = entry && entry.entity;
-          if (!player || !player.states || !player.team) return;
+          if (!player || !player.states || !player.team || !entry.actor
+            || entry.actor._runtimeRemoved || entry.actor._runtimeRemovalPending
+            || entry.actor.state && entry.actor.state.onPitch === !1) return;
           try {
             player.static = !1;
             player.passing = !1;
@@ -944,6 +1025,54 @@
           } catch {}
         });
         return woke;
+      }
+
+      function resumeNoPenaltyVarIncident(finished) {
+        var script = finished && finished.script,
+          scenarioId = script && script.scenarioId,
+          outcomeId = finished && finished.outcome,
+          noPenaltyOutcomes = {
+            var_penalty_review: [
+              "play_continues",
+              "possession_maintained",
+              "yellow_card_dissent",
+              "shape_held",
+              "opponent_counter",
+            ],
+            handball_penalty_claim: [
+              "play_continues",
+              "possession_maintained",
+              "yellow_card_dissent",
+            ],
+            defensive_line_handball_var: [
+              "play_continues",
+              "shape_held",
+            ],
+          },
+          isExplicitNoPenalty = noPenaltyOutcomes[scenarioId]
+            && noPenaltyOutcomes[scenarioId].indexOf(outcomeId) >= 0;
+        if (!isExplicitNoPenalty || script.__suppressResumeForPenalty
+          || window.__matchGame && window.__matchGame.__happySeedPendingVarInvalidGoal
+          || window.__matchGame && window.__matchGame.__happySeedGoalPresentationHoldToken != null)
+          return !1;
+        try { pitch.timeScale.clear(); } catch {}
+        try {
+          var stateName = pitchStateName(),
+            Pitch = runtime("pitch").Pitch;
+          if (["Match", "BallOutOfPlay"].indexOf(stateName) >= 0) {
+            pitch.ballOutOfPlay = !1;
+            if (stateName !== "Match") pitch.states.change(Pitch.states.Match);
+          }
+        } catch (stateError) {
+          console.error("[decision-director-v3] no-penalty state recovery failed", stateError);
+        }
+        try { wakeDecisionParticipants(finished); } catch {}
+        try { window.__happySeedStadiumScene.followBall(); } catch {}
+        try {
+          document.body.dataset.noPenaltyVarRecovery = String(scenarioId);
+          document.body.dataset.noPenaltyVarTimeScale = String(Number(pitch.timeScale));
+        } catch {}
+        return Number(pitch.timeScale) > 0;
       }
 
       // One idempotent terminal path is shared by successful completion,
@@ -1031,7 +1160,8 @@
             finished.savedActors.forEach(function (position) {
               if (!stagedIds[position.runtimeActorId]) return;
               var entry = entryFor(position.runtimeActorId);
-              if (!entry || !entry.entity || !entry.entity.position) return;
+              if (!entry || !entry.entity || !entry.entity.position
+                || preserveNativeGoalkeeper(entry)) return;
               entry.entity.position.x = position.x;
               entry.entity.position.y = position.y;
               entry.entity.position.z = position.z;
@@ -1076,6 +1206,7 @@
           } catch {}
         } finally {
           emergencyDecisionCleanup(finished);
+          resumeNoPenaltyVarIncident(finished);
           publishRecoveryDiagnostics(cancelled ? "cancelled" : "completed", finished);
         }
         if (cancelled) {
@@ -1194,18 +1325,9 @@
             console.warn("[decision-director-v3] 球权交接超时，强制赋值结算",
               active.script.scenarioId, active.outcome);
             var contEntry = entryFor(active.execution.continuation.runtimeActorId);
-            if (contEntry && contEntry.entity && contEntry.entity.position) {
-              try {
-                pitch.ball.owner = contEntry.entity;
-                pitch.ball.placeAtPosition(
-                  contEntry.entity.position.x,
-                  contEntry.entity.position.y,
-                  Math.max(pitch.ball.radius || .12, .12),
-                );
-              } catch (forceError) {
-                console.error("[decision-director-v3] 强制球权失败", forceError);
-              }
-            }
+            if (contEntry && !(contEntry.entity && contEntry.entity.isGoalkeeper)
+              && !(contEntry.actor && contEntry.actor.isGoalkeeper))
+              activateDecisionPossession(contEntry);
             state.continuationReady = !0;
           }
         }

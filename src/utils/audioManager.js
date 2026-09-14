@@ -265,7 +265,7 @@ export class AudioManager {
   }
 
   preloadMatchSamples() {
-    // 互动空间包完全离线，且比赛音效使用本地合成音；编译时移除通用网络加载分支。
+    // 平台包需支持完全离线，且比赛音效使用本地合成音；编译时移除通用网络加载分支。
     if (__DOUYIN_BUILD__) return
     const ctx = this.ensureSfxContext()
     if (!ctx || typeof fetch !== 'function') return

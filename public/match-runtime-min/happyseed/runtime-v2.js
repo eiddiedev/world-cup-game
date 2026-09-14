@@ -33,6 +33,7 @@
         baseComposition = new Container(),
         state = {
           ready: !1,
+          readyDispatched: !1,
           activeCamera: "normal",
           cameraMode: "ball",
           cameraTarget: { x: pitch.center.x, y: pitch.center.y },
@@ -402,6 +403,11 @@
           stadium.disableOverlay && stadium.disableOverlay();
           preserveOriginalGoalsOnly();
           hideLegacyAnimalCrowd();
+          state.ready = !0;
+          if (!state.readyDispatched) {
+            state.readyDispatched = !0;
+            dispatchScene("ab-stadium-slice-ready");
+          }
           return !0;
         } catch (error) {
           console.error("[stadium-v2] 统一背景烘焙失败", error);
@@ -699,9 +705,7 @@
         console.error("[stadium-v2] 镜头初始化失败", error);
       }
 
-      state.ready = !0;
       installPixelBallTexture();
-      dispatchScene("ab-stadium-slice-ready");
       return !0;
     } catch (error) {
       stadium._pixelStadiumV2Init = !1;

@@ -1,4 +1,9 @@
-import { buildRecommendedNationalSquad, MIN_PURCHASE, NATIONAL_SQUAD_SIZE } from '../data/rosterRules.js'
+import {
+  buildRecommendedNationalSquad,
+  getNationalSquadBudget,
+  MIN_PURCHASE,
+  NATIONAL_SQUAD_SIZE,
+} from '../data/rosterRules.js'
 import { getTeamDefaultFormation } from '../data/teamFormations.js'
 import { getTeamById } from '../data/teams.js'
 import { FORMATION_NAMES } from '../data/formationTactics.js'
@@ -10,14 +15,14 @@ import {
   buildHappySeedKitPalette,
   HAPPYSEED_HUMAN_PART_SET_ID,
 } from './happySeedHumanPlayer.js'
-import { INTERACTIVE_PLAYABLE_TEAM_IDS } from '../../config/variants.mjs'
+import { ALL_PLAYABLE_TEAM_IDS } from '../../config/variants.mjs'
 
 export const HAPPYSEED_RUNTIME_ACTOR_SCHEMA_VERSION = 'happyseed-runtime-actors-v1'
 export const HAPPYSEED_RUNTIME_ACTOR_COUNT = 22
 export const HAPPYSEED_FORMATION_TRANSITION_MS = 1600
 export const HAPPYSEED_RUNTIME_PLAYER_DISPLAY_SCALE = 0.62
 const PIXEL_PREFIX = __DOUYIN_BUILD__ ? './pixel' : '/pixel'
-const DOUYIN_SELECTABLE_TEAM_IDS = new Set(INTERACTIVE_PLAYABLE_TEAM_IDS)
+const DOUYIN_SELECTABLE_TEAM_IDS = new Set(ALL_PLAYABLE_TEAM_IDS)
 
 const SIDE_ORDER = ['red', 'blue']
 const POSITION_ORDER = ['GK', 'DF', 'MF', 'FW']
@@ -185,6 +190,7 @@ function buildBusinessBinding(team, player, assignedPosition, kitVariant, status
       stamina: clamp(player.stamina ?? player.sta ?? 80, 0, 100),
       morale: clamp(player.morale ?? 70, 0, 99),
       form: clamp(player.form ?? 70, 0, 99),
+      hp: 100,
       yellowCards: 0,
       redCard: false,
       injured: false,
@@ -312,7 +318,7 @@ function buildRuntimeSide({
     ? selectablePool.slice(0, NATIONAL_SQUAD_SIZE)
     : buildRecommendedNationalSquad(
       team.players.filter((player) => !INELIGIBLE_STATUSES.has(player.status)),
-      team.budget,
+      getNationalSquadBudget(team.players, team.budget),
       selectedFormation,
     )
   const eligibleSquad = squad.filter((player) => !unavailableIds.has(player.id))

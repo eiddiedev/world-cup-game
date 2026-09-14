@@ -3,7 +3,6 @@ import { getTeamById, getTeamFlag } from '../data/teams'
 import { getTeamSchedule, KNOCKOUT_ROUNDS } from '../data/schedules'
 import { generateKnockoutOpponents } from '../services/aiService'
 import { getFallbackKnockoutOpponents, sanitizeKnockoutOpponents } from '../utils/knockoutResolver'
-import { refreshPlayerLineup } from '../utils/playerModeSetup'
 import { COMPETITION_BRAND } from '@competition-brand'
 
 /**
@@ -284,24 +283,7 @@ export default function TournamentScreen({ saveData, updateSaveData, navigateTo 
 
   // 进入排兵布阵
   const handlePrepareMatch = (roundIndex) => {
-    const isPlayerMode = saveData.currentRun?.gameMode === 'player'
     const opponentId = getScheduleOpponentId(groupMatches[roundIndex])
-    if (isPlayerMode) {
-      // 球员模式：自动刷新首发，跳过布阵页直接比赛
-      const refreshed = refreshPlayerLineup(saveData.currentRun)
-      updateSaveData({
-        ...saveData,
-        currentRun: {
-          ...refreshed,
-          matchIndex: roundIndex,
-          stage: 'match',
-          isKnockoutMatch: false,
-          currentOpponent: opponentId,
-        },
-      })
-      navigateTo('match')
-      return
-    }
     updateSaveData({
       ...saveData,
       currentRun: {
@@ -317,22 +299,6 @@ export default function TournamentScreen({ saveData, updateSaveData, navigateTo 
 
   // 进入淘汰赛
   const handleKnockout = (roundId) => {
-    const isPlayerMode = saveData.currentRun?.gameMode === 'player'
-    if (isPlayerMode) {
-      const refreshed = refreshPlayerLineup(saveData.currentRun)
-      updateSaveData({
-        ...saveData,
-        currentRun: {
-          ...refreshed,
-          stage: 'match',
-          knockoutRound: roundId,
-          isKnockoutMatch: true,
-          currentOpponent: knockoutOpponents[roundId] || '待定',
-        },
-      })
-      navigateTo('match')
-      return
-    }
     updateSaveData({
       ...saveData,
       currentRun: {
@@ -435,7 +401,7 @@ export default function TournamentScreen({ saveData, updateSaveData, navigateTo 
 
                 {isCurrent && (
                   <button className="table-action-button tournament-action-button" onClick={() => handlePrepareMatch(index)}>
-                    {saveData.currentRun?.gameMode === 'player' ? '开始比赛' : '排兵布阵'}
+                    排兵布阵
                   </button>
                 )}
               </div>
@@ -506,7 +472,7 @@ export default function TournamentScreen({ saveData, updateSaveData, navigateTo 
                       </span>
                       {isCurrent && (
                         <button className="table-action-button tournament-action-button" onClick={() => handleKnockout(round.id)}>
-                          {saveData.currentRun?.gameMode === 'player' ? '开始比赛' : '排兵布阵'}
+                          排兵布阵
                         </button>
                       )}
                     </div>
